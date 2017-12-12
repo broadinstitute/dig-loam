@@ -1,4 +1,4 @@
-val dataConfig       = loadConfig("dataConfig", "/humgen/diabetes2/users/ryank/software/dig-loam-stream/pipeline/conf/metsim/data.conf")
+val dataConfig       = loadConfig("dataConfig", "")
 val pipelineConfig   = loadConfig("pipelineConfig", "/humgen/diabetes2/users/ryank/software/dig-loam-stream/pipeline/conf/qc.conf")
 
 val startChr        = pipelineConfig.getInt("startChr")

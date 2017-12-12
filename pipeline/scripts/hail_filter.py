@@ -1,6 +1,7 @@
 from hail import *
 hc = HailContext()
 import argparse
+import multiprocessing
 
 def main(args=None):
 
