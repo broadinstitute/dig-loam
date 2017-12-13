@@ -760,7 +760,11 @@ uger {
     $rAncestryClusterMerge
     --ancestry-in $ancestryInferredPathList
     --out-table ${ancestryInferredMerged}
-    --out-outliers ${ancestryInferredMergedOutliers}""".in(ancestryInferredStores).out(ancestryInferredMerged, ancestryInferredMergedOutliers).using("R-3.4")
+    --out-outliers ${ancestryInferredMergedOutliers}"""
+    .in(ancestryInferredStores)
+    .out(ancestryInferredMerged, ancestryInferredMergedOutliers)
+    .using("R-3.4")
+    .named("$ancestryInferredMerged".split("/").last)
 
 }
 
@@ -920,6 +924,7 @@ andThen {
       .in(Params.paramsByArrSorted.map(_.arrayDataRawFreq) ++ Params.paramsByArrSorted.map(_.arrayDataPreparedMultiallelic) ++ Params.paramsByArrSorted.map(_.arrayDataRawIndel) ++ Params.paramsByArrSorted.map(_.arrayDataRawDupRemove))
       .out(reportQcVariantSummaryTable)
       .using("R-3.4")
+      .named("$reportQcVariantSummaryTable".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -929,10 +934,12 @@ andThen {
       .in(Params.paramsByArrSorted.map(_.arrayData))
       .out(reportQcSampleUpsetplotPdf)
       .using("R-3.4")
+      .named("$reportQcSampleUpsetplotPdf".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSampleUpsetplotPdf}[0] $reportQcSampleUpsetplotPng"""
       .in(reportQcSampleUpsetplotPdf)
       .out(reportQcSampleUpsetplotPng)
+      .named("$reportQcSampleUpsetplotPng".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -942,10 +949,12 @@ andThen {
       .in(Params.paramsByArrSorted.flatMap(_.harm))
       .out(reportQcVariantUpsetplotPdf)
       .using("R-3.4")
+      .named("$reportQcVariantUpsetplotPdf".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantUpsetplotPdf}[0] $reportQcVariantUpsetplotPng"""
       .in(reportQcVariantUpsetplotPdf)
       .out(reportQcVariantUpsetplotPng)
+      .named("$reportQcVariantUpsetplotPng".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterTable
@@ -957,6 +966,7 @@ andThen {
       .in(Params.paramsByArrSorted.map(_.ancestryClusterGroups) ++ Params.paramsByArrSorted.map(_.ancestryInferred) :+ ancestryInferredMerged)
       .out(reportQcAncestryClusterTable, reportQcAncestryFinalTable)
       .using("R-3.4")
+      .named("$reportQcAncestryFinalTable".split("/").last)
   
     cmd"""python $pyGenerateQcReportIntro
       --id $projectId
@@ -965,6 +975,7 @@ andThen {
       --array-data ${arrayDataStrings.mkString(",")}"""
       .in(Params.paramsByArrSorted.map(_.arrayData))
       .out(reportQcIntro)
+      .named("$reportQcIntro".split("/").last)
   
     cmd"""python $pyGenerateQcReportData
       --narrays $nArrays
@@ -974,6 +985,7 @@ andThen {
       --out ${reportQcData}"""
       .in(reportQcSampleUpsetplotPng, reportQcVariantSummaryTable)
       .out(reportQcData)
+      .named("$reportQcData".split("/").last)
   
     cmd"""python $pyGenerateQcReportAncestry
       --kg-merged-bim "${arrayMergedKgBims.mkString(",")}"
@@ -984,6 +996,7 @@ andThen {
       --out ${reportQcAncestry}"""
       .in(Params.paramsByArrSorted.flatMap(_.harmRef1kg) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc2VsPc3) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc2VsPc3) :+ reportQcAncestryClusterTable :+ reportQcAncestryFinalTable)
       .out(reportQcAncestry)
+      .named("$reportQcAncestry".split("/").last)
   
     cmd"""python $pyGenerateQcReportIbdSexcheck
       --filtered-bim "${arrayharmRefFilteredBims.mkString(",")}"
@@ -993,6 +1006,7 @@ andThen {
       --out ${reportQcIbdSexcheck}"""
       .in(Params.paramsByArrSorted.flatMap(_.harmRefFiltPruned) ++ Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems))
       .out(reportQcIbdSexcheck)
+      .named("$reportQcIbdSexcheck".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
@@ -1003,10 +1017,12 @@ andThen {
       .in(Params.paramsByArrSorted.head.sampleqcStats)
       .out(sampleQcMetricDistUnadjPdf)
       .using("R-3.4")
+      .named("$sampleQcMetricDistUnadjPdf".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistUnadjPdf}[0] $sampleQcMetricDistUnadjPng"""
       .in(sampleQcMetricDistUnadjPdf)
       .out(sampleQcMetricDistUnadjPng)
+      .named("$sampleQcMetricDistUnadjPng".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
@@ -1017,10 +1033,12 @@ andThen {
       .in(Params.paramsByArrSorted.head.sampleqcStatsAdj)
       .out(sampleQcMetricDistAdjPdf)
       .using("R-3.4")
+      .named("$sampleQcMetricDistAdjPdf".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistAdjPdf}[0] $sampleQcMetricDistAdjPng"""
       .in(sampleQcMetricDistAdjPdf)
       .out(sampleQcMetricDistAdjPng)
+      .named("$sampleQcMetricDistAdjPng".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeOutlierTable
@@ -1034,6 +1052,7 @@ andThen {
       .in(Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcStatsAdjOutliersTable) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems) ++ Params.paramsByArrSorted.map(_.finalSampleExclusions) :+ ancestryInferredMergedOutliers)
       .out(reportQcSampleqcTable)
       .using("R-3.4")
+      .named("$reportQcSampleqcTable".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -1044,10 +1063,12 @@ andThen {
       .in(Params.paramsByArrSorted.flatMap(_.clean) :+ ancestryInferredMerged)
       .out(reportQcSamplesRemainingUpsetplotPdf)
       .using("R-3.4")
+      .named("$reportQcSamplesRemainingUpsetplotPdf".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSamplesRemainingUpsetplotPdf}[0] $reportQcSamplesRemainingUpsetplotPng"""
       .in(reportQcSamplesRemainingUpsetplotPdf)
       .out(reportQcSamplesRemainingUpsetplotPng)
+      .named("$reportQcSamplesRemainingUpsetplotPng".split("/").last)
   
     cmd"""python $pyGenerateQcReportSampleqc
       --compare-dist-nhet-unadj ${sampleQcMetricDistUnadjPng}
@@ -1059,6 +1080,7 @@ andThen {
       --out ${reportQcSampleqc}"""
       .in(Params.paramsByArrSorted.map(_.sampleqcOutlierPlotPng) :+ sampleQcMetricDistUnadjPng :+ sampleQcMetricDistAdjPng :+ reportQcSampleqcTable :+ reportQcSamplesRemainingUpsetplotPng)
       .out(reportQcSampleqc)
+      .named("$reportQcSampleqc".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -1068,10 +1090,12 @@ andThen {
       .in(Params.paramsByArrSorted.flatMap(_.clean))
       .out(reportQcVariantsRemainingUpsetplotPdf)
       .using("R-3.4")
+      .named("$reportQcVariantsRemainingUpsetplotPdf".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantsRemainingUpsetplotPdf}[0] $reportQcVariantsRemainingUpsetplotPng"""
       .in(reportQcVariantsRemainingUpsetplotPdf)
       .out(reportQcVariantsRemainingUpsetplotPng)
+      .named("$reportQcVariantsRemainingUpsetplotPng".split("/").last)
   
     cmd"""python $pyGenerateQcReportVariantqc
       --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng}
@@ -1079,18 +1103,22 @@ andThen {
       --out ${reportQcVariantqc}"""
       .in(Params.paramsByArrSorted.map(_.finalVariantExclusions) :+ reportQcVariantsRemainingUpsetplotPng)
       .out(reportQcVariantqc)
+      .named("$reportQcVariantqc".split("/").last)
   
     cmd"""python $pyGenerateQcReportBibliography
       --out ${reportQcBibliography}"""
       .out(reportQcBibliography)
+      .named("$reportQcBibliography".split("/").last)
   
     cmd"""cat ${reportQcIntro} ${reportQcData} ${reportQcAncestry} ${reportQcIbdSexcheck} ${reportQcSampleqc} ${reportQcVariantqc} ${reportQcBibliography} > $reportQcTex"""
       .in(reportQcIntro, reportQcData, reportQcAncestry, reportQcIbdSexcheck, reportQcSampleqc, reportQcVariantqc, reportQcBibliography)
       .out(reportQcTex)
+      .named("$reportQcTex".split("/").last)
   
     cmd"""$binPdflatex --output-directory=${localOutDir} $reportQcTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportQcTex """
       .in(reportQcTex)
       .out(reportQcPdf)
+      .named("$reportQcPdf".split("/").last)
   
   }
 
@@ -1127,6 +1155,7 @@ andThen {
         --out-input ${reportAnalysisIntroInput}"""
         .in(Params.paramsByArrSorted.map(_.arrayData))
         .out(reportAnalysisIntro, reportAnalysisIntroInput)
+        .named("$reportAnalysisIntro".split("/").last)
       
       cmd"""python $pyGenerateAnalysisReportData
         --samples-upset-diagram ${reportQcSamplesRemainingUpsetplotPng}
@@ -1135,11 +1164,13 @@ andThen {
         --out-input ${reportAnalysisDataInput}"""
         .in(reportQcSamplesRemainingUpsetplotPng, reportQcVariantsRemainingUpsetplotPng)
         .out(reportAnalysisData, reportAnalysisDataInput)
+        .named("$reportAnalysisData".split("/").last)
       
       cmd"""python $pyGenerateAnalysisReportStrategy
         --out-tex ${reportAnalysisStrategy}
         --out-input ${reportAnalysisStrategyInput}"""
         .out(reportAnalysisStrategy, reportAnalysisStrategyInput)
+        .named("$reportAnalysisStrategy".split("/").last)
 
     }
       
@@ -1200,6 +1231,7 @@ andThen {
               --out ${reportAnalysisPhenoDistPlot}"""
               .in(paramsArr.clean :+ ancestryInferredMerged :+ Input.Local.pheno)
               .out(reportAnalysisPhenoDistPlot)
+              .named("$reportAnalysisPhenoDistPlot".split("/").last)
           
             cmd"""python $pyPhenoDistPlot
               --strat
@@ -1210,6 +1242,7 @@ andThen {
               --out ${reportAnalysisPhenoDistStratPlot}"""
               .in(paramsArr.clean :+ ancestryInferredMerged :+ Input.Local.pheno)
               .out(reportAnalysisPhenoDistStratPlot)
+              .named("$reportAnalysisPhenoDistStratPlot".split("/").last)
           
           }
 
@@ -1295,6 +1328,7 @@ andThen {
           --out-input ${reportAnalysisPhenoSummaryInput}"""
           .in(reportAnalysisModelPhenoFileList ++ reportAnalysisModelSamplesIncludeList ++ reportAnalysisModelPcsFileList ++ reportAnalysisPhenoDistPlotList ++ reportAnalysisPhenoDistStratPlotList :+ ancestryInferredMerged :+ Input.Local.pheno)
           .out(reportAnalysisPhenoSummary, reportAnalysisPhenoSummaryInput)
+          .named("$reportAnalysisPhenoSummary".split("/").last)
         
         cmd"""python $pyGenerateAnalysisReportPhenoCalibration
           --qq-plots "${reportAnalysisModelQqPlotStrings.mkString(",")}"
@@ -1305,6 +1339,7 @@ andThen {
           --out-input ${reportAnalysisPhenoCalibrationInput}"""
           .in(reportAnalysisModelQqPlotList ++ reportAnalysisModelMhtPlotList)
           .out(reportAnalysisPhenoCalibration, reportAnalysisPhenoCalibrationInput)
+          .named("$reportAnalysisPhenoCalibration".split("/").last)
         
         cmd"""python $pyGenerateAnalysisReportPhenoTopLoci
           --top-results "${reportAnalysisModelTop20AnnotAlignedRiskStrings.mkString(",")}"
@@ -1315,6 +1350,7 @@ andThen {
           --out-input ${reportAnalysisPhenoTopLociInput}"""
           .in(reportAnalysisModelTop20AnnotAlignedRiskList ++ reportAnalysisModelRegplotsList)
           .out(reportAnalysisPhenoTopLoci, reportAnalysisPhenoTopLociInput)
+          .named("$reportAnalysisPhenoTopLoci".split("/").last)
 
         cmd"""python $pyGenerateAnalysisReportPhenoKnownLoci
           --top-known-loci "${reportAnalysisModelTop50KnownStrings.mkString(",")}"
@@ -1326,6 +1362,7 @@ andThen {
           --out-input ${reportAnalysisPhenoKnownLociInput}"""
           .in(reportAnalysisModelTop50KnownList)
           .out(reportAnalysisPhenoKnownLoci, reportAnalysisPhenoKnownLociInput)
+          .named("$reportAnalysisPhenoKnownLoci".split("/").last)
       
       }
 
@@ -1344,18 +1381,23 @@ andThen {
         --out-tex ${reportAnalysisBibliography}
         --out-input ${reportAnalysisBibliographyInput}"""
         .out(reportAnalysisBibliography, reportAnalysisBibliographyInput)
+        .named("$reportAnalysisBibliography".split("/").last)
 
       cmd"""cat ${reportAnalysisIntro} ${reportAnalysisData} ${reportAnalysisStrategy} ${reportAnalysisResultsStringList.mkString(" ")} ${reportAnalysisBibliography} > $reportAnalysisTex"""
         .in(reportAnalysisResultsList :+ reportAnalysisIntro :+ reportAnalysisData :+ reportAnalysisStrategy :+ reportAnalysisBibliography)
         .out(reportAnalysisTex)
+        .named("$reportAnalysisTex".split("/").last)
       
       cmd"""cat ${reportAnalysisIntroInput} ${reportAnalysisDataInput} ${reportAnalysisStrategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${reportAnalysisBibliographyInput} > $reportAnalysisInput"""
         .in(reportAnalysisResultsInputList :+ reportAnalysisIntroInput :+ reportAnalysisDataInput :+ reportAnalysisStrategyInput :+ reportAnalysisBibliographyInput)
         .out(reportAnalysisInput)
+        .named("$reportAnalysisInput".split("/").last)
       
       cmd"""$binPdflatex --output-directory=${localOutDir} $reportAnalysisTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportAnalysisTex """
         .in(reportAnalysisTex)
         .out(reportAnalysisPdf)
+        .named("$reportAnalysisPdf".split("/").last)
+
     }
 
   }
@@ -1376,26 +1418,32 @@ def qc1(i: Int): Store = {
     cmd"""awk '$$1 == 0 {print $$2}' ${paramsArr.arrayDataPath}.bim > ${paramsArr.arrayDataRawUnplaced}"""
       .in(paramsArr.arrayData)
       .out(paramsArr.arrayDataRawUnplaced)
+      .named("${paramsArr.arrayDataRawUnplaced}".split("/").last)
   
     cmd"""awk '{k=$$1":"$$4":"$$5":"$$6; if(!m[k]) {print $$2; m[k]=1}}' ${paramsArr.arrayDataPath}.bim > ${paramsArr.arrayDataRawUnique}"""
       .in(paramsArr.arrayData)
       .out(paramsArr.arrayDataRawUnique)
+      .named("${paramsArr.arrayDataRawUnique}".split("/").last)
   
     cmd"""awk '{if($$5$$6 == "ID" || $$5$$6 == "DI") print $$2}' ${paramsArr.arrayDataPath}.bim > ${paramsArr.arrayDataRawIndel}"""
       .in(paramsArr.arrayData)
       .out(paramsArr.arrayDataRawIndel)
+      .named("${paramsArr.arrayDataRawIndel}".split("/").last)
   
     cmd"""$binPlink --bfile ${paramsArr.arrayDataPath} --missing --out ${paramsArr.arrayDataRawName}.missing"""
       .in(paramsArr.arrayData)
       .out(paramsArr.arrayDataRawLmiss)
+      .named("${paramsArr.arrayDataRawLmiss}".split("/").last)
   
     cmd"""$binPlink --bfile ${paramsArr.arrayDataPath} --freq --out ${paramsArr.arrayDataRawName}.freq"""
       .in(paramsArr.arrayData)
-     .out(paramsArr.arrayDataRawFreq)
+      .out(paramsArr.arrayDataRawFreq)
+      .named("${paramsArr.arrayDataRawFreq}".split("/").last)
   
     cmd"""sed '1d' ${paramsArr.arrayDataRawFreq} | awk '{if($$5 == 0) print $$2}' > ${paramsArr.arrayDataRawMono}"""
       .in(paramsArr.arrayDataRawFreq)
       .out(paramsArr.arrayDataRawMono)
+      .named("${paramsArr.arrayDataRawMono}".split("/").last)
   
     // run find_best_duplicate_variants.r to generate exclude list for duplicates
     cmd"""$binRscript --vanilla --verbose 
@@ -1407,14 +1455,17 @@ def qc1(i: Int): Store = {
       .in(paramsArr.arrayData, paramsArr.arrayDataRawFreq, paramsArr.arrayDataRawLmiss)
       .out(paramsArr.arrayDataRawDupRemove)
       .using("R-3.4")
+      .named("${paramsArr.arrayDataRawDupRemove}".split("/").last)
   
     cmd"""$binPlink --bfile ${paramsArr.arrayDataPath} --exclude ${paramsArr.arrayDataRawDupRemove} --make-bed --out ${paramsArr.arrayDataPreparedName}"""
       .in(paramsArr.arrayData, paramsArr.arrayDataRawDupRemove)
       .out(paramsArr.arrayDataPrepared)
+      .named("${paramsArr.arrayDataPreparedName}".split("/").last)
   
     cmd"""awk '{if(x[$$1":"$$4]) {x_count[$$1":"$$4]++; print $$2; if(x_count[$$1":"$$4] == 1) {print x[$$1":"$$4]}} x[$$1":"$$4] = $$2}' ${paramsArr.arrayDataPreparedName}.bim > ${paramsArr.arrayDataPreparedMultiallelic}"""
       .in(paramsArr.arrayDataPrepared)
       .out(paramsArr.arrayDataPreparedMultiallelic)
+      .named("${paramsArr.arrayDataPreparedMultiallelic}".split("/").last)
   
   }  
   
@@ -1436,6 +1487,7 @@ def qc1(i: Int): Store = {
 	  cmd"""$binPlink --bfile ${paramsArr.arrayDataPreparedName} --chr $chr --keep-allele-order --make-bed --output-chr MT --out ${paramsChr.rawChrName} --memory 3000 --threads 1"""
         .in(paramsArr.arrayDataPrepared)
         .out(paramsChr.rawChr)
+        .named("${paramsChr.rawChrName}".split("/").last)
 
     }
 
@@ -1457,6 +1509,7 @@ def qc1(i: Int): Store = {
       --debug"""
         .in(paramsChr.rawChr :+ paramsChr.kgVcfChr)
         .out(paramsChr.harmKgChr :+ paramsChr.harmKgChrVarIdUpdate :+ paramsChr.harmKgChrVarSnpLog)
+        .named("${paramsChr.harmKgChrName}".split("/").last)
 
     }
 
@@ -1474,10 +1527,12 @@ def qc1(i: Int): Store = {
       --out-force-a1 ${paramsChr.harmNonKgChrForceA1}"""
         .in(paramsChr.harmKgChr :+ paramsChr.kgLegendChr)
         .out(paramsChr.harmNonKgChrRemove, paramsChr.harmNonKgChrIgnore, paramsChr.harmNonKgChrMono,paramsChr.harmNonKgChrNomatch, paramsChr.harmNonKgChrFlip, paramsChr.harmNonKgChrForceA1)
+        .named("${paramsChr.harmKgChrName}.nonkg".split("/").last)
       
       cmd"""$binPlink --bfile ${paramsChr.harmKgChrName} --exclude ${paramsChr.harmNonKgChrRemove} --flip ${paramsChr.harmNonKgChrFlip} --a1-allele ${paramsChr.harmNonKgChrForceA1} --make-bed --out ${paramsChr.harmKgHuRefChrName} --memory 3000 --threads 1"""
         .in(paramsChr.harmKgChr :+ paramsChr.harmNonKgChrRemove :+ paramsChr.harmNonKgChrFlip :+ paramsChr.harmNonKgChrForceA1)
         .out(paramsChr.harmKgHuRefChr)
+        .named("${paramsChr.harmKgHuRefChrName}".split("/").last)
 
     }
   
@@ -1491,6 +1546,7 @@ def qc1(i: Int): Store = {
 
     cmd"""echo "$harmMergeLinesConcat" > ${paramsArr.harmMergeList}"""
       .out(paramsArr.harmMergeList)
+      .named("${paramsArr.harmMergeList}".split("/").last)
 
   }
 
@@ -1499,6 +1555,7 @@ def qc1(i: Int): Store = {
     cmd"""$binPlink --bfile ${paramsArr.paramsByArrByChrSorted.head.harmKgHuRefChrName} --merge-list ${paramsArr.harmMergeList} --make-bed --keep-allele-order --out ${paramsArr.harmName} --memory 3000 --threads 1"""
       .in(paramsArr.paramsByArrByChrSorted.flatMap(_.harmKgHuRefChr) :+ paramsArr.harmMergeList)
       .out(paramsArr.harm)
+      .named("${paramsArr.harmName}".split("/").last)
 
   }
 
@@ -1507,6 +1564,7 @@ def qc1(i: Int): Store = {
     cmd"""awk '{print $$2,$$5}' ${paramsArr.harmName}.bim > ${paramsArr.harmForceA2}"""
       .in(paramsArr.harm)
       .out(paramsArr.harmForceA2)
+      .named("${paramsArr.harmForceA2}".split("/").last)
 
   }
 
@@ -1515,14 +1573,17 @@ def qc1(i: Int): Store = {
     cmd"""$binPlink --bfile ${paramsArr.harmName} --real-ref-alleles --a2-allele ${paramsArr.harmForceA2} --make-bed --out ${paramsArr.harmRefName} --memory 3000 --threads 1"""
       .in(paramsArr.harm :+ paramsArr.harmForceA2)
       .out(paramsArr.harmRef)
+      .named("${paramsArr.harmRefName}".split("/").last)
     
     cmd"""$binPlink --bfile ${paramsArr.harmName} --recode vcf-iid bgz --real-ref-alleles --a2-allele ${paramsArr.harmForceA2} --out ${paramsArr.harmRefName} --memory 3000 --threads 1"""
       .in(paramsArr.harm :+ paramsArr.harmForceA2)
       .out(paramsArr.harmRefVcf)
+      .named("${paramsArr.harmRefVcf}".split("/").last)
     
     cmd"""$binTabix -f -p vcf ${paramsArr.harmRefVcf}"""
       .in(paramsArr.harmRefVcf)
       .out(paramsArr.harmRefVcfTbi)
+      .named("${paramsArr.harmRefVcfTbi}".split("/").last)
 
   }
   
@@ -1554,6 +1615,7 @@ def qc1(i: Int): Store = {
       """
       .in(paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrRemove) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrMono) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrNomatch) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrIgnore) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrFlip) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrForceA1) ++ paramsArr.paramsByArrByChrSorted.map(_.harmKgChrVarSnpLog))
       .out(paramsArr.harmNonKgRemove, paramsArr.harmNonKgNomatch, paramsArr.harmNonKgMono, paramsArr.harmNonKgIgnore, paramsArr.harmNonKgFlip, paramsArr.harmNonKgForceA1, paramsArr.harmKgVarSnpLog)
+      .named("${paramsArr.harmName}.pyMergeVariantLists".split("/").last)
 
   }
   
@@ -1577,6 +1639,7 @@ def qc1(i: Int): Store = {
       --vds-out ${paramsArr.harmRefVdsCloud}"""
       .in(paramsArr.harmRefVcfCloud, paramsArr.harmRefVcfTbiCloud)
       .out(paramsArr.harmRefVdsCloud)
+      .named("${paramsArr.harmRefVds}.google".split("/").last)
 
   }
   
@@ -1599,6 +1662,7 @@ def qc1(i: Int): Store = {
       --filt-pruned-plink-out ${paramsArr.harmRefFiltPrunedNameCloud}"""
       .in(paramsArr.harmRefVdsCloud, Input.Google.regionsExclude)
       .out(((paramsArr.harmRefFiltCloud :+ paramsArr.harmRefFiltVdsCloud) ++ (paramsArr.harmRefFiltPrunedCloud :+ paramsArr.harmRefFiltPrunedVdsCloud)) :+ paramsArr.harmRefFiltVariantQcCloud :+ paramsArr.harmRefFiltVariantsPrunedInCloud)
+      .named("${paramsArr.harmRefVds}.pyHailFilter.google".split("/").last)
 
   }
   
@@ -1622,6 +1686,7 @@ def qc1(i: Int): Store = {
     cmd"""$shKing $binKing ${paramsArr.harmRefFiltPrunedName}.bed ${paramsArr.kinName} ${paramsArr.kinLog} ${paramsArr.kinKin0} ${paramsArr.kinKin0Related} 4"""
     .in(paramsArr.harmRefFiltPruned)
     .out(paramsArr.kinLog, paramsArr.kinKin, paramsArr.kinTmpDat, paramsArr.kinTmpPed, paramsArr.kinKin0, paramsArr.kinKin0Related)
+    .named("${paramsArr.harmRefFiltPrunedName}.shKing".split("/").last)
 
   }
 
@@ -1630,6 +1695,7 @@ def qc1(i: Int): Store = {
     cmd"""$binR --vanilla --args ${paramsArr.kinKin0Related} ${paramsArr.kinFamsizes} < ${rCalcKinshipFamSizes}"""
     .in(paramsArr.kinKin0Related)
     .out(paramsArr.kinFamsizes)
+    .named("${paramsArr.kinFamsizes}".split("/").last)
 
   }
   
@@ -1650,6 +1716,7 @@ def qc1(i: Int): Store = {
       --plink-out ${paramsArr.harmRef1kgNameCloud}"""
       .in(paramsArr.harmRefVdsCloud, Input.Google.kgPurcellVcf, Input.Google.kgSample)
       .out(paramsArr.harmRef1kgCloud)
+      .named("${paramsArr.harmRef1kgName}.google".split("/").last)
 
   }
   
@@ -1675,22 +1742,26 @@ def qc1(i: Int): Store = {
       .in(paramsArr.harmRef1kg :+ Input.Local.kgSample)
       .out(paramsArr.harmRef1kgGds, paramsArr.ancestryPcaLog, paramsArr.ancestryPcaScores)
       .using("R-3.4")
+      .named("${paramsArr.ancestryPcaScores}".split("/").last)
 
   }
 
   uger {
 
     cmd"""$binR --vanilla --args $projectId ${paramsArr.ancestryPcaScores} ${paramsArr.ancestryPcaScoresPlots} < $rPlotAncestryPca"""
-    .in(paramsArr.ancestryPcaScores)
-    .out(paramsArr.ancestryPcaScoresPlots)
+      .in(paramsArr.ancestryPcaScores)
+      .out(paramsArr.ancestryPcaScoresPlots)
+      named("${paramsArr.ancestryPcaScoresPlots}".split("/").last)
     
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryPcaScoresPlots}[0] ${paramsArr.ancestryPcaScoresPlotPc1VsPc2}"""
       .in(paramsArr.ancestryPcaScoresPlots)
       .out(paramsArr.ancestryPcaScoresPlotPc1VsPc2)
+      .named("${paramsArr.ancestryPcaScoresPlotPc1VsPc2}".split("/").last)
     
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryPcaScoresPlots}[1] ${paramsArr.ancestryPcaScoresPlotPc2VsPc3}"""
       .in(paramsArr.ancestryPcaScoresPlots)
       .out(paramsArr.ancestryPcaScoresPlotPc2VsPc3)
+      .named("${paramsArr.ancestryPcaScoresPlotPc2VsPc3}".split("/").last)
 
   }
   
@@ -1706,12 +1777,14 @@ def qc1(i: Int): Store = {
   uger {
 
     cmd"""(echo 3; sed '1d' ${paramsArr.ancestryPcaScores} | cut -f4-6 | sed 's/\t/ /g') > ${paramsArr.ancestryClusterFet}"""
-    .in(paramsArr.ancestryPcaScores)
-    .out(paramsArr.ancestryClusterFet)
+      .in(paramsArr.ancestryPcaScores)
+      .out(paramsArr.ancestryClusterFet)
+      .named("${paramsArr.ancestryClusterFet}".split("/").last)
   
     cmd"""$binKlustakwik ${paramsArr.ancestryClusterName} 1 -UseFeatures 111 -UseDistributional 0 > ${paramsArr.ancestryClusterLog}"""
-    .in(paramsArr.ancestryClusterFet)
-    .out(paramsArr.ancestryClusterClu, paramsArr.ancestryClusterKlg, paramsArr.ancestryClusterLog)
+      .in(paramsArr.ancestryClusterFet)
+      .out(paramsArr.ancestryClusterClu, paramsArr.ancestryClusterKlg, paramsArr.ancestryClusterLog)
+      .named("${paramsArr.ancestryClusterName}.binKlustakwik".split("/").last)
 
   }
 
@@ -1723,14 +1796,17 @@ def qc1(i: Int): Store = {
       ${paramsArr.ancestryClusterPlotsNo1kg} < $rPlotAncestryCluster"""
       .in(paramsArr.ancestryPcaScores, paramsArr.ancestryClusterClu, Input.Local.pheno)
       .out(paramsArr.ancestryClusterPlots, paramsArr.ancestryClusterXtabs, paramsArr.ancestryClusterPlotsCenters, paramsArr.ancestryClusterGroups, paramsArr.ancestryInferred, paramsArr.ancestryClusterPlotsNo1kg)
+      .named("${paramsArr.ancestryPcaScores}.rPlotAncestryCluster".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryClusterPlots}[0] ${paramsArr.ancestryClusterPlotPc1VsPc2}"""
       .in(paramsArr.ancestryClusterPlots)
       .out(paramsArr.ancestryClusterPlotPc1VsPc2)
+      .named("${paramsArr.ancestryClusterPlotPc1VsPc2}".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryClusterPlots}[1] ${paramsArr.ancestryClusterPlotPc2VsPc3}"""
       .in(paramsArr.ancestryClusterPlots)
       .out(paramsArr.ancestryClusterPlotPc2VsPc3)
+      .named("${paramsArr.ancestryClusterPlotPc2VsPc3}".split("/").last)
   
   }
 
@@ -1765,6 +1841,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       .in(paramsArr.harmRefFiltPruned :+ ancestryInferredMerged :+ ancestryInferredMergedOutliers)
       .out(paramsArr.harmRefFiltPrunedPcaGds, paramsArr.pcaLog, paramsArr.pcaScores)
       .using("R-3.4")
+      .named("${paramsArr.pcaScores}".split("/").last)
 
   }
   
@@ -1793,6 +1870,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       --sexcheck-problems-out ${paramsArr.sampleqcSexcheckProblemsCloud}"""
       .in(Input.Google.pheno, paramsArr.harmRefVdsCloud, Input.Google.regionsExclude)
       .out(paramsArr.sampleqcSexcheckCloud, paramsArr.sampleqcSexcheckProblemsCloud)
+      .named("${paramsArr.sampleqcSexcheck}.google".split("/").last)
   
     hail"""$pyHailSampleqc
       --vds-in ${paramsArr.harmRefFiltPrunedVdsCloud}
@@ -1800,6 +1878,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       --qc-out ${paramsArr.sampleqcStatsCloud}"""
       .in(paramsArr.harmRefFiltPrunedVdsCloud, ancestryInferredMergedCloud)
       .out(paramsArr.sampleqcStatsCloud)
+      .named("${paramsArr.sampleqcStats}.google".split("/").last)
 
   }
   
@@ -1812,12 +1891,14 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
   uger {
 
     cmd"""$binR --vanilla --args ${paramsArr.sampleqcStats} ${paramsArr.pcaScores} ${paramsArr.sampleqcStatsAdj} < $rCalcIstatsAdj"""
-    .in(paramsArr.sampleqcStats, paramsArr.pcaScores)
-    .out(paramsArr.sampleqcStatsAdj)
+      .in(paramsArr.sampleqcStats, paramsArr.pcaScores)
+      .out(paramsArr.sampleqcStatsAdj)
+      .named("${paramsArr.sampleqcStatsAdj}".split("/").last)
   
     cmd"""$binR --vanilla --args ${paramsArr.sampleqcStatsAdj} ${paramsArr.sampleqcStatsAdjCorrPlots} ${paramsArr.sampleqcStatsAdjPcaLoadings} ${paramsArr.sampleqcStatsAdjPcaScoresPlots} ${paramsArr.sampleqcStatsAdjPcaScores} < $rIstatsAdjPca"""
-    .in(paramsArr.sampleqcStatsAdj)
-    .out(paramsArr.sampleqcStatsAdjCorrPlots, paramsArr.sampleqcStatsAdjPcaLoadings, paramsArr.sampleqcStatsAdjPcaScoresPlots, paramsArr.sampleqcStatsAdjPcaScores)
+      .in(paramsArr.sampleqcStatsAdj)
+      .out(paramsArr.sampleqcStatsAdjCorrPlots, paramsArr.sampleqcStatsAdjPcaLoadings, paramsArr.sampleqcStatsAdjPcaScoresPlots, paramsArr.sampleqcStatsAdjPcaScores)
+      .named("${paramsArr.sampleqcStatsAdj}.rIstatsAdjPca".split("/").last)
 
   }
   
@@ -1844,12 +1925,14 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       ${paramsArr.sampleqcStatsAdjClusterKlustakwikLog}"""
       .in(paramsArr.sampleqcStatsAdjPcaScores)
       .out(paramsArr.sampleqcStatsAdjClusterFet, paramsArr.sampleqcStatsAdjClusterClu, paramsArr.sampleqcStatsAdjClusterKlg, paramsArr.sampleqcStatsAdjClusterKlustakwikLog)
+      .named("${paramsArr.sampleqcStatsAdjClusterName}.binKlustakwik".split("/").last)
 
     cmd"""$binR --vanilla --args ${paramsArr.sampleqcStatsAdjPcaScores} ${paramsArr.sampleqcStatsAdjClusterClu}
       ${paramsArr.sampleqcStatsAdjClusterOutliers} ${paramsArr.sampleqcStatsAdjClusterPlots}
       ${paramsArr.sampleqcStatsAdjClusterXtabs} $projectId < $rIstatsPcsGmmClusterPlot"""
       .in(paramsArr.sampleqcStatsAdjPcaScores, paramsArr.sampleqcStatsAdjClusterClu)
       .out(paramsArr.sampleqcStatsAdjClusterOutliers, paramsArr.sampleqcStatsAdjClusterPlots, paramsArr.sampleqcStatsAdjClusterXtabs)
+      .named("${paramsArr.sampleqcStatsAdjPcaScores}.rIstatsPcsGmmClusterPlot".split("/").last)
   
   }
   
@@ -1874,10 +1957,12 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         sed '1d' ${paramsArr.sampleqcStatsAdj} | awk -v col=$${metricIdx} '{print $$col}' >> ${paramsMetric.sampleqcStatsAdjIndClusterFet}"""
         .in(paramsArr.sampleqcStatsAdj)
         .out(paramsMetric.sampleqcStatsAdjIndClusterFet)
+        .named("${paramsMetric.sampleqcStatsAdjIndClusterFet}".split("/").last)
 
       cmd"""$binKlustakwik ${paramsMetric.sampleqcStatsAdjIndClusterName} 1 -UseFeatures 1 -UseDistributional 0 > ${paramsMetric.sampleqcStatsAdjIndClusterKlustakwikLog}"""
         .in(paramsMetric.sampleqcStatsAdjIndClusterFet)
         .out(paramsMetric.sampleqcStatsAdjIndClusterClu, paramsMetric.sampleqcStatsAdjIndClusterKlg, paramsMetric.sampleqcStatsAdjIndClusterKlustakwikLog)
+        .named("${paramsMetric.sampleqcStatsAdjIndClusterName}.binKlustakwik".split("/").last)
 
     }
   
@@ -1898,6 +1983,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       < $rIstatsAdjGmmPlotMetrics"""
       .in(paramsArr.paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu) :+ paramsArr.sampleqcStats :+ paramsArr.sampleqcStatsAdj :+ ancestryInferredMerged :+ paramsArr.sampleqcStatsAdjClusterOutliers)
       .out(paramsArr.sampleqcStatsAdjIndBoxplots, paramsArr.sampleqcStatsAdjIndDiscreteness, paramsArr.sampleqcStatsAdjOutliersTable, paramsArr.sampleqcStatsAdjStripchart)
+      .named("${paramsArr.sampleqcStats}.rIstatsAdjGmmPlotMetrics".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeSampleqcOutlierPlot
@@ -1909,10 +1995,12 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       .in(paramsArr.paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu) :+ paramsArr.sampleqcStats :+ paramsArr.sampleqcStatsAdj)
       .out(paramsArr.sampleqcOutlierPlotPdf)
       .using("R-3.4")
+      .named("${paramsArr.sampleqcOutlierPlotPdf}".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.sampleqcOutlierPlotPdf}[0] ${paramsArr.sampleqcOutlierPlotPng}"""
       .in(paramsArr.sampleqcOutlierPlotPdf)
       .out(paramsArr.sampleqcOutlierPlotPng)
+      .named("${paramsArr.sampleqcOutlierPlotPng}".split("/").last)
   
   }
   
@@ -1937,6 +2025,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       --out ${paramsArr.finalSampleExclusions}"""
       .in(ancestryInferredMerged, paramsArr.kinKin0Related, paramsArr.kinFamsizes, paramsArr.sampleqcStatsAdjOutliersTable, paramsArr.sampleqcSexcheckProblems)
       .out(paramsArr.finalSampleExclusions)
+      .named("${paramsArr.finalSampleExclusions}".split("/").last)
 
   }
   
@@ -1968,6 +2057,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       --vds-out ${paramsArr.cleanVdsCloud}"""
       .in(paramsArr.harmRefVdsCloud, ancestryInferredMergedCloud, paramsArr.sampleqcSexcheckCloud, Input.Google.pheno, paramsArr.finalSampleExclusionsCloud)
       .out(paramsArr.cleanCloud :+ paramsArr.cleanVcfCloud :+ paramsArr.variantqcStatsCloud :+ paramsArr.finalVariantExclusionsCloud :+ paramsArr.cleanVdsCloud)
+      .named("${paramsArr.harmRefVds}.pyHailFilterFinal.google".split("/").last)
 
   }
   
@@ -1985,6 +2075,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
     cmd"""$binTabix -f -p vcf ${paramsArr.cleanVcf}"""
       .in(paramsArr.cleanVcf)
       .out(paramsArr.cleanVcfTbi)
+      .named("${paramsArr.cleanVcfTbi}".split("/").last)
 
   }
   
@@ -2001,6 +2092,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       .in(paramsArr.harmRefFiltPruned)
       .out(paramsArr.cleanGds, paramsArr.cleanPcaScores, paramsArr.cleanPcaLog)
       .using("R-3.4")
+      .named("${paramsArr.cleanPcaScores}".split("/").last)
   
   }
   
@@ -2028,6 +2120,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         --out-samples ${paramsModel.modelSamplesIncludeCloud}"""
       .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno)
       .out(paramsModel.modelPhenoPrelimFileCloud, paramsModel.modelSamplesIncludeCloud)
+      .named("${paramsModel.modelPhenoPrelimFile}.google".split("/").last)
 
     }
     
@@ -2059,6 +2152,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         .in(paramsArr.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsModel.modelSamplesInclude, paramsArr.finalVariantExclusions)
         .out(paramsModel.modelPhenoFile, paramsModel.modelPcsFile, paramsModel.modelPhenoFileLog)
         .using("R-3.4")
+        .named("${paramsModel.modelPhenoFile}".split("/").last)
 
     }
     
@@ -2084,6 +2178,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         --out ${paramsModel.modelResultsCloud}"""
           .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno :+ paramsModel.modelPhenoFileCloud)
           .out(paramsModel.modelResultsCloud)
+          .named("${paramsModel.modelResults}.google".split("/").last)
     
     }
     
@@ -2098,6 +2193,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       cmd"""$binTabix -b 2 -e 2 ${paramsModel.modelResults}"""
         .in(paramsModel.modelResults)
         .out(paramsModel.modelResultsTbi)
+        .named("${paramsModel.modelResultsTbi}".split("/").last)
 
     }
   
@@ -2130,8 +2226,9 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
         --covars "${paramsKnownLoci.knownLociCovars}"
         --out-pheno-prelim ${paramsKnownLoci.knownLociPhenoPrelimFileCloud}
         --out-samples ${paramsKnownLoci.knownLociSamplesIncludeCloud}"""
-      .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno)
-      .out(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociSamplesIncludeCloud)
+        .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno)
+        .out(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociSamplesIncludeCloud)
+        .named("${paramsKnownLoci.knownLociPhenoPrelimFile}.google".split("/").last)
 
     }
     
@@ -2163,6 +2260,7 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
         .in(paramsArr.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsKnownLoci.knownLociSamplesInclude, paramsArr.finalVariantExclusions)
         .out(paramsKnownLoci.knownLociPhenoFile, paramsKnownLoci.knownLociPcsFile, paramsKnownLoci.knownLociPhenoFileLog)
         .using("R-3.4")
+        .named("${paramsKnownLoci.knownLociPhenoFile}".split("/").last)
 
     }
     
@@ -2188,8 +2286,9 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
         --trans "${paramsKnownLoci.knownLociTrans}"
         --covars "${paramsKnownLoci.knownLociCovars}"
         --out ${paramsKnownLoci.knownLociResultsCloud}"""
-          .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno :+ paramsKnownLoci.knownLociPhenoFileCloud :+ paramsKnownLoci.knownLociHiLdCloud)
-          .out(paramsKnownLoci.knownLociResultsCloud)
+        .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno :+ paramsKnownLoci.knownLociPhenoFileCloud :+ paramsKnownLoci.knownLociHiLdCloud)
+        .out(paramsKnownLoci.knownLociResultsCloud)
+        .named("${paramsKnownLoci.knownLociResults}.google".split("/").last)
     
     }
     
@@ -2241,8 +2340,10 @@ def mergeResults(i: Int): Unit = {
     hail"""$pyHailMerge
       --results "${modelResultsString}"
       --test ${paramsResult.resultTest}
-      --out ${paramsResult.resultFinalCloud}
-      """.in(modelResultsMap.values).out(paramsResult.resultFinalCloud)
+      --out ${paramsResult.resultFinalCloud}"""
+      .in(modelResultsMap.values)
+      .out(paramsResult.resultFinalCloud)
+      .named("${paramsResult.resultFinal}.google".split("/").last)
 
   }
   
@@ -2257,6 +2358,7 @@ def mergeResults(i: Int): Unit = {
     cmd"""$binTabix -b 2 -e 2 ${paramsResult.resultFinal}"""
       .in(paramsResult.resultFinal)
       .out(paramsResult.resultFinalTbi)
+      .named("${paramsResult.resultFinalTbi}".split("/").last)
 
   }
   
@@ -2274,10 +2376,12 @@ def mergeResults(i: Int): Unit = {
       --out ${paramsResult.resultFinalTop1000}"""
       .in(paramsResult.resultFinal)
       .out(paramsResult.resultFinalTop1000)
+      .named("${paramsResult.resultFinalTop1000}".split("/").last)
     
     cmd"""(sed '1d' ${paramsResult.resultFinalTop1000} | awk '{print $$1"\t"$$2}' | python $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${Input.Local.genes} --out-delim \\t) | sort -u > ${paramsResult.resultFinalTop1000Genes}"""
       .in(paramsResult.resultFinalTop1000, Input.Local.genes)
       .out(paramsResult.resultFinalTop1000Genes)
+      .named("${paramsResult.resultFinalTop1000Genes}".split("/").last)
     
     cmd"""$binRscript --vanilla --verbose
       $rTop20
@@ -2292,6 +2396,7 @@ def mergeResults(i: Int): Unit = {
       .in(reportAnalysisResultKnownLociHiLdList :+ paramsResult.resultFinalTop1000 :+ paramsResult.resultFinalTop1000Genes)
       .out(paramsResult.resultFinalTop20AnnotAlignedRisk)
       .using("R-3.4")
+      .named("${paramsResult.resultFinalTop20AnnotAlignedRisk}".split("/").last)
   
   }
 
@@ -2306,24 +2411,30 @@ def mergeResults(i: Int): Unit = {
     cmd"""python $pyQqPlot
       --results ${paramsResult.resultFinal}
       --p pval
-      --out ${paramsResult.resultFinalQqPlot}
-      """.in(paramsResult.resultFinal).out(paramsResult.resultFinalQqPlot)
+      --out ${paramsResult.resultFinalQqPlot}"""
+      .in(paramsResult.resultFinal)
+      .out(paramsResult.resultFinalQqPlot)
+      .named("${paramsResult.resultFinalQqPlot}".split("/").last)
     
     cmd"""python $pyMhtPlot
       --results ${paramsResult.resultFinal}
       --chr "#chr"
       --pos pos
       --p pval
-      --out ${paramsResult.resultFinalMhtPlot}
-      """.in(paramsResult.resultFinal).out(paramsResult.resultFinalMhtPlot)
+      --out ${paramsResult.resultFinalMhtPlot}"""
+      .in(paramsResult.resultFinal)
+      .out(paramsResult.resultFinalMhtPlot)
+      .named("${paramsResult.resultFinalMhtPlot}".split("/").last)
     
     cmd"""python $pyExtractTopRegions
       --results ${paramsResult.resultFinal}
       --chr "#chr"
       --pos pos
       --p pval
-      --out ${paramsResult.resultFinalSigRegions}
-      """.in(paramsResult.resultFinal).out(paramsResult.resultFinalSigRegions)
+      --out ${paramsResult.resultFinalSigRegions}"""
+      .in(paramsResult.resultFinal)
+      .out(paramsResult.resultFinalSigRegions)
+      .named("${paramsResult.resultFinalSigRegions}".split("/").last)
 
   }
   
@@ -2348,8 +2459,10 @@ def mergeKnownLoci(i: Int): Unit = {
     hail"""$pyHailMerge
       --results "${knownLociString}"
       --test ${paramsResultKnownLoci.resultKnownLociTest}
-      --out ${paramsResultKnownLoci.resultKnownLociFinalCloud}
-      """.in(knownLociMap.values).out(paramsResultKnownLoci.resultKnownLociFinalCloud)
+      --out ${paramsResultKnownLoci.resultKnownLociFinalCloud}"""
+      .in(knownLociMap.values)
+      .out(paramsResultKnownLoci.resultKnownLociFinalCloud)
+      .named("${paramsResultKnownLoci.resultKnownLociFinal}.google".split("/").last)
 
   }
   
@@ -2374,6 +2487,7 @@ def mergeKnownLoci(i: Int): Unit = {
       .in(paramsResultKnownLoci.resultKnownLociFinal, paramsResultKnownLoci.resultKnownLociData)
       .out(paramsResultKnownLoci.resultKnownLociFinalTop50Known)
       .using("R-3.4")
+      .named("${paramsResultKnownLoci.resultKnownLociFinalTop50Known}".split("/").last)
 
   }
 
@@ -2405,14 +2519,17 @@ def plotSigRegions(i: Int): Seq[Store] = {
       cmd"""pcol=`$binTabix -H ${paramsResult.resultFinal} | tr "\t" "\n" | grep -n pval | awk -F':' '{print $$1}'`; (echo -e "id\tpval"; $binTabix ${paramsResult.resultFinal} ${regionChr}:${regionStart}-${regionEnd} | awk -v pcol=$$pcol '{if(substr($$4 ,0, 2) != "rs") { print "chr"$$1":"$$2"\t"$$pcol } else print $$4"\t"$$pcol}') > ${resultsFinalRegplotData}"""
         .in(paramsResult.resultFinal)
         .out(resultsFinalRegplotData)
+        .named("${resultsFinalRegplotData}".split("/").last)
       
       cmd"""$binLocuszoom --metal ${resultsFinalRegplotData} --chr $regionChr --start $regionStart --end $regionEnd --markercol id --pvalcol pval --pop EUR --build hg19 --source 1000G_Nov2014 --no-date --prefix ${paramsResult.resultFinalRegplotName}_${regionVar} --cache None  > ${resultsFinalRegplotLog}"""
         .in(resultsFinalRegplotData)
         .out(resultsFinalRegplotPdf, resultsFinalRegplotLog)
+        .named("${resultsFinalRegplotPdf}".split("/").last)
       
       cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${resultsFinalRegplotPdf}[0] $resultsFinalRegplotPng"""
         .in(resultsFinalRegplotPdf)
         .out(resultsFinalRegplotPng)
+        .named("${resultsFinalRegplotPng}".split("/").last)
 
     }
   
