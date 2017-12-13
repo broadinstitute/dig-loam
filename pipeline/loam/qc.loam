@@ -1739,7 +1739,7 @@ def qc1(i: Int): Store = {
     cmd"""$binR --vanilla --args $projectId ${paramsArr.ancestryPcaScores} ${paramsArr.ancestryPcaScoresPlots} < $rPlotAncestryPca"""
       .in(paramsArr.ancestryPcaScores)
       .out(paramsArr.ancestryPcaScoresPlots)
-      named("${paramsArr.ancestryPcaScoresPlots}".split("/").last)
+      .named("${paramsArr.ancestryPcaScoresPlots}".split("/").last)
     
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryPcaScoresPlots}[0] ${paramsArr.ancestryPcaScoresPlotPc1VsPc2}"""
       .in(paramsArr.ancestryPcaScoresPlots)
