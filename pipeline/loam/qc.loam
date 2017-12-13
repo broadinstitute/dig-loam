@@ -1542,34 +1542,22 @@ def qc1(i: Int): Store = {
     .drop(1)
     .mkString("\n") // Exclude first chrom
 
-  local {
+  uger {
 
     cmd"""echo "$harmMergeLinesConcat" > ${paramsArr.harmMergeList}"""
       .out(paramsArr.harmMergeList)
       .named("${paramsArr.harmMergeList}".split("/").last)
-
-  }
-
-  uger {
   
     cmd"""$binPlink --bfile ${paramsArr.paramsByArrByChrSorted.head.harmKgHuRefChrName} --merge-list ${paramsArr.harmMergeList} --make-bed --keep-allele-order --out ${paramsArr.harmName} --memory 3000 --threads 1"""
       .in(paramsArr.paramsByArrByChrSorted.flatMap(_.harmKgHuRefChr) :+ paramsArr.harmMergeList)
       .out(paramsArr.harm)
       .named("${paramsArr.harmName}".split("/").last)
-
-  }
-
-  local {
   
     cmd"""awk '{print $$2,$$5}' ${paramsArr.harmName}.bim > ${paramsArr.harmForceA2}"""
       .in(paramsArr.harm)
       .out(paramsArr.harmForceA2)
       .named("${paramsArr.harmForceA2}".split("/").last)
 
-  }
-
-  uger {
-  
     cmd"""$binPlink --bfile ${paramsArr.harmName} --real-ref-alleles --a2-allele ${paramsArr.harmForceA2} --make-bed --out ${paramsArr.harmRefName} --memory 3000 --threads 1"""
       .in(paramsArr.harm :+ paramsArr.harmForceA2)
       .out(paramsArr.harmRef)
@@ -1780,6 +1768,10 @@ def qc1(i: Int): Store = {
       .in(paramsArr.ancestryPcaScores)
       .out(paramsArr.ancestryClusterFet)
       .named("${paramsArr.ancestryClusterFet}".split("/").last)
+
+  }
+
+  ugerWith(mem=8) {
   
     cmd"""$binKlustakwik ${paramsArr.ancestryClusterName} 1 -UseFeatures 111 -UseDistributional 0 > ${paramsArr.ancestryClusterLog}"""
       .in(paramsArr.ancestryClusterFet)
@@ -1915,7 +1907,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
    *  Requires: Klustakwik, R
    */
   
-  uger {
+  ugerWith(mem=8) {
 
     cmd"""N=$$(head -1 ${paramsArr.sampleqcStatsAdjPcaScores} | wc | awk '{print $$2-1}');
       echo $$N > ${paramsArr.sampleqcStatsAdjClusterFet};
@@ -1926,6 +1918,10 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       .in(paramsArr.sampleqcStatsAdjPcaScores)
       .out(paramsArr.sampleqcStatsAdjClusterFet, paramsArr.sampleqcStatsAdjClusterClu, paramsArr.sampleqcStatsAdjClusterKlg, paramsArr.sampleqcStatsAdjClusterKlustakwikLog)
       .named("${paramsArr.sampleqcStatsAdjClusterName}.binKlustakwik".split("/").last)
+
+  }
+
+  uger {
 
     cmd"""$binR --vanilla --args ${paramsArr.sampleqcStatsAdjPcaScores} ${paramsArr.sampleqcStatsAdjClusterClu}
       ${paramsArr.sampleqcStatsAdjClusterOutliers} ${paramsArr.sampleqcStatsAdjClusterPlots}
@@ -1958,6 +1954,10 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         .in(paramsArr.sampleqcStatsAdj)
         .out(paramsMetric.sampleqcStatsAdjIndClusterFet)
         .named("${paramsMetric.sampleqcStatsAdjIndClusterFet}".split("/").last)
+
+    }
+
+    ugerWith(mem=8) {
 
       cmd"""$binKlustakwik ${paramsMetric.sampleqcStatsAdjIndClusterName} 1 -UseFeatures 1 -UseDistributional 0 > ${paramsMetric.sampleqcStatsAdjIndClusterKlustakwikLog}"""
         .in(paramsMetric.sampleqcStatsAdjIndClusterFet)
@@ -2070,7 +2070,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
 
   }
   
-  local {
+  uger {
 
     cmd"""$binTabix -f -p vcf ${paramsArr.cleanVcf}"""
       .in(paramsArr.cleanVcf)
@@ -2131,10 +2131,11 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
 
     }
     
-    uger {
+    ugerWith(cores=4, mem=4) {
 
       cmd"""$binRscript --vanilla --verbose
         $rGeneratePheno
+        --cpus 4
         --gds-in ${paramsArr.harmRefFiltPrunedPcaGds}
         --pheno-in ${Input.Local.pheno}
         --ancestry-in ${ancestryInferredMerged}
@@ -2188,7 +2189,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
 
     }
     
-    local {
+    uger {
 
       cmd"""$binTabix -b 2 -e 2 ${paramsModel.modelResults}"""
         .in(paramsModel.modelResults)
@@ -2239,10 +2240,11 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
 
     }
     
-    uger {
+    ugerWith(cores=4, mem=4) {
 
       cmd"""$binRscript --vanilla --verbose
         $rGeneratePheno
+        --cpus 4
         --gds-in ${paramsArr.harmRefFiltPrunedPcaGds}
         --pheno-in ${Input.Local.pheno}
         --ancestry-in ${ancestryInferredMerged}
