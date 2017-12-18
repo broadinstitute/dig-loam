@@ -26,6 +26,8 @@ for(inp in unlist(strsplit(args$input,","))) {
 			for(c in unique(anc$FINAL)) {
 				ids[[paste(l," (",c,")",sep="")]]<-tbl[,2][tbl[,2] %in% anc$IID[anc$FINAL == c]]
 			}
+		} else {
+			ids[[l]]<-tbl[,2]
 		}
 		xLabel = "Samples"
 	} else if(args$type == "bim") {
