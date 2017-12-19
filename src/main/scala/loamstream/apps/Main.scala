@@ -15,6 +15,7 @@ import loamstream.model.jobs.LJob
 import loamstream.util.Loggable
 import loamstream.util.OneTimeLatch
 import loamstream.util.Versions
+import loamstream.cli.ExecutionInfo
 
 
 /**
@@ -32,6 +33,8 @@ object Main extends Loggable {
     
     if (cli.dryRun.isSupplied) {
       compile(cli)
+    } else if(cli.lookup.isSupplied) {
+      doLookup(cli)
     } else {
       run(cli)
     }
@@ -195,5 +198,17 @@ object Main extends Loggable {
     val compilationResult = compilationResultShot.get
 
     info(compilationResult.report)
+  }
+  
+  private def doLookup(cli: Conf): Unit = {
+    val wiring = AppWiring(cli)
+    
+    val outputPathOrUri = cli.lookup()
+    
+    val descriptionOpt = ExecutionInfo.forOutput(wiring.dao)(outputPathOrUri)
+    
+    def outputAsString: String = outputPathOrUri.fold(_.toString, _.toString)
+    
+    info(descriptionOpt.getOrElse(s"No records found for $outputAsString"))
   }
 }

@@ -10,7 +10,10 @@ import loamstream.util.Loggable
  *         kyuksel
  * date: Sep 30, 2016
  */
-final class DbBackedJobFilter(val dao: LoamDao) extends JobFilter with Loggable {
+final class DbBackedJobFilter(
+    val dao: LoamDao, 
+    val outputHashingStrategy: HashingStrategy = HashingStrategy.HashOutputs) extends JobFilter with Loggable {
+  
   override def shouldRun(job: LJob): Boolean = {
     def anyOutputNeedsToBeRun = job.outputs.exists(o => needsToBeRun(job.toString, o.toOutputRecord))
 
@@ -36,17 +39,22 @@ final class DbBackedJobFilter(val dao: LoamDao) extends JobFilter with Loggable 
   private[execute] def needsToBeRun(jobStr: String, rec: OutputRecord): Boolean = {
     val msg = s"Job $jobStr will be run because its output"
 
+    val considerHashes = outputHashingStrategy.shouldHash
+    
     lazy val missing = rec.isMissing
     lazy val older = isOlder(rec)
     lazy val noHash = notHashed(rec)
     lazy val differentHash = hasDifferentHash(rec)
-
+    lazy val absentOrDifferentHash = (considerHashes && (noHash || differentHash))
+    
     if (missing) { debug(s"$msg $rec is missing.") }
     else if (older) { debug(s"$msg $rec is older.") }
-    else if (noHash) { debug(s"$msg $rec does not have a hash value.") }
-    else if (differentHash) { debug(s"$msg $rec has a different hash.") }
+    else if(considerHashes) {
+      if (noHash) { debug(s"$msg $rec does not have a hash value.") }
+      else if (differentHash) { debug(s"$msg $rec has a different hash.") }
+    }
 
-    missing || older || noHash || differentHash
+    missing || older || absentOrDifferentHash
   }
 
   private def findOutput(loc: String): Option[OutputRecord] = {

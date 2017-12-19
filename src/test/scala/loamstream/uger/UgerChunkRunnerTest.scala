@@ -32,6 +32,7 @@ import rx.lang.scala.schedulers.IOScheduler
 import loamstream.model.jobs.LocalJob
 import loamstream.model.jobs.JobNode
 import loamstream.conf.ExecutionConfig
+import loamstream.model.jobs.commandline.HasCommandLine
 
 
 /**
@@ -181,8 +182,12 @@ final class UgerChunkRunnerTest extends FunSuite {
     doTest(UgerStatus.CommandResult(0, None), isFailure = false)
   }
   
-  private def toTuple(job: UgerChunkRunnerTest.MockUgerJob): (LJob, Observable[UgerStatus]) = {
-    job -> Observable.from(job.statusesToReturn)
+  private def toTuple(jobWrapper: UgerJobWrapper): (UgerJobWrapper, Observable[UgerStatus]) = {
+    import UgerChunkRunnerTest.MockUgerJob
+    
+    val mockJob = jobWrapper.commandLineJob.asInstanceOf[MockUgerJob]
+    
+    jobWrapper -> Observable.from(mockJob.statusesToReturn)
   }
   
   test("toExecutions - one failed job") {
@@ -195,26 +200,28 @@ final class UgerChunkRunnerTest extends FunSuite {
     val id = "failed"
     
     def doTest(shouldRestart: LJob => Boolean, lastUgerStatus: UgerStatus, expectedLastStatus: JobStatus): Unit = {
-      val failed = MockUgerJob(id, Queued, Queued, Running, Running, lastUgerStatus)
+      val job = MockUgerJob(id, Queued, Queued, Running, Running, lastUgerStatus)
       
-      assert(failed.runCount === 0)
+      val failed = UgerJobWrapper(ExecutionConfig.default, job, 1)
+      
+      assert(job.runCount === 0)
       
       val result = waitFor(toExecutions(shouldRestart, Map(id -> toTuple(failed))).firstAsFuture)
       
       val Seq((actualJob, execution)) = result.toSeq
       
-      assert(actualJob === failed)    
+      assert(actualJob === job)    
       assert(execution.status === JobStatus.Failed)
       assert(execution.isFailure)
       //TODO: Other assertions about execution?
       
       val expectedStatuses = Seq(JobStatus.Submitted, JobStatus.Running, expectedLastStatus)
       
-      val statuses = if(shouldRestart(failed)) failed.statuses.take(3) else failed.statuses 
+      val statuses = if(shouldRestart(job)) job.statuses.take(3) else job.statuses 
 
       assert(waitFor(statuses.to[Seq].firstAsFuture) === expectedStatuses)
       
-      assert(failed.runCount === 1)
+      assert(job.runCount === 1)
     }
     
     doTest(neverRestart, Failed(), JobStatus.FailedPermanently)
@@ -236,26 +243,28 @@ final class UgerChunkRunnerTest extends FunSuite {
     val id = "worked"
     
     def doTest(shouldRestart: LJob => Boolean, lastUgerStatus: UgerStatus, expectedLastStatus: JobStatus): Unit = {
-      val worked = MockUgerJob(id, Queued, Queued, Running, Running, lastUgerStatus)
+      val job = MockUgerJob(id, Queued, Queued, Running, Running, lastUgerStatus)
       
-      assert(worked.runCount === 0)
+      val worked = UgerJobWrapper(ExecutionConfig.default, job, 1)
+      
+      assert(job.runCount === 0)
       
       val result = waitFor(toExecutions(shouldRestart, Map(id -> toTuple(worked))).firstAsFuture)
       
       val Seq((actualJob, execution)) = result.toSeq
       
-      assert(actualJob === worked)
+      assert(actualJob === job)
       assert(execution.status === JobStatus.Succeeded)
       assert(execution.isSuccess)
       //TODO: Other assertions about execution?
       
       val expectedStatuses = Seq(JobStatus.Submitted, JobStatus.Running, expectedLastStatus)
       
-      val statuses = worked.statuses.to[Seq] 
+      val statuses = job.statuses.to[Seq] 
 
       assert(waitFor(statuses.firstAsFuture) === expectedStatuses)
       
-      assert(worked.runCount === 1)
+      assert(job.runCount === 1)
     }
     
     doTest(neverRestart, Done, JobStatus.Succeeded)
@@ -282,18 +291,21 @@ final class UgerChunkRunnerTest extends FunSuite {
         expectedLastGoodStatus: JobStatus,
         expectedLastBadStatus: JobStatus): Unit = {
       
-      val worked = MockUgerJob(goodId, Queued, Queued, Running, Running, lastGoodUgerStatus)
-      val failed = MockUgerJob(badId, Queued, Queued, Running, Running, lastBadUgerStatus)
+      val workedJob = MockUgerJob(goodId, Queued, Queued, Running, Running, lastGoodUgerStatus)
+      val failedJob = MockUgerJob(badId, Queued, Queued, Running, Running, lastBadUgerStatus)
       
-      assert(worked.runCount === 0)
-      assert(failed.runCount === 0)
+      val worked = UgerJobWrapper(ExecutionConfig.default, workedJob, 1)
+      val failed = UgerJobWrapper(ExecutionConfig.default, failedJob, 2)
+      
+      assert(workedJob.runCount === 0)
+      assert(failedJob.runCount === 0)
       
       val input = Map(goodId -> toTuple(worked), badId -> toTuple(failed))
       
       val result = waitFor(toExecutions(shouldRestart, input).firstAsFuture)
       
-      val goodExecution = result(worked)
-      val badExecution = result(failed)
+      val goodExecution = result(workedJob)
+      val badExecution = result(failedJob)
       
       assert(result.size === 2)
       
@@ -306,14 +318,14 @@ final class UgerChunkRunnerTest extends FunSuite {
       val expectedGoodStatuses = Seq(JobStatus.Submitted, JobStatus.Running, expectedLastGoodStatus)
       val expectedBadStatuses = Seq(JobStatus.Submitted, JobStatus.Running, expectedLastBadStatus)
       
-      val goodStatuses = worked.statuses.to[Seq] 
-      val badStatuses = (if(shouldRestart(failed)) failed.statuses.take(3) else failed.statuses).to[Seq]
+      val goodStatuses = workedJob.statuses.to[Seq] 
+      val badStatuses = (if(shouldRestart(failedJob)) failedJob.statuses.take(3) else failedJob.statuses).to[Seq]
 
       assert(waitFor(goodStatuses.firstAsFuture) === expectedGoodStatuses)
       assert(waitFor(badStatuses.firstAsFuture) === expectedBadStatuses)
       
-      assert(worked.runCount === 1)
-      assert(failed.runCount === 1)
+      assert(workedJob.runCount === 1)
+      assert(failedJob.runCount === 1)
     }
     
     val failedPermanently = JobStatus.FailedPermanently
@@ -436,13 +448,13 @@ final class UgerChunkRunnerTest extends FunSuite {
     
     val actualSubmissionParams = mockJobSubmitter.params
     
-    val actualParamsUnordered: Set[(UgerSettings, Set[CommandLineJob])] = {
+    val actualParamsUnordered: Set[(UgerSettings, Set[LJob])] = {
       actualSubmissionParams.map { case (settings, taskArray) => 
-        (settings, taskArray.ugerJobs.map(_.commandLineJob).toSet) 
+        (settings, taskArray.ugerJobs.map(_.commandLineJob).toSet[LJob]) 
       }.toSet
     }
     
-    val expectedParamsUnordered: Set[(UgerSettings, Set[CommandLineJob])] = Set(
+    val expectedParamsUnordered: Set[(UgerSettings, Set[LJob])] = Set(
         expectedSettings0 -> Set(findJob(tool0), findJob(tool1)),
         expectedSettings1 -> Set(findJob(tool2), findJob(tool3)))
     
@@ -457,13 +469,15 @@ object UgerChunkRunnerTest {
     override def submitJobs(ugerSettings: UgerSettings, taskArray: UgerTaskArray): DrmaaClient.SubmissionResult = {
       params :+= (ugerSettings -> taskArray)
       
-      DrmaaClient.SubmissionSuccess(Nil)
+      DrmaaClient.SubmissionSuccess(Map.empty)
     }
   }
   
-  final case class MockUgerJob(name: String, statusesToReturn: UgerStatus*) extends LocalJob {
+  final case class MockUgerJob(name: String, statusesToReturn: UgerStatus*) extends LocalJob with HasCommandLine {
     require(statusesToReturn.nonEmpty)
 
+    override def commandLineString: String = name //NB: The content of the command line is unimportant
+    
     override val executionEnvironment: Environment = Environment.Local
     
     override def inputs: Set[JobNode] = Set.empty

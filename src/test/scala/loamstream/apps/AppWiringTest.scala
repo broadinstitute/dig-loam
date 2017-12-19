@@ -11,6 +11,7 @@ import loamstream.model.execute.JobFilter
 import loamstream.uger.UgerChunkRunner
 import loamstream.model.execute.AsyncLocalChunkRunner
 import loamstream.model.execute.CompositeChunkRunner
+import loamstream.model.execute.HashingStrategy
 
 /**
  * @author clint
@@ -24,6 +25,20 @@ final class AppWiringTest extends FunSuite with Matchers {
   private val confFileForUger = Paths.get("src/test/resources/for-uger.conf")
   
   private def cliConf(argString: String): Conf = Conf(argString.split("\\s+").toSeq)
+  
+  test("determineHashingStrategy") { 
+    {
+      val conf = cliConf(s"--disable-hashing --dry-run $exampleFile")
+      
+      assert(AppWiring.determineHashingStrategy(conf) === HashingStrategy.DontHashOutputs)
+    }
+
+    {
+      val conf = cliConf(s"--dry-run $exampleFile")
+      
+      assert(AppWiring.determineHashingStrategy(conf) === HashingStrategy.HashOutputs)
+    }
+  }
   
   test("Local execution, db-backed") {
     val wiring = AppWiring(cliConf(s"$exampleFile"))

@@ -19,7 +19,8 @@ final case class NoOpJob(override val inputs: Set[JobNode]) extends LocalJob {
         status = Succeeded,
         result = None,
         resources = None,
-        outputs = Set.empty[OutputRecord])
+        outputs = Set.empty[OutputRecord],
+        outputStreams = None)
   }
   
   override def toString: String = name

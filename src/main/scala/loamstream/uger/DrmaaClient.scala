@@ -73,7 +73,7 @@ object DrmaaClient {
     override val isFailure: Boolean = true
   }
 
-  final case class SubmissionSuccess(jobIds: Seq[String]) extends SubmissionResult {
+  final case class SubmissionSuccess(idsForJobs: Map[String, UgerJobWrapper]) extends SubmissionResult {
     override val isFailure: Boolean = false
   }
 }

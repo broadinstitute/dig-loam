@@ -21,7 +21,7 @@ class OutputRecordTest extends FunSuite {
 
   private val fooPathCopy = fooPath
   private val fooHashCopy = Hashes.sha1(fooPathCopy).valueAsBase64String
-  private val fooRecCopy = OutputRecord(fooLoc, Option(fooHashCopy), lastModifiedOptOf(fooPathCopy))
+  private val fooRecCopy = OutputRecord(fooLoc)
 
   private val emptyLoc = normalize("src/test/resources/for-hashing/empty.txt")
   private val emptyPath = Paths.get(emptyLoc)

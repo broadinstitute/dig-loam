@@ -4,6 +4,7 @@ import java.nio.file.Path
 import java.time.Instant
 
 import loamstream.util.{PathUtils, TimeUtils}
+import java.net.URI
 
 /**
  * @author kyuksel
@@ -54,14 +55,10 @@ object OutputRecord {
                                                       hash = None,
                                                       hashType = None,
                                                       lastModified = None)
-
-  def apply(loc: String,
-            hash: Option[String],
-            lastModified: Option[Instant]): OutputRecord = OutputRecord(loc,
-                                                                        isPresent = lastModified.isDefined,
-                                                                        hash = None,
-                                                                        hashType = None,
-                                                                        lastModified = None)
+                                                      
+  def apply(path: Path): OutputRecord = OutputRecord(PathUtils.normalize(path))
+  
+  def apply(uri: URI): OutputRecord = OutputRecord(uri.toString)
 
   def apply(loc: String,
             hash: Option[String],
@@ -72,7 +69,7 @@ object OutputRecord {
                                                                         hashType = hashType,
                                                                         lastModified = lastModified)
 
-  def apply(path: Path): OutputRecord = OutputRecord(PathUtils.normalize(path))
+  
 
   def apply(output: Output): OutputRecord = output.lastModified match {
     case lmOpt @ Some(_) => OutputRecord( loc = output.location,

@@ -58,7 +58,7 @@ object AsyncLocalChunkRunner extends Loggable {
     
     job.transitionTo(JobStatus.Running)
     
-    val processLogger = ProcessLoggers.forNamedJob(executionConfig, this, job)
+    val processLogger = ProcessLoggers.forNamedJob(executionConfig, job)
     
     val result = for {
       execution <- LocalJobStrategy.execute(job, processLogger)

@@ -17,10 +17,10 @@ import loamstream.util.TypeBox
  * Oct 14, 2015
  */
 final class ExecutionTest extends FunSuite with ProvidesEnvAndResources {
-  //scalastyle:off magic.number
-
   private val p0 = Paths.get("foo/bar/baz")
   private val p1 = Paths.get("nuh")
+  
+  import TestHelpers.dummyOutputStreams
   
   test("from(LJob, JobStatus, JobResult)") {
     import TestHelpers.path
@@ -32,32 +32,46 @@ final class ExecutionTest extends FunSuite with ProvidesEnvAndResources {
     val job0 = CommandLineJob("foo", path("."), Environment.Uger(TestHelpers.defaultUgerSettings))
     val job1 = MockJob(status1)
     
-    val e0 = Execution.from(job0, status0, Option(result0))
+    val outputStreamsOpt = Some(dummyOutputStreams)
+    
+    val e0 = Execution.from(job0, status0, Option(result0), outputStreamsOpt)
     val e1 = Execution.from(job1, status1)
     
     assert(e0.cmd === Some("foo"))
     assert(e0.env.isUger)
     assert(e0.result === Some(result0))
-    assert(e0.outputs.isEmpty)
+    assert(e0.outputs === Set.empty)
+    assert(e0.outputStreams === outputStreamsOpt)
     //TODO: Check settings field once it's no longer a placeholder 
     
     assert(e1.cmd === None)
     assert(e1.env.isLocal)
     assert(e1.status === status1)
     assert(e1.result === None)
-    assert(e1.outputs.isEmpty)
+    assert(e1.outputs === Set.empty)
+    assert(e1.outputStreams === None)
     //TODO: Check settings field once it's no longer a placeholder
   }
 
   test("isCommandExecution") {
     def assertIsCommandExecution(result: JobResult, cmd: Option[String] = Option(mockCmd)): Unit = {
-      val execution = Execution(env = mockEnv, cmd = cmd, result = result, outputs = Set.empty[OutputRecord])
+      val execution = Execution(
+          env = mockEnv, 
+          cmd = cmd, 
+          result = result,
+          outputStreams = dummyOutputStreams,
+          outputs = Set.empty[OutputRecord])
       
       assert(execution.isCommandExecution)
     }
     
     def assertIsNOTCommandExecution(result: JobResult, cmd: Option[String] = Option(mockCmd)): Unit = {
-      val execution = Execution(env = mockEnv, cmd = cmd, result = result, outputs = Set.empty[OutputRecord])
+      val execution = Execution(
+          env = mockEnv, 
+          cmd = cmd, 
+          result = result,
+          outputStreams = dummyOutputStreams,
+          outputs = Set.empty[OutputRecord])
       
       assert(!execution.isCommandExecution)
     }

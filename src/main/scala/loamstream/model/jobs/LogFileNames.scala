@@ -10,6 +10,10 @@ import loamstream.util.PathEnrichments
  */
 object LogFileNames {
   
+  def outputStreams(job: LJob, outputDirName: Path): OutputStreams = {
+    OutputStreams(stdout(job, outputDirName), stderr(job, outputDirName))
+  }
+  
   def stdout(job: LJob, outputDirName: Path): Path = makePath(job, "stdout", outputDirName)
   
   def stderr(job: LJob, outputDirName: Path): Path = makePath(job, "stderr", outputDirName)

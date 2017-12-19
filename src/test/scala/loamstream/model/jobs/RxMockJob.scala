@@ -98,6 +98,7 @@ object RxMockJob {
         status = jobResult.toJobStatus,
         result = Option(jobResult),
         resources = None,
+        outputStreams = None,
         outputs = outputs.map(_.toOutputRecord))
   }
 }

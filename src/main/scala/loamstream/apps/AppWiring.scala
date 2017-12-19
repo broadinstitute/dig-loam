@@ -37,6 +37,7 @@ import loamstream.conf.ExecutionConfig
 import loamstream.util.ConfigUtils
 import loamstream.util.Tries
 import loamstream.uger.JobSubmitter
+import loamstream.model.execute.HashingStrategy
 
 /**
  * @author clint
@@ -51,9 +52,11 @@ trait AppWiring {
   def executer: Executer
 
   def cloudStorageClient: Option[CloudStorageClient]
-
+  
   private[AppWiring] def makeJobFilter(conf: Conf): JobFilter = {
-    if (conf.runEverything()) JobFilter.RunEverything else new DbBackedJobFilter(dao)
+    import AppWiring.determineHashingStrategy
+    
+    if (conf.runEverything()) JobFilter.RunEverything else new DbBackedJobFilter(dao, determineHashingStrategy(conf))
   }
   
   def shutdown(): Seq[Throwable]
@@ -116,6 +119,16 @@ object AppWiring extends DrmaaClientHelpers with Loggable {
       val handles: Seq[Terminable] = (ugerRunnerHandles ++ googleRunner) :+ threadPoolHandle :+ localEcHandle
 
       new TerminableExecuter(rxExecuter, handles: _*)
+    }
+  }
+  
+  private[apps] def determineHashingStrategy(conf: Conf): HashingStrategy = {
+    import HashingStrategy.{DontHashOutputs, HashOutputs}
+    
+    conf.disableHashing.toOption.map { shouldDisableHashing =>
+      if(shouldDisableHashing) DontHashOutputs else HashOutputs
+    }.getOrElse {
+      HashOutputs
     }
   }
 

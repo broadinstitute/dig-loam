@@ -8,12 +8,22 @@ import loamstream.model.jobs.Execution
 import loamstream.model.jobs.JobResult.CommandResult
 import loamstream.model.jobs.JobStatus
 import loamstream.model.jobs.OutputRecord
+import java.nio.file.Paths
+import loamstream.model.jobs.OutputStreams
 
 /**
  * @author clint
  *         date: Sep 22, 2016
  */
-final case class ExecutionRow(id: Int, env: String, cmd: String, status: JobStatus, exitCode: Int) {
+final case class ExecutionRow(
+    id: Int, 
+    env: String, 
+    cmd: String, 
+    status: JobStatus, 
+    exitCode: Int,
+    stdoutPath: String,
+    stderrPath: String) {
+  
   def toExecution(settings: Settings, resourcesOpt: Option[Resources], outputs: Set[OutputRecord]): Execution = {
     val commandResult = CommandResult(exitCode)
 
@@ -25,20 +35,18 @@ final case class ExecutionRow(id: Int, env: String, cmd: String, status: JobStat
     //TODO: :(
     require(environmentOpt.isDefined)
     
+    import Paths.{get => toPath}
+    
+    val streamsOpt = Option(OutputStreams(toPath(stdoutPath), toPath(stderrPath)))
+    
     Execution(
-        id = Option(mapId(identity)),
+        id = Option(id),
         env = environmentOpt.get,
         cmd = Option(cmd),
         status = status,
         result = Option(commandResult),
         resources = resourcesOpt,
-        outputs = outputs)
+        outputs = outputs,
+        outputStreams = streamsOpt)
   }
-
-  /**
-   * Meant to abstract out Execution.id from ExecutionRow.id
-   * to prevent database-level information from leaking up
-   */
-  //TODO: Why is this here?
-  private def mapId[A](f: Int => A): A = f(id)
 }

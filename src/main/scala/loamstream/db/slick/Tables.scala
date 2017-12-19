@@ -105,9 +105,11 @@ final class Tables(val driver: JdbcProfile) extends Loggable {
     //NB: Specify the length of this column so that we hopefully don't get a too-small VARCHAR,
     //and instead some DB-specific column type appropriate for strings thousands of chars long.
     def cmd = column[String]("CMD", O.Length(maxStringColumnLength))
+    def stdoutPath = column[String]("STDOUT_PATH", O.Length(maxStringColumnLength))
+    def stderrPath = column[String]("STDERR_PATH", O.Length(maxStringColumnLength))
     def exitCode = column[Int]("EXIT_CODE")
     def status = column[JobStatus]("STATUS")
-    def * = (id, env, cmd, status, exitCode) <> (ExecutionRow.tupled, ExecutionRow.unapply)
+    def * = (id, env, cmd, status, exitCode, stdoutPath, stderrPath) <> (ExecutionRow.tupled, ExecutionRow.unapply)
   }
 
   final class Outputs(tag: Tag) extends Table[OutputRow](tag, Names.outputs) {

@@ -8,6 +8,8 @@ import org.rogach.scallop._
 
 import loamstream.util.Loggable
 import loamstream.util.Versions
+import java.net.URI
+import loamstream.model.execute.HashingStrategy
 
 /**
  * Provides a command line interface for LoamStream apps
@@ -95,6 +97,14 @@ final case class Conf(
       required = false,
       validate = _.nonEmpty)(listPathConverter)
 
+  val lookup: ScallopOption[Either[Path, URI]] = opt[Either[Path, URI]](
+      descr = "Path to output file or URI; look up info on command that made it",
+      required = false)(ValueConverters.PathOrGoogleUriConverter)
+      
+  val disableHashing: ScallopOption[Boolean] = opt[Boolean](
+      descr = "Don't hash files when determining whether a job may be skipped.",
+      required = false)
+      
   private def dryRunNoFilesMessage = "Please specify at least one Loam file to compile"
   private def runNoFilesMessage = "Please specify at least one Loam file to run"
 
@@ -106,19 +116,22 @@ final case class Conf(
    * --version trumps everything - if it's present, everything else is optional
    * --backend and --dry-run are mutually exclusive; both require a non-empty list of loam files
    */
-  validateOpt(version, conf, runEverything, loams, dryRun) {
+  validateOpt(version, lookup, conf, runEverything, loams, dryRun) {
     // If --version is supplied, everything else is unchecked
-    case (Some(true), _, _, _, _) => Right(Unit)
+    case (Some(true), _, _, _, _, _) => Right(Unit)
+    
+    // If --lookup is supplied, everything else is unchecked
+    case (_, Some(outputPathOrUri), _, _, _, _) => Right(Unit)
 
     //--dry-run and a non-empty list of loam files is valid
-    case (_, _, _, Some(files), Some(true)) if files.nonEmpty => Right(Unit)
-    case (_, _, _, Some(files), Some(true)) if files.isEmpty => Left(dryRunNoFilesMessage)
-    case (_, _, _, None, Some(true)) => Left(dryRunNoFilesMessage)
+    case (_, _, _, _, Some(files), Some(true)) if files.nonEmpty => Right(Unit)
+    case (_, _, _, _, Some(files), Some(true)) if files.isEmpty => Left(dryRunNoFilesMessage)
+    case (_, _, _, _, None, Some(true)) => Left(dryRunNoFilesMessage)
 
     // running (no --dry-run) with a non-empty list of loam files is valid
-    case (_, _, _, Some(files), _) if files.nonEmpty => Right(Unit)
-    case (_, _, _, Some(files), _) if files.isEmpty => Left(runNoFilesMessage)
-    case (_, _, _, None, _) => Left(runNoFilesMessage)
+    case (_, _, _, _, Some(files), _) if files.nonEmpty => Right(Unit)
+    case (_, _, _, _, Some(files), _) if files.isEmpty => Left(runNoFilesMessage)
+    case (_, _, _, _, None, _) => Left(runNoFilesMessage)
 
     case _ => Left("Invalid option/argument combination")
   }

@@ -34,6 +34,8 @@ import loamstream.util.Sequence
 import loamstream.model.execute.UgerSettings
 import loamstream.util.PathEnrichments
 import org.apache.commons.io.FileUtils
+import loamstream.model.jobs.OutputStreams
+import java.util.UUID
 
 /**
   * @author clint
@@ -80,7 +82,8 @@ object TestHelpers {
 
   def executionFrom(status: JobStatus,
                     result: Option[JobResult] = None,
-                    resources: Option[Resources] = None): Execution = {
+                    resources: Option[Resources] = None,
+                    outputStreams: Option[OutputStreams] = None): Execution = {
     Execution(
         id = None,
         env = env,
@@ -88,7 +91,8 @@ object TestHelpers {
         status,
         result,
         resources,
-        Set.empty[OutputRecord])
+        Set.empty[OutputRecord],
+        outputStreams)
   }
 
   def executionFromStatus(status: JobStatus, resources: Option[Resources] = None): Execution = {
@@ -139,4 +143,8 @@ object TestHelpers {
       ugerConfig.defaultMemoryPerCore,
       ugerConfig.defaultMaxRunTime)
   }
+  
+  def dummyFileName: Path = TestHelpers.path(s"${UUID.randomUUID.toString}.log")
+    
+  def dummyOutputStreams: OutputStreams = OutputStreams(dummyFileName, dummyFileName)
 }

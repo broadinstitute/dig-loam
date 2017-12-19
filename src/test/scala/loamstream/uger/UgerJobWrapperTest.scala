@@ -56,7 +56,7 @@ final class UgerJobWrapperTest extends FunSuite {
     assert(ugerStdErrPath2 === expected2)
   }
   
-  test("stdOutDestPath") {
+  test("outputStreams.stdout") {
     val taskArray = UgerTaskArray.fromCommandLineJobs(executionConfig, ugerConfig, Seq(j0))
     
     val jobName = UgerTaskArray.makeJobName(Seq(j0))
@@ -65,17 +65,17 @@ final class UgerJobWrapperTest extends FunSuite {
     
     val expected = path(s"${executionConfig.outputDir}/${j0.id}.stdout")
     
-    assert(wrapper0.stdOutDestPath === expected)
+    assert(wrapper0.outputStreams.stdout === expected)
   }
   
-  test("stdErrDestPath") {
+  test("outputStreams.stderr") {
     val taskArray = UgerTaskArray.fromCommandLineJobs(executionConfig, ugerConfig, Seq(j0))
     
     val Seq(wrapper0) = taskArray.ugerJobs
     
     val expected = path(s"${executionConfig.outputDir}/${j0.id}.stderr")
     
-    assert(wrapper0.stdErrDestPath === expected)
+    assert(wrapper0.outputStreams.stderr === expected)
   }
   
   test("ugerCommandLine") {
@@ -86,7 +86,16 @@ final class UgerJobWrapperTest extends FunSuite {
     val jobName = UgerTaskArray.makeJobName(Seq(j0))
     
     // scalastyle:off line.size.limit
-    val expected = s"( ${j0.commandLineString} ) ; mkdir -p $outputDir ; mv /foo/bar/baz/$jobName.1.stdout $outputDir/${j0.id}.stdout ; mv /foo/bar/baz/$jobName.1.stderr $outputDir/${j0.id}.stderr"
+    val expected = s"""|${j0.commandLineString}
+                       |
+                       |LOAMSTREAM_JOB_EXIT_CODE=$$?
+                       |
+                       |mkdir -p $outputDir
+                       |mv /foo/bar/baz/$jobName.1.stdout $outputDir/${j0.id}.stdout || echo "Couldn't move Uger std out log" > $outputDir/${j0.id}.stdout
+                       |mv /foo/bar/baz/$jobName.1.stderr $outputDir/${j0.id}.stderr || echo "Couldn't move Uger std err log" > $outputDir/${j0.id}.stderr
+                       |
+                       |exit $$LOAMSTREAM_JOB_EXIT_CODE
+                       |""".stripMargin
     // scalastyle:on line.size.limit
     
     assert(wrapper0.ugerCommandLine(taskArray) === expected)

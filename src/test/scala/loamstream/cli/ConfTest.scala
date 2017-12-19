@@ -5,6 +5,7 @@ import java.nio.file.Paths
 
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+import java.net.URI
 
 /**
  * Created by kyuksel on 10/12/16.
@@ -79,6 +80,32 @@ final class ConfTest extends FunSuite with Matchers {
     doTest("-d", Seq("src/examples/loam/cp.loam", "src/examples/loam/cp.loam"))
   }
   
+  test("--disable-hashing") {
+    {
+      val args = Seq("--disable-hashing", "--dry-run", "src/examples/loam/cp.loam")
+      
+      val conf = makeConf(args)
+      
+      assert(conf.disableHashing.isSupplied)
+      assert(conf.dryRun.isSupplied)
+      assert(conf.conf.isSupplied === false)
+      assert(conf.version.isSupplied === false)
+      assert(conf.loams() === Seq(Paths.get("src/examples/loam/cp.loam")))
+    }
+    
+    {
+      val args = Seq("--dry-run", "src/examples/loam/cp.loam")
+      
+      val conf = makeConf(args)
+      
+      assert(conf.disableHashing.isSupplied === false)
+      assert(conf.dryRun.isSupplied)
+      assert(conf.conf.isSupplied === false)
+      assert(conf.version.isSupplied === false)
+      assert(conf.loams() === Seq(Paths.get("src/examples/loam/cp.loam")))
+    }
+  }
+  
   test("Loam files must be specified if running normally or with --dry-run") {
     //No loam files
     intercept[CliException] {
@@ -148,10 +175,77 @@ final class ConfTest extends FunSuite with Matchers {
     }
     
     {
+      val conf = makeConf(Seq("-r", exampleFile))
+        
+      conf.runEverything() shouldBe(true)
+      conf.loams() shouldEqual List(expected)
+      conf.dryRun() shouldBe(false)
+      conf.conf.isSupplied shouldBe(false)
+    }
+    
+    {
       val conf = makeConf(Seq(exampleFile))
         
       conf.runEverything() shouldBe(false)
       conf.loams() shouldEqual List(expected)
+      conf.dryRun() shouldBe(false)
+      conf.conf.isSupplied shouldBe(false)
+    }
+  }
+  
+  test("--lookup") {
+    val someFile = "some/arbitrary/output"
+    val someUri = "gs://foo/bar/baz"
+    
+    val expectedPath = Paths.get(someFile)
+    val expectedUri = URI.create(someUri)
+    
+    //Path, full arg name
+    {
+      val conf = makeConf(Seq("--lookup", someFile))
+        
+      conf.lookup.isSupplied shouldBe(true)
+      conf.lookup() shouldBe(Left(expectedPath))
+      
+      conf.runEverything() shouldBe(false)
+      conf.loams.isSupplied shouldBe(false)
+      conf.dryRun() shouldBe(false)
+      conf.conf.isSupplied shouldBe(false)
+    }
+    //Path, short arg name
+    {
+      val conf = makeConf(Seq("-l", someFile))
+        
+      conf.lookup.isSupplied shouldBe(true)
+      conf.lookup() shouldBe(Left(expectedPath))
+      
+      conf.runEverything() shouldBe(false)
+      conf.loams.isSupplied shouldBe(false)
+      conf.dryRun() shouldBe(false)
+      conf.conf.isSupplied shouldBe(false)
+    }
+    
+    //URI, full arg name
+    {
+      val conf = makeConf(Seq("--lookup", someUri))
+        
+      conf.lookup.isSupplied shouldBe(true)
+      conf.lookup() shouldBe(Right(expectedUri))
+      
+      conf.runEverything() shouldBe(false)
+      conf.loams.isSupplied shouldBe(false)
+      conf.dryRun() shouldBe(false)
+      conf.conf.isSupplied shouldBe(false)
+    }
+    //URI, short arg name
+    {
+      val conf = makeConf(Seq("-l", someUri))
+        
+      conf.lookup.isSupplied shouldBe(true)
+      conf.lookup() shouldBe(Right(expectedUri))
+      
+      conf.runEverything() shouldBe(false)
+      conf.loams.isSupplied shouldBe(false)
       conf.dryRun() shouldBe(false)
       conf.conf.isSupplied shouldBe(false)
     }

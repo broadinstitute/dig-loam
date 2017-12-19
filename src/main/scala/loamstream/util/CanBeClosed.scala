@@ -15,6 +15,10 @@ object CanBeClosed {
   implicit def javaCloseablesCanBeClosed[C <: Closeable]: CanBeClosed[C] = _.close()
 
   implicit def scalaSourcesCanBeClosed[S <: Source]: CanBeClosed[S] = _.close()
+  
+  implicit def terminablesCanBeClosed[A <: Terminable]: CanBeClosed[A] = new CanBeClosed[A] {
+    override def close(a: A): Unit = a.stop()
+  }
 
   def enclosed[A, C: CanBeClosed](c: C)(f: C => A): A = {
     try {

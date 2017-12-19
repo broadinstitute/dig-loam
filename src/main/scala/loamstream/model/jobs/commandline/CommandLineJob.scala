@@ -41,7 +41,7 @@ final case class CommandLineJob(
     override val inputs: Set[JobNode] = Set.empty,
     outputs: Set[Output] = Set.empty,
     exitValueCheck: Int => Boolean = CommandLineJob.defaultExitValueChecker,
-    private val nameOpt: Option[String] = None) extends LJob with Loggable {
+    private val nameOpt: Option[String] = None) extends HasCommandLine with Loggable {
 
   override def equals(other: Any): Boolean = other match {
     case that: CommandLineJob => this.id == that.id

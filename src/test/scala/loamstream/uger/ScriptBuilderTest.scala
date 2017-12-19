@@ -89,8 +89,8 @@ final class ScriptBuilderTest extends FunSuite {
 
     getShapeItCommandLineTokens(shapeItExecutable, vcf, map, haps, samples, log, numThreads).mkString(" ")
   }
+
   // scalastyle:off method.length
-  // scalastyle:off line.size.limit
   private def expectedScriptAsString(discriminators: (Int, Int, Int), jobIds: (String, String, String)): String = {
     val (discriminator0, discriminator1, discriminator2) = discriminators
     val (jobId0, jobId1, jobId2) = jobIds
@@ -101,7 +101,8 @@ final class ScriptBuilderTest extends FunSuite {
     val outputDir = path("job-outputs").toAbsolutePath
     
     val sixSpaces = "      "
-
+    
+    // scalastyle:off line.size.limit
     s"""#!/bin/bash
 #$$ -cwd
 
@@ -117,16 +118,43 @@ i=$$SGE_TASK_ID
 $sixSpaces
 if [ $$i -eq 1 ]
 then
-\t( /some/shapeit/executable -V /some/vcf/file.$discriminator0 -M /some/map/file.$discriminator0 -O /some/haplotype/file.$discriminator0 /some/sample/file -L /some/log/file --thread 2 ) ; mkdir -p $outputDir ; mv $ugerDir/${jobName}.1.stdout $outputDir/${jobId0}.stdout ; mv $ugerDir/${jobName}.1.stderr $outputDir/${jobId0}.stderr
+/some/shapeit/executable -V /some/vcf/file.$discriminator0 -M /some/map/file.$discriminator0 -O /some/haplotype/file.$discriminator0 /some/sample/file -L /some/log/file --thread 2
+
+LOAMSTREAM_JOB_EXIT_CODE=$$?
+
+mkdir -p $outputDir
+mv $ugerDir/${jobName}.1.stdout $outputDir/${jobId0}.stdout || echo "Couldn't move Uger std out log" > $outputDir/${jobId0}.stdout
+mv $ugerDir/${jobName}.1.stderr $outputDir/${jobId0}.stderr || echo "Couldn't move Uger std err log" > $outputDir/${jobId0}.stderr
+
+exit $$LOAMSTREAM_JOB_EXIT_CODE
+
 elif [ $$i -eq 2 ]
 then
-\t( /some/shapeit/executable -V /some/vcf/file.$discriminator1 -M /some/map/file.$discriminator1 -O /some/haplotype/file.$discriminator1 /some/sample/file -L /some/log/file --thread 2 ) ; mkdir -p $outputDir ; mv $ugerDir/${jobName}.2.stdout $outputDir/${jobId1}.stdout ; mv $ugerDir/${jobName}.2.stderr $outputDir/${jobId1}.stderr
+/some/shapeit/executable -V /some/vcf/file.$discriminator1 -M /some/map/file.$discriminator1 -O /some/haplotype/file.$discriminator1 /some/sample/file -L /some/log/file --thread 2
+
+LOAMSTREAM_JOB_EXIT_CODE=$$?
+
+mkdir -p $outputDir
+mv $ugerDir/${jobName}.2.stdout $outputDir/${jobId1}.stdout || echo "Couldn't move Uger std out log" > $outputDir/${jobId1}.stdout
+mv $ugerDir/${jobName}.2.stderr $outputDir/${jobId1}.stderr || echo "Couldn't move Uger std err log" > $outputDir/${jobId1}.stderr
+
+exit $$LOAMSTREAM_JOB_EXIT_CODE
+
 elif [ $$i -eq 3 ]
 then
-\t( /some/shapeit/executable -V /some/vcf/file.$discriminator2 -M /some/map/file.$discriminator2 -O /some/haplotype/file.$discriminator2 /some/sample/file -L /some/log/file --thread 2 ) ; mkdir -p $outputDir ; mv $ugerDir/${jobName}.3.stdout $outputDir/${jobId2}.stdout ; mv $ugerDir/${jobName}.3.stderr $outputDir/${jobId2}.stderr
+/some/shapeit/executable -V /some/vcf/file.$discriminator2 -M /some/map/file.$discriminator2 -O /some/haplotype/file.$discriminator2 /some/sample/file -L /some/log/file --thread 2
+
+LOAMSTREAM_JOB_EXIT_CODE=$$?
+
+mkdir -p $outputDir
+mv $ugerDir/${jobName}.3.stdout $outputDir/${jobId2}.stdout || echo "Couldn't move Uger std out log" > $outputDir/${jobId2}.stdout
+mv $ugerDir/${jobName}.3.stderr $outputDir/${jobId2}.stderr || echo "Couldn't move Uger std err log" > $outputDir/${jobId2}.stderr
+
+exit $$LOAMSTREAM_JOB_EXIT_CODE
+
 fi
 """
-  }
   // scalastyle:on line.size.limit
+  }
   // scalastyle:on method.length
 }

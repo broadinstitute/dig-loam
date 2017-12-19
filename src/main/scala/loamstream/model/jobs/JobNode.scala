@@ -37,7 +37,7 @@ trait JobNode extends Loggable {
   private def snapshot: JobSnapshot = snapshotRef()
   
   //NB: Needs to be a ReplaySubject for correct operation
-  private[this] val runsEmitter: Subject[JobRun] = /*ReplaySubject.withSize(15)*/ ReplaySubject()
+  private[this] val runsEmitter: Subject[JobRun] = ReplaySubject()
   
   /** This job's current status */
   final def status: JobStatus = snapshotRef().status

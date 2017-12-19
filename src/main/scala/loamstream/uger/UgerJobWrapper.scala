@@ -1,19 +1,20 @@
 package loamstream.uger
 
-import loamstream.model.jobs.commandline.CommandLineJob
-import java.util.UUID
 import java.nio.file.Path
-import loamstream.conf.UgerConfig
-import org.ggf.drmaa.JobTemplate
-import loamstream.model.jobs.LogFileNames
 import java.nio.file.Paths
+
+import org.ggf.drmaa.JobTemplate
+
 import loamstream.conf.ExecutionConfig
+import loamstream.model.jobs.LogFileNames
+import loamstream.model.jobs.OutputStreams
+import loamstream.model.jobs.commandline.HasCommandLine
 
 /**
  * @author clint
  * Nov 16, 2017
  */
-final case class UgerJobWrapper(executionConfig: ExecutionConfig, commandLineJob: CommandLineJob, ugerIndex: Int) {
+final case class UgerJobWrapper(executionConfig: ExecutionConfig, commandLineJob: HasCommandLine, ugerIndex: Int) {
   
   def ugerStdOutPath(taskArray: UgerTaskArray): Path = reifyPath(taskArray.stdOutPathTemplate)
   
@@ -26,9 +27,11 @@ final case class UgerJobWrapper(executionConfig: ExecutionConfig, commandLineJob
     Paths.get(pathString).toAbsolutePath
   }
   
-  def stdOutDestPath: Path = LogFileNames.stdout(commandLineJob, executionConfig.outputDir)
+  private lazy val stdOutDestPath: Path = LogFileNames.stdout(commandLineJob, executionConfig.outputDir)
   
-  def stdErrDestPath: Path = LogFileNames.stderr(commandLineJob, executionConfig.outputDir)
+  private lazy val stdErrDestPath: Path = LogFileNames.stderr(commandLineJob, executionConfig.outputDir)
+  
+  def outputStreams: OutputStreams = OutputStreams(stdOutDestPath, stdErrDestPath)
   
   def ugerCommandLine(taskArray: UgerTaskArray): String = {
     val plainCommandLine = commandLineJob.commandLineString
@@ -36,7 +39,16 @@ final case class UgerJobWrapper(executionConfig: ExecutionConfig, commandLineJob
     val outputDir = executionConfig.outputDir.toAbsolutePath
     
     // scalastyle:off line.size.limit
-    s"( $plainCommandLine ) ; mkdir -p $outputDir ; mv ${ugerStdOutPath(taskArray)} $stdOutDestPath ; mv ${ugerStdErrPath(taskArray)} $stdErrDestPath"
+    s"""|$plainCommandLine
+        |
+        |LOAMSTREAM_JOB_EXIT_CODE=$$?
+        |
+        |mkdir -p $outputDir
+        |mv ${ugerStdOutPath(taskArray)} $stdOutDestPath || echo "Couldn't move Uger std out log" > $stdOutDestPath
+        |mv ${ugerStdErrPath(taskArray)} $stdErrDestPath || echo "Couldn't move Uger std err log" > $stdErrDestPath
+        |
+        |exit $$LOAMSTREAM_JOB_EXIT_CODE
+        |""".stripMargin
     // scalastyle:on line.size.limit
   }
 }
