@@ -64,7 +64,7 @@ final class CompileLoamsTest extends FunSuite with LoamTestHelpers with Loggable
   
   private lazy val results: LoamCompiler.Result = {
     withSysProps(
-        "dataConfig" -> "pipeline/conf/metsim/data.conf",
+        "dataConfig" -> "pipeline/conf/METSIM/METSIM.conf",,
         "pipelineConfig" -> "pipeline/conf/qc.conf") {
       
       val loams: Set[Path] = {

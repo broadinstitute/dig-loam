@@ -2525,7 +2525,8 @@ def plotSigRegions(i: Int): Seq[Store] = {
         .in(resultsFinalRegplotData)
         .out(resultsFinalRegplotPdf, resultsFinalRegplotLog)
         .named(s"${resultsFinalRegplotPng}".split("/").last.replace(".png",".pdf"))
-      
+        .using("R-3.4","PLINK2","Tabix")
+
       cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${resultsFinalRegplotPdf}[0] $resultsFinalRegplotPng"""
         .in(resultsFinalRegplotPdf)
         .out(resultsFinalRegplotPng)
