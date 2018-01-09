@@ -1,6 +1,0 @@
-val genotypesId = "myImportantGenotypes"
-val cmdName = "doThis"
-val input1 = store.at(path("input1")).asInput
-val output1 = store.at(path("output1"))
-
-cmd"$cmdName -id $genotypesId -in $input1 -out $output1"

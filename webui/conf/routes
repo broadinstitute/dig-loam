@@ -1,3 +1,0 @@
-GET   /               loamstream.web.controllers.WebController.index
-GET   /socket         loamstream.web.controllers.WebController.socket
-GET   /public/*file   controllers.Assets.at(path="/public", file)

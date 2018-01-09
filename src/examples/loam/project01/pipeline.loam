@@ -1,4 +1,0 @@
-import values.greeting
-import values.answer
-
-cmd"echo $greeting! The answer is $answer."
