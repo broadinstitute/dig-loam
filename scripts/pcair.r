@@ -1,7 +1,7 @@
 library(argparse)
 
 parser <- ArgumentParser()
-parser$add_argument("--cpus", dest="cpus", type="character", help="number of cpus to use for King")
+parser$add_argument("--cpus", dest="cpus", type="integer", help="number of cpus to use for King")
 parser$add_argument("--plink-in", dest="plink_in", type="character", help="Plink fileset name")
 parser$add_argument("--gds-out", dest="gds_out", type="character", help="Bioconductor gds file name")
 parser$add_argument("--exclude", dest="exclude", default=NULL, type="character", help="A single column file with no header containing sample IDs to exclude")

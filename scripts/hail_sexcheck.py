@@ -27,8 +27,11 @@ def main(args=None):
 	print "imputing sex"
 	vds = vds.impute_sex()
 
-	print "annotating samples with sexcheck results"
-	vds = vds.annotate_samples_expr('sa.sexcheck = if(((sa.pheno.SEX == "female" || sa.pheno.SEX == "Female" || sa.pheno.SEX == "f" || sa.pheno.SEX == "F" || sa.pheno.SEX == "2") && ! isMissing(sa.imputesex.isFemale) && sa.imputesex.isFemale) || ((sa.pheno.SEX == "male" || sa.pheno.SEX == "Male" || sa.pheno.SEX == "m" || sa.pheno.SEX == "M" || sa.pheno.SEX == "1") && ! isMissing(sa.imputesex.isFemale) && ! sa.imputesex.isFemale)) "OK" else "PROBLEM"')
+	print "annotating samples with sexcheck status"
+	vds = vds.annotate_samples_expr('sa.sexcheck = if(((sa.pheno.SEX == "female" || sa.pheno.SEX == "Female" || sa.pheno.SEX == "f" || sa.pheno.SEX == "F" || sa.pheno.SEX == "2") && ! isMissing(sa.imputesex.isFemale) && sa.imputesex.isFemale) || ((sa.pheno.SEX == "male" || sa.pheno.SEX == "Male" || sa.pheno.SEX == "m" || sa.pheno.SEX == "M" || sa.pheno.SEX == "1") && ! isMissing(sa.imputesex.isFemale) && ! sa.imputesex.isFemale) || isMissing(sa.imputesex.isFemale)) "OK" else "PROBLEM"')
+
+	print "replace isFemale annotation with self report if imputed sex failed"
+	vds = vds.annotate_samples_expr('sa.imputesex.isFemale = if((sa.pheno.SEX == "female" || sa.pheno.SEX == "Female" || sa.pheno.SEX == "f" || sa.pheno.SEX == "F" || sa.pheno.SEX == "2") &&  isMissing(sa.imputesex.isFemale)) true else if((sa.pheno.SEX == "male" || sa.pheno.SEX == "Male" || sa.pheno.SEX == "m" || sa.pheno.SEX == "M" || sa.pheno.SEX == "1") &&  isMissing(sa.imputesex.isFemale)) false else sa.imputesex.isFemale')
 
 	print "write sexcheck results to file"
 	vds.export_samples(args.sexcheck_out, expr="IID = s, SEX = sa.pheno.SEX, sa.imputesex.*, sexCheck = sa.sexcheck")

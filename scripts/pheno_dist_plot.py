@@ -45,8 +45,8 @@ def main(args=None):
 
 	if args.strat:
 		df['POP'] = df['POP'].astype('category')
-		if len(df['POP'].unique().tolist()) < len(pops):
-			df['POP'] = df['POP'].cat.add_categories([p for p in pops if p not in df['POP'].unique().tolist()])
+		if len(df['POP'].unique()) < len(pops):
+			df['POP'] = df['POP'].cat.add_categories([p for p in pops if p not in df['POP'].unique()])
 		df['POP'] = df['POP'].cat.reorder_categories(pops, ordered=True)
 
 	if len(df[args.pheno_name].unique()) > 2:

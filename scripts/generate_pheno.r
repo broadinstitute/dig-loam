@@ -6,6 +6,7 @@ library(pryr)
 library(argparse)
 
 parser <- ArgumentParser()
+parser$add_argument("--cpus", dest="cpus", type="character", help="number of cpus to use for King")
 parser$add_argument("--gds-in", dest="gds_in", type="character", help="a plink binary file path")
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
