@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import pandas.io.common
 
 def main(args=None):
 
@@ -77,8 +78,13 @@ def main(args=None):
 				i = i + 1
 				l = a.split("___")[0]
 				m = a.split("___")[1]
-				df = pd.read_table(m, header=None)
-				df = df[df[1] >= 10]
+				try:
+					df = pd.read_table(m, header=None)
+				except pandas.io.common.EmptyDataError:
+					print "skipping empty famsize file " + m
+					df = pd.DataFrame()
+				else:
+					df = df[df[1] >= 10]
 				if i == 1:
 					text1 = "{0:,d}".format(df.shape[0]) + " " + l
 				elif i < len(bim_list) -1:
