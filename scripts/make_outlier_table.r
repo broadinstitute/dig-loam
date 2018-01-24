@@ -37,9 +37,13 @@ for(a in x) {
 	l<-unlist(strsplit(a,"___"))[1]
 	if(! l %in% ls(ids)) ids[[l]]<-list()
 	f<-unlist(strsplit(a,"___"))[2]
-	famsizes_df<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
-	y<-famsizes_df[famsizes_df$V2 >= 10,]
-	ids[[l]][['cryptic relatedness']]<-unique(y$V1[y$V2 >= 10])
+	famsizes_df<-try(read.table(f,header=F,as.is=T,stringsAsFactors=F), silent=TRUE)
+	if(inherits(famsizes_df, "try-error")) {
+		ids[[l]][['cryptic relatedness']]<-c()
+	} else {
+		y<-famsizes_df[famsizes_df$V2 >= 10,]
+		ids[[l]][['cryptic relatedness']]<-unique(y$V1[y$V2 >= 10])
+	}
 }
 
 print("reading sexcheck problems file")
@@ -158,7 +162,9 @@ for(a in arrays) {
 	l = paste(l,paste("\t",length(ids[[a]][['cryptic relatedness']]),sep=""),sep="")
 }
 n<-unlist(sapply(ids, function(z) z['cryptic relatedness']))
-n<-n[! is.na(n)]
+if(length(n) > 0) {
+	n<-n[! is.na(n)]
+}
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
 cat(l,"\n",file=args$out, append=T)
 
@@ -180,7 +186,9 @@ for(a in arrays) {
 	l = paste(l,paste("\t",length(ids[[a]][['ancestry outlier']]),sep=""),sep="")
 }
 n<-unlist(sapply(ids, function(z) z['ancestry outlier']))
-n<-n[! is.na(n)]
+if(length(n) > 0) {
+	n<-n[! is.na(n)]
+}
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
 cat(l,"\n",file=args$out, append=T)
 
