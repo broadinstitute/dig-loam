@@ -1,5 +1,5 @@
 val dataConfig       = loadConfig("dataConfig", "")
-val pipelineConfig   = loadConfig("pipelineConfig", "/humgen/diabetes2/users/ryank/software/dig-loam-stream/pipeline/conf/qc.conf")
+val pipelineConfig   = loadConfig("pipelineConfig", "")
 
 val sampleQcMetrics         = pipelineConfig.getStrList("sampleQcMetrics")
 val ancestryOutliersKeep    = pipelineConfig.getStrList("ancestryOutliersKeep")

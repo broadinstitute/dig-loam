@@ -38,17 +38,18 @@ for(inp in unlist(strsplit(args$input,","))) {
 		stop(paste("file type ",args$type," not supported",sep=""))
 	}
 }
+
+if(! is.null(args$ancestry) && args$type == "fam") {
+	ids <- ids[c(grep("AFR",names(ids)), grep("AMR",names(ids)), grep("EAS",names(ids)), grep("EUR",names(ids)), grep("SAS",names(ids)))]
+}
+
 if(unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))] == "pdf") {
 	pdf(args$out,width=0,height=0,paper="a4r",onefile=FALSE)
 } else {
 	stop(paste("output extension ",unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))]," not supported",sep=""))
 }
 
-if(! is.null(args$ancestry) && args$type == "fam") {
-	ids <- ids[c(grep("AFR",names(ids)), grep("AMR",names(ids)), grep("EAS",names(ids)), grep("EUR",names(ids)), grep("SAS",names(ids)))]
-}
-
 # green: #16BE72
 # blue: #1F76B4
-upset(fromList(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=1, number.angles = 0, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 3))
+upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=1, number.angles = 0, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 3))
 dev.off()

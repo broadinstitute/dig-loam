@@ -34,7 +34,7 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsubsection{Principal Component Adjustment and Normalization of Sample Metrics}"); f.write("\n")
 
-		text=r"""Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:nhetCompare}} shows the nHet metric for {0} samples before and after adjustment.""".format(args.compare_dist_nhet_label)
+		text=r"""Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:nhetCompare}} shows the nHet metric for {0} samples before and after adjustment.""".format(args.compare_dist_nhet_label.replace("_","\_"))
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=r"""\begin{figure}[H]
@@ -112,7 +112,7 @@ def main(args=None):
 			text=r"""\begin{figure}[H]
 				\centering
 				\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio]{""" + m + r"""}
-				\caption{Adjusted sample metric distributions for """ + l + r"""}
+				\caption{Adjusted sample metric distributions for """ + l.replace("_","\_") + r"""}
 				\label{fig:adjSampleMetricDist""" + l + r"""}
 			\end{figure}"""
 			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
@@ -142,10 +142,10 @@ def main(args=None):
 						columns/""" + c + r"""/.style={column name=, string type, column type={>{\fontseries{bx}\selectfont}r}},"""
 			elif c == cols[len(cols)-1]:
 				text = text + r"""
-						columns/""" + c + r"""/.style={column name=""" + c + r""", string type, column type={>{\fontseries{bx}\selectfont}l}},"""
+						columns/""" + c + r"""/.style={column name=""" + c.replace("_","\_") + r""", string type, column type={>{\fontseries{bx}\selectfont}l}},"""
 			else:
 				text = text + r"""
-						columns/""" + c + r"""/.style={column name=""" + c + r""", string type},"""
+						columns/""" + c + r"""/.style={column name=""" + c.replace("_","\_") + r""", string type},"""
 		text = text + r"""
 						postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},
 						every head row/.style={before row={\toprule}, after row={\midrule}},

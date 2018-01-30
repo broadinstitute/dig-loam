@@ -12,7 +12,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\section{Data}"); f.write("\n")
 		f.write("\n"); f.write(r"\subsection{Samples}"); f.write("\n")
 
-		text=r"""The following diagram (Figure \ref{{table:variantsSummaryTable}}) describes the sample distribution over the {0:d} genotype arrays, along with their intersection sizes.""".format(args.narrays)
+		text=r"""The following diagram (Figure \ref{{fig:samplesUpsetDiagram}}) describes the sample distribution over the {0:d} genotype arrays, along with their intersection sizes.""".format(args.narrays)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 		
 		text=r"""\begin{figure}[H]

@@ -84,7 +84,7 @@ for(f in unlist(strsplit(args$freq_in,','))) {
 
 cat("Array\tFreq\tUnpl\tAuto\tX\tY\tX(PAR)\tMito\tInDel\tMulti\tDup\tTotal\n",file=args$out)
 for(x in names(vars_list)) {
-	cat(paste(x,"\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",sep=""),file=args$out,append=T)
+	cat(paste(gsub("_","\\\\_",x),"\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",sep=""),file=args$out,append=T)
 	write.table(cbind('{}',row.names(vars_list[[x]]),vars_list[[x]]),args$out,row.names=F,col.names=F,quote=F,sep="\t",append=T)
 	if(x != names(vars_list[[x]])[length(names(vars_list[[x]]))]) {
 		cat("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",file=args$out,append=T)

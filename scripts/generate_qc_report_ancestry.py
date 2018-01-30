@@ -26,14 +26,14 @@ def main(args=None):
 				m = a.split("___")[1]
 				df = pd.read_table(m, header=None)
 				if i == 1:
-					text2 = "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+					text2 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 				elif i < len(bim_list)-1:
-					text2 = text2 + ", " + "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+					text2 = text2 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 				else:
 					if len(bim_list) == 2:
-						text2 = text2 + " and " + "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+						text2 = text2 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 					else:
-						text2 = text2 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+						text2 = text2 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 		else:
 			l = args.kg_merged_bim.split("___")[0]
 			m = args.kg_merged_bim.split("___")[1]
@@ -82,7 +82,7 @@ def main(args=None):
 				r"      \caption{PC2 vs. PC3}",
 				r"      \label{fig:ancestryPca2vs3Plot" + l + r"}",
 				r"   \end{subfigure}",
-				r"   \caption{Principal components of ancestry for " + l + r"}",
+				r"   \caption{Principal components of ancestry for " + l.replace("_","\_") + r"}",
 				r"   \label{fig:ancestryPcaPlots" + l + r"}",
 				r"\end{figure}"]
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
@@ -127,7 +127,7 @@ def main(args=None):
 				r"      \caption{PC2 vs. PC3}",
 				r"      \label{fig:ancestryClusterPc2vs3Plot" + l + r"}",
 				r"   \end{subfigure}",
-				r"   \caption{Population clusters for " + l + r"}",
+				r"   \caption{Population clusters for " + l.replace("_","\_") + r"}",
 				r"   \label{fig:ancestryClusterPlots" + l + r"}",
 				r"\end{figure}"]
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
@@ -139,9 +139,9 @@ def main(args=None):
 				i = i + 1
 				l = a.split("___")[0]
 				if i == 1:
-					text1 = text1 + l
+					text1 = text1 + l.replace("_","\_")
 				else:
-					text1 = text1 + " > " + l
+					text1 = text1 + " > " + l.replace("_","\_")
 			text1 = text1 + ") and assigning each sample to the population determined using the highest technology"
 		else:
 			text1="Table \ref{{table:ancestryFinalTable}} describes the final population assignments."

@@ -11,7 +11,7 @@ def main(args=None):
 		print "writing duplicates and excessive sharing section"
 		f.write("\n"); f.write(r"\subsection{Duplicates and Excessive Sharing of Identity-by-Descent (IBD)}"); f.write("\n")
 
-		text=r"""Sample pair kinship coefficients were determined using KING \cite{king} relationship inference software, which offers a robust algorithm for relationship inference under population stratification. Prior to inferring relationships, we filtered variants with low callrate, variants with low minor allele frequency, variants with positions in known high LD regions \cite{umichHiLd}, and known Type 2 diabetes associated loci using the software Hail \cite{hail}. Then an LD pruned dataset was created. The specific filters that were used are listed below.."""
+		text=r"""Sample pair kinship coefficients were determined using KING \cite{king} relationship inference software, which offers a robust algorithm for relationship inference under population stratification. Prior to inferring relationships, we filtered variants with low callrate, variants with low minor allele frequency, variants with positions in known high LD regions \cite{umichHiLd}, and known Type 2 diabetes associated loci using the software Hail \cite{hail}. Then an LD pruned dataset was created. The specific filters that were used are listed below."""
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=r"""\begin{itemize}
@@ -33,14 +33,14 @@ def main(args=None):
 				m = a.split("___")[1]
 				df = pd.read_table(m, header=None)
 				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+					text1 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 				elif i < len(bim_list)-1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 				else:
 					if len(bim_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l + " variants"
+						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
 		else:
 			m = args.filtered_bim.split("___")[1]
 			df = pd.read_table(m, header=None)
@@ -58,14 +58,14 @@ def main(args=None):
 				df = pd.read_table(m)
 				df = df[df['Kinship'] > 0.4]
 				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + l
+					text1 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 				elif i < len(kin0_list)-1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l
+					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 				else:
 					if len(kin0_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l
+						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l
+						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 		else:
 			text1 = "{0:,d}".format(df.shape[0])
 		text=r"""In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data.""".format(text1)
@@ -86,14 +86,14 @@ def main(args=None):
 				else:
 					df = df[df[1] >= 10]
 				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + l
+					text1 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 				elif i < len(bim_list) -1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l
+					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 				else:
 					if len(bim_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l
+						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l
+						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 		else:
 			l = a.split("___")[0]
 			m = a.split("___")[1]
@@ -122,18 +122,18 @@ def main(args=None):
 					nnomatch = 0
 					nnoimpute = 0
 				if i == 1:
-					text_nomatch = str(nnomatch) + " " + l
-					text_noimpute = str(nnoimpute) + " " + l
+					text_nomatch = str(nnomatch) + " " + l.replace("_","\_")
+					text_noimpute = str(nnoimpute) + " " + l.replace("_","\_")
 				elif i < len(sex_list) -1:
-					text_nomatch = text_nomatch + ", " + str(nnomatch) + " " + l
-					text_noimpute = text_noimpute + ", " + str(nnoimpute) + " " + l
+					text_nomatch = text_nomatch + ", " + str(nnomatch) + " " + l.replace("_","\_")
+					text_noimpute = text_noimpute + ", " + str(nnoimpute) + " " + l.replace("_","\_")
 				else:
 					if len(sex_list) == 2:
-						text_nomatch = text_nomatch + " and " + str(nnomatch) + " " + l
-						text_noimpute = text_noimpute + " and " + str(nnoimpute) + " " + l
+						text_nomatch = text_nomatch + " and " + str(nnomatch) + " " + l.replace("_","\_")
+						text_noimpute = text_noimpute + " and " + str(nnoimpute) + " " + l.replace("_","\_")
 					else:
-						text_nomatch = text_nomatch + ", and " + str(nnomatch) + " " + l
-						text_noimpute = text_noimpute + ", and " + str(nnoimpute) + " " + l
+						text_nomatch = text_nomatch + ", and " + str(nnomatch) + " " + l.replace("_","\_")
+						text_noimpute = text_noimpute + ", and " + str(nnoimpute) + " " + l.replace("_","\_")
 		else:
 			l = args.sexcheck_problems.split("___")[0]
 			m = args.sexcheck_problems.split("___")[1]

@@ -21,14 +21,14 @@ def main(args=None):
 				with open(m) as mo:
 					failed = mo.read().splitlines()
 				if i == 1:
-					text1 = "{0:,d}".format(len(failed)) + " " + l + " variants"
+					text1 = "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
 				elif i < len(var_list)-1:
-					text1 = text1 + ", " + "{0:,d}".format(len(failed)) + " " + l + " variants"
+					text1 = text1 + ", " + "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
 				else:
 					if len(var_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(len(failed)) + " " + l + " variants"
+						text1 = text1 + " and " + "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(len(failed)) + " " + l + " variants"
+						text1 = text1 + ", and " + "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
 		else:
 			l = args.variant_exclusions.split("___")[0]
 			m = args.variant_exclusions.split("___")[1]

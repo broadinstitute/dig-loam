@@ -29,7 +29,7 @@ i <- 0
 for(f in unlist(strsplit(args$cluster_in,','))) {
 	i <- i + 1
 	l<-unlist(strsplit(f,"___"))[1]
-	cat(paste(l,"\t{}\t{}\t{}\n",sep=""),file=args$cluster_out,append=T)
+	cat(paste(gsub("_","\\\\_",l),"\t{}\t{}\t{}\n",sep=""),file=args$cluster_out,append=T)
 	for(x in c("AFR","AMR","EAS","EUR","SAS")) {
 		if(is.na(clusters[[l]]$V2[clusters[[l]]$V1 == x])) {
 			cat("{}\t",x,"\tNA\t0\n",file=args$cluster_out,append=T)
