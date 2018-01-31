@@ -24,6 +24,7 @@ val nMetrics = sampleQcMetrics.size
 val qcReportAuthors = dataConfig.getStrList("qcReportAuthors").mkString(",")
 val analysisReportAuthors = dataConfig.getStrList("analysisReportAuthors").mkString(",")
 val analysisReportAcknowledgements = dataConfig.getStrList("analysisReportAcknowledgements").mkString(",")
+val ancestryInferenceFeatures = if (dataConfig.isDefined("ancestryInferenceFeatures")) { "1" * dataConfig.getInt("ancestryInferenceFeatures") + "0" * (20 - dataConfig.getInt("ancestryInferenceFeatures")) } else { "1" * 3 + "0" * (20 - 3) }
 
 // generate list of tuples that define each model
 var modelSeq: Seq[(String, String, String, String, String, String, Int)] = Seq()
@@ -1834,7 +1835,7 @@ def qc1(i: Int): Store = {
   
   uger {
 
-    cmd"""(echo 3; sed '1d' ${paramsArr.ancestryPcaScores} | cut -f4-6 | sed 's/\t/ /g') > ${paramsArr.ancestryClusterFet}"""
+    cmd"""(echo 20; sed '1d' ${paramsArr.ancestryPcaScores} | cut -f4- | sed 's/\t/ /g') > ${paramsArr.ancestryClusterFet}"""
       .in(paramsArr.ancestryPcaScores)
       .out(paramsArr.ancestryClusterFet)
       .named(s"${paramsArr.ancestryClusterFet}".split("/").last)
@@ -1843,7 +1844,7 @@ def qc1(i: Int): Store = {
 
   ugerWith(mem=8) {
   
-    cmd"""$binKlustakwik ${paramsArr.ancestryClusterName} 1 -UseFeatures 111 -UseDistributional 0 > ${paramsArr.ancestryClusterLog}"""
+    cmd"""$binKlustakwik ${paramsArr.ancestryClusterName} 1 -UseFeatures $ancestryInferenceFeatures -UseDistributional 0 > ${paramsArr.ancestryClusterLog}"""
       .in(paramsArr.ancestryClusterFet)
       .out(paramsArr.ancestryClusterClu, paramsArr.ancestryClusterKlg, paramsArr.ancestryClusterLog)
       .named(s"${paramsArr.ancestryClusterName}.binKlustakwik".split("/").last)
