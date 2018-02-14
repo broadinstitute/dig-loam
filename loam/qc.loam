@@ -20,16 +20,44 @@ val phenoSrSex = dataConfig.getStr("phenoSrSex")
 val phenoSrRace = dataConfig.getStr("phenoSrRace")
 val phenoStatus = dataConfig.getStr("phenoStatus")
 val nArrays = dataConfig.getObjList("arrays").size
+val nCohorts = dataConfig.getObjList("strategy").getObjList("cohorts").size
+val nPhases = dataConfig.getObjList("phases").size
 val nMetrics = sampleQcMetrics.size
 val qcReportAuthors = dataConfig.getStrList("qcReportAuthors").mkString(",")
 val analysisReportAuthors = dataConfig.getStrList("analysisReportAuthors").mkString(",")
 val analysisReportAcknowledgements = dataConfig.getStrList("analysisReportAcknowledgements").mkString(",")
 val ancestryInferenceFeatures = if (dataConfig.isDefined("ancestryInferenceFeatures")) { "1" * dataConfig.getInt("ancestryInferenceFeatures") + "0" * (20 - dataConfig.getInt("ancestryInferenceFeatures")) } else { "1" * 3 + "0" * (20 - 3) }
 
-// generate list of tuples that define each model
-var modelSeq: Seq[(String, String, String, String, String, String, Int)] = Seq()
+//// generate list of tuples that define each cohort model
+//var modelSeq: Seq[(String, String, String, String, String, String, Int)] = Seq()
+//val phases = dataConfig.getObjList("phases")
+//for { i <- 0 until phases.size } 
+//  {
+//    for { j <- 0 until phases(i).getObjList("phenotypes").size }
+//      {
+//        for { test <- phases(i).getObjList("phenotypes")(j).getStrList("tests") }
+//          {
+//            for { covars <- phases(i).getObjList("phenotypes")(j).getStrList("covars") }
+//              {
+//                modelSeq = modelSeq :+ (
+//                  (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
+//                    phases(i).getObjList("phenotypes")(j).getStr("trans"),
+//                    test,
+//                    covars,
+//                    phases(i).getStr("strat"),
+//                    phases(i).getObjList("phenotypes")(j).getStr("ancestryKeep"),
+//                    i + 1)
+//                  )
+//              }
+//          }
+//      }
+//  }
+
+// generate list of tuples that define each cohort-level model
+var modelSeq: Seq[(String, String, String, String, String, String, Seq[String], Boolean, Int)] = Seq()
 val phases = dataConfig.getObjList("phases")
-for { i <- 0 until phases.size } 
+val strategy = dataConfig.getObjList("strategy")
+for { i <- 0 until nPhases } 
   {
     for { j <- 0 until phases(i).getObjList("phenotypes").size }
       {
@@ -37,41 +65,78 @@ for { i <- 0 until phases.size }
           {
             for { covars <- phases(i).getObjList("phenotypes")(j).getStrList("covars") }
               {
-                modelSeq = modelSeq :+ (
-                  (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
-                    phases(i).getObjList("phenotypes")(j).getStr("trans"),
-                    test,
-                    covars,
-                    phases(i).getStr("strat"),
-                    phases(i).getObjList("phenotypes")(j).getStr("ancestryKeep"),
-                    i + 1)
-                  )
+                for { k <- 0 until nCohorts }
+
+                  modelSeq = modelSeq :+ (
+                    (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
+                      phases(i).getObjList("phenotypes")(j).getStr("trans"),
+                      test,
+                      covars,
+                      strategy.getObjList("cohorts")(k).getStr("id"),
+                      strategy.getObjList("cohorts")(k).getStr("array"),
+                      strategy.getObjList("cohorts")(k).getStrList("ancestry"),
+                      strategy.getObjList("cohorts")(k).getBool("report"),
+                      i + 1)
+                    )
+
+                }
               }
           }
       }
   }
 
+//// generate list of tuples that define each known loci table
+//var knownLociSeq: Seq[(String, String, String, String, String, String, String, String, Int, Int, Int)] = Seq()
+//for { i <- 0 until phases.size } 
+//  {
+//    for { j <- 0 until phases(i).getObjList("phenotypes").size }
+//      {
+//        for { k <- 0 until phases(i).getObjList("phenotypes")(j).getObjList("knownLoci").size }
+//          {
+//              knownLociSeq = knownLociSeq :+ (
+//                (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
+//                  phases(i).getObjList("phenotypes")(j).getStr("trans"),
+//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("test"),
+//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("covars"),
+//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("pop"),
+//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("hiLd"),
+//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("data"),
+//                  i + 1,
+//                  j + 1,
+//                  k + 1)
+//                )
+//          }
+//      }
+//  }
+
 // generate list of tuples that define each known loci table
-var knownLociSeq: Seq[(String, String, String, String, String, String, String, String, Int, Int, Int)] = Seq()
-for { i <- 0 until phases.size } 
+var knownLociSeq: Seq[(String, String, String, String, String, String, String, String, String, Boolean, Int, Int, Int)] = Seq()
+for { i <- 0 until nPhases } 
   {
     for { j <- 0 until phases(i).getObjList("phenotypes").size }
       {
         for { k <- 0 until phases(i).getObjList("phenotypes")(j).getObjList("knownLoci").size }
           {
-            knownLociSeq = knownLociSeq :+ (
-              (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
-                phases(i).getObjList("phenotypes")(j).getStr("trans"),
-                phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("test"),
-                phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("covars"),
-                phases(i).getStr("strat"),
-                phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("pop"),
-                phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("hiLd"),
-                phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("data"),
-                i + 1,
-                j + 1,
-                k + 1)
-              )  
+            for { l <- 0 until nCohorts }
+              {
+                
+                knownLociSeq = knownLociSeq :+ (
+                  (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
+                    phases(i).getObjList("phenotypes")(j).getStr("trans"),
+                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("test"),
+                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("covars"),
+                    strategy.getObjList("cohorts")(l).getStr("id"),
+                    strategy.getObjList("cohorts")(l).getStr("array"),
+                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("ancestry"),
+                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("hiLd"),
+                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("data"),
+                    strategy.getObjList("cohorts")(l).getBool("report"),
+                    i + 1,
+                    j + 1,
+                    k + 1)
+                  )
+
+              }
           }
       }
   }
@@ -125,11 +190,13 @@ object Params {
   
   final case class Model(
     modelPheno: String,
+    modelTrans: String,
     modelTest: String,
     modelCovars: String,
-    modelTrans: String,
-    modelStrat: String,
-    modelAncestryKeep: String,
+    modelId: String,
+    modelArray: String,
+    modelAncestry: Seq[String],
+    modelReport: Boolean,
     modelPhase: Int,
     modelPhenoPrelimFile: Store,
     modelPhenoPrelimFileCloud: Store,
@@ -144,33 +211,34 @@ object Params {
     modelResultsTbi: Store,
     modelResultsCloud: Store)
   
-  final case class Result(
-    resultPheno: String,
-    resultTest: String,
-    resultCovars: String,
-    resultTrans: String,
-    resultStrat: String,
-    resultFinal: Store,
-    resultFinalTop1000: Store,
-    resultFinalTop1000Genes: Store,
-    resultFinalTop20AnnotAlignedRisk: Store,
-    resultFinalTbi: Store,
-    resultFinalCloud: Store,
-    resultFinalQqPlot: Store,
-    resultFinalMhtPlot: Store,
-    resultFinalSigRegions: Store,
-    resultFinalRegplotBase: String,
-    resultFinalRegplotName: Path)
+  //final case class Result(
+  //  resultPheno: String,
+  //  resultTest: String,
+  //  resultCovars: String,
+  //  resultTrans: String,
+  //  resultFinal: Store,
+  //  resultFinalTop1000: Store,
+  //  resultFinalTop1000Genes: Store,
+  //  resultFinalTop20AnnotAlignedRisk: Store,
+  //  resultFinalTbi: Store,
+  //  resultFinalCloud: Store,
+  //  resultFinalQqPlot: Store,
+  //  resultFinalMhtPlot: Store,
+  //  resultFinalSigRegions: Store,
+  //  resultFinalRegplotBase: String,
+  //  resultFinalRegplotName: Path)
 
   final case class KnownLoci(
     knownLociPhenoName: String,
     knownLociTrans: String,
     knownLociTest: String,
     knownLociCovars: String,
-    knownLociStrat: String,
-    knownLociPop: String,
+    knownLociId: String,
+    knownLociArray: String,
+    knownLociAncestry: Seq[String],
     knownLociHiLd: Store,
     knownLociHiLdCloud: Store,
+    knownLociReport: Boolean,
     knownLociPhase: Int,
     knownLociPhenoPrelimFile: Store,
     knownLociPhenoPrelimFileCloud: Store,
@@ -184,27 +252,34 @@ object Params {
     knownLociResults: Store,
     knownLociResultsCloud: Store)
 
-  final case class ResultKnownLoci(
-    resultKnownLociPhenoName: String,
-    resultKnownLociTrans: String,
-    resultKnownLociTest: String,
-    resultKnownLociCovars: String,
-    resultKnownLociStrat: String,
-    resultKnownLociPop: String,
-    resultKnownLociHiLd: Store,
-    resultKnownLociData: Store,
-    resultKnownLociN: String,
-    resultKnownLociCase: String,
-    resultKnownLociCtrl: String,
-    resultKnownLociDesc: String,
-    resultKnownLociTag: String,
-    resultKnownLociCitation: String,
-    resultKnownLociPhase: Int,
-    resultKnownLociPhenoNum: Int,
-    resultKnownLociKnownLociNum: Int,
-    resultKnownLociFinal: Store,
-    resultKnownLociFinalCloud: Store,
-    resultKnownLociFinalTop50Known: Store)
+  //final case class ResultKnownLoci(
+  //  resultKnownLociPhenoName: String,
+  //  resultKnownLociTrans: String,
+  //  resultKnownLociTest: String,
+  //  resultKnownLociCovars: String,
+  //  resultKnownLociPop: String,
+  //  resultKnownLociHiLd: Store,
+  //  resultKnownLociData: Store,
+  //  resultKnownLociN: String,
+  //  resultKnownLociCase: String,
+  //  resultKnownLociCtrl: String,
+  //  resultKnownLociDesc: String,
+  //  resultKnownLociTag: String,
+  //  resultKnownLociCitation: String,
+  //  resultKnownLociPhase: Int,
+  //  resultKnownLociPhenoNum: Int,
+  //  resultKnownLociKnownLociNum: Int,
+  //  resultKnownLociFinal: Store,
+  //  resultKnownLociFinalCloud: Store,
+  //  resultKnownLociFinalTop50Known: Store)
+
+  final case class Cohort(
+    paramsByCohortByModel: Seq[(Int, Model)],
+    paramsByArrByKnownLoci: Seq[(Int, KnownLoci)],
+    paramsByArrByMetric: Seq[(Int, Metric)],
+    paramsByArrByChrSorted: Seq[Chr],
+    paramsByCohortByModelSorted: Seq[Model],
+    paramsByArrByKnownLociSorted: Seq[KnownLoci])
 
   final case class Arr(
     arrayId: String,
@@ -255,12 +330,8 @@ object Params {
     harmRefFiltPrunedCloud: Seq[Store],
     harmRefFiltPrunedVdsCloud: Store,
     paramsByArrByChr: Seq[(Int, Chr)],
-    paramsByArrByModel: Seq[(Int, Model)],
-    paramsByArrByKnownLoci: Seq[(Int, KnownLoci)],
     paramsByArrByMetric: Seq[(Int, Metric)],
     paramsByArrByChrSorted: Seq[Chr],
-    paramsByArrByModelSorted: Seq[Model],
-    paramsByArrByKnownLociSorted: Seq[KnownLoci],
     paramsByArrByMetricSorted: Seq[Metric],
     harmMergeLines: Seq[String],
     harmMergeList: Store,
@@ -344,74 +415,162 @@ object Params {
     cleanVcfTbi: Store,
     cleanVdsCloud: Store)
 
-  val paramsByResult: Seq[(Int, Result)] = (0 until modelSeq.size).map { result =>
+  //val paramsByResult: Seq[(Int, Result)] = (0 until modelSeq.size).map { result =>
+  //
+  //  val resultPheno = modelSeq(result)._1
+  //  val resultTrans = modelSeq(result)._2
+  //  val resultTest = modelSeq(result)._3
+  //  val resultCovars = modelSeq(result)._4
+  //
+  //  val covarsString = resultCovars.replace("+","_")
+  //  val resultFinalRegplotBase = s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.regplot"
+  //
+  //  result -> Result(
+  //    resultPheno = resultPheno,
+  //    resultTest = resultTest,
+  //    resultCovars = resultCovars,
+  //    resultTrans = resultTrans,
+  //    resultFinal = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.tsv.bgz"),
+  //    resultFinalTbi = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.tsv.bgz.tbi"),
+  //    resultFinalTop1000 = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.top1000.tsv"),
+  //    resultFinalTop1000Genes = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.top1000.genes.tsv"),
+  //    resultFinalTop20AnnotAlignedRisk = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.top20.annot.aligned_risk.tsv"),
+  //    resultFinalCloud = store.at(googleOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.tsv.bgz"),
+  //    resultFinalQqPlot = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.qq.png"),
+  //    resultFinalMhtPlot = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.mht.png"),
+  //    resultFinalSigRegions = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.sigregions.tsv"),
+  //    resultFinalRegplotBase = resultFinalRegplotBase,
+  //    resultFinalRegplotName = localOutDir / resultFinalRegplotBase)
+  //
+  //}
   
-    val resultPheno = modelSeq(result)._1
-    val resultTrans = modelSeq(result)._2
-    val resultTest = modelSeq(result)._3
-    val resultCovars = modelSeq(result)._4
-    val resultStrat = modelSeq(result)._5
-  
-    val covarsString = resultCovars.replace("+","_")
-    val resultFinalRegplotBase = s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.regplot"
-  
-    result -> Result(
-      resultPheno = resultPheno,
-      resultTest = resultTest,
-      resultCovars = resultCovars,
-      resultTrans = resultTrans,
-      resultStrat = resultStrat,
-      resultFinal = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.tsv.bgz"),
-      resultFinalTbi = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.tsv.bgz.tbi"),
-      resultFinalTop1000 = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.top1000.tsv"),
-      resultFinalTop1000Genes = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.top1000.genes.tsv"),
-      resultFinalTop20AnnotAlignedRisk = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.top20.annot.aligned_risk.tsv"),
-      resultFinalCloud = store.at(googleOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.results.tsv.bgz"),
-      resultFinalQqPlot = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.qq.png"),
-      resultFinalMhtPlot = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.mht.png"),
-      resultFinalSigRegions = store.at(localOutDir / s"${projectId}.assoc.$resultPheno.$resultTrans.$covarsString.$resultTest.sigregions.tsv"),
-      resultFinalRegplotBase = resultFinalRegplotBase,
-      resultFinalRegplotName = localOutDir / resultFinalRegplotBase)
-  
-  }
-  
-  val paramsByResultKnownLoci: Seq[(Int, ResultKnownLoci)] = (0 until knownLociSeq.size).map { resultKnownLoci =>
+  //val paramsByResultKnownLoci: Seq[(Int, ResultKnownLoci)] = (0 until knownLociSeq.size).map { resultKnownLoci =>
+  //
+  //  val resultKnownLociPhenoName = knownLociSeq(resultKnownLoci)._1
+  //  val resultKnownLociTrans = knownLociSeq(resultKnownLoci)._2
+  //  val resultKnownLociTest = knownLociSeq(resultKnownLoci)._3
+  //  val resultKnownLociCovars = knownLociSeq(resultKnownLoci)._4
+  //  val resultKnownLociPop = knownLociSeq(resultKnownLoci)._5
+  //  val resultKnownLociHiLdString = knownLociSeq(resultKnownLoci)._6
+  //  val resultKnownLociDataString = knownLociSeq(resultKnownLoci)._7
+  //  val resultKnownLociPhase = knownLociSeq(resultKnownLoci)._8
+  //  val resultKnownLociPhenoNum = knownLociSeq(resultKnownLoci)._9
+  //  val resultKnownLociKnownLociNum = knownLociSeq(resultKnownLoci)._10
+  //
+  //  val knownLociCovarsString = resultKnownLociCovars.replace("+","_")
+  //
+  //  resultKnownLoci -> ResultKnownLoci(
+  //    resultKnownLociPhenoName = resultKnownLociPhenoName,
+  //    resultKnownLociTrans = resultKnownLociTrans,
+  //    resultKnownLociTest = resultKnownLociTest,
+  //    resultKnownLociCovars = resultKnownLociCovars,
+  //    resultKnownLociPop = resultKnownLociPop,
+  //    resultKnownLociHiLd = store.at(path(resultKnownLociHiLdString)).asInput,
+  //    resultKnownLociData = store.at(path(resultKnownLociDataString)).asInput,
+  //    resultKnownLociN = if (dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).isDefined("n")) { dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("n") } else { "" },
+  //    resultKnownLociCase = if (dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).isDefined("nCase")) { dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("nCase") } else { "" },
+  //    resultKnownLociCtrl = if (dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).isDefined("nCtrl")) { dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("nCtrl") } else { "" },
+  //    resultKnownLociDesc = dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("desc"),
+  //    resultKnownLociTag = dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("tag"),
+  //    resultKnownLociCitation = dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("citation"),
+  //    resultKnownLociPhase = resultKnownLociPhase,
+  //    resultKnownLociPhenoNum = resultKnownLociPhenoNum,
+  //    resultKnownLociKnownLociNum = resultKnownLociKnownLociNum,
+  //    resultKnownLociFinal = store.at(localOutDir / s"${projectId}.assoc.$resultKnownLociPhenoName.$resultKnownLociTrans.$knownLociCovarsString.$resultKnownLociTest.results.known_loci.tsv"),
+  //    resultKnownLociFinalCloud = store.at(googleOutDir / s"${projectId}.assoc.$resultKnownLociPhenoName.$resultKnownLociTrans.$knownLociCovarsString.$resultKnownLociTest.results.known_loci.tsv"),
+  //    resultKnownLociFinalTop50Known = store.at(localOutDir / s"${projectId}.assoc.$resultKnownLociPhenoName.$resultKnownLociTrans.$knownLociCovarsString.$resultKnownLociTest.results.known_loci.top50.tsv"))
+  //
+  //}
 
-    val resultKnownLociPhenoName = knownLociSeq(resultKnownLoci)._1
-    val resultKnownLociTrans = knownLociSeq(resultKnownLoci)._2
-    val resultKnownLociTest = knownLociSeq(resultKnownLoci)._3
-    val resultKnownLociCovars = knownLociSeq(resultKnownLoci)._4
-    val resultKnownLociStrat = knownLociSeq(resultKnownLoci)._5
-    val resultKnownLociPop = knownLociSeq(resultKnownLoci)._6
-    val resultKnownLociHiLdString = knownLociSeq(resultKnownLoci)._7
-    val resultKnownLociDataString = knownLociSeq(resultKnownLoci)._8
-    val resultKnownLociPhase = knownLociSeq(resultKnownLoci)._9
-    val resultKnownLociPhenoNum = knownLociSeq(resultKnownLoci)._10
-    val resultKnownLociKnownLociNum = knownLociSeq(resultKnownLoci)._11
+  val paramsByCohort: Seq[(Int, Cohort)] = (0 until nCohorts).map { cohort =>
 
-    val knownLociCovarsString = resultKnownLociCovars.replace("+","_")
+    val paramsByCohortByModel = (0 until modelSeq.size).map { model =>
+    
+      val modelPheno = modelSeq(model)._1
+      val modelTrans = modelSeq(model)._2
+      val modelTest = modelSeq(model)._3
+      val modelCovars = modelSeq(model)._4
+      val modelId = modelSeq(model)._5
+      val modelArray = modelSeq(model)._6
+      val modelAncestry = modelSeq(model)._7
+      val modelReport = modelSeq(model)._8
+      val modelPhase = modelSeq(model)._9
+    
+      val modelCovarsString = modelCovars.replace("+","_")
+    
+      model -> Model(
+        modelPheno = modelPheno,
+        modelTrans = modelTrans,
+        modelTest = modelTest,
+        modelCovars = modelCovars,
+        modelId = modelId,
+        modelArray = modelArray,
+        modelAncestry = modelAncestry,
+        modelReport = modelReport,
+        modelPhase = modelPhase,
+        modelPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
+        modelPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
+        modelSamplesInclude = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
+        modelSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
+        modelPhenoFileLog = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.log"),
+        modelPhenoFile = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
+        modelPcsFile = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
+        modelPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
+        modelPcsFileCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
+        modelResults = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"),
+        modelResultsTbi = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz.tbi"),
+        modelResultsCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"))
+    
+    }
 
-    resultKnownLoci -> ResultKnownLoci(
-      resultKnownLociPhenoName = resultKnownLociPhenoName,
-      resultKnownLociTrans = resultKnownLociTrans,
-      resultKnownLociTest = resultKnownLociTest,
-      resultKnownLociCovars = resultKnownLociCovars,
-      resultKnownLociStrat = resultKnownLociStrat,
-      resultKnownLociPop = resultKnownLociPop,
-      resultKnownLociHiLd = store.at(path(resultKnownLociHiLdString)).asInput,
-      resultKnownLociData = store.at(path(resultKnownLociDataString)).asInput,
-      resultKnownLociN = if (dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).isDefined("n")) { dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("n") } else { "" },
-      resultKnownLociCase = if (dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).isDefined("nCase")) { dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("nCase") } else { "" },
-      resultKnownLociCtrl = if (dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).isDefined("nCtrl")) { dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("nCtrl") } else { "" },
-      resultKnownLociDesc = dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("desc"),
-      resultKnownLociTag = dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("tag"),
-      resultKnownLociCitation = dataConfig.getObjList("phases")(resultKnownLociPhase - 1).getObjList("phenotypes")(resultKnownLociPhenoNum - 1).getObjList("knownLoci")(resultKnownLociKnownLociNum - 1).getStr("citation"),
-      resultKnownLociPhase = resultKnownLociPhase,
-      resultKnownLociPhenoNum = resultKnownLociPhenoNum,
-      resultKnownLociKnownLociNum = resultKnownLociKnownLociNum,
-      resultKnownLociFinal = store.at(localOutDir / s"${projectId}.assoc.$resultKnownLociPhenoName.$resultKnownLociTrans.$knownLociCovarsString.$resultKnownLociTest.results.known_loci.tsv"),
-      resultKnownLociFinalCloud = store.at(googleOutDir / s"${projectId}.assoc.$resultKnownLociPhenoName.$resultKnownLociTrans.$knownLociCovarsString.$resultKnownLociTest.results.known_loci.tsv"),
-      resultKnownLociFinalTop50Known = store.at(localOutDir / s"${projectId}.assoc.$resultKnownLociPhenoName.$resultKnownLociTrans.$knownLociCovarsString.$resultKnownLociTest.results.known_loci.top50.tsv"))
+    val paramsByCohortByKnownLoci = (0 until knownLociSeq.size).map { knownLoci =>
+
+      val knownLociPhenoName = knownLociSeq(knownLoci)._1
+      val knownLociTrans = knownLociSeq(knownLoci)._2
+      val knownLociTest = knownLociSeq(knownLoci)._3
+      val knownLociCovars = knownLociSeq(knownLoci)._4
+      val knownLociId = knownLociSeq(knownLoci)._5
+      val knownLociArray = knownLociSeq(knownLoci)._6
+      val knownLociAncestry = knownLociSeq(knownLoci)._7
+      val knownLociHiLdString = knownLociSeq(knownLoci)._8
+      val knownLociReport = knownLociSeq(knownLoci)._10
+      val knownLociPhase = knownLociSeq(knownLoci)._11
+
+      val knownLociCovarsString = knownLociCovars.replace("+","_")
+      val knownLociHiLdStringBase = knownLociHiLdString.split("/").last
+    
+      knownLoci -> KnownLoci(
+        knownLociPhenoName = knownLociPhenoName,
+        knownLociTrans = knownLociTrans,
+        knownLociTest = knownLociTest,
+        knownLociCovars = knownLociCovars,
+        knownLociId = knownLociId,
+        knownLociArray = knownLociArray,
+        knownLociAncestry = knownLociAncestry,
+        knownLociHiLd = store.at(path(knownLociHiLdString)).asInput,
+        knownLociHiLdCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.${knownLociHiLdStringBase}"),
+        knownLociReport = knownLociReport,
+        knownLociPhase = knownLociPhase,
+        knownLociPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
+        knownLociPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
+        knownLociSamplesInclude = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
+        knownLociSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
+        knownLociPhenoFileLog = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.log"),
+        knownLociPhenoFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
+        knownLociPcsFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
+        knownLociPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
+        knownLociPcsFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
+        knownLociResults = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"),
+        knownLociResultsCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"))
+
+    }
+
+    val (_, paramsByCohortByModelSorted) = paramsByCohortByModel.unzip
+    val (_, paramsByArrByKnownLociSorted) = paramsByArrByKnownLoci.unzip
+
+    cohort -> Cohort(
+      paramsByCohortByModelSorted = paramsByCohortByModelSorted,
+      paramsByArrByKnownLociSorted = paramsByArrByKnownLociSorted)
 
   }
 
@@ -476,79 +635,6 @@ object Params {
         harmKgChrVarSnpLog = store.at(localOutDir / s"${harmKgChrBase}_snpLog.log"),
         harmMergeLine = s"${localOutDir}/${harmKgChrBase}")
     }
-    
-    val paramsByArrByModel = (0 until modelSeq.size).map { model =>
-    
-      val modelPheno = modelSeq(model)._1
-      val modelTrans = modelSeq(model)._2
-      val modelTest = modelSeq(model)._3
-      val modelCovars = modelSeq(model)._4
-      val modelStrat = modelSeq(model)._5
-      val modelAncestryKeep = modelSeq(model)._6
-      val modelPhase = modelSeq(model)._7
-    
-      val modelCovarsString = modelCovars.replace("+","_")
-    
-      model -> Model(
-        modelPheno = modelPheno,
-        modelTest = modelTest,
-        modelCovars = modelCovars,
-        modelTrans = modelTrans,
-        modelStrat = modelStrat,
-        modelPhase = modelPhase,
-        modelAncestryKeep = modelAncestryKeep,
-        modelPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
-        modelPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
-        modelSamplesInclude = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
-        modelSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
-        modelPhenoFileLog = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.log"),
-        modelPhenoFile = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
-        modelPcsFile = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
-        modelPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
-        modelPcsFileCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
-        modelResults = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"),
-        modelResultsTbi = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz.tbi"),
-        modelResultsCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"))
-    
-    }
-
-    val paramsByArrByKnownLoci = (0 until knownLociSeq.size).map { knownLoci =>
-
-      val knownLociPhenoName = knownLociSeq(knownLoci)._1
-      val knownLociTrans = knownLociSeq(knownLoci)._2
-      val knownLociTest = knownLociSeq(knownLoci)._3
-      val knownLociCovars = knownLociSeq(knownLoci)._4
-      val knownLociStrat = knownLociSeq(knownLoci)._5
-      val knownLociPop = knownLociSeq(knownLoci)._6
-      val knownLociHiLdString = knownLociSeq(knownLoci)._7
-      val knownLociPhase = knownLociSeq(knownLoci)._9
-
-      val knownLociCovarsString = knownLociCovars.replace("+","_")
-      val knownLociHiLdStringBase = knownLociHiLdString.split("/").last
-    
-      knownLoci -> KnownLoci(
-        knownLociPhenoName = knownLociPhenoName,
-        knownLociTrans = knownLociTrans,
-        knownLociTest = knownLociTest,
-        knownLociCovars = knownLociCovars,
-        knownLociStrat = knownLociStrat,
-        knownLociPop = knownLociPop,
-        knownLociHiLd = store.at(path(knownLociHiLdString)).asInput,
-        knownLociHiLdCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.${knownLociHiLdStringBase}"),
-        knownLociPhase = knownLociPhase,
-        knownLociPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
-        knownLociPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
-        knownLociSamplesInclude = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
-        knownLociSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
-        knownLociPhenoFileLog = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.log"),
-        knownLociPhenoFile = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
-        knownLociPcsFile = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
-        knownLociPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
-        knownLociPcsFileCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
-        knownLociResults = store.at(localOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"),
-        knownLociResultsCloud = store.at(googleOutDir / s"${projectId}.${arrayId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"))
-
-    }
 
     val sampleqcBase = s"${projectId}.${arrayId}.sampleqc"
     val sampleqcStatsAdjBase = s"${sampleqcBase}.stats.adj"
@@ -596,8 +682,6 @@ object Params {
   
     val (_, paramsByArrByChrSorted) = paramsByArrByChr.unzip
     val harmMergeLines = paramsByArrByChrSorted.map(_.harmKgHuRefChrName.toString)
-    val (_, paramsByArrByModelSorted) = paramsByArrByModel.unzip
-    val (_, paramsByArrByKnownLociSorted) = paramsByArrByKnownLoci.unzip
     val (_, paramsByArrByMetricSorted) = paramsByArrByMetric.unzip
     val sampleqcStatsAdjIndClusterCluList = paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu.toString)
   
@@ -624,8 +708,6 @@ object Params {
     arrayDataPreparedAnnotatedName = if (arrayDataLift) arrayDataPreparedAnnotatedName else arrayDataPreparedName,
     arrayDataPreparedAnnotated = if (arrayDataLift) bedBimFam(arrayDataPreparedAnnotatedName) else arrayDataPrepared,
     paramsByArrByChr = paramsByArrByChr,
-    paramsByArrByModel = paramsByArrByModel,
-    paramsByArrByKnownLoci = paramsByArrByKnownLoci,
     paramsByArrByMetric = paramsByArrByMetric,
     harmName = harmName,
     harm = bedBimFam(harmName),
@@ -644,8 +726,6 @@ object Params {
     harmRefVcfTbiCloud = store.at(googleOutDir / s"${harmRefBase}.vcf.gz.tbi"),
     harmRefVdsCloud = store.at(googleOutDir / s"${harmRefBase}.vds"),
     paramsByArrByChrSorted = paramsByArrByChrSorted,
-    paramsByArrByModelSorted = paramsByArrByModelSorted,
-    paramsByArrByKnownLociSorted = paramsByArrByKnownLociSorted,
     paramsByArrByMetricSorted = paramsByArrByMetricSorted,
     harmMergeLines = harmMergeLines,
     sampleqcStatsAdjIndClusterCluList = sampleqcStatsAdjIndClusterCluList,
@@ -740,6 +820,7 @@ object Params {
     cleanVdsCloud = store.at(googleOutDir / s"${cleanBase}.vds"))
   }
 
+  val (_, paramsByCohortSorted) = paramsByCohort.unzip
   val (_, paramsByArrSorted) = paramsByArr.unzip
   val (_, paramsByResultSorted) = paramsByResult.unzip
   val (_, paramsByResultKnownLociSorted) = paramsByResultKnownLoci.unzip
@@ -779,640 +860,649 @@ uger {
 
 }
 
-// Perform qc2, adding relevent (inter-array) stores to the map
+// Perform qc2
+for {
+  i <- 0 until nArrays
+} yield { 
+
+  qc2(i)
+
+}
+
+// Perform variant association for each cohort, adding relevent (inter-array) stores to the map
 val resultsStoresMapsList: Seq[Map[(String, String, String, String, String), Store]] = {
 
   for {
-    i <- 0 until nArrays
+    i <- 0 until nCohorts
   } yield { 
 
-    qc2(i)
+    variantAssociation(i)
 
   }
 
 }
 
-// Merge results step
-for {
-  i <- 0 until modelSeq.size
-} {
+//// Merge results
+//for {
+//  i <- 0 until modelSeq.size
+//} {
+//
+//  mergeResults(i)
+//
+//}
 
-  mergeResults(i)
-
-}
-
-// Perform qc2, adding relevent (inter-array) stores to the map
+// Perform known loci association, adding relevent (inter-array) stores to the map
 val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, String, String), Store]] = {
 
   for {
-    i <- 0 until nArrays
+    i <- 0 until nCohorts
   } yield { 
 
-    qc3(i)
+    knownLociAssociation(i)
 
   }
 
 }
 
-// Merge results step
-for {
-  i <- 0 until knownLociSeq.size
-} {
+//// Merge known loci
+//for {
+//  i <- 0 until knownLociSeq.size
+//} {
+//
+//  mergeKnownLoci(i)
+//
+//}
 
-  mergeKnownLoci(i)
-
-}
-
-// Generate regional plots after merge results step
-andThen {
-
-  val resultsFinalRegplots: Seq[Seq[Store]] = {
-
-    for {
-      i <- 0 until modelSeq.size
-    } yield { 
-
-      plotSigRegions(i)
-
-    }
-
-  }
-
-  // Generate qc report files
-  val reportQcIntro = store.at(localOutDir / s"${projectId}.qcreport.intro.tex")
-  val reportQcData = store.at(localOutDir / s"${projectId}.qcreport.data.tex")
-  val reportQcAncestry = store.at(localOutDir / s"${projectId}.qcreport.ancestry.tex")
-  val reportQcIbdSexcheck = store.at(localOutDir / s"${projectId}.qcreport.ibd_sexcheck.tex")
-  val reportQcSampleqc = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.tex")
-  val reportQcVariantqc = store.at(localOutDir / s"${projectId}.qcreport.variantqc.tex")
-  val reportQcBibliography = store.at(localOutDir / s"${projectId}.qcreport.bibliography.tex")
-  val reportQcTex = store.at(localOutDir / s"${projectId}.qcreport.tex")
-  val reportQcPdf = store.at(localOutDir / s"${projectId}.qcreport.pdf")
-  val reportQcSampleUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.pdf")
-  val reportQcSampleUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.png")
-  val reportQcVariantsRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.pdf")
-  val reportQcVariantsRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.png")
-  val reportQcSamplesRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.pdf")
-  val reportQcSamplesRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.png")
-  val reportQcVariantUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.pdf")
-  val reportQcVariantUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.png")
-  val reportQcSampleqcTable = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.tbl")
-  val reportQcVariantSummaryTable = store.at(localOutDir / s"${projectId}.qcreport.variants.summary.tbl")
-  val reportQcAncestryClusterTable = store.at(localOutDir / s"${projectId}.qcreport.ancestry.clusters.tbl")
-  val reportQcAncestryFinalTable = store.at(localOutDir / s"${projectId}.qcreport.ancestry.final.tbl")
-  val sampleQcMetricDistUnadjPdf = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_unadj.pdf")
-  val sampleQcMetricDistAdjPdf = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_adj.pdf")
-  val sampleQcMetricDistUnadjPng = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_unadj.png")
-  val sampleQcMetricDistAdjPng = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_adj.png")
-  var arrayDataStrings = Seq[String]()
-  var harmRefFamStrings = Seq[String]()
-  var harmRefBimStrings = Seq[String]()
-  var arrayFrqStrings = Seq[String]()
-  var arrayIndelStrings = Seq[String]()
-  var arrayMultiStrings = Seq[String]()
-  var arrayDuplStrings = Seq[String]()
-  var arrayMergedKgBims = Seq[String]()
-  var arrayClusterGroups = Seq[String]()
-  var arrayAncestryInferred = Seq[String]()
-  var arrayPcaScoresPlots = Seq[String]()
-  var arrayClusterPlots = Seq[String]()
-  var arrayharmRefFilteredBims = Seq[String]()
-  var arrayKin0Related = Seq[String]()
-  var arrayFamsizes = Seq[String]()
-  var arraySexcheckProblems = Seq[String]()
-  var arraySampleqcOutliers = Seq[String]()
-  var arrayFinalSampleExclusions = Seq[String]()
-  var arrayFinalVariantExclusions = Seq[String]()
-  var arraySampleqcOutlierPlots = Seq[String]()
-  var arrayCleanFamStrings = Seq[String]()
-  var arrayCleanBimStrings = Seq[String]()
-
-  for { 
-    i <- 0 until nArrays
-  } {
-
-    val (_, paramsArr) = Params.paramsByArr(i)
-
-    arrayDataStrings = arrayDataStrings :+ paramsArr.arrayDataType + "___" + paramsArr.arrayDataPath
-    harmRefFamStrings = harmRefFamStrings :+ paramsArr.arrayId + "___" + paramsArr.harmRefName + ".fam"
-    harmRefBimStrings = harmRefBimStrings :+ paramsArr.arrayId + "___" + paramsArr.harmRefName + ".bim"
-
-    arrayFrqStrings = arrayFrqStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataRawFreq.toString.split("@")(1)}"
-    arrayMultiStrings = arrayMultiStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataPreparedMultiallelic.toString.split("@")(1)}"
-    arrayIndelStrings = arrayIndelStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataRawIndel.toString.split("@")(1)}"
-    arrayDuplStrings = arrayDuplStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataRawDupRemove.toString.split("@")(1)}"
-
-    arrayMergedKgBims = arrayMergedKgBims :+ paramsArr.arrayId + "___" + s"${paramsArr.harmRef1kgName}.bim"
-    arrayClusterGroups = arrayClusterGroups :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryClusterGroups.toString.split("@")(1)}"
-    arrayAncestryInferred = arrayAncestryInferred :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryInferred.toString.split("@")(1)}"
-    arrayPcaScoresPlots = arrayPcaScoresPlots :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryPcaScoresPlotPc1VsPc2.toString.split("@")(1)}" + "___" + s"${paramsArr.ancestryPcaScoresPlotPc2VsPc3.toString.split("@")(1)}"
-    arrayClusterPlots = arrayClusterPlots :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryClusterPlotPc1VsPc2.toString.split("@")(1)}" + "___" + s"${paramsArr.ancestryClusterPlotPc2VsPc3.toString.split("@")(1)}"
-
-    arrayharmRefFilteredBims = arrayharmRefFilteredBims :+ paramsArr.arrayId + "___" + s"${paramsArr.harmRefFiltPrunedName}.bim"
-    arrayKin0Related = arrayKin0Related :+ paramsArr.arrayId + "___" + s"${paramsArr.kinKin0Related.toString.split("@")(1)}"
-    arrayFamsizes = arrayFamsizes :+ paramsArr.arrayId + "___" + s"${paramsArr.kinFamsizes.toString.split("@")(1)}"
-    arraySexcheckProblems = arraySexcheckProblems :+ paramsArr.arrayId + "___" + s"${paramsArr.sampleqcSexcheckProblems.toString.split("@")(1)}"
-
-    arraySampleqcOutliers = arraySampleqcOutliers :+ paramsArr.arrayId + "___" + s"${paramsArr.sampleqcStatsAdjOutliersTable.toString.split("@")(1)}"
-    arrayFinalSampleExclusions = arrayFinalSampleExclusions :+ paramsArr.arrayId + "___" + s"${paramsArr.finalSampleExclusions.toString.split("@")(1)}"
-    arrayFinalVariantExclusions = arrayFinalVariantExclusions :+ paramsArr.arrayId + "___" + s"${paramsArr.finalVariantExclusions.toString.split("@")(1)}"
-    arraySampleqcOutlierPlots = arraySampleqcOutlierPlots :+ paramsArr.arrayId + "___" + s"${paramsArr.sampleqcOutlierPlotPng.toString.split("@")(1)}"
-
-    arrayCleanFamStrings = arrayCleanFamStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.cleanName}.fam"
-    arrayCleanBimStrings = arrayCleanBimStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.cleanName}.bim"
-
-  }
-  
-  uger {
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rVariantsSummaryTable
-      --freq-in "${arrayFrqStrings.mkString(",")}"
-      --indel-in "${arrayIndelStrings.mkString(",")}"
-      --multi-in "${arrayMultiStrings.mkString(",")}"
-      --dupl-in "${arrayDuplStrings.mkString(",")}"
-      --out ${reportQcVariantSummaryTable}"""
-      .in(Params.paramsByArrSorted.map(_.arrayDataRawFreq) ++ Params.paramsByArrSorted.map(_.arrayDataPreparedMultiallelic) ++ Params.paramsByArrSorted.map(_.arrayDataRawIndel) ++ Params.paramsByArrSorted.map(_.arrayDataRawDupRemove))
-      .out(reportQcVariantSummaryTable)
-      .using("R-3.4")
-      .named(s"$reportQcVariantSummaryTable".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rUpsetplotBimFam
-      --input "${harmRefFamStrings.mkString(",")}"
-      --type fam
-      --out $reportQcSampleUpsetplotPdf"""
-      .in(Params.paramsByArrSorted.map(_.arrayData))
-      .out(reportQcSampleUpsetplotPdf)
-      .using("R-3.4")
-      .named(s"$reportQcSampleUpsetplotPdf".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSampleUpsetplotPdf}[0] $reportQcSampleUpsetplotPng"""
-      .in(reportQcSampleUpsetplotPdf)
-      .out(reportQcSampleUpsetplotPng)
-      .named(s"$reportQcSampleUpsetplotPng".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rUpsetplotBimFam
-      --input "${harmRefBimStrings.mkString(",")}"
-      --type bim
-      --out $reportQcVariantUpsetplotPdf"""
-      .in(Params.paramsByArrSorted.flatMap(_.harm))
-      .out(reportQcVariantUpsetplotPdf)
-      .using("R-3.4")
-      .named(s"$reportQcVariantUpsetplotPdf".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantUpsetplotPdf}[0] $reportQcVariantUpsetplotPng"""
-      .in(reportQcVariantUpsetplotPdf)
-      .out(reportQcVariantUpsetplotPng)
-      .named(s"$reportQcVariantUpsetplotPng".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rAncestryClusterTable
-      --cluster-in "${arrayClusterGroups.mkString(",")}"
-      --ancestry-in "${arrayAncestryInferred.mkString(",")}"
-      --final-in ${ancestryInferredMerged}
-      --cluster-out ${reportQcAncestryClusterTable}
-      --final-out ${reportQcAncestryFinalTable}"""
-      .in(Params.paramsByArrSorted.map(_.ancestryClusterGroups) ++ Params.paramsByArrSorted.map(_.ancestryInferred) :+ ancestryInferredMerged)
-      .out(reportQcAncestryClusterTable, reportQcAncestryFinalTable)
-      .using("R-3.4")
-      .named(s"$reportQcAncestryFinalTable".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportIntro
-      --id $projectId
-      --authors "$qcReportAuthors" 
-      --out ${reportQcIntro} 
-      --array-data ${arrayDataStrings.mkString(",")}"""
-      .in(Params.paramsByArrSorted.map(_.arrayData))
-      .out(reportQcIntro)
-      .named(s"$reportQcIntro".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportData
-      --narrays $nArrays
-      --samples-upset-diagram ${reportQcSampleUpsetplotPng}
-      --variants-summary-table ${reportQcVariantSummaryTable} 
-      --variants-upset-diagram ${reportQcVariantUpsetplotPng} 
-      --out ${reportQcData}"""
-      .in(reportQcSampleUpsetplotPng, reportQcVariantSummaryTable)
-      .out(reportQcData)
-      .named(s"$reportQcData".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportAncestry
-      --kg-merged-bim "${arrayMergedKgBims.mkString(",")}"
-      --pca-plots "${arrayPcaScoresPlots.mkString(",")}"
-      --cluster-plots "${arrayClusterPlots.mkString(",")}"
-      --cluster-table ${reportQcAncestryClusterTable}
-      --final-table ${reportQcAncestryFinalTable}
-      --out ${reportQcAncestry}"""
-      .in(Params.paramsByArrSorted.flatMap(_.harmRef1kg) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc2VsPc3) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc2VsPc3) :+ reportQcAncestryClusterTable :+ reportQcAncestryFinalTable)
-      .out(reportQcAncestry)
-      .named(s"$reportQcAncestry".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportIbdSexcheck
-      --filtered-bim "${arrayharmRefFilteredBims.mkString(",")}"
-      --kin0-related "${arrayKin0Related.mkString(",")}"
-      --famsizes "${arrayFamsizes.mkString(",")}"
-      --sexcheck-problems "${arraySexcheckProblems.mkString(",")}"
-      --out ${reportQcIbdSexcheck}"""
-      .in(Params.paramsByArrSorted.flatMap(_.harmRefFiltPruned) ++ Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems))
-      .out(reportQcIbdSexcheck)
-      .named(s"$reportQcIbdSexcheck".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rMakeMetricDistPlot
-      --sampleqc ${Params.paramsByArrSorted.head.sampleqcStats}
-      --metric nHet
-      --out ${sampleQcMetricDistUnadjPdf}
-      """
-      .in(Params.paramsByArrSorted.head.sampleqcStats)
-      .out(sampleQcMetricDistUnadjPdf)
-      .using("R-3.4")
-      .named(s"$sampleQcMetricDistUnadjPdf".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistUnadjPdf}[0] $sampleQcMetricDistUnadjPng"""
-      .in(sampleQcMetricDistUnadjPdf)
-      .out(sampleQcMetricDistUnadjPng)
-      .named(s"$sampleQcMetricDistUnadjPng".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rMakeMetricDistPlot
-      --sampleqc ${Params.paramsByArrSorted.head.sampleqcStatsAdj}
-      --metric nHet_res
-      --out ${sampleQcMetricDistAdjPdf}
-      """
-      .in(Params.paramsByArrSorted.head.sampleqcStatsAdj)
-      .out(sampleQcMetricDistAdjPdf)
-      .using("R-3.4")
-      .named(s"$sampleQcMetricDistAdjPdf".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistAdjPdf}[0] $sampleQcMetricDistAdjPng"""
-      .in(sampleQcMetricDistAdjPdf)
-      .out(sampleQcMetricDistAdjPng)
-      .named(s"$sampleQcMetricDistAdjPng".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rMakeOutlierTable
-      --ancestry-inferred-outliers ${ancestryInferredMergedOutliers}
-      --kinship-related ${arrayKin0Related.mkString(",")}
-      --kinship-famsizes ${arrayFamsizes.mkString(",")}
-      --sampleqc-outliers ${arraySampleqcOutliers.mkString(",")}
-      --sexcheck-problems ${arraySexcheckProblems.mkString(",")}
-      --final-exclusions ${arrayFinalSampleExclusions.mkString(",")}
-      --out ${reportQcSampleqcTable}"""
-      .in(Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcStatsAdjOutliersTable) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems) ++ Params.paramsByArrSorted.map(_.finalSampleExclusions) :+ ancestryInferredMergedOutliers)
-      .out(reportQcSampleqcTable)
-      .using("R-3.4")
-      .named(s"$reportQcSampleqcTable".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rUpsetplotBimFam
-      --input "${arrayCleanFamStrings.mkString(",")}"
-      --type fam
-      --ancestry ${ancestryInferredMerged}
-      --out ${reportQcSamplesRemainingUpsetplotPdf}"""
-      .in(Params.paramsByArrSorted.flatMap(_.clean) :+ ancestryInferredMerged)
-      .out(reportQcSamplesRemainingUpsetplotPdf)
-      .using("R-3.4")
-      .named(s"$reportQcSamplesRemainingUpsetplotPdf".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSamplesRemainingUpsetplotPdf}[0] $reportQcSamplesRemainingUpsetplotPng"""
-      .in(reportQcSamplesRemainingUpsetplotPdf)
-      .out(reportQcSamplesRemainingUpsetplotPng)
-      .named(s"$reportQcSamplesRemainingUpsetplotPng".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportSampleqc
-      --compare-dist-nhet-unadj ${sampleQcMetricDistUnadjPng}
-      --compare-dist-nhet-adj ${sampleQcMetricDistAdjPng}
-      --compare-dist-nhet-label ${Params.paramsByArrSorted.head.arrayId}
-      --sampleqc-outliers ${arraySampleqcOutlierPlots.mkString(",")}
-      --sampleqc-summary-table ${reportQcSampleqcTable}
-      --samples-upset-diagram ${reportQcSamplesRemainingUpsetplotPng}
-      --out ${reportQcSampleqc}"""
-      .in(Params.paramsByArrSorted.map(_.sampleqcOutlierPlotPng) :+ sampleQcMetricDistUnadjPng :+ sampleQcMetricDistAdjPng :+ reportQcSampleqcTable :+ reportQcSamplesRemainingUpsetplotPng)
-      .out(reportQcSampleqc)
-      .named(s"$reportQcSampleqc".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rUpsetplotBimFam
-      --input "${arrayCleanBimStrings.mkString(",")}"
-      --type bim
-      --out ${reportQcVariantsRemainingUpsetplotPdf}"""
-      .in(Params.paramsByArrSorted.flatMap(_.clean))
-      .out(reportQcVariantsRemainingUpsetplotPdf)
-      .using("R-3.4")
-      .named(s"$reportQcVariantsRemainingUpsetplotPdf".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantsRemainingUpsetplotPdf}[0] $reportQcVariantsRemainingUpsetplotPng"""
-      .in(reportQcVariantsRemainingUpsetplotPdf)
-      .out(reportQcVariantsRemainingUpsetplotPng)
-      .named(s"$reportQcVariantsRemainingUpsetplotPng".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportVariantqc
-      --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng}
-      --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
-      --out ${reportQcVariantqc}"""
-      .in(Params.paramsByArrSorted.map(_.finalVariantExclusions) :+ reportQcVariantsRemainingUpsetplotPng)
-      .out(reportQcVariantqc)
-      .named(s"$reportQcVariantqc".split("/").last)
-  
-    cmd"""$binPython $pyGenerateQcReportBibliography
-      --out ${reportQcBibliography}"""
-      .out(reportQcBibliography)
-      .named(s"$reportQcBibliography".split("/").last)
-  
-    cmd"""cat ${reportQcIntro} ${reportQcData} ${reportQcAncestry} ${reportQcIbdSexcheck} ${reportQcSampleqc} ${reportQcVariantqc} ${reportQcBibliography} > $reportQcTex"""
-      .in(reportQcIntro, reportQcData, reportQcAncestry, reportQcIbdSexcheck, reportQcSampleqc, reportQcVariantqc, reportQcBibliography)
-      .out(reportQcTex)
-      .named(s"$reportQcTex".split("/").last)
-  
-    cmd"""$binPdflatex --output-directory=${localOutDir} $reportQcTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportQcTex """
-      .in(reportQcTex)
-      .out(reportQcPdf)
-      .named(s"$reportQcPdf".split("/").last)
-  
-  }
-
-  // Generate analysis report files
-  for {
-    i <- 1 until phases.size + 1
-  } {
-
-    val modelSeqPhase = modelSeq.filter(_._6 == i)
-    val reportAnalysisIntro = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.intro.tex")
-    val reportAnalysisData = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.data.tex")
-    val reportAnalysisIntroInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.intro.input")
-    val reportAnalysisDataInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.data.input")
-    val reportAnalysisStrategy = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.strategy.tex")
-    val reportAnalysisStrategyInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.strategy.input")
-    val reportAnalysisBibliography = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.bibliography.tex")
-    val reportAnalysisBibliographyInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.bibliography.input")
-    val reportAnalysisTex = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.tex")
-    val reportAnalysisInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.input")
-    val reportAnalysisPdf = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.pdf")
-    var reportAnalysisResultsList = Seq[Store]()
-    var reportAnalysisResultsInputList = Seq[Store]()
-    var reportAnalysisResultsStringList = Seq[String]()
-    var reportAnalysisResultsInputStringList = Seq[String]()
-    var reportAnalysisModelTop50KnownCitation = Seq[String]()
-
-    uger {
-
-      cmd"""$binPython $pyGenerateAnalysisReportIntro
-        --id $projectId
-        --phase $i
-        --authors "$analysisReportAuthors" 
-        --out-tex ${reportAnalysisIntro}
-        --out-input ${reportAnalysisIntroInput}"""
-        .in(Params.paramsByArrSorted.map(_.arrayData))
-        .out(reportAnalysisIntro, reportAnalysisIntroInput)
-        .named(s"$reportAnalysisIntro".split("/").last)
-      
-      cmd"""$binPython $pyGenerateAnalysisReportData
-        --samples-upset-diagram ${reportQcSamplesRemainingUpsetplotPng}
-        --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng} 
-        --out-tex ${reportAnalysisData}
-        --out-input ${reportAnalysisDataInput}"""
-        .in(reportQcSamplesRemainingUpsetplotPng, reportQcVariantsRemainingUpsetplotPng)
-        .out(reportAnalysisData, reportAnalysisDataInput)
-        .named(s"$reportAnalysisData".split("/").last)
-      
-      cmd"""$binPython $pyGenerateAnalysisReportStrategy
-        --out-tex ${reportAnalysisStrategy}
-        --out-input ${reportAnalysisStrategyInput}"""
-        .out(reportAnalysisStrategy, reportAnalysisStrategyInput)
-        .named(s"$reportAnalysisStrategy".split("/").last)
-
-    }
-      
-    for {
-      j <- 0 until phases(i-1).getObjList("phenotypes").size
-    } {
-
-      val phenoName = phases(i-1).getObjList("phenotypes")(j).getStr("phenoName")
-      val phenoLongName = phases(i-1).getObjList("phenotypes")(j).getStr("phenoLongName")
-      val reportAnalysisPhenoSummary = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.summary.tex")
-      val reportAnalysisPhenoSummaryInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.summary.input")
-      val reportAnalysisPhenoCalibration = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.calibration.tex")
-      val reportAnalysisPhenoCalibrationInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.calibration.input")
-      val reportAnalysisPhenoTopLoci = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.top_loci.tex")
-      val reportAnalysisPhenoTopLociInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.top_loci.input")
-      val reportAnalysisPhenoKnownLoci = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.known_loci.tex")
-      val reportAnalysisPhenoKnownLociInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.known_loci.input")
-      var reportAnalysisPhenoDistPlotList = Seq[Store]()
-      var reportAnalysisPhenoDistStratPlotList = Seq[Store]()
-      var reportAnalysisPhenoDistPlotStrings = Seq[String]()
-      var reportAnalysisPhenoDistStratPlotStrings = Seq[String]()
-      var reportAnalysisModelPhenoFileStrings = Seq[String]()
-      var reportAnalysisModelSamplesIncludeStrings = Seq[String]()
-      var reportAnalysisModelPcsFileStrings = Seq[String]()
-      var reportAnalysisModelPhenoFileList = Seq[Store]()
-      var reportAnalysisModelSamplesIncludeList = Seq[Store]()
-      var reportAnalysisModelPcsFileList = Seq[Store]()
-      var reportAnalysisModelQqPlotList = Seq[Store]()
-      var reportAnalysisModelMhtPlotList = Seq[Store]()
-      var reportAnalysisModelTop20AnnotAlignedRiskList = Seq[Store]()
-      var reportAnalysisModelTop50KnownList = Seq[Store]()
-      var reportAnalysisModelRegplotsList = Seq[Store]()
-      var reportAnalysisModelQqPlotStrings = Seq[String]()
-      var reportAnalysisModelMhtPlotStrings = Seq[String]()
-      var reportAnalysisModelRegplotsStrings = Seq[String]()
-      var reportAnalysisModelTop20AnnotAlignedRiskStrings = Seq[String]()
-      var reportAnalysisModelTop50KnownStrings = Seq[String]()
-      var reportAnalysisModelTop50KnownDesc = Seq[String]()
-      var reportAnalysisModelTop50KnownTag = Seq[String]()
-
-      for {
-        k <- 0 until nArrays
-      } {
-
-          val (_, paramsArr) = Params.paramsByArr(k)
-          val reportAnalysisPhenoDistPlot = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${paramsArr.arrayId}.${phenoName}.dist.png")
-          val reportAnalysisPhenoDistStratPlot = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${paramsArr.arrayId}.${phenoName}.dist.strat.png")
-
-          reportAnalysisPhenoDistPlotStrings = reportAnalysisPhenoDistPlotStrings :+ paramsArr.arrayId + "___" + s"${reportAnalysisPhenoDistPlot.toString.split("@")(1)}"
-          reportAnalysisPhenoDistStratPlotStrings = reportAnalysisPhenoDistStratPlotStrings :+ paramsArr.arrayId + "___" + s"${reportAnalysisPhenoDistStratPlot.toString.split("@")(1)}"
-
-          uger {
-          
-            cmd"""$binPython $pyPhenoDistPlot
-              --pheno ${Input.Local.pheno}
-              --pheno-name ${phenoName}
-              --fam ${paramsArr.cleanName}.fam
-              --out ${reportAnalysisPhenoDistPlot}"""
-              .in(paramsArr.clean :+ ancestryInferredMerged :+ Input.Local.pheno)
-              .out(reportAnalysisPhenoDistPlot)
-              .named(s"$reportAnalysisPhenoDistPlot".split("/").last)
-          
-            cmd"""$binPython $pyPhenoDistPlot
-              --strat
-              --ancestry ${ancestryInferredMerged}
-              --pheno ${Input.Local.pheno}
-              --pheno-name ${phenoName}
-              --fam ${paramsArr.cleanName}.fam
-              --out ${reportAnalysisPhenoDistStratPlot}"""
-              .in(paramsArr.clean :+ ancestryInferredMerged :+ Input.Local.pheno)
-              .out(reportAnalysisPhenoDistStratPlot)
-              .named(s"$reportAnalysisPhenoDistStratPlot".split("/").last)
-          
-          }
-
-          reportAnalysisPhenoDistPlotList = reportAnalysisPhenoDistPlotList :+ reportAnalysisPhenoDistPlot
-          reportAnalysisPhenoDistStratPlotList = reportAnalysisPhenoDistStratPlotList :+ reportAnalysisPhenoDistStratPlot
-
-          for {
-            m <-  modelSeq.zipWithIndex.filter(_._1._1 == phenoName).map(_._2)
-          } {
-
-            val paramsModel = paramsArr.paramsByArrByModelSorted(m)
-            val modelPhenoString = Seq(paramsModel.modelPheno, paramsModel.modelTrans, paramsModel.modelCovars.replace("+","_")).filter(_ != "").mkString("_")
-            reportAnalysisModelPhenoFileList = reportAnalysisModelPhenoFileList :+ paramsModel.modelPhenoFile
-            reportAnalysisModelSamplesIncludeList = reportAnalysisModelSamplesIncludeList :+ paramsModel.modelSamplesInclude
-            reportAnalysisModelPcsFileList = reportAnalysisModelPcsFileList :+ paramsModel.modelPcsFile
-            reportAnalysisModelPhenoFileStrings = reportAnalysisModelPhenoFileStrings :+ paramsArr.arrayId + "___" + modelPhenoString + "___" + s"${paramsModel.modelPhenoFile.toString.split("@")(1)}"
-            reportAnalysisModelSamplesIncludeStrings = reportAnalysisModelSamplesIncludeStrings :+ paramsArr.arrayId + "___" + modelPhenoString + "___" + s"${paramsModel.modelSamplesInclude.toString.split("@")(1)}"
-            reportAnalysisModelPcsFileStrings = reportAnalysisModelPcsFileStrings :+ paramsArr.arrayId + "___" + modelPhenoString + "___" + s"${paramsModel.modelPcsFile.toString.split("@")(1)}"
-
-          }
-
-      }
-
-      for {
-        m <-  modelSeq.zipWithIndex.filter(_._1._1 == phenoName).map(_._2)
-      } {
-
-        val paramsResult = Params.paramsByResultSorted(m)
-        val resultPhenoString = Seq(paramsResult.resultPheno, paramsResult.resultTrans, paramsResult.resultCovars.replace("+","_")).filter(_ != "").mkString("_")
-        reportAnalysisModelQqPlotList = reportAnalysisModelQqPlotList :+ paramsResult.resultFinalQqPlot
-        reportAnalysisModelMhtPlotList = reportAnalysisModelMhtPlotList :+ paramsResult.resultFinalMhtPlot
-        reportAnalysisModelTop20AnnotAlignedRiskList = reportAnalysisModelTop20AnnotAlignedRiskList :+ paramsResult.resultFinalTop20AnnotAlignedRisk
-        reportAnalysisModelQqPlotStrings = reportAnalysisModelQqPlotStrings :+ resultPhenoString + "___" + s"${paramsResult.resultFinalQqPlot.toString.split("@")(1)}"
-        reportAnalysisModelMhtPlotStrings = reportAnalysisModelMhtPlotStrings :+ resultPhenoString + "___" + s"${paramsResult.resultFinalMhtPlot.toString.split("@")(1)}"
-        reportAnalysisModelTop20AnnotAlignedRiskStrings = reportAnalysisModelTop20AnnotAlignedRiskStrings :+ resultPhenoString + "___" + s"${paramsResult.resultFinalTop20AnnotAlignedRisk.toString.split("@")(1)}"
-
-        reportAnalysisModelRegplotsList = reportAnalysisModelRegplotsList ++ resultsFinalRegplots(m)
-        var regPlotStrings = Seq[String]()
-        for {
-          p <- resultsFinalRegplots(m)
-        } {
-
-          regPlotStrings = regPlotStrings :+ s"${p.toString.split("@")(1)}"
-
-        }
-
-        reportAnalysisModelRegplotsStrings = { 
-          if (regPlotStrings.size > 0) { reportAnalysisModelRegplotsStrings :+ resultPhenoString + "___" + regPlotStrings.mkString(";") }
-          else { reportAnalysisModelRegplotsStrings }
-        }
-
-      }
-
-      for {
-        m <-  knownLociSeq.zipWithIndex.filter(_._1._1 == phenoName).map(_._2)
-      } {
-
-        val paramsResultKnownLoci = Params.paramsByResultKnownLociSorted(m)
-        val resultKnownLociPhenoString = Seq(paramsResultKnownLoci.resultKnownLociPhenoName, paramsResultKnownLoci.resultKnownLociTrans, paramsResultKnownLoci.resultKnownLociCovars.replace("+","_")).filter(_ != "").mkString("_")
-        reportAnalysisModelTop50KnownList = reportAnalysisModelTop50KnownList :+ paramsResultKnownLoci.resultKnownLociFinalTop50Known
-        reportAnalysisModelTop50KnownStrings = reportAnalysisModelTop50KnownStrings :+ resultKnownLociPhenoString + "___" + s"${paramsResultKnownLoci.resultKnownLociFinalTop50Known.toString.split("@")(1)}"
-        reportAnalysisModelTop50KnownDesc = reportAnalysisModelTop50KnownDesc :+ resultKnownLociPhenoString + "___" + s"${paramsResultKnownLoci.resultKnownLociDesc}"
-        reportAnalysisModelTop50KnownTag = reportAnalysisModelTop50KnownTag :+ resultKnownLociPhenoString + "___" + s"${paramsResultKnownLoci.resultKnownLociTag}"
-        reportAnalysisModelTop50KnownCitation = reportAnalysisModelTop50KnownCitation :+ s"${paramsResultKnownLoci.resultKnownLociTag}" + "___" + s"${paramsResultKnownLoci.resultKnownLociCitation}"
-
-      }
-
-      uger {
-      
-        cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
-          --dist-plot "${reportAnalysisPhenoDistPlotStrings.mkString(",")}"
-          --strat-dist-plot "${reportAnalysisPhenoDistStratPlotStrings.mkString(",")}"
-          --pheno-master ${Input.Local.pheno}
-          --id-col $phenoId
-          --sex-col $phenoSrSex
-          --pheno "${reportAnalysisModelPhenoFileStrings.mkString(",")}"
-          --pheno-name ${phenoName}
-          --pheno-long-name "${phenoLongName}"
-          --ancestry ${ancestryInferredMerged}
-          --samples-include "${reportAnalysisModelSamplesIncludeStrings.mkString(",")}"
-          --pcs-include "${reportAnalysisModelPcsFileStrings.mkString(",")}"
-          --out-tex ${reportAnalysisPhenoSummary}
-          --out-input ${reportAnalysisPhenoSummaryInput}"""
-          .in(reportAnalysisModelPhenoFileList ++ reportAnalysisModelSamplesIncludeList ++ reportAnalysisModelPcsFileList ++ reportAnalysisPhenoDistPlotList ++ reportAnalysisPhenoDistStratPlotList :+ ancestryInferredMerged :+ Input.Local.pheno)
-          .out(reportAnalysisPhenoSummary, reportAnalysisPhenoSummaryInput)
-          .named(s"$reportAnalysisPhenoSummary".split("/").last)
-        
-        cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
-          --qq-plots "${reportAnalysisModelQqPlotStrings.mkString(",")}"
-          --mht-plots "${reportAnalysisModelMhtPlotStrings.mkString(",")}"
-          --pheno-name ${phenoName}
-          --pheno-long-name "${phenoLongName}"
-          --out-tex ${reportAnalysisPhenoCalibration}
-          --out-input ${reportAnalysisPhenoCalibrationInput}"""
-          .in(reportAnalysisModelQqPlotList ++ reportAnalysisModelMhtPlotList)
-          .out(reportAnalysisPhenoCalibration, reportAnalysisPhenoCalibrationInput)
-          .named(s"$reportAnalysisPhenoCalibration".split("/").last)
-        
-        cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
-          --top-results "${reportAnalysisModelTop20AnnotAlignedRiskStrings.mkString(",")}"
-          --regionals "${reportAnalysisModelRegplotsStrings.mkString(",")}"
-          --pheno-name ${phenoName}
-          --pheno-long-name "${phenoLongName}"
-          --out-tex ${reportAnalysisPhenoTopLoci}
-          --out-input ${reportAnalysisPhenoTopLociInput}"""
-          .in(reportAnalysisModelTop20AnnotAlignedRiskList ++ reportAnalysisModelRegplotsList)
-          .out(reportAnalysisPhenoTopLoci, reportAnalysisPhenoTopLociInput)
-          .named(s"$reportAnalysisPhenoTopLoci".split("/").last)
-
-        cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
-          --top-known-loci "${reportAnalysisModelTop50KnownStrings.mkString(",")}"
-          --pheno-name ${phenoName}
-          --pheno-long-name "${phenoLongName}"
-          --desc "${reportAnalysisModelTop50KnownDesc.mkString(",,,")}"
-          --tag "${reportAnalysisModelTop50KnownTag.mkString(",")}"
-          --out-tex ${reportAnalysisPhenoKnownLoci}
-          --out-input ${reportAnalysisPhenoKnownLociInput}"""
-          .in(reportAnalysisModelTop50KnownList)
-          .out(reportAnalysisPhenoKnownLoci, reportAnalysisPhenoKnownLociInput)
-          .named(s"$reportAnalysisPhenoKnownLoci".split("/").last)
-      
-      }
-
-      reportAnalysisResultsList = reportAnalysisResultsList :+ reportAnalysisPhenoSummary :+ reportAnalysisPhenoCalibration :+ reportAnalysisPhenoTopLoci :+ reportAnalysisPhenoKnownLoci
-      reportAnalysisResultsStringList = reportAnalysisResultsStringList :+ s"${reportAnalysisPhenoSummary.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoCalibration.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoTopLoci.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoKnownLoci.toString.split("@")(1)}"
-      reportAnalysisResultsInputList = reportAnalysisResultsInputList :+ reportAnalysisPhenoSummaryInput :+ reportAnalysisPhenoCalibrationInput :+ reportAnalysisPhenoTopLociInput :+ reportAnalysisPhenoKnownLociInput
-      reportAnalysisResultsInputStringList = reportAnalysisResultsInputStringList :+ s"${reportAnalysisPhenoSummaryInput.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoCalibrationInput.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoTopLociInput.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoKnownLociInput.toString.split("@")(1)}"
-
-    }
-
-    uger {
-
-      cmd"""$binPython $pyGenerateAnalysisReportBibliography
-        --names "${analysisReportAcknowledgements}"
-        --known-loci-citations "${reportAnalysisModelTop50KnownCitation.mkString(",,,")}"
-        --out-tex ${reportAnalysisBibliography}
-        --out-input ${reportAnalysisBibliographyInput}"""
-        .out(reportAnalysisBibliography, reportAnalysisBibliographyInput)
-        .named(s"$reportAnalysisBibliography".split("/").last)
-
-      cmd"""cat ${reportAnalysisIntro} ${reportAnalysisData} ${reportAnalysisStrategy} ${reportAnalysisResultsStringList.mkString(" ")} ${reportAnalysisBibliography} > $reportAnalysisTex"""
-        .in(reportAnalysisResultsList :+ reportAnalysisIntro :+ reportAnalysisData :+ reportAnalysisStrategy :+ reportAnalysisBibliography)
-        .out(reportAnalysisTex)
-        .named(s"$reportAnalysisTex".split("/").last)
-      
-      cmd"""cat ${reportAnalysisIntroInput} ${reportAnalysisDataInput} ${reportAnalysisStrategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${reportAnalysisBibliographyInput} > $reportAnalysisInput"""
-        .in(reportAnalysisResultsInputList :+ reportAnalysisIntroInput :+ reportAnalysisDataInput :+ reportAnalysisStrategyInput :+ reportAnalysisBibliographyInput)
-        .out(reportAnalysisInput)
-        .named(s"$reportAnalysisInput".split("/").last)
-      
-      cmd"""$binPdflatex --output-directory=${localOutDir} $reportAnalysisTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportAnalysisTex """
-        .in(reportAnalysisTex)
-        .out(reportAnalysisPdf)
-        .named(s"$reportAnalysisPdf".split("/").last)
-
-    }
-
-  }
-}
+//// Generate regional plots after merge results step
+//andThen {
+//
+//  val resultsFinalRegplots: Seq[Seq[Store]] = {
+//
+//    for {
+//      i <- 0 until modelSeq.size
+//    } yield { 
+//
+//      plotSigRegions(i)
+//
+//    }
+//
+//  }
+//
+//  // Generate qc report files
+//  val reportQcIntro = store.at(localOutDir / s"${projectId}.qcreport.intro.tex")
+//  val reportQcData = store.at(localOutDir / s"${projectId}.qcreport.data.tex")
+//  val reportQcAncestry = store.at(localOutDir / s"${projectId}.qcreport.ancestry.tex")
+//  val reportQcIbdSexcheck = store.at(localOutDir / s"${projectId}.qcreport.ibd_sexcheck.tex")
+//  val reportQcSampleqc = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.tex")
+//  val reportQcVariantqc = store.at(localOutDir / s"${projectId}.qcreport.variantqc.tex")
+//  val reportQcBibliography = store.at(localOutDir / s"${projectId}.qcreport.bibliography.tex")
+//  val reportQcTex = store.at(localOutDir / s"${projectId}.qcreport.tex")
+//  val reportQcPdf = store.at(localOutDir / s"${projectId}.qcreport.pdf")
+//  val reportQcSampleUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.pdf")
+//  val reportQcSampleUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.png")
+//  val reportQcVariantsRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.pdf")
+//  val reportQcVariantsRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.png")
+//  val reportQcSamplesRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.pdf")
+//  val reportQcSamplesRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.png")
+//  val reportQcVariantUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.pdf")
+//  val reportQcVariantUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.png")
+//  val reportQcSampleqcTable = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.tbl")
+//  val reportQcVariantSummaryTable = store.at(localOutDir / s"${projectId}.qcreport.variants.summary.tbl")
+//  val reportQcAncestryClusterTable = store.at(localOutDir / s"${projectId}.qcreport.ancestry.clusters.tbl")
+//  val reportQcAncestryFinalTable = store.at(localOutDir / s"${projectId}.qcreport.ancestry.final.tbl")
+//  val sampleQcMetricDistUnadjPdf = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_unadj.pdf")
+//  val sampleQcMetricDistAdjPdf = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_adj.pdf")
+//  val sampleQcMetricDistUnadjPng = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_unadj.png")
+//  val sampleQcMetricDistAdjPng = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_adj.png")
+//  var arrayDataStrings = Seq[String]()
+//  var harmRefFamStrings = Seq[String]()
+//  var harmRefBimStrings = Seq[String]()
+//  var arrayFrqStrings = Seq[String]()
+//  var arrayIndelStrings = Seq[String]()
+//  var arrayMultiStrings = Seq[String]()
+//  var arrayDuplStrings = Seq[String]()
+//  var arrayMergedKgBims = Seq[String]()
+//  var arrayClusterGroups = Seq[String]()
+//  var arrayAncestryInferred = Seq[String]()
+//  var arrayPcaScoresPlots = Seq[String]()
+//  var arrayClusterPlots = Seq[String]()
+//  var arrayharmRefFilteredBims = Seq[String]()
+//  var arrayKin0Related = Seq[String]()
+//  var arrayFamsizes = Seq[String]()
+//  var arraySexcheckProblems = Seq[String]()
+//  var arraySampleqcOutliers = Seq[String]()
+//  var arrayFinalSampleExclusions = Seq[String]()
+//  var arrayFinalVariantExclusions = Seq[String]()
+//  var arraySampleqcOutlierPlots = Seq[String]()
+//  var arrayCleanFamStrings = Seq[String]()
+//  var arrayCleanBimStrings = Seq[String]()
+//
+//  for { 
+//    i <- 0 until nArrays
+//  } {
+//
+//    val (_, paramsArr) = Params.paramsByArr(i)
+//
+//    arrayDataStrings = arrayDataStrings :+ paramsArr.arrayDataType + "___" + paramsArr.arrayDataPath
+//    harmRefFamStrings = harmRefFamStrings :+ paramsArr.arrayId + "___" + paramsArr.harmRefName + ".fam"
+//    harmRefBimStrings = harmRefBimStrings :+ paramsArr.arrayId + "___" + paramsArr.harmRefName + ".bim"
+//
+//    arrayFrqStrings = arrayFrqStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataRawFreq.toString.split("@")(1)}"
+//    arrayMultiStrings = arrayMultiStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataPreparedMultiallelic.toString.split("@")(1)}"
+//    arrayIndelStrings = arrayIndelStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataRawIndel.toString.split("@")(1)}"
+//    arrayDuplStrings = arrayDuplStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.arrayDataRawDupRemove.toString.split("@")(1)}"
+//
+//    arrayMergedKgBims = arrayMergedKgBims :+ paramsArr.arrayId + "___" + s"${paramsArr.harmRef1kgName}.bim"
+//    arrayClusterGroups = arrayClusterGroups :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryClusterGroups.toString.split("@")(1)}"
+//    arrayAncestryInferred = arrayAncestryInferred :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryInferred.toString.split("@")(1)}"
+//    arrayPcaScoresPlots = arrayPcaScoresPlots :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryPcaScoresPlotPc1VsPc2.toString.split("@")(1)}" + "___" + s"${paramsArr.ancestryPcaScoresPlotPc2VsPc3.toString.split("@")(1)}"
+//    arrayClusterPlots = arrayClusterPlots :+ paramsArr.arrayId + "___" + s"${paramsArr.ancestryClusterPlotPc1VsPc2.toString.split("@")(1)}" + "___" + s"${paramsArr.ancestryClusterPlotPc2VsPc3.toString.split("@")(1)}"
+//
+//    arrayharmRefFilteredBims = arrayharmRefFilteredBims :+ paramsArr.arrayId + "___" + s"${paramsArr.harmRefFiltPrunedName}.bim"
+//    arrayKin0Related = arrayKin0Related :+ paramsArr.arrayId + "___" + s"${paramsArr.kinKin0Related.toString.split("@")(1)}"
+//    arrayFamsizes = arrayFamsizes :+ paramsArr.arrayId + "___" + s"${paramsArr.kinFamsizes.toString.split("@")(1)}"
+//    arraySexcheckProblems = arraySexcheckProblems :+ paramsArr.arrayId + "___" + s"${paramsArr.sampleqcSexcheckProblems.toString.split("@")(1)}"
+//
+//    arraySampleqcOutliers = arraySampleqcOutliers :+ paramsArr.arrayId + "___" + s"${paramsArr.sampleqcStatsAdjOutliersTable.toString.split("@")(1)}"
+//    arrayFinalSampleExclusions = arrayFinalSampleExclusions :+ paramsArr.arrayId + "___" + s"${paramsArr.finalSampleExclusions.toString.split("@")(1)}"
+//    arrayFinalVariantExclusions = arrayFinalVariantExclusions :+ paramsArr.arrayId + "___" + s"${paramsArr.finalVariantExclusions.toString.split("@")(1)}"
+//    arraySampleqcOutlierPlots = arraySampleqcOutlierPlots :+ paramsArr.arrayId + "___" + s"${paramsArr.sampleqcOutlierPlotPng.toString.split("@")(1)}"
+//
+//    arrayCleanFamStrings = arrayCleanFamStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.cleanName}.fam"
+//    arrayCleanBimStrings = arrayCleanBimStrings :+ paramsArr.arrayId + "___" + s"${paramsArr.cleanName}.bim"
+//
+//  }
+//  
+//  uger {
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rVariantsSummaryTable
+//      --freq-in "${arrayFrqStrings.mkString(",")}"
+//      --indel-in "${arrayIndelStrings.mkString(",")}"
+//      --multi-in "${arrayMultiStrings.mkString(",")}"
+//      --dupl-in "${arrayDuplStrings.mkString(",")}"
+//      --out ${reportQcVariantSummaryTable}"""
+//      .in(Params.paramsByArrSorted.map(_.arrayDataRawFreq) ++ Params.paramsByArrSorted.map(_.arrayDataPreparedMultiallelic) ++ Params.paramsByArrSorted.map(_.arrayDataRawIndel) ++ Params.paramsByArrSorted.map(_.arrayDataRawDupRemove))
+//      .out(reportQcVariantSummaryTable)
+//      .using("R-3.4")
+//      .named(s"$reportQcVariantSummaryTable".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rUpsetplotBimFam
+//      --input "${harmRefFamStrings.mkString(",")}"
+//      --type fam
+//      --out $reportQcSampleUpsetplotPdf"""
+//      .in(Params.paramsByArrSorted.map(_.arrayData))
+//      .out(reportQcSampleUpsetplotPdf)
+//      .using("R-3.4")
+//      .named(s"$reportQcSampleUpsetplotPdf".split("/").last)
+//  
+//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSampleUpsetplotPdf}[0] $reportQcSampleUpsetplotPng"""
+//      .in(reportQcSampleUpsetplotPdf)
+//      .out(reportQcSampleUpsetplotPng)
+//      .named(s"$reportQcSampleUpsetplotPng".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rUpsetplotBimFam
+//      --input "${harmRefBimStrings.mkString(",")}"
+//      --type bim
+//      --out $reportQcVariantUpsetplotPdf"""
+//      .in(Params.paramsByArrSorted.flatMap(_.harm))
+//      .out(reportQcVariantUpsetplotPdf)
+//      .using("R-3.4")
+//      .named(s"$reportQcVariantUpsetplotPdf".split("/").last)
+//  
+//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantUpsetplotPdf}[0] $reportQcVariantUpsetplotPng"""
+//      .in(reportQcVariantUpsetplotPdf)
+//      .out(reportQcVariantUpsetplotPng)
+//      .named(s"$reportQcVariantUpsetplotPng".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rAncestryClusterTable
+//      --cluster-in "${arrayClusterGroups.mkString(",")}"
+//      --ancestry-in "${arrayAncestryInferred.mkString(",")}"
+//      --final-in ${ancestryInferredMerged}
+//      --cluster-out ${reportQcAncestryClusterTable}
+//      --final-out ${reportQcAncestryFinalTable}"""
+//      .in(Params.paramsByArrSorted.map(_.ancestryClusterGroups) ++ Params.paramsByArrSorted.map(_.ancestryInferred) :+ ancestryInferredMerged)
+//      .out(reportQcAncestryClusterTable, reportQcAncestryFinalTable)
+//      .using("R-3.4")
+//      .named(s"$reportQcAncestryFinalTable".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportIntro
+//      --id $projectId
+//      --authors "$qcReportAuthors" 
+//      --out ${reportQcIntro} 
+//      --array-data ${arrayDataStrings.mkString(",")}"""
+//      .in(Params.paramsByArrSorted.map(_.arrayData))
+//      .out(reportQcIntro)
+//      .named(s"$reportQcIntro".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportData
+//      --narrays $nArrays
+//      --samples-upset-diagram ${reportQcSampleUpsetplotPng}
+//      --variants-summary-table ${reportQcVariantSummaryTable} 
+//      --variants-upset-diagram ${reportQcVariantUpsetplotPng} 
+//      --out ${reportQcData}"""
+//      .in(reportQcSampleUpsetplotPng, reportQcVariantSummaryTable)
+//      .out(reportQcData)
+//      .named(s"$reportQcData".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportAncestry
+//      --kg-merged-bim "${arrayMergedKgBims.mkString(",")}"
+//      --pca-plots "${arrayPcaScoresPlots.mkString(",")}"
+//      --cluster-plots "${arrayClusterPlots.mkString(",")}"
+//      --cluster-table ${reportQcAncestryClusterTable}
+//      --final-table ${reportQcAncestryFinalTable}
+//      --out ${reportQcAncestry}"""
+//      .in(Params.paramsByArrSorted.flatMap(_.harmRef1kg) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc2VsPc3) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc2VsPc3) :+ reportQcAncestryClusterTable :+ reportQcAncestryFinalTable)
+//      .out(reportQcAncestry)
+//      .named(s"$reportQcAncestry".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportIbdSexcheck
+//      --filtered-bim "${arrayharmRefFilteredBims.mkString(",")}"
+//      --kin0-related "${arrayKin0Related.mkString(",")}"
+//      --famsizes "${arrayFamsizes.mkString(",")}"
+//      --sexcheck-problems "${arraySexcheckProblems.mkString(",")}"
+//      --out ${reportQcIbdSexcheck}"""
+//      .in(Params.paramsByArrSorted.flatMap(_.harmRefFiltPruned) ++ Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems))
+//      .out(reportQcIbdSexcheck)
+//      .named(s"$reportQcIbdSexcheck".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rMakeMetricDistPlot
+//      --sampleqc ${Params.paramsByArrSorted.head.sampleqcStats}
+//      --metric nHet
+//      --out ${sampleQcMetricDistUnadjPdf}
+//      """
+//      .in(Params.paramsByArrSorted.head.sampleqcStats)
+//      .out(sampleQcMetricDistUnadjPdf)
+//      .using("R-3.4")
+//      .named(s"$sampleQcMetricDistUnadjPdf".split("/").last)
+//  
+//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistUnadjPdf}[0] $sampleQcMetricDistUnadjPng"""
+//      .in(sampleQcMetricDistUnadjPdf)
+//      .out(sampleQcMetricDistUnadjPng)
+//      .named(s"$sampleQcMetricDistUnadjPng".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rMakeMetricDistPlot
+//      --sampleqc ${Params.paramsByArrSorted.head.sampleqcStatsAdj}
+//      --metric nHet_res
+//      --out ${sampleQcMetricDistAdjPdf}
+//      """
+//      .in(Params.paramsByArrSorted.head.sampleqcStatsAdj)
+//      .out(sampleQcMetricDistAdjPdf)
+//      .using("R-3.4")
+//      .named(s"$sampleQcMetricDistAdjPdf".split("/").last)
+//  
+//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistAdjPdf}[0] $sampleQcMetricDistAdjPng"""
+//      .in(sampleQcMetricDistAdjPdf)
+//      .out(sampleQcMetricDistAdjPng)
+//      .named(s"$sampleQcMetricDistAdjPng".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rMakeOutlierTable
+//      --ancestry-inferred-outliers ${ancestryInferredMergedOutliers}
+//      --kinship-related ${arrayKin0Related.mkString(",")}
+//      --kinship-famsizes ${arrayFamsizes.mkString(",")}
+//      --sampleqc-outliers ${arraySampleqcOutliers.mkString(",")}
+//      --sexcheck-problems ${arraySexcheckProblems.mkString(",")}
+//      --final-exclusions ${arrayFinalSampleExclusions.mkString(",")}
+//      --out ${reportQcSampleqcTable}"""
+//      .in(Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcStatsAdjOutliersTable) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems) ++ Params.paramsByArrSorted.map(_.finalSampleExclusions) :+ ancestryInferredMergedOutliers)
+//      .out(reportQcSampleqcTable)
+//      .using("R-3.4")
+//      .named(s"$reportQcSampleqcTable".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rUpsetplotBimFam
+//      --input "${arrayCleanFamStrings.mkString(",")}"
+//      --type fam
+//      --ancestry ${ancestryInferredMerged}
+//      --out ${reportQcSamplesRemainingUpsetplotPdf}"""
+//      .in(Params.paramsByArrSorted.flatMap(_.clean) :+ ancestryInferredMerged)
+//      .out(reportQcSamplesRemainingUpsetplotPdf)
+//      .using("R-3.4")
+//      .named(s"$reportQcSamplesRemainingUpsetplotPdf".split("/").last)
+//  
+//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSamplesRemainingUpsetplotPdf}[0] $reportQcSamplesRemainingUpsetplotPng"""
+//      .in(reportQcSamplesRemainingUpsetplotPdf)
+//      .out(reportQcSamplesRemainingUpsetplotPng)
+//      .named(s"$reportQcSamplesRemainingUpsetplotPng".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportSampleqc
+//      --compare-dist-nhet-unadj ${sampleQcMetricDistUnadjPng}
+//      --compare-dist-nhet-adj ${sampleQcMetricDistAdjPng}
+//      --compare-dist-nhet-label ${Params.paramsByArrSorted.head.arrayId}
+//      --sampleqc-outliers ${arraySampleqcOutlierPlots.mkString(",")}
+//      --sampleqc-summary-table ${reportQcSampleqcTable}
+//      --samples-upset-diagram ${reportQcSamplesRemainingUpsetplotPng}
+//      --out ${reportQcSampleqc}"""
+//      .in(Params.paramsByArrSorted.map(_.sampleqcOutlierPlotPng) :+ sampleQcMetricDistUnadjPng :+ sampleQcMetricDistAdjPng :+ reportQcSampleqcTable :+ reportQcSamplesRemainingUpsetplotPng)
+//      .out(reportQcSampleqc)
+//      .named(s"$reportQcSampleqc".split("/").last)
+//  
+//    cmd"""$binRscript --vanilla --verbose
+//      $rUpsetplotBimFam
+//      --input "${arrayCleanBimStrings.mkString(",")}"
+//      --type bim
+//      --out ${reportQcVariantsRemainingUpsetplotPdf}"""
+//      .in(Params.paramsByArrSorted.flatMap(_.clean))
+//      .out(reportQcVariantsRemainingUpsetplotPdf)
+//      .using("R-3.4")
+//      .named(s"$reportQcVariantsRemainingUpsetplotPdf".split("/").last)
+//  
+//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantsRemainingUpsetplotPdf}[0] $reportQcVariantsRemainingUpsetplotPng"""
+//      .in(reportQcVariantsRemainingUpsetplotPdf)
+//      .out(reportQcVariantsRemainingUpsetplotPng)
+//      .named(s"$reportQcVariantsRemainingUpsetplotPng".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportVariantqc
+//      --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng}
+//      --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
+//      --out ${reportQcVariantqc}"""
+//      .in(Params.paramsByArrSorted.map(_.finalVariantExclusions) :+ reportQcVariantsRemainingUpsetplotPng)
+//      .out(reportQcVariantqc)
+//      .named(s"$reportQcVariantqc".split("/").last)
+//  
+//    cmd"""$binPython $pyGenerateQcReportBibliography
+//      --out ${reportQcBibliography}"""
+//      .out(reportQcBibliography)
+//      .named(s"$reportQcBibliography".split("/").last)
+//  
+//    cmd"""cat ${reportQcIntro} ${reportQcData} ${reportQcAncestry} ${reportQcIbdSexcheck} ${reportQcSampleqc} ${reportQcVariantqc} ${reportQcBibliography} > $reportQcTex"""
+//      .in(reportQcIntro, reportQcData, reportQcAncestry, reportQcIbdSexcheck, reportQcSampleqc, reportQcVariantqc, reportQcBibliography)
+//      .out(reportQcTex)
+//      .named(s"$reportQcTex".split("/").last)
+//  
+//    cmd"""$binPdflatex --output-directory=${localOutDir} $reportQcTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportQcTex """
+//      .in(reportQcTex)
+//      .out(reportQcPdf)
+//      .named(s"$reportQcPdf".split("/").last)
+//  
+//  }
+//
+//  // Generate analysis report files
+//  for {
+//    i <- 1 until phases.size + 1
+//  } {
+//
+//    val modelSeqPhase = modelSeq.filter(_._6 == i)
+//    val reportAnalysisIntro = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.intro.tex")
+//    val reportAnalysisData = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.data.tex")
+//    val reportAnalysisIntroInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.intro.input")
+//    val reportAnalysisDataInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.data.input")
+//    val reportAnalysisStrategy = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.strategy.tex")
+//    val reportAnalysisStrategyInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.strategy.input")
+//    val reportAnalysisBibliography = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.bibliography.tex")
+//    val reportAnalysisBibliographyInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.bibliography.input")
+//    val reportAnalysisTex = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.tex")
+//    val reportAnalysisInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.input")
+//    val reportAnalysisPdf = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.pdf")
+//    var reportAnalysisResultsList = Seq[Store]()
+//    var reportAnalysisResultsInputList = Seq[Store]()
+//    var reportAnalysisResultsStringList = Seq[String]()
+//    var reportAnalysisResultsInputStringList = Seq[String]()
+//    var reportAnalysisModelTop50KnownCitation = Seq[String]()
+//
+//    uger {
+//
+//      cmd"""$binPython $pyGenerateAnalysisReportIntro
+//        --id $projectId
+//        --phase $i
+//        --authors "$analysisReportAuthors" 
+//        --out-tex ${reportAnalysisIntro}
+//        --out-input ${reportAnalysisIntroInput}"""
+//        .in(Params.paramsByArrSorted.map(_.arrayData))
+//        .out(reportAnalysisIntro, reportAnalysisIntroInput)
+//        .named(s"$reportAnalysisIntro".split("/").last)
+//      
+//      cmd"""$binPython $pyGenerateAnalysisReportData
+//        --samples-upset-diagram ${reportQcSamplesRemainingUpsetplotPng}
+//        --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng} 
+//        --out-tex ${reportAnalysisData}
+//        --out-input ${reportAnalysisDataInput}"""
+//        .in(reportQcSamplesRemainingUpsetplotPng, reportQcVariantsRemainingUpsetplotPng)
+//        .out(reportAnalysisData, reportAnalysisDataInput)
+//        .named(s"$reportAnalysisData".split("/").last)
+//      
+//      cmd"""$binPython $pyGenerateAnalysisReportStrategy
+//        --out-tex ${reportAnalysisStrategy}
+//        --out-input ${reportAnalysisStrategyInput}"""
+//        .out(reportAnalysisStrategy, reportAnalysisStrategyInput)
+//        .named(s"$reportAnalysisStrategy".split("/").last)
+//
+//    }
+//      
+//    for {
+//      j <- 0 until phases(i-1).getObjList("phenotypes").size
+//    } {
+//
+//      val phenoName = phases(i-1).getObjList("phenotypes")(j).getStr("phenoName")
+//      val phenoLongName = phases(i-1).getObjList("phenotypes")(j).getStr("phenoLongName")
+//      val reportAnalysisPhenoSummary = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.summary.tex")
+//      val reportAnalysisPhenoSummaryInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.summary.input")
+//      val reportAnalysisPhenoCalibration = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.calibration.tex")
+//      val reportAnalysisPhenoCalibrationInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.calibration.input")
+//      val reportAnalysisPhenoTopLoci = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.top_loci.tex")
+//      val reportAnalysisPhenoTopLociInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.top_loci.input")
+//      val reportAnalysisPhenoKnownLoci = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.known_loci.tex")
+//      val reportAnalysisPhenoKnownLociInput = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${phenoName}.known_loci.input")
+//      var reportAnalysisPhenoDistPlotList = Seq[Store]()
+//      var reportAnalysisPhenoDistStratPlotList = Seq[Store]()
+//      var reportAnalysisPhenoDistPlotStrings = Seq[String]()
+//      var reportAnalysisPhenoDistStratPlotStrings = Seq[String]()
+//      var reportAnalysisModelPhenoFileStrings = Seq[String]()
+//      var reportAnalysisModelSamplesIncludeStrings = Seq[String]()
+//      var reportAnalysisModelPcsFileStrings = Seq[String]()
+//      var reportAnalysisModelPhenoFileList = Seq[Store]()
+//      var reportAnalysisModelSamplesIncludeList = Seq[Store]()
+//      var reportAnalysisModelPcsFileList = Seq[Store]()
+//      var reportAnalysisModelQqPlotList = Seq[Store]()
+//      var reportAnalysisModelMhtPlotList = Seq[Store]()
+//      var reportAnalysisModelTop20AnnotAlignedRiskList = Seq[Store]()
+//      var reportAnalysisModelTop50KnownList = Seq[Store]()
+//      var reportAnalysisModelRegplotsList = Seq[Store]()
+//      var reportAnalysisModelQqPlotStrings = Seq[String]()
+//      var reportAnalysisModelMhtPlotStrings = Seq[String]()
+//      var reportAnalysisModelRegplotsStrings = Seq[String]()
+//      var reportAnalysisModelTop20AnnotAlignedRiskStrings = Seq[String]()
+//      var reportAnalysisModelTop50KnownStrings = Seq[String]()
+//      var reportAnalysisModelTop50KnownDesc = Seq[String]()
+//      var reportAnalysisModelTop50KnownTag = Seq[String]()
+//
+//      for {
+//        k <- 0 until nArrays
+//      } {
+//
+//          val (_, paramsArr) = Params.paramsByArr(k)
+//          val reportAnalysisPhenoDistPlot = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${paramsArr.arrayId}.${phenoName}.dist.png")
+//          val reportAnalysisPhenoDistStratPlot = store.at(localOutDir / s"${projectId}.analysisreport.phase${i}.${paramsArr.arrayId}.${phenoName}.dist.strat.png")
+//
+//          reportAnalysisPhenoDistPlotStrings = reportAnalysisPhenoDistPlotStrings :+ paramsArr.arrayId + "___" + s"${reportAnalysisPhenoDistPlot.toString.split("@")(1)}"
+//          reportAnalysisPhenoDistStratPlotStrings = reportAnalysisPhenoDistStratPlotStrings :+ paramsArr.arrayId + "___" + s"${reportAnalysisPhenoDistStratPlot.toString.split("@")(1)}"
+//
+//          uger {
+//          
+//            cmd"""$binPython $pyPhenoDistPlot
+//              --pheno ${Input.Local.pheno}
+//              --pheno-name ${phenoName}
+//              --fam ${paramsArr.cleanName}.fam
+//              --out ${reportAnalysisPhenoDistPlot}"""
+//              .in(paramsArr.clean :+ ancestryInferredMerged :+ Input.Local.pheno)
+//              .out(reportAnalysisPhenoDistPlot)
+//              .named(s"$reportAnalysisPhenoDistPlot".split("/").last)
+//          
+//            cmd"""$binPython $pyPhenoDistPlot
+//              --strat
+//              --ancestry ${ancestryInferredMerged}
+//              --pheno ${Input.Local.pheno}
+//              --pheno-name ${phenoName}
+//              --fam ${paramsArr.cleanName}.fam
+//              --out ${reportAnalysisPhenoDistStratPlot}"""
+//              .in(paramsArr.clean :+ ancestryInferredMerged :+ Input.Local.pheno)
+//              .out(reportAnalysisPhenoDistStratPlot)
+//              .named(s"$reportAnalysisPhenoDistStratPlot".split("/").last)
+//          
+//          }
+//
+//          reportAnalysisPhenoDistPlotList = reportAnalysisPhenoDistPlotList :+ reportAnalysisPhenoDistPlot
+//          reportAnalysisPhenoDistStratPlotList = reportAnalysisPhenoDistStratPlotList :+ reportAnalysisPhenoDistStratPlot
+//
+//          for {
+//            m <-  modelSeq.zipWithIndex.filter(_._1._1 == phenoName).map(_._2)
+//          } {
+//
+//            val paramsModel = paramsArr.paramsByArrByModelSorted(m)
+//            val modelPhenoString = Seq(paramsModel.modelPheno, paramsModel.modelTrans, paramsModel.modelCovars.replace("+","_")).filter(_ != "").mkString("_")
+//            reportAnalysisModelPhenoFileList = reportAnalysisModelPhenoFileList :+ paramsModel.modelPhenoFile
+//            reportAnalysisModelSamplesIncludeList = reportAnalysisModelSamplesIncludeList :+ paramsModel.modelSamplesInclude
+//            reportAnalysisModelPcsFileList = reportAnalysisModelPcsFileList :+ paramsModel.modelPcsFile
+//            reportAnalysisModelPhenoFileStrings = reportAnalysisModelPhenoFileStrings :+ paramsArr.arrayId + "___" + modelPhenoString + "___" + s"${paramsModel.modelPhenoFile.toString.split("@")(1)}"
+//            reportAnalysisModelSamplesIncludeStrings = reportAnalysisModelSamplesIncludeStrings :+ paramsArr.arrayId + "___" + modelPhenoString + "___" + s"${paramsModel.modelSamplesInclude.toString.split("@")(1)}"
+//            reportAnalysisModelPcsFileStrings = reportAnalysisModelPcsFileStrings :+ paramsArr.arrayId + "___" + modelPhenoString + "___" + s"${paramsModel.modelPcsFile.toString.split("@")(1)}"
+//
+//          }
+//
+//      }
+//
+//      for {
+//        m <-  modelSeq.zipWithIndex.filter(_._1._1 == phenoName).map(_._2)
+//      } {
+//
+//        val paramsResult = Params.paramsByResultSorted(m)
+//        val resultPhenoString = Seq(paramsResult.resultPheno, paramsResult.resultTrans, paramsResult.resultCovars.replace("+","_")).filter(_ != "").mkString("_")
+//        reportAnalysisModelQqPlotList = reportAnalysisModelQqPlotList :+ paramsResult.resultFinalQqPlot
+//        reportAnalysisModelMhtPlotList = reportAnalysisModelMhtPlotList :+ paramsResult.resultFinalMhtPlot
+//        reportAnalysisModelTop20AnnotAlignedRiskList = reportAnalysisModelTop20AnnotAlignedRiskList :+ paramsResult.resultFinalTop20AnnotAlignedRisk
+//        reportAnalysisModelQqPlotStrings = reportAnalysisModelQqPlotStrings :+ resultPhenoString + "___" + s"${paramsResult.resultFinalQqPlot.toString.split("@")(1)}"
+//        reportAnalysisModelMhtPlotStrings = reportAnalysisModelMhtPlotStrings :+ resultPhenoString + "___" + s"${paramsResult.resultFinalMhtPlot.toString.split("@")(1)}"
+//        reportAnalysisModelTop20AnnotAlignedRiskStrings = reportAnalysisModelTop20AnnotAlignedRiskStrings :+ resultPhenoString + "___" + s"${paramsResult.resultFinalTop20AnnotAlignedRisk.toString.split("@")(1)}"
+//
+//        reportAnalysisModelRegplotsList = reportAnalysisModelRegplotsList ++ resultsFinalRegplots(m)
+//        var regPlotStrings = Seq[String]()
+//        for {
+//          p <- resultsFinalRegplots(m)
+//        } {
+//
+//          regPlotStrings = regPlotStrings :+ s"${p.toString.split("@")(1)}"
+//
+//        }
+//
+//        reportAnalysisModelRegplotsStrings = { 
+//          if (regPlotStrings.size > 0) { reportAnalysisModelRegplotsStrings :+ resultPhenoString + "___" + regPlotStrings.mkString(";") }
+//          else { reportAnalysisModelRegplotsStrings }
+//        }
+//
+//      }
+//
+//      for {
+//        m <-  knownLociSeq.zipWithIndex.filter(_._1._1 == phenoName).map(_._2)
+//      } {
+//
+//        val paramsResultKnownLoci = Params.paramsByResultKnownLociSorted(m)
+//        val resultKnownLociPhenoString = Seq(paramsResultKnownLoci.resultKnownLociPhenoName, paramsResultKnownLoci.resultKnownLociTrans, paramsResultKnownLoci.resultKnownLociCovars.replace("+","_")).filter(_ != "").mkString("_")
+//        reportAnalysisModelTop50KnownList = reportAnalysisModelTop50KnownList :+ paramsResultKnownLoci.resultKnownLociFinalTop50Known
+//        reportAnalysisModelTop50KnownStrings = reportAnalysisModelTop50KnownStrings :+ resultKnownLociPhenoString + "___" + s"${paramsResultKnownLoci.resultKnownLociFinalTop50Known.toString.split("@")(1)}"
+//        reportAnalysisModelTop50KnownDesc = reportAnalysisModelTop50KnownDesc :+ resultKnownLociPhenoString + "___" + s"${paramsResultKnownLoci.resultKnownLociDesc}"
+//        reportAnalysisModelTop50KnownTag = reportAnalysisModelTop50KnownTag :+ resultKnownLociPhenoString + "___" + s"${paramsResultKnownLoci.resultKnownLociTag}"
+//        reportAnalysisModelTop50KnownCitation = reportAnalysisModelTop50KnownCitation :+ s"${paramsResultKnownLoci.resultKnownLociTag}" + "___" + s"${paramsResultKnownLoci.resultKnownLociCitation}"
+//
+//      }
+//
+//      uger {
+//      
+//        cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
+//          --dist-plot "${reportAnalysisPhenoDistPlotStrings.mkString(",")}"
+//          --strat-dist-plot "${reportAnalysisPhenoDistStratPlotStrings.mkString(",")}"
+//          --pheno-master ${Input.Local.pheno}
+//          --id-col $phenoId
+//          --sex-col $phenoSrSex
+//          --pheno "${reportAnalysisModelPhenoFileStrings.mkString(",")}"
+//          --pheno-name ${phenoName}
+//          --pheno-long-name "${phenoLongName}"
+//          --ancestry ${ancestryInferredMerged}
+//          --samples-include "${reportAnalysisModelSamplesIncludeStrings.mkString(",")}"
+//          --pcs-include "${reportAnalysisModelPcsFileStrings.mkString(",")}"
+//          --out-tex ${reportAnalysisPhenoSummary}
+//          --out-input ${reportAnalysisPhenoSummaryInput}"""
+//          .in(reportAnalysisModelPhenoFileList ++ reportAnalysisModelSamplesIncludeList ++ reportAnalysisModelPcsFileList ++ reportAnalysisPhenoDistPlotList ++ reportAnalysisPhenoDistStratPlotList :+ ancestryInferredMerged :+ Input.Local.pheno)
+//          .out(reportAnalysisPhenoSummary, reportAnalysisPhenoSummaryInput)
+//          .named(s"$reportAnalysisPhenoSummary".split("/").last)
+//        
+//        cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
+//          --qq-plots "${reportAnalysisModelQqPlotStrings.mkString(",")}"
+//          --mht-plots "${reportAnalysisModelMhtPlotStrings.mkString(",")}"
+//          --pheno-name ${phenoName}
+//          --pheno-long-name "${phenoLongName}"
+//          --out-tex ${reportAnalysisPhenoCalibration}
+//          --out-input ${reportAnalysisPhenoCalibrationInput}"""
+//          .in(reportAnalysisModelQqPlotList ++ reportAnalysisModelMhtPlotList)
+//          .out(reportAnalysisPhenoCalibration, reportAnalysisPhenoCalibrationInput)
+//          .named(s"$reportAnalysisPhenoCalibration".split("/").last)
+//        
+//        cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
+//          --top-results "${reportAnalysisModelTop20AnnotAlignedRiskStrings.mkString(",")}"
+//          --regionals "${reportAnalysisModelRegplotsStrings.mkString(",")}"
+//          --pheno-name ${phenoName}
+//          --pheno-long-name "${phenoLongName}"
+//          --out-tex ${reportAnalysisPhenoTopLoci}
+//          --out-input ${reportAnalysisPhenoTopLociInput}"""
+//          .in(reportAnalysisModelTop20AnnotAlignedRiskList ++ reportAnalysisModelRegplotsList)
+//          .out(reportAnalysisPhenoTopLoci, reportAnalysisPhenoTopLociInput)
+//          .named(s"$reportAnalysisPhenoTopLoci".split("/").last)
+//
+//        cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
+//          --top-known-loci "${reportAnalysisModelTop50KnownStrings.mkString(",")}"
+//          --pheno-name ${phenoName}
+//          --pheno-long-name "${phenoLongName}"
+//          --desc "${reportAnalysisModelTop50KnownDesc.mkString(",,,")}"
+//          --tag "${reportAnalysisModelTop50KnownTag.mkString(",")}"
+//          --out-tex ${reportAnalysisPhenoKnownLoci}
+//          --out-input ${reportAnalysisPhenoKnownLociInput}"""
+//          .in(reportAnalysisModelTop50KnownList)
+//          .out(reportAnalysisPhenoKnownLoci, reportAnalysisPhenoKnownLociInput)
+//          .named(s"$reportAnalysisPhenoKnownLoci".split("/").last)
+//      
+//      }
+//
+//      reportAnalysisResultsList = reportAnalysisResultsList :+ reportAnalysisPhenoSummary :+ reportAnalysisPhenoCalibration :+ reportAnalysisPhenoTopLoci :+ reportAnalysisPhenoKnownLoci
+//      reportAnalysisResultsStringList = reportAnalysisResultsStringList :+ s"${reportAnalysisPhenoSummary.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoCalibration.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoTopLoci.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoKnownLoci.toString.split("@")(1)}"
+//      reportAnalysisResultsInputList = reportAnalysisResultsInputList :+ reportAnalysisPhenoSummaryInput :+ reportAnalysisPhenoCalibrationInput :+ reportAnalysisPhenoTopLociInput :+ reportAnalysisPhenoKnownLociInput
+//      reportAnalysisResultsInputStringList = reportAnalysisResultsInputStringList :+ s"${reportAnalysisPhenoSummaryInput.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoCalibrationInput.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoTopLociInput.toString.split("@")(1)}" :+ s"${reportAnalysisPhenoKnownLociInput.toString.split("@")(1)}"
+//
+//    }
+//
+//    uger {
+//
+//      cmd"""$binPython $pyGenerateAnalysisReportBibliography
+//        --names "${analysisReportAcknowledgements}"
+//        --known-loci-citations "${reportAnalysisModelTop50KnownCitation.mkString(",,,")}"
+//        --out-tex ${reportAnalysisBibliography}
+//        --out-input ${reportAnalysisBibliographyInput}"""
+//        .out(reportAnalysisBibliography, reportAnalysisBibliographyInput)
+//        .named(s"$reportAnalysisBibliography".split("/").last)
+//
+//      cmd"""cat ${reportAnalysisIntro} ${reportAnalysisData} ${reportAnalysisStrategy} ${reportAnalysisResultsStringList.mkString(" ")} ${reportAnalysisBibliography} > $reportAnalysisTex"""
+//        .in(reportAnalysisResultsList :+ reportAnalysisIntro :+ reportAnalysisData :+ reportAnalysisStrategy :+ reportAnalysisBibliography)
+//        .out(reportAnalysisTex)
+//        .named(s"$reportAnalysisTex".split("/").last)
+//      
+//      cmd"""cat ${reportAnalysisIntroInput} ${reportAnalysisDataInput} ${reportAnalysisStrategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${reportAnalysisBibliographyInput} > $reportAnalysisInput"""
+//        .in(reportAnalysisResultsInputList :+ reportAnalysisIntroInput :+ reportAnalysisDataInput :+ reportAnalysisStrategyInput :+ reportAnalysisBibliographyInput)
+//        .out(reportAnalysisInput)
+//        .named(s"$reportAnalysisInput".split("/").last)
+//      
+//      cmd"""$binPdflatex --output-directory=${localOutDir} $reportAnalysisTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportAnalysisTex """
+//        .in(reportAnalysisTex)
+//        .out(reportAnalysisPdf)
+//        .named(s"$reportAnalysisPdf".split("/").last)
+//
+//    }
+//
+//  }
+//}
 
 def qc1(i: Int): Store = {
 
@@ -1877,11 +1967,9 @@ def qc1(i: Int): Store = {
 
 }
 
-def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
+def qc2(i: Int): Unit = {
 
   val (_, paramsArr) = Params.paramsByArr(i)
-  var resultsMap = Seq[Map[(String, String, String, String, String), Store]]()
-  var knownLociMap = Seq[Map[(String, String, String, String, String, String), Store]]()
 
   /**
    * PCA Step
@@ -2166,6 +2254,18 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       .named(s"${paramsArr.cleanPcaScores}".split("/").last)
   
   }
+
+}
+
+def crossArrayQc(): Unit = {
+
+  
+}
+
+def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq[String]), Store] = {
+
+  val (_, paramsCohort) = Params.paramsByCohort(i)
+  var resultsMap = Seq[Map[(String, String, String, String, String), Store, Seq[String]]]()
   
   /**
    * Association Step
@@ -2174,14 +2274,14 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
    */
   
   for {
-    (model, paramsModel) <- paramsArr.paramsByArrByModel
+    (model, paramsModel) <- paramsCohort.paramsByCohortByModel
   } {
   
     google {
 
       hail"""$pyHailListSamples
-        --vds-in ${paramsArr.cleanVdsCloud}
-        --bim-in ${paramsArr.harmRefFiltPrunedNameCloud}.bim
+        --vds-in ${paramsCohort.cleanVdsCloud}
+        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
         --pheno-in ${Input.Google.pheno}
         --iid-col $phenoId
         --pheno-col ${paramsModel.modelPheno}
@@ -2189,7 +2289,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         --covars "${paramsModel.modelCovars}"
         --out-pheno-prelim ${paramsModel.modelPhenoPrelimFileCloud}
         --out-samples ${paramsModel.modelSamplesIncludeCloud}"""
-      .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno)
+      .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno)
       .out(paramsModel.modelPhenoPrelimFileCloud, paramsModel.modelSamplesIncludeCloud)
       .named(s"${paramsModel.modelPhenoPrelimFile}.google".split("/").last)
 
@@ -2207,21 +2307,21 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
       cmd"""$binRscript --vanilla --verbose
         $rGeneratePheno
         --cpus 4
-        --gds-in ${paramsArr.harmRefFiltPrunedPcaGds}
+        --gds-in ${paramsCohort.harmRefFiltPrunedPcaGds}
         --pheno-in ${Input.Local.pheno}
         --ancestry-in ${ancestryInferredMerged}
-        --ancestry-keep "${paramsModel.modelAncestryKeep}"
+        --ancestry-keep ${paramsModel.modelAncestry.mkString(",")}
         --pheno-col ${paramsModel.modelPheno}
         --iid-col $phenoId
         --samples-include ${paramsModel.modelSamplesInclude}
-        --variants-exclude ID ${paramsArr.finalVariantExclusions}
+        --variants-exclude ID ${paramsCohort.finalVariantExclusions}
         --test ${paramsModel.modelTest}
         --trans "${paramsModel.modelTrans}"
         --covars "${paramsModel.modelCovars}"
         --out-pheno ${paramsModel.modelPhenoFile}
         --out-pcs ${paramsModel.modelPcsFile}
         > ${paramsModel.modelPhenoFileLog}"""
-        .in(paramsArr.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsModel.modelSamplesInclude, paramsArr.finalVariantExclusions)
+        .in(paramsCohort.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsModel.modelSamplesInclude, paramsCohort.finalVariantExclusions)
         .out(paramsModel.modelPhenoFile, paramsModel.modelPcsFile, paramsModel.modelPhenoFileLog)
         .using("R-3.4")
         .named(s"${paramsModel.modelPhenoFile}".split("/").last)
@@ -2238,8 +2338,8 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
     google {
 
       hail"""$pyHailAssoc
-        --vds-in ${paramsArr.cleanVdsCloud}
-        --bim-in ${paramsArr.harmRefFiltPrunedNameCloud}.bim
+        --vds-in ${paramsCohort.cleanVdsCloud}
+        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
         --pheno-in ${paramsModel.modelPhenoFileCloud}
         --iid-col $phenoId
         --pheno-col ${paramsModel.modelPheno}
@@ -2248,7 +2348,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
         --trans "${paramsModel.modelTrans}"
         --covars "${paramsModel.modelCovars}"
         --out ${paramsModel.modelResultsCloud}"""
-          .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno :+ paramsModel.modelPhenoFileCloud)
+          .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno :+ paramsModel.modelPhenoFileCloud)
           .out(paramsModel.modelResultsCloud)
           .named(s"${paramsModel.modelResults}.google".split("/").last)
     
@@ -2269,7 +2369,7 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
 
     }
   
-    resultsMap = resultsMap :+ Map((paramsArr.arrayId, paramsModel.modelPheno, paramsModel.modelTest, paramsModel.modelCovars, paramsModel.modelTrans) -> paramsModel.modelResultsCloud)
+    resultsMap = resultsMap :+ Map((paramsModel.modelId, paramsModel.modelPheno, paramsModel.modelTest, paramsModel.modelCovars, paramsModel.modelTrans, paramsModel.modelAncestry) -> paramsModel.modelResultsCloud)
 
   }
 
@@ -2277,20 +2377,20 @@ def qc2(i: Int): Map[(String, String, String, String, String), Store] = {
 
 }
 
-def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = {
+def knownLociAssociation(i: Int): Map[(String, String, String, String, String, Seq[String]), Store] = {
 
-  val (_, paramsArr) = Params.paramsByArr(i)
-  var knownLociMap = Seq[Map[(String, String, String, String, String, String), Store]]()
+  val (_, paramsCohort) = Params.paramsByCohort(i)
+  var knownLociMap = Seq[Map[(String, String, String, String, String, Seq[String]), Store]]()
 
   for {
-    (model, paramsKnownLoci) <- paramsArr.paramsByArrByKnownLoci
+    (model, paramsKnownLoci) <- paramsCohort.paramsByCohortByKnownLoci
   } {
   
     google {
 
       hail"""$pyHailListSamples
-        --vds-in ${paramsArr.cleanVdsCloud}
-        --bim-in ${paramsArr.harmRefFiltPrunedNameCloud}.bim
+        --vds-in ${paramsCohort.cleanVdsCloud}
+        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
         --pheno-in ${Input.Google.pheno}
         --iid-col $phenoId
         --pheno-col ${paramsKnownLoci.knownLociPhenoName}
@@ -2298,7 +2398,7 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
         --covars "${paramsKnownLoci.knownLociCovars}"
         --out-pheno-prelim ${paramsKnownLoci.knownLociPhenoPrelimFileCloud}
         --out-samples ${paramsKnownLoci.knownLociSamplesIncludeCloud}"""
-        .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno)
+        .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno)
         .out(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociSamplesIncludeCloud)
         .named(s"${paramsKnownLoci.knownLociPhenoPrelimFile}.google".split("/").last)
 
@@ -2316,21 +2416,21 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
       cmd"""$binRscript --vanilla --verbose
         $rGeneratePheno
         --cpus 4
-        --gds-in ${paramsArr.harmRefFiltPrunedPcaGds}
+        --gds-in ${paramsCohort.harmRefFiltPrunedPcaGds}
         --pheno-in ${Input.Local.pheno}
         --ancestry-in ${ancestryInferredMerged}
-        --ancestry-keep "${paramsKnownLoci.knownLociPop}"
+        --ancestry-keep ${paramsKnownLoci.knownLociAncestry.mkString(",")}
         --pheno-col ${paramsKnownLoci.knownLociPhenoName}
         --iid-col $phenoId
         --samples-include ${paramsKnownLoci.knownLociSamplesInclude}
-        --variants-exclude ID ${paramsArr.finalVariantExclusions}
+        --variants-exclude ID ${paramsCohort.finalVariantExclusions}
         --test ${paramsKnownLoci.knownLociTest}
         --trans "${paramsKnownLoci.knownLociTrans}"
         --covars "${paramsKnownLoci.knownLociCovars}"
         --out-pheno ${paramsKnownLoci.knownLociPhenoFile}
         --out-pcs ${paramsKnownLoci.knownLociPcsFile}
         > ${paramsKnownLoci.knownLociPhenoFileLog}"""
-        .in(paramsArr.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsKnownLoci.knownLociSamplesInclude, paramsArr.finalVariantExclusions)
+        .in(paramsCohort.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsKnownLoci.knownLociSamplesInclude, paramsCohort.finalVariantExclusions)
         .out(paramsKnownLoci.knownLociPhenoFile, paramsKnownLoci.knownLociPcsFile, paramsKnownLoci.knownLociPhenoFileLog)
         .using("R-3.4")
         .named(s"${paramsKnownLoci.knownLociPhenoFile}".split("/").last)
@@ -2348,8 +2448,8 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
     google {
 
       hail"""$pyHailAssoc
-        --vds-in ${paramsArr.cleanVdsCloud}
-        --bim-in ${paramsArr.harmRefFiltPrunedNameCloud}.bim
+        --vds-in ${paramsCohort.cleanVdsCloud}
+        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
         --pheno-in ${paramsKnownLoci.knownLociPhenoFileCloud}
         --iid-col $phenoId
         --pheno-col ${paramsKnownLoci.knownLociPhenoName}
@@ -2359,7 +2459,7 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
         --trans "${paramsKnownLoci.knownLociTrans}"
         --covars "${paramsKnownLoci.knownLociCovars}"
         --out ${paramsKnownLoci.knownLociResultsCloud}"""
-        .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno :+ paramsKnownLoci.knownLociPhenoFileCloud :+ paramsKnownLoci.knownLociHiLdCloud)
+        .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno :+ paramsKnownLoci.knownLociPhenoFileCloud :+ paramsKnownLoci.knownLociHiLdCloud)
         .out(paramsKnownLoci.knownLociResultsCloud)
         .named(s"${paramsKnownLoci.knownLociResults}.google".split("/").last)
     
@@ -2371,7 +2471,7 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
 
     }
     
-    knownLociMap = knownLociMap :+ Map((paramsArr.arrayId, paramsKnownLoci.knownLociPhenoName, paramsKnownLoci.knownLociTest, paramsKnownLoci.knownLociCovars, paramsKnownLoci.knownLociTrans, paramsKnownLoci.knownLociPop) -> paramsKnownLoci.knownLociResultsCloud)
+    knownLociMap = knownLociMap :+ Map((paramsKnownLoci.knownLociId, paramsKnownLoci.knownLociPhenoName, paramsKnownLoci.knownLociTest, paramsKnownLoci.knownLociCovars, paramsKnownLoci.knownLociTrans, paramsKnownLoci.knownLociAncestry) -> paramsKnownLoci.knownLociResultsCloud)
   
   }
 
@@ -2379,243 +2479,242 @@ def qc3(i: Int): Map[(String, String, String, String, String, String), Store] = 
 
 }
 
-
-def mergeResults(i: Int): Unit = {
-
-  val (_, paramsResult) = Params.paramsByResult(i)
-  
-  /**
-   * Merge Step
-   *  Description: Run association tests
-   *  Requires: Hail
-   */
-  
-  val modelResultsMap = resultsStoresMapsList.flatten.toMap.filterKeys({e => e._2 == paramsResult.resultPheno && e._3 == paramsResult.resultTest && e._4 == paramsResult.resultCovars && e._5 == paramsResult.resultTrans})
-  
-  val modelResultsString = modelResultsMap.map { case (key, value) => s"""${key._1}___${value.toString.split("@")(1)}""" }.mkString(",")
-
-  var reportAnalysisResultKnownLociHiLdList = Seq[Store]()
-  var reportAnalysisResultKnownLociHiLdStrings = Seq[String]()
-      
-
-  for {
-    m <-  knownLociSeq.zipWithIndex.filter(_._1._1 == paramsResult.resultPheno).map(_._2)
-  } {
-      
-    val paramsResultKnownLoci = Params.paramsByResultKnownLociSorted(m)
-    reportAnalysisResultKnownLociHiLdList = reportAnalysisResultKnownLociHiLdList :+ paramsResultKnownLoci.resultKnownLociHiLd
-    reportAnalysisResultKnownLociHiLdStrings = reportAnalysisResultKnownLociHiLdStrings :+ s"${paramsResultKnownLoci.resultKnownLociHiLd.toString.split("@")(1)}"
-
-  }
-
-  google {
-
-    hail"""$pyHailMerge
-      --results "${modelResultsString}"
-      --test ${paramsResult.resultTest}
-      --out ${paramsResult.resultFinalCloud}"""
-      .in(modelResultsMap.values)
-      .out(paramsResult.resultFinalCloud)
-      .named(s"${paramsResult.resultFinal}.google".split("/").last)
-
-  }
-  
-  local {
-
-    googleCopy(paramsResult.resultFinalCloud, paramsResult.resultFinal)
-
-  }
-
-  uger {
-
-    cmd"""$binTabix -f -b 2 -e 2 ${paramsResult.resultFinal}"""
-      .in(paramsResult.resultFinal)
-      .out(paramsResult.resultFinalTbi)
-      .named(s"${paramsResult.resultFinalTbi}".split("/").last)
-
-  }
-  
-  /**
-   * Top Results Step
-   *  Description: Extract top results and annotate
-   *  Requires: Python
-   */
-  
-  uger {
-  
-    cmd"""$binPython $pyTop1000
-      --results ${paramsResult.resultFinal}
-      --p pval 
-      --out ${paramsResult.resultFinalTop1000}"""
-      .in(paramsResult.resultFinal)
-      .out(paramsResult.resultFinalTop1000)
-      .named(s"${paramsResult.resultFinalTop1000}".split("/").last)
-    
-    cmd"""(sed '1d' ${paramsResult.resultFinalTop1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${Input.Local.genes} --out-delim \\t) | sort -u > ${paramsResult.resultFinalTop1000Genes}"""
-      .in(paramsResult.resultFinalTop1000, Input.Local.genes)
-      .out(paramsResult.resultFinalTop1000Genes)
-      .named(s"${paramsResult.resultFinalTop1000Genes}".split("/").last)
-    
-    cmd"""$binRscript --vanilla --verbose
-      $rTop20
-      --results ${paramsResult.resultFinalTop1000}
-      --chr "#chr"
-      --pos pos
-      --genes ${paramsResult.resultFinalTop1000Genes}
-      --known-loci ${reportAnalysisResultKnownLociHiLdStrings.mkString(",")}
-      --p pval
-      --test ${paramsResult.resultTest}
-      --out ${paramsResult.resultFinalTop20AnnotAlignedRisk}"""
-      .in(reportAnalysisResultKnownLociHiLdList :+ paramsResult.resultFinalTop1000 :+ paramsResult.resultFinalTop1000Genes)
-      .out(paramsResult.resultFinalTop20AnnotAlignedRisk)
-      .using("R-3.4")
-      .named(s"${paramsResult.resultFinalTop20AnnotAlignedRisk}".split("/").last)
-  
-  }
-
-  /**
-   * Plot Step
-   *  Description: Run association tests
-   *  Requires: Python
-   */
-  
-  uger {
-
-    cmd"""$binPython $pyQqPlot
-      --results ${paramsResult.resultFinal}
-      --p pval
-      --out ${paramsResult.resultFinalQqPlot}"""
-      .in(paramsResult.resultFinal)
-      .out(paramsResult.resultFinalQqPlot)
-      .named(s"${paramsResult.resultFinalQqPlot}".split("/").last)
-    
-    cmd"""$binPython $pyMhtPlot
-      --results ${paramsResult.resultFinal}
-      --chr "#chr"
-      --pos pos
-      --p pval
-      --out ${paramsResult.resultFinalMhtPlot}"""
-      .in(paramsResult.resultFinal)
-      .out(paramsResult.resultFinalMhtPlot)
-      .named(s"${paramsResult.resultFinalMhtPlot}".split("/").last)
-    
-    cmd"""$binPython $pyExtractTopRegions
-      --results ${paramsResult.resultFinal}
-      --chr "#chr"
-      --pos pos
-      --p pval
-      --out ${paramsResult.resultFinalSigRegions}"""
-      .in(paramsResult.resultFinal)
-      .out(paramsResult.resultFinalSigRegions)
-      .named(s"${paramsResult.resultFinalSigRegions}".split("/").last)
-
-  }
-  
-}
-
-def mergeKnownLoci(i: Int): Unit = {
-
-  val (_, paramsResultKnownLoci) = Params.paramsByResultKnownLoci(i)
-  
-  /**
-   * Merge Step
-   *  Description: Run association tests for known loci
-   *  Requires: Hail
-   */
-
-  val knownLociMap = resultsKnownLociStoresMapsList.flatten.toMap.filterKeys({e => e._2 == paramsResultKnownLoci.resultKnownLociPhenoName && e._3 == paramsResultKnownLoci.resultKnownLociTest && e._4 == paramsResultKnownLoci.resultKnownLociCovars && e._5 == paramsResultKnownLoci.resultKnownLociTrans && e._6 == paramsResultKnownLoci.resultKnownLociPop})
-  
-  val knownLociString = knownLociMap.map { case (key, value) => s"""${key._1}___${value.toString.split("@")(1)}""" }.mkString(",")
-
-  google {
-
-    hail"""$pyHailMerge
-      --results "${knownLociString}"
-      --test ${paramsResultKnownLoci.resultKnownLociTest}
-      --out ${paramsResultKnownLoci.resultKnownLociFinalCloud}"""
-      .in(knownLociMap.values)
-      .out(paramsResultKnownLoci.resultKnownLociFinalCloud)
-      .named(s"${paramsResultKnownLoci.resultKnownLociFinal}.google".split("/").last)
-
-  }
-  
-  local {
-
-    googleCopy(paramsResultKnownLoci.resultKnownLociFinalCloud, paramsResultKnownLoci.resultKnownLociFinal)
-
-  }
-  
-  uger {
-
-    cmd"""$binRscript --vanilla --verbose
-      $rTop50Known
-      --results ${paramsResultKnownLoci.resultKnownLociFinal}
-      --known-loci ${paramsResultKnownLoci.resultKnownLociData}
-      --known-ld ${paramsResultKnownLoci.resultKnownLociHiLd}
-      --known-loci-n "${paramsResultKnownLoci.resultKnownLociN}"
-      --known-loci-case "${paramsResultKnownLoci.resultKnownLociCase}"
-      --known-loci-ctrl "${paramsResultKnownLoci.resultKnownLociCtrl}"
-      --test ${paramsResultKnownLoci.resultKnownLociTest}
-      --out ${paramsResultKnownLoci.resultKnownLociFinalTop50Known}"""
-      .in(paramsResultKnownLoci.resultKnownLociFinal, paramsResultKnownLoci.resultKnownLociData)
-      .out(paramsResultKnownLoci.resultKnownLociFinalTop50Known)
-      .using("R-3.4")
-      .named(s"${paramsResultKnownLoci.resultKnownLociFinalTop50Known}".split("/").last)
-
-  }
-
-}
-
-def plotSigRegions(i: Int): Seq[Store] = {
-
-  val (_, paramsResult) = Params.paramsByResult(i)
-  var resultsFinalRegplotList = Seq[Store]()
-  val regions: Seq[String] = {
-    enclosed(scala.io.Source.fromFile(paramsResult.resultFinalSigRegions.path.toFile)) { 
-      _.getLines.filter(_.trim.nonEmpty).toIndexedSeq
-    }
-  }
-
-  for (region <- regions) {
-  
-    val regionChr = region.split("\t")(0)
-    val regionStart = region.split("\t")(1)
-    val regionEnd = region.split("\t")(2)
-    val regionVar = region.split("\t")(3)
-    val resultsFinalRegplotData = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}_${regionEnd}.data.tsv")
-    val resultsFinalRegplotLog = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}_${regionEnd}.locuszoom.log")
-    val resultsFinalRegplotPdf = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}-${regionEnd}" / s"chr${regionChr}_${regionStart}-${regionEnd}.pdf")
-    val resultsFinalRegplotPng = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}_${regionEnd}.png")
-
-    uger {
-
-      cmd"""pcol=`$binTabix -H ${paramsResult.resultFinal} | tr "\t" "\n" | grep -n pval | awk -F':' '{print $$1}'`; (echo -e "id\tpval"; $binTabix ${paramsResult.resultFinal} ${regionChr}:${regionStart}-${regionEnd} | awk -v pcol=$$pcol '{if(substr($$4 ,0, 2) != "rs") { print "chr"$$1":"$$2"\t"$$pcol } else print $$4"\t"$$pcol}') > ${resultsFinalRegplotData}"""
-        .in(paramsResult.resultFinal)
-        .out(resultsFinalRegplotData)
-        .named(s"${resultsFinalRegplotData}".split("/").last)
-
-    }
-
-    ugerWith(mem=8) {
-      
-      cmd"""$binLocuszoom --metal ${resultsFinalRegplotData} --chr $regionChr --start $regionStart --end $regionEnd --markercol id --pvalcol pval --pop EUR --build hg19 --source 1000G_Nov2014 --no-date --prefix ${paramsResult.resultFinalRegplotName}_${regionVar} --cache None  > ${resultsFinalRegplotLog}"""
-        .in(resultsFinalRegplotData)
-        .out(resultsFinalRegplotPdf, resultsFinalRegplotLog)
-        .named(s"${resultsFinalRegplotPng}".split("/").last.replace(".png",".pdf"))
-        .using("R-3.4","PLINK2","Tabix")
-
-      cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${resultsFinalRegplotPdf}[0] $resultsFinalRegplotPng"""
-        .in(resultsFinalRegplotPdf)
-        .out(resultsFinalRegplotPng)
-        .named(s"${resultsFinalRegplotPng}".split("/").last)
-
-    }
-  
-    resultsFinalRegplotList = resultsFinalRegplotList :+ resultsFinalRegplotPng
-  
-  }
-
-  resultsFinalRegplotList
-
-}
+//def mergeResults(i: Int): Unit = {
+//
+//  val (_, paramsResult) = Params.paramsByResult(i)
+//  
+//  /**
+//   * Merge Step
+//   *  Description: Run association tests
+//   *  Requires: Hail
+//   */
+//  
+//  val modelResultsMap = resultsStoresMapsList.flatten.toMap.filterKeys({e => e._2 == paramsResult.resultPheno && e._3 == paramsResult.resultTest && e._4 == paramsResult.resultCovars && e._5 == paramsResult.resultTrans})
+//  
+//  val modelResultsString = modelResultsMap.map { case (key, value) => s"""${key._1}___${value.toString.split("@")(1)}""" }.mkString(",")
+//
+//  var reportAnalysisResultKnownLociHiLdList = Seq[Store]()
+//  var reportAnalysisResultKnownLociHiLdStrings = Seq[String]()
+//      
+//
+//  for {
+//    m <-  knownLociSeq.zipWithIndex.filter(_._1._1 == paramsResult.resultPheno).map(_._2)
+//  } {
+//      
+//    val paramsResultKnownLoci = Params.paramsByResultKnownLociSorted(m)
+//    reportAnalysisResultKnownLociHiLdList = reportAnalysisResultKnownLociHiLdList :+ paramsResultKnownLoci.resultKnownLociHiLd
+//    reportAnalysisResultKnownLociHiLdStrings = reportAnalysisResultKnownLociHiLdStrings :+ s"${paramsResultKnownLoci.resultKnownLociHiLd.toString.split("@")(1)}"
+//
+//  }
+//
+//  google {
+//
+//    hail"""$pyHailMerge
+//      --results "${modelResultsString}"
+//      --test ${paramsResult.resultTest}
+//      --out ${paramsResult.resultFinalCloud}"""
+//      .in(modelResultsMap.values)
+//      .out(paramsResult.resultFinalCloud)
+//      .named(s"${paramsResult.resultFinal}.google".split("/").last)
+//
+//  }
+//  
+//  local {
+//
+//    googleCopy(paramsResult.resultFinalCloud, paramsResult.resultFinal)
+//
+//  }
+//
+//  uger {
+//
+//    cmd"""$binTabix -f -b 2 -e 2 ${paramsResult.resultFinal}"""
+//      .in(paramsResult.resultFinal)
+//      .out(paramsResult.resultFinalTbi)
+//      .named(s"${paramsResult.resultFinalTbi}".split("/").last)
+//
+//  }
+//  
+//  /**
+//   * Top Results Step
+//   *  Description: Extract top results and annotate
+//   *  Requires: Python
+//   */
+//  
+//  uger {
+//  
+//    cmd"""$binPython $pyTop1000
+//      --results ${paramsResult.resultFinal}
+//      --p pval 
+//      --out ${paramsResult.resultFinalTop1000}"""
+//      .in(paramsResult.resultFinal)
+//      .out(paramsResult.resultFinalTop1000)
+//      .named(s"${paramsResult.resultFinalTop1000}".split("/").last)
+//    
+//    cmd"""(sed '1d' ${paramsResult.resultFinalTop1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${Input.Local.genes} --out-delim \\t) | sort -u > ${paramsResult.resultFinalTop1000Genes}"""
+//      .in(paramsResult.resultFinalTop1000, Input.Local.genes)
+//      .out(paramsResult.resultFinalTop1000Genes)
+//      .named(s"${paramsResult.resultFinalTop1000Genes}".split("/").last)
+//    
+//    cmd"""$binRscript --vanilla --verbose
+//      $rTop20
+//      --results ${paramsResult.resultFinalTop1000}
+//      --chr "#chr"
+//      --pos pos
+//      --genes ${paramsResult.resultFinalTop1000Genes}
+//      --known-loci ${reportAnalysisResultKnownLociHiLdStrings.mkString(",")}
+//      --p pval
+//      --test ${paramsResult.resultTest}
+//      --out ${paramsResult.resultFinalTop20AnnotAlignedRisk}"""
+//      .in(reportAnalysisResultKnownLociHiLdList :+ paramsResult.resultFinalTop1000 :+ paramsResult.resultFinalTop1000Genes)
+//      .out(paramsResult.resultFinalTop20AnnotAlignedRisk)
+//      .using("R-3.4")
+//      .named(s"${paramsResult.resultFinalTop20AnnotAlignedRisk}".split("/").last)
+//  
+//  }
+//
+//  /**
+//   * Plot Step
+//   *  Description: Run association tests
+//   *  Requires: Python
+//   */
+//  
+//  uger {
+//
+//    cmd"""$binPython $pyQqPlot
+//      --results ${paramsResult.resultFinal}
+//      --p pval
+//      --out ${paramsResult.resultFinalQqPlot}"""
+//      .in(paramsResult.resultFinal)
+//      .out(paramsResult.resultFinalQqPlot)
+//      .named(s"${paramsResult.resultFinalQqPlot}".split("/").last)
+//    
+//    cmd"""$binPython $pyMhtPlot
+//      --results ${paramsResult.resultFinal}
+//      --chr "#chr"
+//      --pos pos
+//      --p pval
+//      --out ${paramsResult.resultFinalMhtPlot}"""
+//      .in(paramsResult.resultFinal)
+//      .out(paramsResult.resultFinalMhtPlot)
+//      .named(s"${paramsResult.resultFinalMhtPlot}".split("/").last)
+//    
+//    cmd"""$binPython $pyExtractTopRegions
+//      --results ${paramsResult.resultFinal}
+//      --chr "#chr"
+//      --pos pos
+//      --p pval
+//      --out ${paramsResult.resultFinalSigRegions}"""
+//      .in(paramsResult.resultFinal)
+//      .out(paramsResult.resultFinalSigRegions)
+//      .named(s"${paramsResult.resultFinalSigRegions}".split("/").last)
+//
+//  }
+//  
+//}
+//
+//def mergeKnownLoci(i: Int): Unit = {
+//
+//  val (_, paramsResultKnownLoci) = Params.paramsByResultKnownLoci(i)
+//  
+//  /**
+//   * Merge Step
+//   *  Description: Run association tests for known loci
+//   *  Requires: Hail
+//   */
+//
+//  val knownLociMap = resultsKnownLociStoresMapsList.flatten.toMap.filterKeys({e => e._2 == paramsResultKnownLoci.resultKnownLociPhenoName && e._3 == paramsResultKnownLoci.resultKnownLociTest && e._4 == paramsResultKnownLoci.resultKnownLociCovars && e._5 == paramsResultKnownLoci.resultKnownLociTrans && e._6 == paramsResultKnownLoci.resultKnownLociPop})
+//  
+//  val knownLociString = knownLociMap.map { case (key, value) => s"""${key._1}___${value.toString.split("@")(1)}""" }.mkString(",")
+//
+//  google {
+//
+//    hail"""$pyHailMerge
+//      --results "${knownLociString}"
+//      --test ${paramsResultKnownLoci.resultKnownLociTest}
+//      --out ${paramsResultKnownLoci.resultKnownLociFinalCloud}"""
+//      .in(knownLociMap.values)
+//      .out(paramsResultKnownLoci.resultKnownLociFinalCloud)
+//      .named(s"${paramsResultKnownLoci.resultKnownLociFinal}.google".split("/").last)
+//
+//  }
+//  
+//  local {
+//
+//    googleCopy(paramsResultKnownLoci.resultKnownLociFinalCloud, paramsResultKnownLoci.resultKnownLociFinal)
+//
+//  }
+//  
+//  uger {
+//
+//    cmd"""$binRscript --vanilla --verbose
+//      $rTop50Known
+//      --results ${paramsResultKnownLoci.resultKnownLociFinal}
+//      --known-loci ${paramsResultKnownLoci.resultKnownLociData}
+//      --known-ld ${paramsResultKnownLoci.resultKnownLociHiLd}
+//      --known-loci-n "${paramsResultKnownLoci.resultKnownLociN}"
+//      --known-loci-case "${paramsResultKnownLoci.resultKnownLociCase}"
+//      --known-loci-ctrl "${paramsResultKnownLoci.resultKnownLociCtrl}"
+//      --test ${paramsResultKnownLoci.resultKnownLociTest}
+//      --out ${paramsResultKnownLoci.resultKnownLociFinalTop50Known}"""
+//      .in(paramsResultKnownLoci.resultKnownLociFinal, paramsResultKnownLoci.resultKnownLociData)
+//      .out(paramsResultKnownLoci.resultKnownLociFinalTop50Known)
+//      .using("R-3.4")
+//      .named(s"${paramsResultKnownLoci.resultKnownLociFinalTop50Known}".split("/").last)
+//
+//  }
+//
+//}
+//
+//def plotSigRegions(i: Int): Seq[Store] = {
+//
+//  val (_, paramsResult) = Params.paramsByResult(i)
+//  var resultsFinalRegplotList = Seq[Store]()
+//  val regions: Seq[String] = {
+//    enclosed(scala.io.Source.fromFile(paramsResult.resultFinalSigRegions.path.toFile)) { 
+//      _.getLines.filter(_.trim.nonEmpty).toIndexedSeq
+//    }
+//  }
+//
+//  for (region <- regions) {
+//  
+//    val regionChr = region.split("\t")(0)
+//    val regionStart = region.split("\t")(1)
+//    val regionEnd = region.split("\t")(2)
+//    val regionVar = region.split("\t")(3)
+//    val resultsFinalRegplotData = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}_${regionEnd}.data.tsv")
+//    val resultsFinalRegplotLog = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}_${regionEnd}.locuszoom.log")
+//    val resultsFinalRegplotPdf = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}-${regionEnd}" / s"chr${regionChr}_${regionStart}-${regionEnd}.pdf")
+//    val resultsFinalRegplotPng = store.at(localOutDir / s"${paramsResult.resultFinalRegplotBase}_${regionVar}_chr${regionChr}_${regionStart}_${regionEnd}.png")
+//
+//    uger {
+//
+//      cmd"""pcol=`$binTabix -H ${paramsResult.resultFinal} | tr "\t" "\n" | grep -n pval | awk -F':' '{print $$1}'`; (echo -e "id\tpval"; $binTabix ${paramsResult.resultFinal} ${regionChr}:${regionStart}-${regionEnd} | awk -v pcol=$$pcol '{if(substr($$4 ,0, 2) != "rs") { print "chr"$$1":"$$2"\t"$$pcol } else print $$4"\t"$$pcol}') > ${resultsFinalRegplotData}"""
+//        .in(paramsResult.resultFinal)
+//        .out(resultsFinalRegplotData)
+//        .named(s"${resultsFinalRegplotData}".split("/").last)
+//
+//    }
+//
+//    ugerWith(mem=8) {
+//      
+//      cmd"""$binLocuszoom --metal ${resultsFinalRegplotData} --chr $regionChr --start $regionStart --end $regionEnd --markercol id --pvalcol pval --pop EUR --build hg19 --source 1000G_Nov2014 --no-date --prefix ${paramsResult.resultFinalRegplotName}_${regionVar} --cache None  > ${resultsFinalRegplotLog}"""
+//        .in(resultsFinalRegplotData)
+//        .out(resultsFinalRegplotPdf, resultsFinalRegplotLog)
+//        .named(s"${resultsFinalRegplotPng}".split("/").last.replace(".png",".pdf"))
+//        .using("R-3.4","PLINK2","Tabix")
+//
+//      cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${resultsFinalRegplotPdf}[0] $resultsFinalRegplotPng"""
+//        .in(resultsFinalRegplotPdf)
+//        .out(resultsFinalRegplotPng)
+//        .named(s"${resultsFinalRegplotPng}".split("/").last)
+//
+//    }
+//  
+//    resultsFinalRegplotList = resultsFinalRegplotList :+ resultsFinalRegplotPng
+//  
+//  }
+//
+//  resultsFinalRegplotList
+//
+//}
 
