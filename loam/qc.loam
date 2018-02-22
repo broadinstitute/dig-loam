@@ -28,31 +28,6 @@ val analysisReportAuthors = dataConfig.getStrList("analysisReportAuthors").mkStr
 val analysisReportAcknowledgements = dataConfig.getStrList("analysisReportAcknowledgements").mkString(",")
 val ancestryInferenceFeatures = if (dataConfig.isDefined("ancestryInferenceFeatures")) { "1" * dataConfig.getInt("ancestryInferenceFeatures") + "0" * (20 - dataConfig.getInt("ancestryInferenceFeatures")) } else { "1" * 3 + "0" * (20 - 3) }
 
-//// generate list of tuples that define each cohort model
-//var modelSeq: Seq[(String, String, String, String, String, String, Int)] = Seq()
-//val phases = dataConfig.getObjList("phases")
-//for { i <- 0 until phases.size } 
-//  {
-//    for { j <- 0 until phases(i).getObjList("phenotypes").size }
-//      {
-//        for { test <- phases(i).getObjList("phenotypes")(j).getStrList("tests") }
-//          {
-//            for { covars <- phases(i).getObjList("phenotypes")(j).getStrList("covars") }
-//              {
-//                modelSeq = modelSeq :+ (
-//                  (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
-//                    phases(i).getObjList("phenotypes")(j).getStr("trans"),
-//                    test,
-//                    covars,
-//                    phases(i).getStr("strat"),
-//                    phases(i).getObjList("phenotypes")(j).getStr("ancestryKeep"),
-//                    i + 1)
-//                  )
-//              }
-//          }
-//      }
-//  }
-
 // generate list of tuples that define each cohort-level model
 var modelSeq: Seq[(String, String, String, String, String, String, Seq[String], Boolean, Int)] = Seq()
 val phases = dataConfig.getObjList("phases")
@@ -84,30 +59,6 @@ for { i <- 0 until nPhases }
           }
       }
   }
-
-//// generate list of tuples that define each known loci table
-//var knownLociSeq: Seq[(String, String, String, String, String, String, String, String, Int, Int, Int)] = Seq()
-//for { i <- 0 until phases.size } 
-//  {
-//    for { j <- 0 until phases(i).getObjList("phenotypes").size }
-//      {
-//        for { k <- 0 until phases(i).getObjList("phenotypes")(j).getObjList("knownLoci").size }
-//          {
-//              knownLociSeq = knownLociSeq :+ (
-//                (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
-//                  phases(i).getObjList("phenotypes")(j).getStr("trans"),
-//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("test"),
-//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("covars"),
-//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("pop"),
-//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("hiLd"),
-//                  phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("data"),
-//                  i + 1,
-//                  j + 1,
-//                  k + 1)
-//                )
-//          }
-//      }
-//  }
 
 // generate list of tuples that define each known loci table
 var knownLociSeq: Seq[(String, String, String, String, String, String, String, String, String, Boolean, Int, Int, Int)] = Seq()
@@ -228,6 +179,10 @@ object Params {
   //  resultFinalRegplotBase: String,
   //  resultFinalRegplotName: Path)
 
+  final case class MergedQc(
+    mergedQcName: Path,
+    mergedQc: Seq[Store])
+
   final case class KnownLoci(
     knownLociPhenoName: String,
     knownLociTrans: String,
@@ -274,12 +229,14 @@ object Params {
   //  resultKnownLociFinalTop50Known: Store)
 
   final case class Cohort(
+    cohortId: String,
+    cohortArray: String,
+    cohortAncestry: Seq[String],
+    cohortReport: Boolean,
     paramsByCohortByModel: Seq[(Int, Model)],
-    paramsByArrByKnownLoci: Seq[(Int, KnownLoci)],
-    paramsByArrByMetric: Seq[(Int, Metric)],
-    paramsByArrByChrSorted: Seq[Chr],
+    paramsByCohortByKnownLoci: Seq[(Int, KnownLoci)],
     paramsByCohortByModelSorted: Seq[Model],
-    paramsByArrByKnownLociSorted: Seq[KnownLoci])
+    paramsByCohortByKnownLociSorted: Seq[KnownLoci])
 
   final case class Arr(
     arrayId: String,
@@ -326,6 +283,7 @@ object Params {
     harmRefFiltVariantsPrunedInCloud: Store,
     harmRefFiltPrunedName: Path,
     harmRefFiltPruned: Seq[Store],
+    harmRefMergeFam: Store,
     harmRefFiltPrunedNameCloud: URI,
     harmRefFiltPrunedCloud: Seq[Store],
     harmRefFiltPrunedVdsCloud: Store,
@@ -566,11 +524,15 @@ object Params {
     }
 
     val (_, paramsByCohortByModelSorted) = paramsByCohortByModel.unzip
-    val (_, paramsByArrByKnownLociSorted) = paramsByArrByKnownLoci.unzip
+    val (_, paramsByCohortByKnownLociSorted) = paramsByCohortByKnownLoci.unzip
 
     cohort -> Cohort(
+      cohortId = cohortId,
+      cohortArray = cohortArray,
+      cohortAncestry = cohortAncestry,
+      cohortReport = cohortReport,
       paramsByCohortByModelSorted = paramsByCohortByModelSorted,
-      paramsByArrByKnownLociSorted = paramsByArrByKnownLociSorted)
+      paramsByCohortByKnownLociSorted = paramsByCohortByKnownLociSorted)
 
   }
 
@@ -738,6 +700,7 @@ object Params {
     harmRefFiltVariantsPrunedInCloud = store.at(googleOutDir / s"${harmRefFiltPrunedBase}.in"),
     harmRefFiltPrunedName = harmRefFiltPrunedName,
     harmRefFiltPruned = bedBimFam(harmRefFiltPrunedName),
+    harmRefMergeFam = store.at(localOutDir / s"${harmRefFiltPrunedBase}.merge.fam"),
     harmRefFiltPrunedNameCloud = harmRefFiltPrunedNameCloud,
     harmRefFiltPrunedCloud = bedBimFam(harmRefFiltPrunedNameCloud),
     harmRefFiltPrunedVdsCloud = store.at(googleOutDir / s"${harmRefFiltPrunedBase}.vds"),
@@ -866,6 +829,15 @@ for {
 } yield { 
 
   qc2(i)
+
+}
+
+// Perform qc3
+for {
+  i <- 0 until nCohorts
+} yield { 
+
+  qc3(i)
 
 }
 
@@ -1820,7 +1792,7 @@ def qc1(i: Int): Store = {
     googleCopy(paramsArr.harmRefFiltPrunedCloud, paramsArr.harmRefFiltPruned)
 
   }
-  
+
   /**
    * Kinship Step
    *  Description: Calculate kinship to identify duplicates and any samples exhibiting abnormal (excessive) sharing
@@ -2257,9 +2229,73 @@ def qc2(i: Int): Unit = {
 
 }
 
-def crossArrayQc(): Unit = {
+def qc3(): Unit = {
 
-  
+  val (_, paramsCohort) = Params.paramsByCohort(i)
+
+  paramsArr = paramsByArrSorted.zipWithIndex collect { case (x,i) if x.arrayId == paramsCohort.cohortArray => x }
+
+  uger {
+
+    cmd"""awk -v var=${paramsCohort.ancestry.mkString(",")} '{split(var,arr,","); for (a in arr) { if(arr[a] == $$2) print $$1, $$1 } }' ${ancestryInferredMerged} > ${paramsCohort.samples}"""
+    .in(ancestryInferredMerged)
+    .out(paramsCohort.samples)
+    .named(s"${paramsCohort.samples}".split("/").last)
+
+    cmd"""$binPlink --bfile ${paramsArr.harmRefFiltName} --keep ${paramsCohort.samples} --make-bed --out ${paramsCohort.harmRefFiltName}"""
+    .in(paramsArr.harmRefFilt :+ paramsCohort.samples)
+    .out(paramsCohort.harmRefFilt)
+    .named(s"${paramsCohort.harmRefFilt}".split("/").last)
+
+    cmd"""awk -v c=${paramsCohort.cohortId} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${paramsCohort.harmRefFiltName}.fam > ${paramsCohort.harmRefFiltFamMerge}"""
+    .in(paramsCohort.harmRefFilt)
+    .out(paramsCohort.harmRefFiltFamMerge)
+    .named(s"${paramsCohort.harmRefFiltFamMerge}".split("/").last)
+
+  }
+
+
+}
+
+def crossCohortQc(): Unit = {  
+
+  var mergedQcFiles = Seq[Seq[String]]()
+  var mergedQcCommonCmd: String = ""
+
+  for { 
+    i <- 0 until nCohorts
+  } {
+
+    val (_, paramsCohort) = Params.paramsByCohort(i)
+
+    mergedQcFiles = mergedQcFiles :+ Seq(s"${paramsCohort.harmRefFilt}.bed", s"${paramsCohort.harmRefFilt}.bim", s"${paramsCohort.harmRefFiltFamMerge}")
+    mergedQcCommonCmd = if (i == 0) {
+      mergedQcCommonCmd + s"cat ${paramsCohort.harmRefFilt}.bim"
+    } else {
+      mergedQcCommonCmd + s" | grep -xF -f- ${paramsCohort.harmRefFilt}.bim"
+    }
+
+  }
+
+  val arrayMergeQcFilesConcat = mergedQcFiles.drop(1).map{ case Seq(x, y, z) => "%s %s %s" format (x, y, z) }.mkString("\n")
+
+  uger {
+
+    cmd"""${mergedQcCommonCmd} | awk '{print $$2}' > ${mergedQcCommon}"""
+    .in(paramsCohort.harmRefFilt :+ Params.paramsByCohortSorted.map(_.harmRefFiltFamMerge))
+    .out(mergedQcCommon)
+    .named(s"${mergedQcCommon}".split("/").last)
+
+    cmd"""echo "$arrayMergeQcFilesConcat" > ${mergedQcList}"""
+    .out(mergedQcList)
+    .named(s"${mergedQcList}".split("/").last)
+
+    cmd"""$binPlink --bed mergedQcFiles(0)(0) --bim mergedQcFiles(0)(1) --fam mergedQcFiles(0)(2) --merge-list ${mergedQcList} --make-bed --out $mergedQcName"""
+    .in(paramsCohort.harmRefFiltPruned :+ Params.paramsByCohortSorted.map(_.harmRefFiltFamMerge) :+ mergedQcList)
+    .out(mergedQc)
+
+  }
+
 }
 
 def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq[String]), Store] = {
