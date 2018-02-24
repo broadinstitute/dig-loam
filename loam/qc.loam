@@ -268,8 +268,6 @@ object Params {
     harmForceA2: Store,
     kinName: Path,
     kinLog: Store,
-    kinTmpDat: Store,
-    kinTmpPed: Store,
     kinKin: Store,
     kinKin0: Store,
     kinKin0Related: Store,
@@ -663,8 +661,6 @@ object Params {
     harmRefFiltPrunedVdsCloud = store.at(googleOutDir / s"${harmRefFiltPrunedBase}.vds"),
     kinName = localOutDir / kinBase,
     kinLog = store.at(localOutDir / s"${kinBase}.log"),
-    kinTmpDat = store.at(localOutDir / s"${kinBase}TMP.dat"),
-    kinTmpPed = store.at(localOutDir / s"${kinBase}TMP.ped"),
     kinKin = store.at(localOutDir / s"${kinBase}.kin"),
     kinKin0 = store.at(localOutDir / s"${kinBase}.kin0"),
     kinKin0Related = store.at(localOutDir / s"${kinBase}.kin0.related"),
@@ -1744,7 +1740,7 @@ def qc1(i: Int): Store = {
 
     cmd"""$shKing $binKing ${paramsArr.harmRefFiltPrunedName}.bed ${paramsArr.kinName} ${paramsArr.kinLog} ${paramsArr.kinKin0} ${paramsArr.kinKin0Related} 4"""
     .in(paramsArr.harmRefFiltPruned)
-    .out(paramsArr.kinLog, paramsArr.kinKin, paramsArr.kinTmpDat, paramsArr.kinTmpPed, paramsArr.kinKin0, paramsArr.kinKin0Related)
+    .out(paramsArr.kinLog, paramsArr.kinKin, paramsArr.kinKin0, paramsArr.kinKin0Related)
     .named(s"${paramsArr.harmRefFiltPrunedName}.shKing".split("/").last)
 
   }
