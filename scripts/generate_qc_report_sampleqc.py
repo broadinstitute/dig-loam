@@ -120,6 +120,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
 		text=r"""Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across both genotyping technologies. Note that "PCA(Metrics)" results from the clustering of the PCs of the 10 PCARM's combined, so "Metrics + PCA(Metrics)" is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."""
+
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 		
 		text=r"""\begin{table}[H]
@@ -157,11 +158,11 @@ def main(args=None):
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=r"""\begin{figure}[H]
-				 \centering
-				 \includegraphics[width=0.75\linewidth]{""" + args.samples_upset_diagram + r"""}
-				 \caption{Samples remaining for analysis}
-				 \label{fig:samplesRemaining}
-			  \end{figure}"""
+				\centering
+				\includegraphics[width=0.75\linewidth]{""" + args.samples_upset_diagram + r"""}
+				\caption{Samples remaining for analysis}
+				\label{fig:samplesRemaining}
+			\end{figure}"""
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"

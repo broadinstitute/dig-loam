@@ -60,7 +60,7 @@ def main(args=None):
 						text1 = text1 + r", and \ref{fig:ancestryPcaPlots" + l + r"} display"
 		else:
 			l = args.pca_plots.split("___")[0]
-			text1 = r"Figure \ref{fig:ancestryPcaPlots} displays"
+			text1 = r"Figure \ref{fig:ancestryPcaPlots" + l + r"} displays"
 		text=r"""{0} plots of the top three principal components along with the 1000 Genomes major population groups.""".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
@@ -144,7 +144,7 @@ def main(args=None):
 					text1 = text1 + " > " + l.replace("_","\_")
 			text1 = text1 + ") and assigning each sample to the population determined using the highest technology"
 		else:
-			text1="Table \ref{{table:ancestryFinalTable}} describes the final population assignments."
+			text1="Table \ref{table:ancestryFinalTable} describes the final population assignments."
 		text=r"""The resulting clusters are then combined with the nearest 1000 Genomes cohort. Table \ref{{table:ancestryClusterTable}} describes the classification using this method. {0}.""".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
