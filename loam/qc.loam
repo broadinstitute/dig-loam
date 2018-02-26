@@ -297,8 +297,6 @@ object Params {
     harmForceA2: Store,
     kinName: Path,
     kinLog: Store,
-    kinTmpDat: Store,
-    kinTmpPed: Store,
     kinKin: Store,
     kinKin0: Store,
     kinKin0Related: Store,
@@ -706,8 +704,6 @@ object Params {
     harmRefFiltPrunedVdsCloud = store.at(googleOutDir / s"${harmRefFiltPrunedBase}.vds"),
     kinName = localOutDir / kinBase,
     kinLog = store.at(localOutDir / s"${kinBase}.log"),
-    kinTmpDat = store.at(localOutDir / s"${kinBase}TMP.dat"),
-    kinTmpPed = store.at(localOutDir / s"${kinBase}TMP.ped"),
     kinKin = store.at(localOutDir / s"${kinBase}.kin"),
     kinKin0 = store.at(localOutDir / s"${kinBase}.kin0"),
     kinKin0Related = store.at(localOutDir / s"${kinBase}.kin0.related"),
@@ -863,18 +859,18 @@ val resultsStoresMapsList: Seq[Map[(String, String, String, String, String), Sto
 //
 //}
 
-// Perform known loci association, adding relevent (inter-array) stores to the map
-val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, String, String), Store]] = {
-
-  for {
-    i <- 0 until nCohorts
-  } yield { 
-
-    knownLociAssociation(i)
-
-  }
-
-}
+//// Perform known loci association, adding relevent (inter-array) stores to the map
+//val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, String, String), Store]] = {
+//
+//  for {
+//    i <- 0 until nCohorts
+//  } yield { 
+//
+//    knownLociAssociation(i)
+//
+//  }
+//
+//}
 
 //// Merge known loci
 //for {
@@ -910,14 +906,6 @@ val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, Str
 //  val reportQcBibliography = store.at(localOutDir / s"${projectId}.qcreport.bibliography.tex")
 //  val reportQcTex = store.at(localOutDir / s"${projectId}.qcreport.tex")
 //  val reportQcPdf = store.at(localOutDir / s"${projectId}.qcreport.pdf")
-//  val reportQcSampleUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.pdf")
-//  val reportQcSampleUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.png")
-//  val reportQcVariantsRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.pdf")
-//  val reportQcVariantsRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.png")
-//  val reportQcSamplesRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.pdf")
-//  val reportQcSamplesRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.png")
-//  val reportQcVariantUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.pdf")
-//  val reportQcVariantUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.png")
 //  val reportQcSampleqcTable = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.tbl")
 //  val reportQcVariantSummaryTable = store.at(localOutDir / s"${projectId}.qcreport.variants.summary.tbl")
 //  val reportQcAncestryClusterTable = store.at(localOutDir / s"${projectId}.qcreport.ancestry.clusters.tbl")
@@ -926,6 +914,15 @@ val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, Str
 //  val sampleQcMetricDistAdjPdf = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_adj.pdf")
 //  val sampleQcMetricDistUnadjPng = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_unadj.png")
 //  val sampleQcMetricDistAdjPng = store.at(localOutDir / s"${projectId}.qcreport.sampleqc.metric_dist_adj.png")
+//  val reportQcSampleUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.pdf")
+//  val reportQcSampleUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples.upsetplot.png")
+//  val reportQcVariantsRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.pdf")
+//  val reportQcVariantsRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants_remaining.upsetplot.png")
+//  val reportQcSamplesRemainingUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.pdf")
+//  val reportQcSamplesRemainingUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.samples_remaining.upsetplot.png")
+//  val reportQcVariantUpsetplotPdf = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.pdf")
+//  val reportQcVariantUpsetplotPng = store.at(localOutDir / s"${projectId}.qcreport.variants.upsetplot.png")
+//
 //  var arrayDataStrings = Seq[String]()
 //  var harmRefFamStrings = Seq[String]()
 //  var harmRefBimStrings = Seq[String]()
@@ -998,37 +995,7 @@ val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, Str
 //      .out(reportQcVariantSummaryTable)
 //      .using("R-3.4")
 //      .named(s"$reportQcVariantSummaryTable".split("/").last)
-//  
-//    cmd"""$binRscript --vanilla --verbose
-//      $rUpsetplotBimFam
-//      --input "${harmRefFamStrings.mkString(",")}"
-//      --type fam
-//      --out $reportQcSampleUpsetplotPdf"""
-//      .in(Params.paramsByArrSorted.map(_.arrayData))
-//      .out(reportQcSampleUpsetplotPdf)
-//      .using("R-3.4")
-//      .named(s"$reportQcSampleUpsetplotPdf".split("/").last)
-//  
-//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSampleUpsetplotPdf}[0] $reportQcSampleUpsetplotPng"""
-//      .in(reportQcSampleUpsetplotPdf)
-//      .out(reportQcSampleUpsetplotPng)
-//      .named(s"$reportQcSampleUpsetplotPng".split("/").last)
-//  
-//    cmd"""$binRscript --vanilla --verbose
-//      $rUpsetplotBimFam
-//      --input "${harmRefBimStrings.mkString(",")}"
-//      --type bim
-//      --out $reportQcVariantUpsetplotPdf"""
-//      .in(Params.paramsByArrSorted.flatMap(_.harm))
-//      .out(reportQcVariantUpsetplotPdf)
-//      .using("R-3.4")
-//      .named(s"$reportQcVariantUpsetplotPdf".split("/").last)
-//  
-//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantUpsetplotPdf}[0] $reportQcVariantUpsetplotPng"""
-//      .in(reportQcVariantUpsetplotPdf)
-//      .out(reportQcVariantUpsetplotPng)
-//      .named(s"$reportQcVariantUpsetplotPng".split("/").last)
-//  
+//
 //    cmd"""$binRscript --vanilla --verbose
 //      $rAncestryClusterTable
 //      --cluster-in "${arrayClusterGroups.mkString(",")}"
@@ -1049,16 +1016,62 @@ val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, Str
 //      .in(Params.paramsByArrSorted.map(_.arrayData))
 //      .out(reportQcIntro)
 //      .named(s"$reportQcIntro".split("/").last)
+//
+//    if (nArrays > 1) {
+//
+//      cmd"""$binRscript --vanilla --verbose
+//        $rUpsetplotBimFam
+//        --input "${harmRefFamStrings.mkString(",")}"
+//        --type fam
+//        --out $reportQcSampleUpsetplotPdf"""
+//        .in(Params.paramsByArrSorted.map(_.arrayData))
+//        .out(reportQcSampleUpsetplotPdf)
+//        .using("R-3.4")
+//        .named(s"$reportQcSampleUpsetplotPdf".split("/").last)
+//
+//      cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSampleUpsetplotPdf}[0] $reportQcSampleUpsetplotPng"""
+//        .in(reportQcSampleUpsetplotPdf)
+//        .out(reportQcSampleUpsetplotPng)
+//        .named(s"$reportQcSampleUpsetplotPng".split("/").last)
 //  
-//    cmd"""$binPython $pyGenerateQcReportData
-//      --narrays $nArrays
-//      --samples-upset-diagram ${reportQcSampleUpsetplotPng}
-//      --variants-summary-table ${reportQcVariantSummaryTable} 
-//      --variants-upset-diagram ${reportQcVariantUpsetplotPng} 
-//      --out ${reportQcData}"""
-//      .in(reportQcSampleUpsetplotPng, reportQcVariantSummaryTable)
-//      .out(reportQcData)
-//      .named(s"$reportQcData".split("/").last)
+//      cmd"""$binRscript --vanilla --verbose
+//        $rUpsetplotBimFam
+//        --input "${harmRefBimStrings.mkString(",")}"
+//        --type bim
+//        --out $reportQcVariantUpsetplotPdf"""
+//        .in(Params.paramsByArrSorted.flatMap(_.harm))
+//        .out(reportQcVariantUpsetplotPdf)
+//        .using("R-3.4")
+//        .named(s"$reportQcVariantUpsetplotPdf".split("/").last)
+//      
+//      cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantUpsetplotPdf}[0] $reportQcVariantUpsetplotPng"""
+//        .in(reportQcVariantUpsetplotPdf)
+//        .out(reportQcVariantUpsetplotPng)
+//        .named(s"$reportQcVariantUpsetplotPng".split("/").last)
+//
+//      cmd"""$binPython $pyGenerateQcReportData
+//        --narrays $nArrays
+//        --samples-upset-diagram ${reportQcSampleUpsetplotPng}
+//        --variants-summary-table ${reportQcVariantSummaryTable} 
+//        --variants-upset-diagram ${reportQcVariantUpsetplotPng} 
+//        --out ${reportQcData}"""
+//        .in(reportQcSampleUpsetplotPng, reportQcVariantSummaryTable)
+//        .out(reportQcData)
+//        .named(s"$reportQcData".split("/").last)
+//
+//    } else {
+//
+//      cmd"""$binPython $pyGenerateQcReportData
+//        --narrays $nArrays
+//        --fam "${harmRefFamStrings(0)}"
+//        --variants-summary-table ${reportQcVariantSummaryTable} 
+//        --bim "${harmRefBimStrings(0)}"
+//        --out ${reportQcData}"""
+//        .in(Params.paramsByArrSorted.flatMap(_.harmRef) :+ reportQcVariantSummaryTable)
+//        .out(reportQcData)
+//        .named(s"$reportQcData".split("/").last)
+//
+//    }
 //  
 //    cmd"""$binPython $pyGenerateQcReportAncestry
 //      --kg-merged-bim "${arrayMergedKgBims.mkString(",")}"
@@ -1126,23 +1139,23 @@ val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, Str
 //      .out(reportQcSampleqcTable)
 //      .using("R-3.4")
 //      .named(s"$reportQcSampleqcTable".split("/").last)
-//  
+//
 //    cmd"""$binRscript --vanilla --verbose
-//      $rUpsetplotBimFam
-//      --input "${arrayCleanFamStrings.mkString(",")}"
-//      --type fam
-//      --ancestry ${ancestryInferredMerged}
-//      --out ${reportQcSamplesRemainingUpsetplotPdf}"""
-//      .in(Params.paramsByArrSorted.flatMap(_.clean) :+ ancestryInferredMerged)
-//      .out(reportQcSamplesRemainingUpsetplotPdf)
-//      .using("R-3.4")
-//      .named(s"$reportQcSamplesRemainingUpsetplotPdf".split("/").last)
-//  
+//	  $rUpsetplotBimFam
+//	  --input "${arrayCleanFamStrings.mkString(",")}"
+//	  --type fam
+//	  --ancestry ${ancestryInferredMerged}
+//	  --out ${reportQcSamplesRemainingUpsetplotPdf}"""
+//	  .in(Params.paramsByArrSorted.flatMap(_.clean) :+ ancestryInferredMerged)
+//	  .out(reportQcSamplesRemainingUpsetplotPdf)
+//	  .using("R-3.4")
+//	  .named(s"$reportQcSamplesRemainingUpsetplotPdf".split("/").last)
+//    
 //    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSamplesRemainingUpsetplotPdf}[0] $reportQcSamplesRemainingUpsetplotPng"""
-//      .in(reportQcSamplesRemainingUpsetplotPdf)
-//      .out(reportQcSamplesRemainingUpsetplotPng)
-//      .named(s"$reportQcSamplesRemainingUpsetplotPng".split("/").last)
-//  
+//	  .in(reportQcSamplesRemainingUpsetplotPdf)
+//	  .out(reportQcSamplesRemainingUpsetplotPng)
+//	  .named(s"$reportQcSamplesRemainingUpsetplotPng".split("/").last)
+//
 //    cmd"""$binPython $pyGenerateQcReportSampleqc
 //      --compare-dist-nhet-unadj ${sampleQcMetricDistUnadjPng}
 //      --compare-dist-nhet-adj ${sampleQcMetricDistAdjPng}
@@ -1154,29 +1167,43 @@ val resultsKnownLociStoresMapsList: Seq[Map[(String, String, String, String, Str
 //      .in(Params.paramsByArrSorted.map(_.sampleqcOutlierPlotPng) :+ sampleQcMetricDistUnadjPng :+ sampleQcMetricDistAdjPng :+ reportQcSampleqcTable :+ reportQcSamplesRemainingUpsetplotPng)
 //      .out(reportQcSampleqc)
 //      .named(s"$reportQcSampleqc".split("/").last)
+//
+//    if (nArrays > 1) {
+//
+//      cmd"""$binRscript --vanilla --verbose
+//        $rUpsetplotBimFam
+//        --input "${arrayCleanBimStrings.mkString(",")}"
+//        --type bim
+//        --out ${reportQcVariantsRemainingUpsetplotPdf}"""
+//        .in(Params.paramsByArrSorted.flatMap(_.clean))
+//        .out(reportQcVariantsRemainingUpsetplotPdf)
+//        .using("R-3.4")
+//        .named(s"$reportQcVariantsRemainingUpsetplotPdf".split("/").last)
+//      
+//      cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantsRemainingUpsetplotPdf}[0] $reportQcVariantsRemainingUpsetplotPng"""
+//        .in(reportQcVariantsRemainingUpsetplotPdf)
+//        .out(reportQcVariantsRemainingUpsetplotPng)
+//        .named(s"$reportQcVariantsRemainingUpsetplotPng".split("/").last)
 //  
-//    cmd"""$binRscript --vanilla --verbose
-//      $rUpsetplotBimFam
-//      --input "${arrayCleanBimStrings.mkString(",")}"
-//      --type bim
-//      --out ${reportQcVariantsRemainingUpsetplotPdf}"""
-//      .in(Params.paramsByArrSorted.flatMap(_.clean))
-//      .out(reportQcVariantsRemainingUpsetplotPdf)
-//      .using("R-3.4")
-//      .named(s"$reportQcVariantsRemainingUpsetplotPdf".split("/").last)
-//  
-//    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantsRemainingUpsetplotPdf}[0] $reportQcVariantsRemainingUpsetplotPng"""
-//      .in(reportQcVariantsRemainingUpsetplotPdf)
-//      .out(reportQcVariantsRemainingUpsetplotPng)
-//      .named(s"$reportQcVariantsRemainingUpsetplotPng".split("/").last)
-//  
-//    cmd"""$binPython $pyGenerateQcReportVariantqc
-//      --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng}
-//      --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
-//      --out ${reportQcVariantqc}"""
-//      .in(Params.paramsByArrSorted.map(_.finalVariantExclusions) :+ reportQcVariantsRemainingUpsetplotPng)
-//      .out(reportQcVariantqc)
-//      .named(s"$reportQcVariantqc".split("/").last)
+//      cmd"""$binPython $pyGenerateQcReportVariantqc
+//        --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng}
+//        --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
+//        --out ${reportQcVariantqc}"""
+//        .in(Params.paramsByArrSorted.map(_.finalVariantExclusions) :+ reportQcVariantsRemainingUpsetplotPng)
+//        .out(reportQcVariantqc)
+//        .named(s"$reportQcVariantqc".split("/").last)
+//
+//    } else {
+//
+//      cmd"""$binPython $pyGenerateQcReportVariantqc
+//        --bim "${arrayCleanBimStrings(0)}"
+//        --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
+//        --out ${reportQcVariantqc}"""
+//        .in(Params.paramsByArrSorted.flatMap(_.clean) ++ Params.paramsByArrSorted.map(_.finalVariantExclusions))
+//        .out(reportQcVariantqc)
+//        .named(s"$reportQcVariantqc".split("/").last)
+//
+//    }
 //  
 //    cmd"""$binPython $pyGenerateQcReportBibliography
 //      --out ${reportQcBibliography}"""
@@ -1806,7 +1833,7 @@ def qc1(i: Int): Store = {
 
     cmd"""$shKing $binKing ${paramsArr.harmRefFiltPrunedName}.bed ${paramsArr.kinName} ${paramsArr.kinLog} ${paramsArr.kinKin0} ${paramsArr.kinKin0Related} 4"""
     .in(paramsArr.harmRefFiltPruned)
-    .out(paramsArr.kinLog, paramsArr.kinKin, paramsArr.kinTmpDat, paramsArr.kinTmpPed, paramsArr.kinKin0, paramsArr.kinKin0Related)
+    .out(paramsArr.kinLog, paramsArr.kinKin, paramsArr.kinKin0, paramsArr.kinKin0Related)
     .named(s"${paramsArr.harmRefFiltPrunedName}.shKing".split("/").last)
 
   }
@@ -2079,9 +2106,8 @@ def qc2(i: Int): Unit = {
   
     uger {
 
-      cmd"""echo 1 > ${paramsMetric.sampleqcStatsAdjIndClusterFet};
-        metricIdx=`head -1 ${paramsArr.sampleqcStatsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${paramsMetric.sampleqcStatsAdjIndMetric} | awk '{print $$1}'`;
-        sed '1d' ${paramsArr.sampleqcStatsAdj} | awk -v col=$${metricIdx} '{print $$col}' >> ${paramsMetric.sampleqcStatsAdjIndClusterFet}"""
+      cmd"""(metricIdx=`head -1 ${paramsArr.sampleqcStatsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${paramsMetric.sampleqcStatsAdjIndMetric} | awk '{print $$1}'`;
+        echo 1; sed '1d' ${paramsArr.sampleqcStatsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${paramsMetric.sampleqcStatsAdjIndClusterFet}"""
         .in(paramsArr.sampleqcStatsAdj)
         .out(paramsMetric.sampleqcStatsAdjIndClusterFet)
         .named(s"${paramsMetric.sampleqcStatsAdjIndClusterFet}".split("/").last)
