@@ -45,7 +45,7 @@ def main(args=None):
 			m = args.filtered_bim.split("___")[1]
 			df = pd.read_table(m, header=None)
 			text1 = "{0:,d}".format(df.shape[0]) + " variants"
-		text=r"""After filtering there were {0} remaining""".format(text1)
+		text=r"""After filtering there were {0} remaining.""".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		kin0_list = args.kin0_related.split(",")
@@ -67,6 +67,10 @@ def main(args=None):
 					else:
 						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
 		else:
+			l = args.kin0_related.split("___")[0]
+			m = args.kin0_related.split("___")[1]
+			df = pd.read_table(m)
+			df = df[df['Kinship'] > 0.4]
 			text1 = "{0:,d}".format(df.shape[0])
 		text=r"""In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data.""".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
@@ -99,7 +103,7 @@ def main(args=None):
 			m = a.split("___")[1]
 			df = pd.read_table(m, header=None)
 			text1 = "{0:,d}".format(df.shape[0])
-		text=r"""In addition to identifying duplicate samples, any single individual that exhibited Kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.""".format(text1)
+		text=r"""In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.""".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		print "writing sex check section"
