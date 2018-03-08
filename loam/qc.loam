@@ -20,7 +20,8 @@ val phenoSrSex = dataConfig.getStr("phenoSrSex")
 val phenoSrRace = dataConfig.getStr("phenoSrRace")
 val phenoStatus = dataConfig.getStr("phenoStatus")
 val nArrays = dataConfig.getObjList("arrays").size
-val nCohorts = dataConfig.getObjList("strategy").getObjList("cohorts").size
+val nCohorts = dataConfig.getObjList("cohorts").size
+val nMetas = dataConfig.getObjList("metas").size
 val nPhases = dataConfig.getObjList("phases").size
 val nMetrics = sampleQcMetrics.size
 val qcReportAuthors = dataConfig.getStrList("qcReportAuthors").mkString(",")
@@ -29,9 +30,8 @@ val analysisReportAcknowledgements = dataConfig.getStrList("analysisReportAcknow
 val ancestryInferenceFeatures = if (dataConfig.isDefined("ancestryInferenceFeatures")) { "1" * dataConfig.getInt("ancestryInferenceFeatures") + "0" * (20 - dataConfig.getInt("ancestryInferenceFeatures")) } else { "1" * 3 + "0" * (20 - 3) }
 
 // generate list of tuples that define each cohort-level model
-var modelSeq: Seq[(String, String, String, String, String, String, Seq[String], Boolean, Int)] = Seq()
+var modelSeq: Seq[(String, String, String, String, Int)] = Seq()
 val phases = dataConfig.getObjList("phases")
-val strategy = dataConfig.getObjList("strategy")
 for { i <- 0 until nPhases } 
   {
     for { j <- 0 until phases(i).getObjList("phenotypes").size }
@@ -40,57 +40,79 @@ for { i <- 0 until nPhases }
           {
             for { covars <- phases(i).getObjList("phenotypes")(j).getStrList("covars") }
               {
-                for { k <- 0 until nCohorts }
-
-                  modelSeq = modelSeq :+ (
-                    (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
-                      phases(i).getObjList("phenotypes")(j).getStr("trans"),
-                      test,
-                      covars,
-                      strategy.getObjList("cohorts")(k).getStr("id"),
-                      strategy.getObjList("cohorts")(k).getStr("array"),
-                      strategy.getObjList("cohorts")(k).getStrList("ancestry"),
-                      strategy.getObjList("cohorts")(k).getBool("report"),
-                      i + 1)
-                    )
-
-                }
-              }
-          }
-      }
-  }
-
-// generate list of tuples that define each known loci table
-var knownLociSeq: Seq[(String, String, String, String, String, String, String, String, String, Boolean, Int, Int, Int)] = Seq()
-for { i <- 0 until nPhases } 
-  {
-    for { j <- 0 until phases(i).getObjList("phenotypes").size }
-      {
-        for { k <- 0 until phases(i).getObjList("phenotypes")(j).getObjList("knownLoci").size }
-          {
-            for { l <- 0 until nCohorts }
-              {
-                
-                knownLociSeq = knownLociSeq :+ (
+                modelSeq = modelSeq :+ (
                   (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
-                    phases(i).getObjList("phenotypes")(j).getStr("trans"),
-                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("test"),
-                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("covars"),
-                    strategy.getObjList("cohorts")(l).getStr("id"),
-                    strategy.getObjList("cohorts")(l).getStr("array"),
-                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("ancestry"),
-                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("hiLd"),
-                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("data"),
-                    strategy.getObjList("cohorts")(l).getBool("report"),
-                    i + 1,
-                    j + 1,
-                    k + 1)
+                  phases(i).getObjList("phenotypes")(j).getStr("trans"),
+                  test,
+                  covars,
+                  i + 1)
                   )
-
               }
           }
       }
   }
+
+//// generate list of tuples that define each known loci table
+//var knownLociSeq: Seq[(String, String, String, String, String, String, Seq[String], String, String, Boolean, Int, Int, Int)] = Seq()
+//for { i <- 0 until nPhases } 
+//  {
+//    for { j <- 0 until phases(i).getObjList("phenotypes").size }
+//      {
+//        for { k <- 0 until phases(i).getObjList("phenotypes")(j).getObjList("knownLoci").size }
+//          {
+//            for { l <- 0 until nCohorts }
+//              {
+//                
+//                knownLociSeq = knownLociSeq :+ (
+//                  (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
+//                    phases(i).getObjList("phenotypes")(j).getStr("trans"),
+//                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("test"),
+//                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("covars"),
+//                    cohorts(l).getStr("id"),
+//                    cohorts(l).getStr("array"),
+//                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStrList("ancestry"),
+//                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("hiLd"),
+//                    phases(i).getObjList("phenotypes")(j).getObjList("knownLoci")(k).getStr("data"),
+//                    cohorts(l).getBool("report"),
+//                    i + 1,
+//                    j + 1,
+//                    k + 1)
+//                  )
+//
+//              }
+//          }
+//      }
+//  }
+
+//// generate list of tuples that define each cohort-level model
+//var metaSeq: Seq[(String, String, String, String, String, Seq[String], Boolean, Int)] = Seq()
+//val phases = dataConfig.getObjList("phases")
+//val metas = dataConfig.getObjList("metas")
+//for { i <- 0 until nPhases } 
+//  {
+//    for { j <- 0 until phases(i).getObjList("phenotypes").size }
+//      {
+//        for { test <- phases(i).getObjList("phenotypes")(j).getStrList("tests") }
+//          {
+//            for { covars <- phases(i).getObjList("phenotypes")(j).getStrList("covars") }
+//              {
+//                for { k <- 0 until nMetas }
+//                  {
+//                    modelSeq = modelSeq :+ (
+//                      (phases(i).getObjList("phenotypes")(j).getStr("phenoName"),
+//                      phases(i).getObjList("phenotypes")(j).getStr("trans"),
+//                      test,
+//                      covars,
+//                      metas(k).getStr("id"),
+//                      metas(k).getStr("cohorts"),
+//                      metas(k).getBool("report"),
+//                      i + 1)
+//                    )
+//                  }
+//              }
+//          }
+//      }
+//  }
 
 object Input {
 
@@ -144,10 +166,6 @@ object Params {
     modelTrans: String,
     modelTest: String,
     modelCovars: String,
-    modelId: String,
-    modelArray: String,
-    modelAncestry: Seq[String],
-    modelReport: Boolean,
     modelPhase: Int,
     modelPhenoPrelimFile: Store,
     modelPhenoPrelimFileCloud: Store,
@@ -161,6 +179,17 @@ object Params {
     modelResults: Store,
     modelResultsTbi: Store,
     modelResultsCloud: Store)
+
+  //final case class Meta(
+  //  metaPheno: String,
+  //  metaTrans: String,
+  //  metaTest: String,
+  //  metaCovars: String,
+  //  metaId: String,
+  //  metaCohorts: Seq[String],
+  //  metaReport: Boolean,
+  //  metaPhase: Int,
+  //  metaResults: Store)
   
   //final case class Result(
   //  resultPheno: String,
@@ -179,33 +208,33 @@ object Params {
   //  resultFinalRegplotBase: String,
   //  resultFinalRegplotName: Path)
 
-  final case class MergedQc(
-    mergedQcName: Path,
-    mergedQc: Seq[Store])
+  //final case class MergedQc(
+  //  mergedQcName: Path,
+  //  mergedQc: Seq[Store])
 
-  final case class KnownLoci(
-    knownLociPhenoName: String,
-    knownLociTrans: String,
-    knownLociTest: String,
-    knownLociCovars: String,
-    knownLociId: String,
-    knownLociArray: String,
-    knownLociAncestry: Seq[String],
-    knownLociHiLd: Store,
-    knownLociHiLdCloud: Store,
-    knownLociReport: Boolean,
-    knownLociPhase: Int,
-    knownLociPhenoPrelimFile: Store,
-    knownLociPhenoPrelimFileCloud: Store,
-    knownLociSamplesInclude: Store,
-    knownLociSamplesIncludeCloud: Store,
-    knownLociPhenoFileLog: Store,
-    knownLociPhenoFile: Store,
-    knownLociPcsFile: Store,
-    knownLociPhenoFileCloud: Store,
-    knownLociPcsFileCloud: Store,
-    knownLociResults: Store,
-    knownLociResultsCloud: Store)
+  //final case class KnownLoci(
+  //  knownLociPhenoName: String,
+  //  knownLociTrans: String,
+  //  knownLociTest: String,
+  //  knownLociCovars: String,
+  //  knownLociId: String,
+  //  knownLociArray: String,
+  //  knownLociAncestry: Seq[String],
+  //  knownLociHiLd: Store,
+  //  knownLociHiLdCloud: Store,
+  //  knownLociReport: Boolean,
+  //  knownLociPhase: Int,
+  //  knownLociPhenoPrelimFile: Store,
+  //  knownLociPhenoPrelimFileCloud: Store,
+  //  knownLociSamplesInclude: Store,
+  //  knownLociSamplesIncludeCloud: Store,
+  //  knownLociPhenoFileLog: Store,
+  //  knownLociPhenoFile: Store,
+  //  knownLociPcsFile: Store,
+  //  knownLociPhenoFileCloud: Store,
+  //  knownLociPcsFileCloud: Store,
+  //  knownLociResults: Store,
+  //  knownLociResultsCloud: Store)
 
   //final case class ResultKnownLoci(
   //  resultKnownLociPhenoName: String,
@@ -233,10 +262,13 @@ object Params {
     cohortArray: String,
     cohortAncestry: Seq[String],
     cohortReport: Boolean,
+    cohortSamples: Store,
+    cohortHarmRefFiltBase: String,
+    cohortHarmRefFiltName: Path,
+    cohortHarmRefFilt: Seq[Store],
+    cohortHarmRefFiltFamMerge: Store,
     paramsByCohortByModel: Seq[(Int, Model)],
-    paramsByCohortByKnownLoci: Seq[(Int, KnownLoci)],
-    paramsByCohortByModelSorted: Seq[Model],
-    paramsByCohortByKnownLociSorted: Seq[KnownLoci])
+    paramsByCohortByModelSorted: Seq[Model])
 
   final case class Arr(
     arrayId: String,
@@ -276,6 +308,8 @@ object Params {
     harmRefVcfTbi: Store,
     harmRefVcfTbiCloud: Store,
     harmRefVdsCloud: Store,
+    harmRefFiltName: Path,
+    harmRefFilt: Seq[Store],
     harmRefFiltNameCloud: URI,
     harmRefFiltCloud: Seq[Store],
     harmRefFiltVdsCloud: Store,
@@ -440,17 +474,23 @@ object Params {
 
   val paramsByCohort: Seq[(Int, Cohort)] = (0 until nCohorts).map { cohort =>
 
+    val cohortId = dataConfig.getObjList("cohorts")(cohort).getStr("id")
+    val cohortArray = dataConfig.getObjList("cohorts")(cohort).getStr("array")
+    val cohortAncestry = dataConfig.getObjList("cohorts")(cohort).getStrList("ancestry")
+    val cohortReport = dataConfig.getObjList("cohorts")(cohort).getBool("report")
+
+    val ancestryString = cohortAncestry.mkString("_")
+    val cohortSamples = store.at(localOutDir / s"${projectId}.${cohortArray}.${ancestryString}.samples.tsv")
+    val cohortHarmRefFiltBase = s"${projectId}.${cohortArray}.${ancestryString}.harm.ref.filt"
+    val cohortHarmRefFiltName = localOutDir / cohortHarmRefFiltBase
+
     val paramsByCohortByModel = (0 until modelSeq.size).map { model =>
     
       val modelPheno = modelSeq(model)._1
       val modelTrans = modelSeq(model)._2
       val modelTest = modelSeq(model)._3
       val modelCovars = modelSeq(model)._4
-      val modelId = modelSeq(model)._5
-      val modelArray = modelSeq(model)._6
-      val modelAncestry = modelSeq(model)._7
-      val modelReport = modelSeq(model)._8
-      val modelPhase = modelSeq(model)._9
+      val modelPhase = modelSeq(model)._5
     
       val modelCovarsString = modelCovars.replace("+","_")
     
@@ -459,78 +499,79 @@ object Params {
         modelTrans = modelTrans,
         modelTest = modelTest,
         modelCovars = modelCovars,
-        modelId = modelId,
-        modelArray = modelArray,
-        modelAncestry = modelAncestry,
-        modelReport = modelReport,
         modelPhase = modelPhase,
-        modelPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
-        modelPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
-        modelSamplesInclude = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
-        modelSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
-        modelPhenoFileLog = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.log"),
-        modelPhenoFile = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
-        modelPcsFile = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
-        modelPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
-        modelPcsFileCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
-        modelResults = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"),
-        modelResultsTbi = store.at(localOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz.tbi"),
-        modelResultsCloud = store.at(googleOutDir / s"${projectId}.${modelId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"))
+        modelPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
+        modelPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.prelim_pheno.tsv"),
+        modelSamplesInclude = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
+        modelSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.samples.include"),
+        modelPhenoFileLog = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.log"),
+        modelPhenoFile = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
+        modelPcsFile = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
+        modelPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pheno.tsv"),
+        modelPcsFileCloud = store.at(googleOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.pcs.include"),
+        modelResults = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"),
+        modelResultsTbi = store.at(localOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz.tbi"),
+        modelResultsCloud = store.at(googleOutDir / s"${projectId}.${cohortId}.assoc.$modelPheno.$modelTrans.$modelCovarsString.$modelTest.results.tsv.bgz"))
     
     }
-
-    val paramsByCohortByKnownLoci = (0 until knownLociSeq.size).map { knownLoci =>
-
-      val knownLociPhenoName = knownLociSeq(knownLoci)._1
-      val knownLociTrans = knownLociSeq(knownLoci)._2
-      val knownLociTest = knownLociSeq(knownLoci)._3
-      val knownLociCovars = knownLociSeq(knownLoci)._4
-      val knownLociId = knownLociSeq(knownLoci)._5
-      val knownLociArray = knownLociSeq(knownLoci)._6
-      val knownLociAncestry = knownLociSeq(knownLoci)._7
-      val knownLociHiLdString = knownLociSeq(knownLoci)._8
-      val knownLociReport = knownLociSeq(knownLoci)._10
-      val knownLociPhase = knownLociSeq(knownLoci)._11
-
-      val knownLociCovarsString = knownLociCovars.replace("+","_")
-      val knownLociHiLdStringBase = knownLociHiLdString.split("/").last
     
-      knownLoci -> KnownLoci(
-        knownLociPhenoName = knownLociPhenoName,
-        knownLociTrans = knownLociTrans,
-        knownLociTest = knownLociTest,
-        knownLociCovars = knownLociCovars,
-        knownLociId = knownLociId,
-        knownLociArray = knownLociArray,
-        knownLociAncestry = knownLociAncestry,
-        knownLociHiLd = store.at(path(knownLociHiLdString)).asInput,
-        knownLociHiLdCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.${knownLociHiLdStringBase}"),
-        knownLociReport = knownLociReport,
-        knownLociPhase = knownLociPhase,
-        knownLociPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
-        knownLociPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
-        knownLociSamplesInclude = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
-        knownLociSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
-        knownLociPhenoFileLog = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.log"),
-        knownLociPhenoFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
-        knownLociPcsFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
-        knownLociPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
-        knownLociPcsFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
-        knownLociResults = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"),
-        knownLociResultsCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"))
-
-    }
-
+    //val paramsByCohortByKnownLoci = (0 until knownLociSeq.size).map { knownLoci =>
+    //
+    //  val knownLociPhenoName = knownLociSeq(knownLoci)._1
+    //  val knownLociTrans = knownLociSeq(knownLoci)._2
+    //  val knownLociTest = knownLociSeq(knownLoci)._3
+    //  val knownLociCovars = knownLociSeq(knownLoci)._4
+    //  val knownLociId = knownLociSeq(knownLoci)._5
+    //  val knownLociArray = knownLociSeq(knownLoci)._6
+    //  val knownLociAncestry = knownLociSeq(knownLoci)._7
+    //  val knownLociHiLdString = knownLociSeq(knownLoci)._8
+    //  val knownLociReport = knownLociSeq(knownLoci)._10
+    //  val knownLociPhase = knownLociSeq(knownLoci)._11
+    //
+    //  val knownLociCovarsString = knownLociCovars.replace("+","_")
+    //  val knownLociHiLdStringBase = knownLociHiLdString.split("/").last
+    //
+    //  knownLoci -> KnownLoci(
+    //    knownLociPhenoName = knownLociPhenoName,
+    //    knownLociTrans = knownLociTrans,
+    //    knownLociTest = knownLociTest,
+    //    knownLociCovars = knownLociCovars,
+    //    knownLociId = knownLociId,
+    //    knownLociArray = knownLociArray,
+    //    knownLociAncestry = knownLociAncestry,
+    //    knownLociHiLd = store.at(path(knownLociHiLdString)).asInput,
+    //    knownLociHiLdCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.${knownLociHiLdStringBase}"),
+    //    knownLociReport = knownLociReport,
+    //    knownLociPhase = knownLociPhase,
+    //    knownLociPhenoPrelimFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
+    //    knownLociPhenoPrelimFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.prelim_pheno.tsv"),
+    //    knownLociSamplesInclude = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
+    //    knownLociSamplesIncludeCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.samples.include"),
+    //    knownLociPhenoFileLog = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.log"),
+    //    knownLociPhenoFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
+    //    knownLociPcsFile = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
+    //    knownLociPhenoFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pheno.tsv"),
+    //    knownLociPcsFileCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.pcs.include"),
+    //    knownLociResults = store.at(localOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"),
+    //    knownLociResultsCloud = store.at(googleOutDir / s"${projectId}.${knownLociId}.assoc.$knownLociPhenoName.$knownLociTrans.$knownLociCovarsString.$knownLociTest.known_loci.results.tsv"))
+    //
+    //}
+    //
     val (_, paramsByCohortByModelSorted) = paramsByCohortByModel.unzip
-    val (_, paramsByCohortByKnownLociSorted) = paramsByCohortByKnownLoci.unzip
+    //val (_, paramsByCohortByKnownLociSorted) = paramsByCohortByKnownLoci.unzip
 
     cohort -> Cohort(
       cohortId = cohortId,
       cohortArray = cohortArray,
       cohortAncestry = cohortAncestry,
       cohortReport = cohortReport,
-      paramsByCohortByModelSorted = paramsByCohortByModelSorted,
-      paramsByCohortByKnownLociSorted = paramsByCohortByKnownLociSorted)
+      cohortSamples = cohortSamples,
+      cohortHarmRefFiltBase = cohortHarmRefFiltBase,
+      cohortHarmRefFiltName = cohortHarmRefFiltName,
+      cohortHarmRefFilt = bedBimFam(cohortHarmRefFiltName),
+      cohortHarmRefFiltFamMerge = store.at(localOutDir / s"${cohortHarmRefFiltBase}.fam.merge"),
+      paramsByCohortByModel = paramsByCohortByModel,
+      paramsByCohortByModelSorted = paramsByCohortByModelSorted)
 
   }
 
@@ -618,10 +659,11 @@ object Params {
     val harmRefBase = s"${harmBase}.ref"
     val harmRefName = localOutDir / harmRefBase
     val harmRefFiltBase = s"${harmRefBase}.filt"
+    val harmRefFiltName = localOutDir / harmRefFiltBase
+    val harmRefFiltNameCloud = googleOutDir / harmRefFiltBase
     val harmRefFiltPrunedBase = s"${harmRefFiltBase}.pruned"
     val harmRefFiltPrunedName = localOutDir / harmRefFiltPrunedBase
     val harmRefFiltPrunedNameCloud = googleOutDir / s"${harmRefFiltBase}.pruned"
-    val harmRefFiltName = localOutDir / harmRefFiltBase
     val kinBase = s"${projectId}.${arrayId}.kinship"
     val harmRef1kgBase = s"${projectId}.${arrayId}.harm.ref.1kg"
     val harmRef1kgName = localOutDir / harmRef1kgBase
@@ -691,8 +733,10 @@ object Params {
     sampleqcStatsAdjIndClusterCluList = sampleqcStatsAdjIndClusterCluList,
     harmMergeList = store.at(localOutDir / s"${harmBase}.merge.txt"),
     harmForceA2 = store.at(localOutDir / s"${harmBase}.force_a2.txt"),
-    harmRefFiltNameCloud = googleOutDir / harmRefFiltBase,
-    harmRefFiltCloud = bedBimFam(googleOutDir / harmRefFiltBase),
+    harmRefFiltName = harmRefFiltName,
+    harmRefFilt = bedBimFam(harmRefFiltName),
+    harmRefFiltNameCloud = harmRefFiltNameCloud,
+    harmRefFiltCloud = bedBimFam(harmRefFiltNameCloud),
     harmRefFiltVdsCloud = store.at(googleOutDir / s"${harmRefFiltBase}.vds"),
     harmRefFiltVariantQcCloud = store.at(googleOutDir / s"${harmRefFiltBase}.variantqc.tsv"),
     harmRefFiltVariantsPrunedInCloud = store.at(googleOutDir / s"${harmRefFiltPrunedBase}.in"),
@@ -781,8 +825,6 @@ object Params {
 
   val (_, paramsByCohortSorted) = paramsByCohort.unzip
   val (_, paramsByArrSorted) = paramsByArr.unzip
-  val (_, paramsByResultSorted) = paramsByResult.unzip
-  val (_, paramsByResultKnownLociSorted) = paramsByResultKnownLoci.unzip
 
 }
 
@@ -838,7 +880,7 @@ for {
 }
 
 // Perform variant association for each cohort, adding relevent (inter-array) stores to the map
-val resultsStoresMapsList: Seq[Map[(String, String, String, String, String), Store]] = {
+val resultsStoresMapsList: Seq[Map[(String, String, String, String, String, Seq[String]), Store]] = {
 
   for {
     i <- 0 until nCohorts
@@ -849,6 +891,15 @@ val resultsStoresMapsList: Seq[Map[(String, String, String, String, String), Sto
   }
 
 }
+
+//// Perform Meta Analysis
+//for {
+//  i <- 0 until nMetas
+//} yield { 
+//
+//  meta(i)
+//
+//}
 
 //// Merge results
 //for {
@@ -1816,6 +1867,7 @@ def qc1(i: Int): Store = {
   
   local {
 
+    googleCopy(paramsArr.harmRefFiltCloud, paramsArr.harmRefFilt)
     googleCopy(paramsArr.harmRefFiltPrunedCloud, paramsArr.harmRefFiltPruned)
 
   }
@@ -2067,10 +2119,10 @@ def qc2(i: Int): Unit = {
   
   ugerWith(mem=8) {
 
-    cmd"""N=$$(head -1 ${paramsArr.sampleqcStatsAdjPcaScores} | wc | awk '{print $$2-1}');
-      echo $$N > ${paramsArr.sampleqcStatsAdjClusterFet};
-      sed '1d' ${paramsArr.sampleqcStatsAdjPcaScores} | cut -f2- | sed 's/\t/ /g' >> ${paramsArr.sampleqcStatsAdjClusterFet};
-      FEATURES=1; for i in $$(seq 2 $$N); do FEATURES=$${FEATURES}1; done;
+    cmd"""(N=$$(head -1 ${paramsArr.sampleqcStatsAdjPcaScores} | wc | awk '{print $$2-1}') &&
+      echo $$N) > ${paramsArr.sampleqcStatsAdjClusterFet} &&
+      sed '1d' ${paramsArr.sampleqcStatsAdjPcaScores} | cut -f2- | sed 's/\t/ /g' >> ${paramsArr.sampleqcStatsAdjClusterFet} &&
+      FEATURES=1; for i in $$(seq 2 $$N); do FEATURES=$${FEATURES}1; done &&
       $binKlustakwik ${paramsArr.sampleqcStatsAdjClusterName} 1 -UseFeatures $$FEATURES -UseDistributional 0 >
       ${paramsArr.sampleqcStatsAdjClusterKlustakwikLog}"""
       .in(paramsArr.sampleqcStatsAdjPcaScores)
@@ -2106,8 +2158,8 @@ def qc2(i: Int): Unit = {
   
     uger {
 
-      cmd"""(metricIdx=`head -1 ${paramsArr.sampleqcStatsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${paramsMetric.sampleqcStatsAdjIndMetric} | awk '{print $$1}'`;
-        echo 1; sed '1d' ${paramsArr.sampleqcStatsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${paramsMetric.sampleqcStatsAdjIndClusterFet}"""
+      cmd"""(metricIdx=`head -1 ${paramsArr.sampleqcStatsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${paramsMetric.sampleqcStatsAdjIndMetric} | awk '{print $$1}'` &&
+        echo 1 && sed '1d' ${paramsArr.sampleqcStatsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${paramsMetric.sampleqcStatsAdjIndClusterFet}"""
         .in(paramsArr.sampleqcStatsAdj)
         .out(paramsMetric.sampleqcStatsAdjIndClusterFet)
         .named(s"${paramsMetric.sampleqcStatsAdjIndClusterFet}".split("/").last)
@@ -2255,79 +2307,83 @@ def qc2(i: Int): Unit = {
 
 }
 
-def qc3(): Unit = {
+def qc3(i: Int): Unit = {
 
   val (_, paramsCohort) = Params.paramsByCohort(i)
 
-  paramsArr = paramsByArrSorted.zipWithIndex collect { case (x,i) if x.arrayId == paramsCohort.cohortArray => x }
+  val (_, paramsArr) =  Params.paramsByArr.filter(_._2.arrayId == paramsCohort.cohortArray)(0)
 
   uger {
 
-    cmd"""awk -v var=${paramsCohort.ancestry.mkString(",")} '{split(var,arr,","); for (a in arr) { if(arr[a] == $$2) print $$1, $$1 } }' ${ancestryInferredMerged} > ${paramsCohort.samples}"""
+    cmd"""awk -v var=${paramsCohort.cohortAncestry.mkString(",")} '{ split(var,arr,","); for (a in arr) { if(arr[a] == $$2) print $$1, $$1 } }' ${ancestryInferredMerged} > ${paramsCohort.cohortSamples}"""
     .in(ancestryInferredMerged)
-    .out(paramsCohort.samples)
-    .named(s"${paramsCohort.samples}".split("/").last)
+    .out(paramsCohort.cohortSamples)
+    .named(s"${paramsCohort.cohortSamples}".split("/").last)
 
-    cmd"""$binPlink --bfile ${paramsArr.harmRefFiltName} --keep ${paramsCohort.samples} --make-bed --out ${paramsCohort.harmRefFiltName}"""
-    .in(paramsArr.harmRefFilt :+ paramsCohort.samples)
-    .out(paramsCohort.harmRefFilt)
-    .named(s"${paramsCohort.harmRefFilt}".split("/").last)
+    cmd"""$binPlink --bfile ${paramsArr.harmRefFiltName} --keep ${paramsCohort.cohortSamples} --make-bed --out ${paramsCohort.cohortHarmRefFiltName}"""
+    .in(paramsArr.harmRefFilt :+ paramsCohort.cohortSamples)
+    .out(paramsCohort.cohortHarmRefFilt)
+    .named(s"${paramsCohort.cohortHarmRefFiltName}".split("/").last)
 
-    cmd"""awk -v c=${paramsCohort.cohortId} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${paramsCohort.harmRefFiltName}.fam > ${paramsCohort.harmRefFiltFamMerge}"""
-    .in(paramsCohort.harmRefFilt)
-    .out(paramsCohort.harmRefFiltFamMerge)
-    .named(s"${paramsCohort.harmRefFiltFamMerge}".split("/").last)
-
-  }
-
-
-}
-
-def crossCohortQc(): Unit = {  
-
-  var mergedQcFiles = Seq[Seq[String]]()
-  var mergedQcCommonCmd: String = ""
-
-  for { 
-    i <- 0 until nCohorts
-  } {
-
-    val (_, paramsCohort) = Params.paramsByCohort(i)
-
-    mergedQcFiles = mergedQcFiles :+ Seq(s"${paramsCohort.harmRefFilt}.bed", s"${paramsCohort.harmRefFilt}.bim", s"${paramsCohort.harmRefFiltFamMerge}")
-    mergedQcCommonCmd = if (i == 0) {
-      mergedQcCommonCmd + s"cat ${paramsCohort.harmRefFilt}.bim"
-    } else {
-      mergedQcCommonCmd + s" | grep -xF -f- ${paramsCohort.harmRefFilt}.bim"
-    }
-
-  }
-
-  val arrayMergeQcFilesConcat = mergedQcFiles.drop(1).map{ case Seq(x, y, z) => "%s %s %s" format (x, y, z) }.mkString("\n")
-
-  uger {
-
-    cmd"""${mergedQcCommonCmd} | awk '{print $$2}' > ${mergedQcCommon}"""
-    .in(paramsCohort.harmRefFilt :+ Params.paramsByCohortSorted.map(_.harmRefFiltFamMerge))
-    .out(mergedQcCommon)
-    .named(s"${mergedQcCommon}".split("/").last)
-
-    cmd"""echo "$arrayMergeQcFilesConcat" > ${mergedQcList}"""
-    .out(mergedQcList)
-    .named(s"${mergedQcList}".split("/").last)
-
-    cmd"""$binPlink --bed mergedQcFiles(0)(0) --bim mergedQcFiles(0)(1) --fam mergedQcFiles(0)(2) --merge-list ${mergedQcList} --make-bed --out $mergedQcName"""
-    .in(paramsCohort.harmRefFiltPruned :+ Params.paramsByCohortSorted.map(_.harmRefFiltFamMerge) :+ mergedQcList)
-    .out(mergedQc)
+    cmd"""awk -v c=${paramsCohort.cohortId} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${paramsCohort.cohortHarmRefFiltName}.fam > ${paramsCohort.cohortHarmRefFiltFamMerge}"""
+    .in(paramsCohort.cohortHarmRefFilt)
+    .out(paramsCohort.cohortHarmRefFiltFamMerge)
+    .named(s"${paramsCohort.cohortHarmRefFiltFamMerge}".split("/").last)
 
   }
 
 }
+
+//def meta(): Unit = {  
+//
+//  var mergedQcFiles = Seq[Seq[String]]()
+//  var mergedQcCommonCmd: String = ""
+//
+//  val paramsCohort =  Params.paramsByCohortSorted.filter(metaCohorts contains _._2.cohortId)
+//
+//  for { 
+//    i <- 0 until nCohorts
+//  } {
+//
+//    val (_, paramsCohort) = Params.paramsByCohort(i)
+//
+//    mergedQcFiles = mergedQcFiles :+ Seq(s"${paramsCohort.harmRefFilt}.bed", s"${paramsCohort.harmRefFilt}.bim", s"${paramsCohort.harmRefFiltFamMerge}")
+//    mergedQcCommonCmd = if (i == 0) {
+//      mergedQcCommonCmd + s"cat ${paramsCohort.harmRefFilt}.bim"
+//    } else {
+//      mergedQcCommonCmd + s" | grep -xF -f- ${paramsCohort.harmRefFilt}.bim"
+//    }
+//
+//  }
+//
+//  val arrayMergeQcFilesConcat = mergedQcFiles.drop(1).map{ case Seq(x, y, z) => "%s %s %s" format (x, y, z) }.mkString("\n")
+//
+//  uger {
+//
+//    cmd"""${mergedQcCommonCmd} | awk '{print $$2}' > ${mergedQcCommon}"""
+//    .in(paramsCohort.harmRefFilt :+ Params.paramsByCohortSorted.map(_.harmRefFiltFamMerge))
+//    .out(mergedQcCommon)
+//    .named(s"${mergedQcCommon}".split("/").last)
+//
+//    cmd"""echo "$arrayMergeQcFilesConcat" > ${mergedQcList}"""
+//    .out(mergedQcList)
+//    .named(s"${mergedQcList}".split("/").last)
+//
+//    cmd"""$binPlink --bed mergedQcFiles(0)(0) --bim mergedQcFiles(0)(1) --fam mergedQcFiles(0)(2) --merge-list ${mergedQcList} --make-bed --out $mergedQcName"""
+//    .in(paramsCohort.harmRefFiltPruned :+ Params.paramsByCohortSorted.map(_.harmRefFiltFamMerge) :+ mergedQcList)
+//    .out(mergedQc)
+//
+//  }
+//
+//}
 
 def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq[String]), Store] = {
 
   val (_, paramsCohort) = Params.paramsByCohort(i)
-  var resultsMap = Seq[Map[(String, String, String, String, String), Store, Seq[String]]]()
+
+  val (_, paramsArr) =  Params.paramsByArr.filter(_._2.arrayId == paramsCohort.cohortArray)(0)
+
+  var resultsMap = Seq[Map[(String, String, String, String, String, Seq[String]), Store]]()
   
   /**
    * Association Step
@@ -2342,8 +2398,8 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
     google {
 
       hail"""$pyHailListSamples
-        --vds-in ${paramsCohort.cleanVdsCloud}
-        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
+        --vds-in ${paramsArr.cleanVdsCloud}
+        --bim-in ${paramsArr.harmRefFiltPrunedNameCloud}.bim
         --pheno-in ${Input.Google.pheno}
         --iid-col $phenoId
         --pheno-col ${paramsModel.modelPheno}
@@ -2351,7 +2407,7 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
         --covars "${paramsModel.modelCovars}"
         --out-pheno-prelim ${paramsModel.modelPhenoPrelimFileCloud}
         --out-samples ${paramsModel.modelSamplesIncludeCloud}"""
-      .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno)
+      .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno)
       .out(paramsModel.modelPhenoPrelimFileCloud, paramsModel.modelSamplesIncludeCloud)
       .named(s"${paramsModel.modelPhenoPrelimFile}.google".split("/").last)
 
@@ -2369,21 +2425,21 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
       cmd"""$binRscript --vanilla --verbose
         $rGeneratePheno
         --cpus 4
-        --gds-in ${paramsCohort.harmRefFiltPrunedPcaGds}
+        --gds-in ${paramsArr.harmRefFiltPrunedPcaGds}
         --pheno-in ${Input.Local.pheno}
         --ancestry-in ${ancestryInferredMerged}
-        --ancestry-keep ${paramsModel.modelAncestry.mkString(",")}
+        --ancestry-keep ${paramsCohort.cohortAncestry.mkString(",")}
         --pheno-col ${paramsModel.modelPheno}
         --iid-col $phenoId
         --samples-include ${paramsModel.modelSamplesInclude}
-        --variants-exclude ID ${paramsCohort.finalVariantExclusions}
+        --variants-exclude ID ${paramsArr.finalVariantExclusions}
         --test ${paramsModel.modelTest}
         --trans "${paramsModel.modelTrans}"
         --covars "${paramsModel.modelCovars}"
         --out-pheno ${paramsModel.modelPhenoFile}
         --out-pcs ${paramsModel.modelPcsFile}
         > ${paramsModel.modelPhenoFileLog}"""
-        .in(paramsCohort.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsModel.modelSamplesInclude, paramsCohort.finalVariantExclusions)
+        .in(paramsArr.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsModel.modelSamplesInclude, paramsArr.finalVariantExclusions)
         .out(paramsModel.modelPhenoFile, paramsModel.modelPcsFile, paramsModel.modelPhenoFileLog)
         .using("R-3.4")
         .named(s"${paramsModel.modelPhenoFile}".split("/").last)
@@ -2400,8 +2456,8 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
     google {
 
       hail"""$pyHailAssoc
-        --vds-in ${paramsCohort.cleanVdsCloud}
-        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
+        --vds-in ${paramsArr.cleanVdsCloud}
+        --bim-in ${paramsArr.harmRefFiltPrunedNameCloud}.bim
         --pheno-in ${paramsModel.modelPhenoFileCloud}
         --iid-col $phenoId
         --pheno-col ${paramsModel.modelPheno}
@@ -2410,7 +2466,7 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
         --trans "${paramsModel.modelTrans}"
         --covars "${paramsModel.modelCovars}"
         --out ${paramsModel.modelResultsCloud}"""
-          .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno :+ paramsModel.modelPhenoFileCloud)
+          .in(paramsArr.harmRefFiltPrunedCloud :+ paramsArr.cleanVdsCloud :+ Input.Google.pheno :+ paramsModel.modelPhenoFileCloud)
           .out(paramsModel.modelResultsCloud)
           .named(s"${paramsModel.modelResults}.google".split("/").last)
     
@@ -2431,7 +2487,7 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
 
     }
   
-    resultsMap = resultsMap :+ Map((paramsModel.modelId, paramsModel.modelPheno, paramsModel.modelTest, paramsModel.modelCovars, paramsModel.modelTrans, paramsModel.modelAncestry) -> paramsModel.modelResultsCloud)
+    resultsMap = resultsMap :+ Map((paramsCohort.cohortId, paramsModel.modelPheno, paramsModel.modelTest, paramsModel.modelCovars, paramsModel.modelTrans, paramsCohort.cohortAncestry) -> paramsModel.modelResultsCloud)
 
   }
 
@@ -2439,108 +2495,108 @@ def variantAssociation(i: Int): Map[(String, String, String, String, String, Seq
 
 }
 
-def knownLociAssociation(i: Int): Map[(String, String, String, String, String, Seq[String]), Store] = {
-
-  val (_, paramsCohort) = Params.paramsByCohort(i)
-  var knownLociMap = Seq[Map[(String, String, String, String, String, Seq[String]), Store]]()
-
-  for {
-    (model, paramsKnownLoci) <- paramsCohort.paramsByCohortByKnownLoci
-  } {
-  
-    google {
-
-      hail"""$pyHailListSamples
-        --vds-in ${paramsCohort.cleanVdsCloud}
-        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
-        --pheno-in ${Input.Google.pheno}
-        --iid-col $phenoId
-        --pheno-col ${paramsKnownLoci.knownLociPhenoName}
-        --test ${paramsKnownLoci.knownLociTest}
-        --covars "${paramsKnownLoci.knownLociCovars}"
-        --out-pheno-prelim ${paramsKnownLoci.knownLociPhenoPrelimFileCloud}
-        --out-samples ${paramsKnownLoci.knownLociSamplesIncludeCloud}"""
-        .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno)
-        .out(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociSamplesIncludeCloud)
-        .named(s"${paramsKnownLoci.knownLociPhenoPrelimFile}.google".split("/").last)
-
-    }
-    
-    local {
-
-      googleCopy(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociPhenoPrelimFile)
-      googleCopy(paramsKnownLoci.knownLociSamplesIncludeCloud, paramsKnownLoci.knownLociSamplesInclude)
-
-    }
-    
-    ugerWith(cores=4, mem=4) {
-
-      cmd"""$binRscript --vanilla --verbose
-        $rGeneratePheno
-        --cpus 4
-        --gds-in ${paramsCohort.harmRefFiltPrunedPcaGds}
-        --pheno-in ${Input.Local.pheno}
-        --ancestry-in ${ancestryInferredMerged}
-        --ancestry-keep ${paramsKnownLoci.knownLociAncestry.mkString(",")}
-        --pheno-col ${paramsKnownLoci.knownLociPhenoName}
-        --iid-col $phenoId
-        --samples-include ${paramsKnownLoci.knownLociSamplesInclude}
-        --variants-exclude ID ${paramsCohort.finalVariantExclusions}
-        --test ${paramsKnownLoci.knownLociTest}
-        --trans "${paramsKnownLoci.knownLociTrans}"
-        --covars "${paramsKnownLoci.knownLociCovars}"
-        --out-pheno ${paramsKnownLoci.knownLociPhenoFile}
-        --out-pcs ${paramsKnownLoci.knownLociPcsFile}
-        > ${paramsKnownLoci.knownLociPhenoFileLog}"""
-        .in(paramsCohort.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsKnownLoci.knownLociSamplesInclude, paramsCohort.finalVariantExclusions)
-        .out(paramsKnownLoci.knownLociPhenoFile, paramsKnownLoci.knownLociPcsFile, paramsKnownLoci.knownLociPhenoFileLog)
-        .using("R-3.4")
-        .named(s"${paramsKnownLoci.knownLociPhenoFile}".split("/").last)
-
-    }
-    
-    local {
-
-      googleCopy(paramsKnownLoci.knownLociPhenoFile, paramsKnownLoci.knownLociPhenoFileCloud)
-      googleCopy(paramsKnownLoci.knownLociPcsFile, paramsKnownLoci.knownLociPcsFileCloud)
-      googleCopy(paramsKnownLoci.knownLociHiLd, paramsKnownLoci.knownLociHiLdCloud)
-
-    }
-    
-    google {
-
-      hail"""$pyHailAssoc
-        --vds-in ${paramsCohort.cleanVdsCloud}
-        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
-        --pheno-in ${paramsKnownLoci.knownLociPhenoFileCloud}
-        --iid-col $phenoId
-        --pheno-col ${paramsKnownLoci.knownLociPhenoName}
-        --pcs-include ${paramsKnownLoci.knownLociPcsFileCloud}
-        --extract-ld ${paramsKnownLoci.knownLociHiLdCloud}
-        --test ${paramsKnownLoci.knownLociTest}
-        --trans "${paramsKnownLoci.knownLociTrans}"
-        --covars "${paramsKnownLoci.knownLociCovars}"
-        --out ${paramsKnownLoci.knownLociResultsCloud}"""
-        .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno :+ paramsKnownLoci.knownLociPhenoFileCloud :+ paramsKnownLoci.knownLociHiLdCloud)
-        .out(paramsKnownLoci.knownLociResultsCloud)
-        .named(s"${paramsKnownLoci.knownLociResults}.google".split("/").last)
-    
-    }
-    
-    local {
-
-      googleCopy(paramsKnownLoci.knownLociResultsCloud, paramsKnownLoci.knownLociResults)
-
-    }
-    
-    knownLociMap = knownLociMap :+ Map((paramsKnownLoci.knownLociId, paramsKnownLoci.knownLociPhenoName, paramsKnownLoci.knownLociTest, paramsKnownLoci.knownLociCovars, paramsKnownLoci.knownLociTrans, paramsKnownLoci.knownLociAncestry) -> paramsKnownLoci.knownLociResultsCloud)
-  
-  }
-
-  return knownLociMap.flatten.toMap
-
-}
-
+//def knownLociAssociation(i: Int): Map[(String, String, String, String, String, Seq[String]), Store] = {
+//
+//  val (_, paramsCohort) = Params.paramsByCohort(i)
+//  var knownLociMap = Seq[Map[(String, String, String, String, String, Seq[String]), Store]]()
+//
+//  for {
+//    (model, paramsKnownLoci) <- paramsCohort.paramsByCohortByKnownLoci
+//  } {
+//  
+//    google {
+//
+//      hail"""$pyHailListSamples
+//        --vds-in ${paramsCohort.cleanVdsCloud}
+//        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
+//        --pheno-in ${Input.Google.pheno}
+//        --iid-col $phenoId
+//        --pheno-col ${paramsKnownLoci.knownLociPhenoName}
+//        --test ${paramsKnownLoci.knownLociTest}
+//        --covars "${paramsKnownLoci.knownLociCovars}"
+//        --out-pheno-prelim ${paramsKnownLoci.knownLociPhenoPrelimFileCloud}
+//        --out-samples ${paramsKnownLoci.knownLociSamplesIncludeCloud}"""
+//        .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno)
+//        .out(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociSamplesIncludeCloud)
+//        .named(s"${paramsKnownLoci.knownLociPhenoPrelimFile}.google".split("/").last)
+//
+//    }
+//    
+//    local {
+//
+//      googleCopy(paramsKnownLoci.knownLociPhenoPrelimFileCloud, paramsKnownLoci.knownLociPhenoPrelimFile)
+//      googleCopy(paramsKnownLoci.knownLociSamplesIncludeCloud, paramsKnownLoci.knownLociSamplesInclude)
+//
+//    }
+//    
+//    ugerWith(cores=4, mem=4) {
+//
+//      cmd"""$binRscript --vanilla --verbose
+//        $rGeneratePheno
+//        --cpus 4
+//        --gds-in ${paramsCohort.harmRefFiltPrunedPcaGds}
+//        --pheno-in ${Input.Local.pheno}
+//        --ancestry-in ${ancestryInferredMerged}
+//        --ancestry-keep ${paramsKnownLoci.knownLociAncestry.mkString(",")}
+//        --pheno-col ${paramsKnownLoci.knownLociPhenoName}
+//        --iid-col $phenoId
+//        --samples-include ${paramsKnownLoci.knownLociSamplesInclude}
+//        --variants-exclude ID ${paramsCohort.finalVariantExclusions}
+//        --test ${paramsKnownLoci.knownLociTest}
+//        --trans "${paramsKnownLoci.knownLociTrans}"
+//        --covars "${paramsKnownLoci.knownLociCovars}"
+//        --out-pheno ${paramsKnownLoci.knownLociPhenoFile}
+//        --out-pcs ${paramsKnownLoci.knownLociPcsFile}
+//        > ${paramsKnownLoci.knownLociPhenoFileLog}"""
+//        .in(paramsCohort.harmRefFiltPrunedPcaGds, Input.Local.pheno, ancestryInferredMerged, paramsKnownLoci.knownLociSamplesInclude, paramsCohort.finalVariantExclusions)
+//        .out(paramsKnownLoci.knownLociPhenoFile, paramsKnownLoci.knownLociPcsFile, paramsKnownLoci.knownLociPhenoFileLog)
+//        .using("R-3.4")
+//        .named(s"${paramsKnownLoci.knownLociPhenoFile}".split("/").last)
+//
+//    }
+//    
+//    local {
+//
+//      googleCopy(paramsKnownLoci.knownLociPhenoFile, paramsKnownLoci.knownLociPhenoFileCloud)
+//      googleCopy(paramsKnownLoci.knownLociPcsFile, paramsKnownLoci.knownLociPcsFileCloud)
+//      googleCopy(paramsKnownLoci.knownLociHiLd, paramsKnownLoci.knownLociHiLdCloud)
+//
+//    }
+//    
+//    google {
+//
+//      hail"""$pyHailAssoc
+//        --vds-in ${paramsCohort.cleanVdsCloud}
+//        --bim-in ${paramsCohort.harmRefFiltPrunedNameCloud}.bim
+//        --pheno-in ${paramsKnownLoci.knownLociPhenoFileCloud}
+//        --iid-col $phenoId
+//        --pheno-col ${paramsKnownLoci.knownLociPhenoName}
+//        --pcs-include ${paramsKnownLoci.knownLociPcsFileCloud}
+//        --extract-ld ${paramsKnownLoci.knownLociHiLdCloud}
+//        --test ${paramsKnownLoci.knownLociTest}
+//        --trans "${paramsKnownLoci.knownLociTrans}"
+//        --covars "${paramsKnownLoci.knownLociCovars}"
+//        --out ${paramsKnownLoci.knownLociResultsCloud}"""
+//        .in(paramsCohort.harmRefFiltPrunedCloud :+ paramsCohort.cleanVdsCloud :+ Input.Google.pheno :+ paramsKnownLoci.knownLociPhenoFileCloud :+ paramsKnownLoci.knownLociHiLdCloud)
+//        .out(paramsKnownLoci.knownLociResultsCloud)
+//        .named(s"${paramsKnownLoci.knownLociResults}.google".split("/").last)
+//    
+//    }
+//    
+//    local {
+//
+//      googleCopy(paramsKnownLoci.knownLociResultsCloud, paramsKnownLoci.knownLociResults)
+//
+//    }
+//    
+//    knownLociMap = knownLociMap :+ Map((paramsKnownLoci.knownLociId, paramsKnownLoci.knownLociPhenoName, paramsKnownLoci.knownLociTest, paramsKnownLoci.knownLociCovars, paramsKnownLoci.knownLociTrans, paramsKnownLoci.knownLociAncestry) -> paramsKnownLoci.knownLociResultsCloud)
+//  
+//  }
+//
+//  return knownLociMap.flatten.toMap
+//
+//}
+//
 //def mergeResults(i: Int): Unit = {
 //
 //  val (_, paramsResult) = Params.paramsByResult(i)
