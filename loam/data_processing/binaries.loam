@@ -1,0 +1,21 @@
+import config._
+
+// UNIX
+val binLiftOver             = path(pipelineConfig.getStr("binaries.binLiftOver"))
+val binGenotypeHarmonizer   = path(pipelineConfig.getStr("binaries.binGenotypeHarmonizer"))
+val binKing                 = path(pipelineConfig.getStr("binaries.binKing"))
+val binPlink                = path(pipelineConfig.getStr("binaries.binPlink"))
+val binTabix                = path(pipelineConfig.getStr("binaries.binTabix"))
+val binKlustakwik           = path(pipelineConfig.getStr("binaries.binKlustakwik"))
+val binPython               = path(pipelineConfig.getStr("binaries.binPython"))
+val binLocuszoom            = path(pipelineConfig.getStr("binaries.binLocuszoom"))
+val binConvert              = path(pipelineConfig.getStr("binaries.binConvert"))
+val binPdflatex             = path(pipelineConfig.getStr("binaries.binPdflatex"))
+
+val binBgzip                = path(pipelineConfig.getStr("binaries.binBgzip"))
+val binR                    = path(pipelineConfig.getStr("binaries.binR"))
+val binRscript              = path(pipelineConfig.getStr("binaries.binRscript"))
+
+//Google Cloud-Facing
+val gsutil                  = path("/humgen/diabetes2/users/dig/loamstream/google-cloud-sdk/bin/gsutil")
+val gcloud                  = path("/humgen/diabetes2/users/dig/loamstream/google-cloud-sdk/bin/gcloud")
