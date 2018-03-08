@@ -1,0 +1,7 @@
+data_processing_current:
+   The current version of the data processing pipeline
+
+data_processing_v1:
+   This version was used to initially process CAMP, BioMe, and METSIM
+   The initial run of these data sets did not require meta-analysis or imputed data as input
+   Branched off to refactor and add meta-analysis and imputed data support
