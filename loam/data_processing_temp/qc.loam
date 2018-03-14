@@ -1896,6 +1896,7 @@ def qc1(i: Int): Store = {
       --out ${paramsArr.kinFamsizes}"""
       .in(paramsArr.kinKin0Related)
       .out(paramsArr.kinFamsizes)
+      .using("R-3.4")
       .named(s"${paramsArr.kinFamsizes}".split("/").last)
 
   }
@@ -1956,6 +1957,7 @@ def qc1(i: Int): Store = {
       --out ${paramsArr.ancestryPcaScoresPlots}"""
       .in(paramsArr.ancestryPcaScores)
       .out(paramsArr.ancestryPcaScoresPlots)
+      .using("R-3.4")
       .named(s"${paramsArr.ancestryPcaScoresPlots}".split("/").last)
     
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryPcaScoresPlots}[0] ${paramsArr.ancestryPcaScoresPlotPc1VsPc2}"""
@@ -2015,6 +2017,7 @@ def qc1(i: Int): Store = {
       --cluster-plots-no1kg ${paramsArr.ancestryClusterPlotsNo1kg}"""
       .in(paramsArr.ancestryPcaScores, paramsArr.ancestryClusterClu, Input.Local.pheno)
       .out(paramsArr.ancestryClusterPlots, paramsArr.ancestryClusterXtabs, paramsArr.ancestryClusterPlotsCenters, paramsArr.ancestryClusterGroups, paramsArr.ancestryInferred, paramsArr.ancestryClusterPlotsNo1kg)
+      .using("R-3.4")
       .named(s"${paramsArr.ancestryPcaScores}.rPlotAncestryCluster".split("/").last)
   
     cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${paramsArr.ancestryClusterPlots}[0] ${paramsArr.ancestryClusterPlotPc1VsPc2}"""
@@ -2114,6 +2117,7 @@ def qc2(i: Int): Unit = {
       --out ${paramsArr.sampleqcStatsAdj}"""
       .in(paramsArr.sampleqcStats, paramsArr.pcaScores)
       .out(paramsArr.sampleqcStatsAdj)
+      .using("R-3.4")
       .named(s"${paramsArr.sampleqcStatsAdj}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
@@ -2125,6 +2129,7 @@ def qc2(i: Int): Unit = {
       --pca-scores ${paramsArr.sampleqcStatsAdjPcaScores}"""
       .in(paramsArr.sampleqcStatsAdj)
       .out(paramsArr.sampleqcStatsAdjCorrPlots, paramsArr.sampleqcStatsAdjPcaLoadings, paramsArr.sampleqcStatsAdjPcaScoresPlots, paramsArr.sampleqcStatsAdjPcaScores)
+      .using("R-3.4")
       .named(s"${paramsArr.sampleqcStatsAdj}.rIstatsAdjPca".split("/").last)
 
   }
@@ -2168,6 +2173,7 @@ def qc2(i: Int): Unit = {
       --id $projectId"""
       .in(paramsArr.sampleqcStatsAdjPcaScores, paramsArr.sampleqcStatsAdjClusterClu)
       .out(paramsArr.sampleqcStatsAdjClusterOutliers, paramsArr.sampleqcStatsAdjClusterPlots, paramsArr.sampleqcStatsAdjClusterXtabs)
+      .using("R-3.4")
       .named(s"${paramsArr.sampleqcStatsAdjPcaScores}.rIstatsPcsGmmClusterPlot".split("/").last)
   
   }
@@ -2222,6 +2228,7 @@ def qc2(i: Int): Unit = {
       --ancestry-inferred-merged ${ancestryInferredMerged}"""
       .in(paramsArr.paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu) :+ paramsArr.sampleqcStats :+ paramsArr.sampleqcStatsAdj :+ ancestryInferredMerged :+ paramsArr.sampleqcStatsAdjClusterOutliers)
       .out(paramsArr.sampleqcStatsAdjIndBoxplots, paramsArr.sampleqcStatsAdjIndDiscreteness, paramsArr.sampleqcStatsAdjOutliersTable, paramsArr.sampleqcStatsAdjStripchart)
+      .using("R-3.4")
       .named(s"${paramsArr.sampleqcStats}.rIstatsAdjGmmPlotMetrics".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
