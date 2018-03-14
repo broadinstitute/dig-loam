@@ -1,26 +1,41 @@
-args<-commandArgs(trailingOnly=T)
 library(reshape2)
 library(ggplot2)
 library(gridExtra)
+library(argparse)
+
+parser <- ArgumentParser()
+parser$add_argument("--metrics", dest="metrics", type="character", help="A comma separated list of sample QC metrics")
+parser$add_argument("--stats", dest="stats", type="character", help="A sample qc stats file")
+parser$add_argument("--stats-adj", dest="stats_adj", type="character", help="An adjusted sample qc stats file")
+parser$add_argument("--outliers", dest="outliers", type="character", help="A sample qc outliers file")
+parser$add_argument("--boxplots", dest="boxplots", type="character", help="An output filename for boxplots")
+parser$add_argument("--discreteness", dest="discreteness", type="character", help="An output filename for discreteness")
+parser$add_argument("--outliers-table", dest="outliers_table", type="character", help="An output filename for an outliers table")
+parser$add_argument("--stripchart", dest="stripchart", type="character", help="An output filename for stripcharts")
+parser$add_argument("--ancestry-inferred-merged", dest="ancestry_inferred_merged", type="character", help="An output filename for reconciled inferred ancestry")
+args<-parser$parse_args()
+
+print(args)
+
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)
   hcl(h=hues, l=65, c=100)[1:n]
 }
-metrics<-unlist(strsplit(args[1],","))
+metrics<-unlist(strsplit(args$metrics,","))
 np<-0
 np<-np+1
-data_orig<-read.table(args[2],header=T,as.is=T,stringsAsFactors=F)
-data<-read.table(args[3],header=T,as.is=T,stringsAsFactors=F)
+data_orig<-read.table(args$stats,header=T,as.is=T,stringsAsFactors=F)
+data<-read.table(args$stats_adj,header=T,as.is=T,stringsAsFactors=F)
 data_names<-names(data)[names(data) %in% metrics]
-oliers<-readLines(args[4])
+oliers<-readLines(args$outliers)
 data$OUTLIER_PCA<-0
 if( length(oliers) > 0) {
 	data$OUTLIER_PCA[data$IID %in% oliers]<-1
 }
-pdf(args[5],width=ceiling(length(data_names)/10)*7, height=7)
+pdf(args$boxplots,width=ceiling(length(data_names)/10)*7, height=7)
 for(m in metrics) {
 	print(m)
-	cl<-read.table(gsub("tsv",paste(m,".clu.1",sep=""),args[3]), as.is=T, skip=1)
+	cl<-read.table(gsub("tsv",paste(m,".clu.1",sep=""),args$stats_adj), as.is=T, skip=1)
 	cl_levels<-c()
 	cl_names<-c()
 	if(1 %in% cl$V1) {
@@ -54,7 +69,7 @@ for(m in metrics) {
 		panel.background = element_blank(),
 		legend.key = element_blank())
 	plot(pl)
-	cat(file=args[6],paste("   ",m,": ",nrow(data)," total, ",length(unique(data[,c(m)]))," unique, ",(length(unique(data[,c(m)])) / nrow(data))*100,"%\n",sep=""),append=T)
+	cat(file=args$discreteness,paste("   ",m,": ",nrow(data)," total, ",length(unique(data[,c(m)]))," unique, ",(length(unique(data[,c(m)])) / nrow(data))*100,"%\n",sep=""),append=T)
 }
 dev.off()
 data<-merge(data,data_orig,all=T)
@@ -80,8 +95,8 @@ sdata$DECISION[sdata$CLUSTER == "X" & sdata$OUTLIER_PCA == 0]<-"OUTLIER_IND"
 sdata$DECISION[sdata$CLUSTER == "X" & sdata$OUTLIER_PCA == 1]<-"OUTLIER_IND_PCA"
 sdata$DECISION[sdata$CLUSTER != "X" & sdata$OUTLIER_PCA == 1]<-"OUTLIER_PCA"
 sdata$DECISION<-factor(sdata$DECISION)
-write.table(sdata[sdata$DECISION != "KEEP",],args[7],row.names=F,col.names=T,quote=F,sep="\t",append=F)
-ancestry<-read.table(args[9],header=F,as.is=T,stringsAsFactors=F)
+write.table(sdata[sdata$DECISION != "KEEP",],args$outliers_table,row.names=F,col.names=T,quote=F,sep="\t",append=F)
+ancestry<-read.table(args$ancestry_inferred_merged,header=F,as.is=T,stringsAsFactors=F)
 names(ancestry)[1]<-"IID"
 names(ancestry)[2]<-"ANCESTRY"
 id_list<-list(all=unique(sdata$IID))
@@ -92,7 +107,7 @@ id_list[['EUR']]<-ancestry$IID[ancestry$ANCESTRY == "EUR"]
 id_list[['SAS']]<-ancestry$IID[ancestry$ANCESTRY == "SAS"]
 
 oliers_plot<-unique(sdata$IID[sdata$DECISION %in% c("OUTLIER_PCA","OUTLIER_IND","OUTLIER_IND_PCA")])
-pdf(args[8],width=20, height=5)
+pdf(args$stripchart,width=20, height=5)
 for(p in names(id_list)) {
 	i<-0
 	sdata_temp<-sdata[sdata$IID %in% id_list[[p]],]

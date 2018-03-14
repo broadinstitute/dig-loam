@@ -1890,10 +1890,13 @@ def qc1(i: Int): Store = {
 
   uger {
 
-    cmd"""$binR --vanilla --args ${paramsArr.kinKin0Related} ${paramsArr.kinFamsizes} < ${rCalcKinshipFamSizes}"""
-    .in(paramsArr.kinKin0Related)
-    .out(paramsArr.kinFamsizes)
-    .named(s"${paramsArr.kinFamsizes}".split("/").last)
+    cmd"""$binRscript --vanilla --verbose
+      $rCalcKinshipFamSizes
+      --kin0 ${paramsArr.kinKin0Related}
+      --out ${paramsArr.kinFamsizes}"""
+      .in(paramsArr.kinKin0Related)
+      .out(paramsArr.kinFamsizes)
+      .named(s"${paramsArr.kinFamsizes}".split("/").last)
 
   }
   
@@ -1946,7 +1949,11 @@ def qc1(i: Int): Store = {
 
   uger {
 
-    cmd"""$binR --vanilla --args $projectId ${paramsArr.ancestryPcaScores} ${paramsArr.ancestryPcaScoresPlots} < $rPlotAncestryPca"""
+    cmd"""$binRscript --vanilla --verbose
+      $rPlotAncestryPca
+      --id $projectId
+      --pca-scores ${paramsArr.ancestryPcaScores}
+      --out ${paramsArr.ancestryPcaScoresPlots}"""
       .in(paramsArr.ancestryPcaScores)
       .out(paramsArr.ancestryPcaScoresPlots)
       .named(s"${paramsArr.ancestryPcaScoresPlots}".split("/").last)
@@ -1992,10 +1999,20 @@ def qc1(i: Int): Store = {
 
   uger {
   
-    cmd"""$binR --vanilla --args ${paramsArr.ancestryPcaScores} ${paramsArr.ancestryClusterClu} ${Input.Local.pheno} $projectId $phenoId $phenoSrRace
-      ${paramsArr.ancestryClusterPlots} ${paramsArr.ancestryClusterXtabs} ${paramsArr.ancestryClusterPlotsCenters}
-      ${paramsArr.ancestryClusterGroups} ${paramsArr.ancestryInferred}
-      ${paramsArr.ancestryClusterPlotsNo1kg} < $rPlotAncestryCluster"""
+    cmd"""$binRscript --vanilla --verbose
+      $rPlotAncestryCluster
+      --pca-scores ${paramsArr.ancestryPcaScores}
+      --cluster ${paramsArr.ancestryClusterClu}
+      --pheno-file ${Input.Local.pheno}
+      --id $projectId
+      --pheno $phenoId
+      --sr-race $phenoSrRace
+      --cluster-plots ${paramsArr.ancestryClusterPlots}
+      --xtabs ${paramsArr.ancestryClusterXtabs}
+      --plots-centers ${paramsArr.ancestryClusterPlotsCenters}
+      --cluster-groups ${paramsArr.ancestryClusterGroups}
+      --ancestry-inferred ${paramsArr.ancestryInferred}
+      --cluster-plots-no1kg ${paramsArr.ancestryClusterPlotsNo1kg}"""
       .in(paramsArr.ancestryPcaScores, paramsArr.ancestryClusterClu, Input.Local.pheno)
       .out(paramsArr.ancestryClusterPlots, paramsArr.ancestryClusterXtabs, paramsArr.ancestryClusterPlotsCenters, paramsArr.ancestryClusterGroups, paramsArr.ancestryInferred, paramsArr.ancestryClusterPlotsNo1kg)
       .named(s"${paramsArr.ancestryPcaScores}.rPlotAncestryCluster".split("/").last)
@@ -2090,12 +2107,22 @@ def qc2(i: Int): Unit = {
   
   uger {
 
-    cmd"""$binR --vanilla --args ${paramsArr.sampleqcStats} ${paramsArr.pcaScores} ${paramsArr.sampleqcStatsAdj} < $rCalcIstatsAdj"""
+    cmd"""$binRscript --vanilla --verbose
+      $rCalcIstatsAdj
+      --sampleqc-stats ${paramsArr.sampleqcStats}
+      --pca-scores ${paramsArr.pcaScores}
+      --out ${paramsArr.sampleqcStatsAdj}"""
       .in(paramsArr.sampleqcStats, paramsArr.pcaScores)
       .out(paramsArr.sampleqcStatsAdj)
       .named(s"${paramsArr.sampleqcStatsAdj}".split("/").last)
   
-    cmd"""$binR --vanilla --args ${paramsArr.sampleqcStatsAdj} ${paramsArr.sampleqcStatsAdjCorrPlots} ${paramsArr.sampleqcStatsAdjPcaLoadings} ${paramsArr.sampleqcStatsAdjPcaScoresPlots} ${paramsArr.sampleqcStatsAdjPcaScores} < $rIstatsAdjPca"""
+    cmd"""$binRscript --vanilla --verbose
+      $rIstatsAdjPca
+      --sampleqc-stats-adj ${paramsArr.sampleqcStatsAdj}
+      --corr-plots ${paramsArr.sampleqcStatsAdjCorrPlots}
+      --pca-loadings ${paramsArr.sampleqcStatsAdjPcaLoadings}
+      --pca-scores-plots ${paramsArr.sampleqcStatsAdjPcaScoresPlots}
+      --pca-scores ${paramsArr.sampleqcStatsAdjPcaScores}"""
       .in(paramsArr.sampleqcStatsAdj)
       .out(paramsArr.sampleqcStatsAdjCorrPlots, paramsArr.sampleqcStatsAdjPcaLoadings, paramsArr.sampleqcStatsAdjPcaScoresPlots, paramsArr.sampleqcStatsAdjPcaScores)
       .named(s"${paramsArr.sampleqcStatsAdj}.rIstatsAdjPca".split("/").last)
@@ -2131,9 +2158,14 @@ def qc2(i: Int): Unit = {
 
   uger {
 
-    cmd"""$binR --vanilla --args ${paramsArr.sampleqcStatsAdjPcaScores} ${paramsArr.sampleqcStatsAdjClusterClu}
-      ${paramsArr.sampleqcStatsAdjClusterOutliers} ${paramsArr.sampleqcStatsAdjClusterPlots}
-      ${paramsArr.sampleqcStatsAdjClusterXtabs} $projectId < $rIstatsPcsGmmClusterPlot"""
+    cmd"""$binRscript --vanilla --verbose
+      $rIstatsPcsGmmClusterPlot
+      --pca-scores ${paramsArr.sampleqcStatsAdjPcaScores}
+      --cluster ${paramsArr.sampleqcStatsAdjClusterClu}
+      --outliers ${paramsArr.sampleqcStatsAdjClusterOutliers}
+      --plots ${paramsArr.sampleqcStatsAdjClusterPlots}
+      --xtabs ${paramsArr.sampleqcStatsAdjClusterXtabs}
+      --id $projectId"""
       .in(paramsArr.sampleqcStatsAdjPcaScores, paramsArr.sampleqcStatsAdjClusterClu)
       .out(paramsArr.sampleqcStatsAdjClusterOutliers, paramsArr.sampleqcStatsAdjClusterPlots, paramsArr.sampleqcStatsAdjClusterXtabs)
       .named(s"${paramsArr.sampleqcStatsAdjPcaScores}.rIstatsPcsGmmClusterPlot".split("/").last)
@@ -2177,17 +2209,17 @@ def qc2(i: Int): Unit = {
   
   uger {
 
-    cmd"""$binR --vanilla --args
-      ${sampleQcMetrics.mkString(",")}
-      ${paramsArr.sampleqcStats}
-      ${paramsArr.sampleqcStatsAdj}
-      ${paramsArr.sampleqcStatsAdjClusterOutliers}
-      ${paramsArr.sampleqcStatsAdjIndBoxplots}
-      ${paramsArr.sampleqcStatsAdjIndDiscreteness}
-      ${paramsArr.sampleqcStatsAdjOutliersTable}
-      ${paramsArr.sampleqcStatsAdjStripchart}
-      ${ancestryInferredMerged}
-      < $rIstatsAdjGmmPlotMetrics"""
+    cmd"""$binRscript --vanilla --verbose
+      $rIstatsAdjGmmPlotMetrics
+      --metrics ${sampleQcMetrics.mkString(",")}
+      --stats ${paramsArr.sampleqcStats}
+      --stats-adj ${paramsArr.sampleqcStatsAdj}
+      --outliers ${paramsArr.sampleqcStatsAdjClusterOutliers}
+      --boxplots ${paramsArr.sampleqcStatsAdjIndBoxplots}
+      --discreteness ${paramsArr.sampleqcStatsAdjIndDiscreteness}
+      --outliers-table ${paramsArr.sampleqcStatsAdjOutliersTable}
+      --stripchart ${paramsArr.sampleqcStatsAdjStripchart}
+      --ancestry-inferred-merged ${ancestryInferredMerged}"""
       .in(paramsArr.paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu) :+ paramsArr.sampleqcStats :+ paramsArr.sampleqcStatsAdj :+ ancestryInferredMerged :+ paramsArr.sampleqcStatsAdjClusterOutliers)
       .out(paramsArr.sampleqcStatsAdjIndBoxplots, paramsArr.sampleqcStatsAdjIndDiscreteness, paramsArr.sampleqcStatsAdjOutliersTable, paramsArr.sampleqcStatsAdjStripchart)
       .named(s"${paramsArr.sampleqcStats}.rIstatsAdjGmmPlotMetrics".split("/").last)

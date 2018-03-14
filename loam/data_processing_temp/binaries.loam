@@ -13,7 +13,6 @@ val binConvert              = path(pipelineConfig.getStr("binaries.binConvert"))
 val binPdflatex             = path(pipelineConfig.getStr("binaries.binPdflatex"))
 
 val binBgzip                = path(pipelineConfig.getStr("binaries.binBgzip"))
-val binR                    = path(pipelineConfig.getStr("binaries.binR"))
 val binRscript              = path(pipelineConfig.getStr("binaries.binRscript"))
 
 //Google Cloud-Facing
