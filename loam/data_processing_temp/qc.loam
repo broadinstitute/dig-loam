@@ -385,7 +385,6 @@ object Params {
     sampleqcStatsAdjOutliersTable: Store,
     sampleqcOutlierPlotPdf: Store,
     sampleqcOutlierPlotPng: Store,
-    sampleqcStatsAdjStripchart: Store,
     finalSampleExclusions: Store,
     finalSampleExclusionsCloud: Store,
     variantqcStats: Store,
@@ -801,7 +800,6 @@ object Params {
     sampleqcStatsAdjOutliersTable = store.at(localOutDir / sampleqcStatsAdjOutliersTableBase),
     sampleqcOutlierPlotPdf = store.at(localOutDir / s"${sampleqcBase}.outlier.plot.pdf"),
     sampleqcOutlierPlotPng = store.at(localOutDir / s"${sampleqcBase}.outlier.plot.png"),
-    sampleqcStatsAdjStripchart = store.at(localOutDir / s"${sampleqcBase}.stats.adj.stripchart.pdf"),
     finalSampleExclusions = store.at(localOutDir / s"${finalBase}.sample.exclusions"),
     finalSampleExclusionsCloud = store.at(googleOutDir / s"${finalBase}.sample.exclusions"),
     variantqcStats = store.at(localOutDir / s"${variantqcBase}.stats.tsv"),
@@ -2223,11 +2221,9 @@ def qc2(i: Int): Unit = {
       --outliers ${paramsArr.sampleqcStatsAdjClusterOutliers}
       --boxplots ${paramsArr.sampleqcStatsAdjIndBoxplots}
       --discreteness ${paramsArr.sampleqcStatsAdjIndDiscreteness}
-      --outliers-table ${paramsArr.sampleqcStatsAdjOutliersTable}
-      --stripchart ${paramsArr.sampleqcStatsAdjStripchart}
-      --ancestry-inferred-merged ${ancestryInferredMerged}"""
-      .in(paramsArr.paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu) :+ paramsArr.sampleqcStats :+ paramsArr.sampleqcStatsAdj :+ ancestryInferredMerged :+ paramsArr.sampleqcStatsAdjClusterOutliers)
-      .out(paramsArr.sampleqcStatsAdjIndBoxplots, paramsArr.sampleqcStatsAdjIndDiscreteness, paramsArr.sampleqcStatsAdjOutliersTable, paramsArr.sampleqcStatsAdjStripchart)
+      --outliers-table ${paramsArr.sampleqcStatsAdjOutliersTable}"""
+      .in(paramsArr.paramsByArrByMetricSorted.map(_.sampleqcStatsAdjIndClusterClu) :+ paramsArr.sampleqcStats :+ paramsArr.sampleqcStatsAdj :+ paramsArr.sampleqcStatsAdjClusterOutliers)
+      .out(paramsArr.sampleqcStatsAdjIndBoxplots, paramsArr.sampleqcStatsAdjIndDiscreteness, paramsArr.sampleqcStatsAdjOutliersTable)
       .using("R-3.4")
       .named(s"${paramsArr.sampleqcStats}.rIstatsAdjGmmPlotMetrics".split("/").last)
   
