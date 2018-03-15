@@ -13,7 +13,7 @@ parser$add_argument("--cluster-plots", dest="cluster_plots", type="character", h
 parser$add_argument("--xtabs", dest="xtabs", type="character", help="An output filename for cross tabs")
 parser$add_argument("--plots-centers", dest="plots_centers", type="character", help="An output filename for cluster plots with centers")
 parser$add_argument("--cluster-groups", dest="cluster_groups", type="character", help="An output filename for cluster groups")
-parser$add_argument("--ancestry-inferred", dest="cluster_plots", type="character", help="An output filename for inferred ancestry")
+parser$add_argument("--ancestry-inferred", dest="ancestry_inferred", type="character", help="An output filename for inferred ancestry")
 parser$add_argument("--cluster-plots-no1kg", dest="cluster_plots_no1kg", type="character", help="An output filename for cluster plots without 1kg samples")
 args<-parser$parse_args()
 
