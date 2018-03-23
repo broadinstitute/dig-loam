@@ -1,0 +1,148 @@
+import ProjectConfig._
+import PipelineConfig._
+import StoreHelpers._
+
+final case class RawData(
+  data: Seq[Store],
+  base: String,
+  rawBase: Path,
+  unplaced: Store,
+  unique: Store,
+  indel: Store,
+  lmiss: Store,
+  imiss: Store,
+  imissRemove: Store,
+  freq: Store,
+  mono: Store,
+  dupRemove: Store)
+
+final case class PreparedData(
+  data: Seq[Store],
+  base: Path,
+  multiallelic: Store,
+  chain: Option[Store] = None,
+  bed: Option[Store] = None,
+  lifted: Option[Store] = None,
+  unlifted: Option[Store] = None,
+  liftedUpdate: Option[Store] = None,
+  liftedExtract: Option[Store] = None)
+
+final case class AnnotatedData(
+  data: Seq[Store],
+  base: Path)
+
+final case class AnnotatedChrData(
+  data: Seq[Store],
+  base: Path)
+
+final case class Array(
+  rawData: RawData,
+  preparedData: PreparedData,
+  annotatedData: AnnotatedData,
+  annotatedChrData: Map[Int, AnnotatedChrData])
+
+val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
+
+  val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
+  val base = arrayCfg.filename
+  val rawBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.raw"
+  val preparedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
+  val annotatedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
+
+  val rawData = RawData(
+    data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
+    base = base,
+    rawBase = rawBase,
+    unplaced = store.at(s"${rawBase}.unplaced"),
+    unique = store.at(s"${rawBase}.unique"),
+    indel = store.at(s"${rawBase}.indel"),
+    lmiss = store.at(s"${rawBase}.missing.lmiss"),
+    imiss = store.at(s"${rawBase}.missing.imiss"),
+    imissRemove = store.at(s"${rawBase}.missing.imiss.remove"),
+    freq = store.at(s"${rawBase}.freq.frq"),
+    mono = store.at(s"${rawBase}.mono"),
+    dupRemove = store.at(s"${rawBase}.dup.remove"))
+
+  val preparedData = PreparedData(
+    data = bedBimFam(preparedBase),
+    base = preparedBase,
+    multiallelic = store.at(s"${preparedBase}.multiallelic"),
+    chain = arrayCfg.liftOver.map(s => store.at(path(s))),
+    bed = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.liftover.bed")),
+    lifted = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.lifted")),
+    unlifted = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.unlifted")),
+    liftedUpdate = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.lifted.update")),
+    liftedExtract = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.lifted.extract")))
+
+  val annotatedData = AnnotatedData(
+    data = arrayCfg.liftOver match {
+      case Some(s) => bedBimFam(annotatedBase)
+      case None => preparedData.data 
+    },
+    base = arrayCfg.liftOver match {
+      case Some(s) => annotatedBase
+      case None => preparedBase 
+    })
+
+  val annotatedChrData = ( 1 until { if ( arrayCfg.xChr ) 23 else 22 } ).map { chr =>
+
+    val chrBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
+
+    chr -> AnnotatedChrData(
+      data = bedBimFam(chrBase),
+      base = chrBase)
+
+  }.toMap
+
+  array -> Array(
+    rawData = rawData,
+    preparedData = preparedData,
+    annotatedData = annotatedData,
+    annotatedChrData = annotatedChrData)
+
+}.toMap
+
+//val endChr = if (arrayDataXChr) 23 else 22
+//    val paramsByArrByChr = (1 to endChr).map { chr =>
+//    
+//      val rawChrBase = s"${projectId}.${arrayId}.chr$chr"
+//      val harmKgChrBase = s"${rawChrBase}.harmkg"
+//      val harmKgChrName = localOutDir / harmKgChrBase
+//      val harmKgHuRefChrName = localOutDir / s"${harmKgChrBase}.huref"
+//      val rawChrName = localOutDir / rawChrBase
+//      val kgVcfChr = store.at(
+//          kgVcfBaseWild
+//            .replace("[CHROMOSOME]", s"$chr")
+//            .replace("23.phase3_shapeit2_mvncall_integrated_v5a",
+//                     "X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
+//      val kgLegendChr = store.at(
+//          kgLegendWild
+//            .replace("[CHROMOSOME]", s"$chr")
+//            .replace("23",
+//                     "X")).asInput
+//      val humanReference = store.at(
+//          humanReferenceWild
+//            .replace("[CHROMOSOME]", s"$chr")
+//            .replace("23",
+//                     "X")).asInput
+//    
+//      chr -> Chr(
+//        rawChrName = rawChrName,
+//        rawChr = bedBimFam(rawChrName),
+//        harmKgChrName = harmKgChrName,
+//        harmKgHuRefChrName = harmKgHuRefChrName,
+//        harmKgChr = bedBimFam(harmKgChrName),
+//        harmKgHuRefChr = bedBimFam(harmKgHuRefChrName),
+//        kgVcfChr = kgVcfChr,
+//        kgLegendChr = kgLegendChr,
+//        humanReference = humanReference,
+//        harmNonKgChrRemove = store.at(localOutDir / s"${harmKgChrBase}.nonkg.remove"),
+//        harmNonKgChrIgnore = store.at(localOutDir / s"${harmKgChrBase}.nonkg.ignore"),
+//        harmNonKgChrMono = store.at(localOutDir / s"${harmKgChrBase}.nonkg.mono"),
+//        harmNonKgChrNomatch = store.at(localOutDir / s"${harmKgChrBase}.nonkg.nomatch"),
+//        harmNonKgChrFlip = store.at(localOutDir / s"${harmKgChrBase}.nonkg.flip"),
+//        harmNonKgChrForceA1 = store.at(localOutDir / s"${harmKgChrBase}.nonkg.force_a1"),
+//        harmKgChrVarIdUpdate = store.at(localOutDir / s"${harmKgChrBase}_idUpdates.txt"),
+//        harmKgChrVarSnpLog = store.at(localOutDir / s"${harmKgChrBase}_snpLog.log"),
+//        harmMergeLine = s"${localOutDir}/${harmKgChrBase}")
+//    }

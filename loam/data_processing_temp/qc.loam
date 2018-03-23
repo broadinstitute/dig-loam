@@ -261,14 +261,20 @@ object Params {
     cohortId: String,
     cohortArray: String,
     cohortAncestry: Seq[String],
-    cohortReport: Boolean,
+    paramsByCohortByModel: Seq[(Int, Model)],
+    paramsByCohortByModelSorted: Seq[Model])
+
+  final case class MetaCohort(
+    cohortId: String,
+    cohortArray: String,
+    cohortAncestry: Seq[String],
     cohortSamples: Store,
     cohortHarmRefFiltBase: String,
     cohortHarmRefFiltName: Path,
     cohortHarmRefFilt: Seq[Store],
     cohortHarmRefFiltFamMerge: Store,
-    paramsByCohortByModel: Seq[(Int, Model)],
-    paramsByCohortByModelSorted: Seq[Model])
+    paramsByMetaCohortByModel: Seq[(Int, Model)],
+    paramsByMetaCohortByModelSorted: Seq[Model])
 
   final case class Arr(
     arrayId: String,
@@ -475,7 +481,6 @@ object Params {
     val cohortId = dataConfig.getObjList("cohorts")(cohort).getStr("id")
     val cohortArray = dataConfig.getObjList("cohorts")(cohort).getStr("array")
     val cohortAncestry = dataConfig.getObjList("cohorts")(cohort).getStrList("ancestry")
-    val cohortReport = dataConfig.getObjList("cohorts")(cohort).getBool("report")
 
     val ancestryString = cohortAncestry.mkString("_")
     val cohortSamples = store.at(localOutDir / s"${projectId}.${cohortArray}.${ancestryString}.samples.tsv")
@@ -562,7 +567,6 @@ object Params {
       cohortId = cohortId,
       cohortArray = cohortArray,
       cohortAncestry = cohortAncestry,
-      cohortReport = cohortReport,
       cohortSamples = cohortSamples,
       cohortHarmRefFiltBase = cohortHarmRefFiltBase,
       cohortHarmRefFiltName = cohortHarmRefFiltName,
@@ -820,6 +824,7 @@ object Params {
   }
 
   val (_, paramsByCohortSorted) = paramsByCohort.unzip
+  val (_, paramsByMetaCohortSorted) = paramsByMetaCohort.unzip
   val (_, paramsByArrSorted) = paramsByArr.unzip
 
 }
@@ -875,7 +880,7 @@ for {
 
 }
 
-// Perform variant association for each cohort, adding relevent (inter-array) stores to the map
+// Perform variant association for each cohort only if report == true, adding relevent (inter-array) stores to the map
 val resultsStoresMapsList: Seq[Map[(String, String, String, String, String, Seq[String]), Store]] = {
 
   for {
@@ -1816,7 +1821,7 @@ def qc1(i: Int): Store = {
   
   /**
    * Load Step
-   *  Description: Generate the Hail VDS from VCF file and a sample file containing population and sex information
+   *  Description: Generate the Hail VDS from VCF file
    *  Requires: Hail
    */
   

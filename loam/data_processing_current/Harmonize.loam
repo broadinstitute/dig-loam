@@ -1,0 +1,146 @@
+/**
+  * Harmonize Step
+  *  Description: Align data strand to 1KG reference. Also, update reference allele and variant ID to match 1KG
+  *  Requires: Plink1.9 and, at least, Genotype Harmonizer v1.4.18
+  *  Notes:
+  *     Could also add --variants and --mafAlign as pipeline options, but for now these are static
+  *     To save time, this will be run in parallel by chromosome number
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+
+def Harmonize(array: String): Unit = {
+
+  for {
+
+    (chr, chrData) <- arrayStores(array).annotatedChrData
+
+  } yield { 
+
+    uger {
+
+	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --output-chr MT --out ${chrData.base} --memory 3000 --threads 1"""
+        .in(arrayStores(array).annotatedData.data)
+        .out(chrData.data)
+        .named(s"${chrData.base}".split("/").last)
+
+    }
+
+    //ugerWith(mem=8, maxRunTime=6) {
+    //
+    //  cmd"""$binGenotypeHarmonizer
+    //  --input ${paramsChr.rawChrName}
+    //  --inputType PLINK_BED
+    //  --output ${paramsChr.harmKgChrName}
+    //  --outputType PLINK_BED
+    //  --ref ${paramsChr.kgVcfChr}
+    //  --refType VCF
+    //  --keep
+    //  --update-id
+    //  --variants 1000
+    //  --mafAlign 0.1
+    //  --update-id
+    //  --update-reference-allele
+    //  --debug"""
+    //    .in(paramsChr.rawChr :+ paramsChr.kgVcfChr)
+    //    .out(paramsChr.harmKgChr :+ paramsChr.harmKgChrVarIdUpdate :+ paramsChr.harmKgChrVarSnpLog)
+    //    .named(s"${paramsChr.harmKgChrName}".split("/").last)
+    //
+    //}
+    //
+    //uger {
+    //  
+    //  cmd"""$binPython $pyAlignNon1kgVariants
+    //  --legend ${paramsChr.kgLegendChr}
+    //  --bim ${paramsChr.harmKgChrName}.bim
+    //  --ref ${paramsChr.humanReference}
+    //  --out-remove ${paramsChr.harmNonKgChrRemove}
+    //  --out-ignore ${paramsChr.harmNonKgChrIgnore}
+    //  --out-mono ${paramsChr.harmNonKgChrMono}
+    //  --out-nomatch ${paramsChr.harmNonKgChrNomatch}
+    //  --out-flip ${paramsChr.harmNonKgChrFlip}
+    //  --out-force-a1 ${paramsChr.harmNonKgChrForceA1}"""
+    //    .in(paramsChr.harmKgChr :+ paramsChr.kgLegendChr)
+    //    .out(paramsChr.harmNonKgChrRemove, paramsChr.harmNonKgChrIgnore, paramsChr.harmNonKgChrMono,paramsChr.harmNonKgChrNomatch, paramsChr.harmNonKgChrFlip, paramsChr.harmNonKgChrForceA1)
+    //    .named(s"${paramsChr.harmKgChrName}.nonkg".split("/").last)
+    //  
+    //  cmd"""$binPlink --bfile ${paramsChr.harmKgChrName} --exclude ${paramsChr.harmNonKgChrRemove} --flip ${paramsChr.harmNonKgChrFlip} --a1-allele ${paramsChr.harmNonKgChrForceA1} --make-bed --out ${paramsChr.harmKgHuRefChrName} --memory 3000 --threads 1"""
+    //    .in(paramsChr.harmKgChr :+ paramsChr.harmNonKgChrRemove :+ paramsChr.harmNonKgChrFlip :+ paramsChr.harmNonKgChrForceA1)
+    //    .out(paramsChr.harmKgHuRefChr)
+    //    .named(s"${paramsChr.harmKgHuRefChrName}".split("/").last)
+    //
+    //}
+  
+  }
+
+  //val harmMergeLinesConcat: String = paramsArr.harmMergeLines
+  //  .drop(1)
+  //  .mkString("\n") // Exclude first chrom
+  //
+  //uger {
+  //
+  //  cmd"""echo "$harmMergeLinesConcat" > ${paramsArr.harmMergeList}"""
+  //    .out(paramsArr.harmMergeList)
+  //    .named(s"${paramsArr.harmMergeList}".split("/").last)
+  //
+  //  cmd"""$binPlink --bfile ${paramsArr.paramsByArrByChrSorted.head.harmKgHuRefChrName} --merge-list ${paramsArr.harmMergeList} --make-bed --keep-allele-order --out ${paramsArr.harmName} --memory 3000 --threads 1"""
+  //    .in(paramsArr.paramsByArrByChrSorted.flatMap(_.harmKgHuRefChr) :+ paramsArr.harmMergeList)
+  //    .out(paramsArr.harm)
+  //    .named(s"${paramsArr.harmName}".split("/").last)
+  //
+  //  cmd"""awk '{print $$2,$$5}' ${paramsArr.harmName}.bim > ${paramsArr.harmForceA2}"""
+  //    .in(paramsArr.harm)
+  //    .out(paramsArr.harmForceA2)
+  //    .named(s"${paramsArr.harmForceA2}".split("/").last)
+  //
+  //  cmd"""$binPlink --bfile ${paramsArr.harmName} --real-ref-alleles --a2-allele ${paramsArr.harmForceA2} --make-bed --out ${paramsArr.harmRefName} --memory 3000 --threads 1"""
+  //    .in(paramsArr.harm :+ paramsArr.harmForceA2)
+  //    .out(paramsArr.harmRef)
+  //    .named(s"${paramsArr.harmRefName}".split("/").last)
+  //  
+  //  cmd"""$binPlink --bfile ${paramsArr.harmName} --recode vcf-iid bgz --real-ref-alleles --a2-allele ${paramsArr.harmForceA2} --out ${paramsArr.harmRefName} --memory 3000 --threads 1"""
+  //    .in(paramsArr.harm :+ paramsArr.harmForceA2)
+  //    .out(paramsArr.harmRefVcf)
+  //    .named(s"${paramsArr.harmRefVcf}".split("/").last)
+  //  
+  //  cmd"""$binTabix -f -p vcf ${paramsArr.harmRefVcf}"""
+  //    .in(paramsArr.harmRefVcf)
+  //    .out(paramsArr.harmRefVcfTbi)
+  //    .named(s"${paramsArr.harmRefVcfTbi}".split("/").last)
+  //
+  //}
+  //
+  //val harmNonKgChrRemoveString = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmNonKgChrRemove.toString.split("@")(1)}"""}.mkString(",")
+  //val harmNonKgChrMonoString = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmNonKgChrMono.toString.split("@")(1)}"""}.mkString(",")
+  //val harmNonKgChrNomatchString = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmNonKgChrNomatch.toString.split("@")(1)}"""}.mkString(",")
+  //val harmNonKgChrIgnoreString = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmNonKgChrIgnore.toString.split("@")(1)}"""}.mkString(",")
+  //val harmNonKgChrFlipString = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmNonKgChrFlip.toString.split("@")(1)}"""}.mkString(",")
+  //val harmNonKgChrForceA1String = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmNonKgChrForceA1.toString.split("@")(1)}"""}.mkString(",")
+  //val harmKgChrVarSnpLogString = paramsArr.paramsByArrByChrSorted.map{ e => s"""${e.harmKgChrVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
+  //
+  //ugerWith(mem=8) {
+  //
+  //  cmd"""$binPython $pyMergeVariantLists
+  //    --remove-in "$harmNonKgChrRemoveString"
+  //    --remove-mono-in "$harmNonKgChrMonoString"
+  //    --remove-nomatch-in "$harmNonKgChrNomatchString"
+  //    --ignore-in "$harmNonKgChrIgnoreString"
+  //    --flip-in "$harmNonKgChrFlipString"
+  //    --force-a1-in "$harmNonKgChrForceA1String"
+  //    --snp-log-in "$harmKgChrVarSnpLogString"
+  //    --remove-out ${paramsArr.harmNonKgRemove}
+  //    --remove-mono-out ${paramsArr.harmNonKgMono}
+  //    --remove-nomatch-out ${paramsArr.harmNonKgNomatch}
+  //    --ignore-out ${paramsArr.harmNonKgIgnore}
+  //    --flip-out ${paramsArr.harmNonKgFlip}
+  //    --force-a1-out ${paramsArr.harmNonKgForceA1}
+  //    --snp-log-out ${paramsArr.harmKgVarSnpLog}
+  //    """
+  //    .in(paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrRemove) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrMono) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrNomatch) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrIgnore) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrFlip) ++ paramsArr.paramsByArrByChrSorted.map(_.harmNonKgChrForceA1) ++ paramsArr.paramsByArrByChrSorted.map(_.harmKgChrVarSnpLog))
+  //    .out(paramsArr.harmNonKgRemove, paramsArr.harmNonKgNomatch, paramsArr.harmNonKgMono, paramsArr.harmNonKgIgnore, paramsArr.harmNonKgFlip, paramsArr.harmNonKgForceA1, paramsArr.harmKgVarSnpLog)
+  //    .named(s"${paramsArr.harmName}.pyMergeVariantLists".split("/").last)
+  //
+  //}
+
+}

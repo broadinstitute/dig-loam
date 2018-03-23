@@ -1,0 +1,49 @@
+import ProjectConfig._
+
+object InputStores {
+
+  val kgVcf = (1 to 23).map { chr =>
+  
+    val vcf = if(chr < 23) { 
+        store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr") + ".vcf.gz").asInput
+      } else {
+        store.at(projectConfig.kgVcfBaseWild.replace("23.phase3_shapeit2_mvncall_integrated_v5a","X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
+      }
+  
+    chr -> vcf
+  
+  }.toMap
+  
+  val kgLegend = (1 to 23).map { chr =>
+  
+    val legend = if(chr < 23) { 
+        store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr")).asInput
+      } else {
+        store.at(projectConfig.kgLegendWild.replace("23","X")).asInput
+      }
+  
+    chr -> legend
+  
+  }.toMap
+  
+  val humanReference = (1 to 23).map { chr =>
+  
+    val ref = if(chr < 23) { 
+        store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
+      } else {
+        store.at(projectConfig.humanReferenceWild.replace("23","X")).asInput
+      }
+  
+    chr -> ref
+  
+  }.toMap
+  
+  val regionsExclude = store.at(path(projectConfig.regionsExclude)).asInput
+  val regionsExcludeGoogle = store.at(path(projectConfig.regionsExclude)).asInput
+  val kgPurcellVcf = store.at(path(projectConfig.regionsExclude)).asInput
+  val kgPurcellVcfGoogle = store.at(path(projectConfig.regionsExclude)).asInput
+  val kgSample = store.at(path(projectConfig.regionsExclude)).asInput
+  val kgSampleGoogle = store.at(path(projectConfig.regionsExclude)).asInput
+  val pheno = store.at(path(projectConfig.regionsExclude)).asInput
+  
+}

@@ -1,0 +1,29 @@
+import ProjectConfig._
+import PipelineConfig._
+import Directories._
+import StoreHelpers._
+import InputStores._
+import ArrayStores._
+import Prepare._
+import Harmonize._
+
+import loamstream.conf.DataConfig
+import loamstream.googlecloud.HailSupport._
+import loamstream.model.Store
+import loamstream.util.CanBeClosed.enclosed
+
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Prepare(array.id)
+
+}
+
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Harmonize(array.id)
+
+}
