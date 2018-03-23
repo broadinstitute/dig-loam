@@ -7,7 +7,7 @@ object InputStores {
     val vcf = if(chr < 23) { 
         store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr") + ".vcf.gz").asInput
       } else {
-        store.at(projectConfig.kgVcfBaseWild.replace("23.phase3_shapeit2_mvncall_integrated_v5a","X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
+        store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr").replace("23.phase3_shapeit2_mvncall_integrated_v5a","X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
       }
   
     chr -> vcf
@@ -19,7 +19,7 @@ object InputStores {
     val legend = if(chr < 23) { 
         store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr")).asInput
       } else {
-        store.at(projectConfig.kgLegendWild.replace("23","X")).asInput
+        store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr").replace("23","X")).asInput
       }
   
     chr -> legend
@@ -31,7 +31,7 @@ object InputStores {
     val ref = if(chr < 23) { 
         store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
       } else {
-        store.at(projectConfig.humanReferenceWild.replace("23","X")).asInput
+        store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr").replace("23","X")).asInput
       }
   
     chr -> ref
@@ -40,10 +40,10 @@ object InputStores {
   
   val regionsExclude = store.at(path(projectConfig.regionsExclude)).asInput
   val regionsExcludeGoogle = store.at(path(projectConfig.regionsExclude)).asInput
-  val kgPurcellVcf = store.at(path(projectConfig.regionsExclude)).asInput
-  val kgPurcellVcfGoogle = store.at(path(projectConfig.regionsExclude)).asInput
-  val kgSample = store.at(path(projectConfig.regionsExclude)).asInput
-  val kgSampleGoogle = store.at(path(projectConfig.regionsExclude)).asInput
-  val pheno = store.at(path(projectConfig.regionsExclude)).asInput
-  
+  val kgPurcellVcf = store.at(path(projectConfig.kgPurcellVcf)).asInput
+  val kgPurcellVcfGoogle = store.at(path(projectConfig.kgPurcellVcfGoogle)).asInput
+  val kgSample = store.at(path(projectConfig.kgSample)).asInput
+  val kgSampleGoogle = store.at(path(projectConfig.kgSampleGoogle)).asInput
+  val pheno = store.at(path(projectConfig.pheno)).asInput
+
 }

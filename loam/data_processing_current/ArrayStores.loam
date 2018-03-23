@@ -4,7 +4,7 @@ import StoreHelpers._
 
 final case class RawData(
   data: Seq[Store],
-  base: String,
+  base: Path,
   rawBase: Path,
   unplaced: Store,
   unique: Store,
@@ -76,91 +76,90 @@ final case class Array(
 val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
   val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
-  val base = arrayCfg.filename
-  val rawBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.raw"
-  val preparedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
-  val annotatedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
-  val harmonizedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
-  val refBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.ref"
+  val rawBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw"
+  val preparedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
+  val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
+  val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
+  val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
 
   val rawData = RawData(
     data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
-    base = base,
-    rawBase = rawBase,
-    unplaced = store.at(s"${rawBase}.unplaced"),
-    unique = store.at(s"${rawBase}.unique"),
-    indel = store.at(s"${rawBase}.indel"),
-    lmiss = store.at(s"${rawBase}.missing.lmiss"),
-    imiss = store.at(s"${rawBase}.missing.imiss"),
-    imissRemove = store.at(s"${rawBase}.missing.imiss.remove"),
-    freq = store.at(s"${rawBase}.freq.frq"),
-    mono = store.at(s"${rawBase}.mono"),
-    dupRemove = store.at(s"${rawBase}.dup.remove"))
+    base = path(arrayCfg.filename),
+    rawBase = localOutDir / rawBaseString,
+    unplaced = store.at(localOutDir / s"${rawBaseString}.unplaced"),
+    unique = store.at(localOutDir / s"${rawBaseString}.unique"),
+    indel = store.at(localOutDir / s"${rawBaseString}.indel"),
+    lmiss = store.at(localOutDir / s"${rawBaseString}.missing.lmiss"),
+    imiss = store.at(localOutDir / s"${rawBaseString}.missing.imiss"),
+    imissRemove = store.at(localOutDir / s"${rawBaseString}.missing.imiss.remove"),
+    freq = store.at(localOutDir / s"${rawBaseString}.freq.frq"),
+    mono = store.at(localOutDir / s"${rawBaseString}.mono"),
+    dupRemove = store.at(localOutDir / s"${rawBaseString}.dup.remove"))
 
   val preparedData = PreparedData(
-    data = bedBimFam(preparedBase),
-    base = preparedBase,
-    multiallelic = store.at(s"${preparedBase}.multiallelic"),
-    chain = arrayCfg.liftOver.map(s => store.at(path(s))),
-    bed = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.liftover.bed")),
-    lifted = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.lifted")),
-    unlifted = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.unlifted")),
-    liftedUpdate = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.lifted.update")),
-    liftedExtract = arrayCfg.liftOver.map(s => store.at(s"${preparedBase}.lifted.extract")))
+    data = bedBimFam(localOutDir / preparedBaseString),
+    base = localOutDir / preparedBaseString,
+    multiallelic = store.at(localOutDir / s"${preparedBaseString}.multiallelic"),
+    chain = arrayCfg.liftOver.map(s => store.at(path(s)).asInput),
+    bed = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.liftover.bed")),
+    lifted = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.lifted")),
+    unlifted = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.unlifted")),
+    liftedUpdate = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.lifted.update")),
+    liftedExtract = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.lifted.extract")))
 
   val annotatedData = AnnotatedData(
     data = arrayCfg.liftOver match {
-      case Some(s) => bedBimFam(annotatedBase)
+      case Some(s) => bedBimFam(localOutDir / annotatedBaseString)
       case None => preparedData.data 
     },
     base = arrayCfg.liftOver match {
-      case Some(s) => annotatedBase
-      case None => preparedBase 
+      case Some(s) => localOutDir / annotatedBaseString
+      case None => localOutDir / preparedBaseString 
     })
 
-  val annotatedChrData = ( 1 until { if ( arrayCfg.xChr ) 23 else 22 } ).map { chr =>
+  val annotatedChrData = ( 1 to { if ( arrayCfg.xChr ) 23 else 22 } ).map { chr =>
 
-    val chrBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
-    val mergedKgBase = localOutDir / s"${chrBase}.harmkg"
-    val mergedKgHuRefBase = localOutDir / s"${mergedKgBase}.huref"
-    val mergedKgNonKgBase = localOutDir / s"${mergedKgBase}.nonkg"
+    val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
+    val mergedKgBaseString = s"${chrBaseString}.harmkg"
+    val mergedKgHuRefBaseString = s"${mergedKgBaseString}.huref"
+    val mergedKgNonKgBaseString = s"${mergedKgBaseString}.nonkg"
 
     chr -> AnnotatedChrData(
-      data = bedBimFam(chrBase),
-      base = chrBase,
-      mergedKgBase = mergedKgBase,
-      mergedKg = bedBimFam(mergedKgBase),
-      mergedKgHuRefBase = mergedKgHuRefBase,
-      mergedKgHuRef = bedBimFam(mergedKgHuRefBase),
-      mergedKgNonKgBase = mergedKgNonKgBase,
-      nonKgRemove = store.at(localOutDir / s"${mergedKgNonKgBase}.remove"),
-      nonKgIgnore = store.at(localOutDir / s"${mergedKgNonKgBase}.ignore"),
-      nonKgMono = store.at(localOutDir / s"${mergedKgNonKgBase}.mono"),
-      nonKgNomatch = store.at(localOutDir / s"${mergedKgNonKgBase}.nomatch"),
-      nonKgFlip = store.at(localOutDir / s"${mergedKgNonKgBase}.flip"),
-      nonKgForceA1 = store.at(localOutDir / s"${mergedKgNonKgBase}.force_a1"),
-      mergedKgVarIdUpdate = store.at(localOutDir / s"${mergedKgBase}_idUpdates.txt"),
-      mergedKgVarSnpLog = store.at(localOutDir / s"${mergedKgBase}_snpLog.log"))
+      data = bedBimFam(localOutDir / chrBaseString),
+      base = localOutDir / chrBaseString,
+      mergedKgBase = localOutDir / mergedKgBaseString,
+      mergedKg = bedBimFam(localOutDir / mergedKgBaseString),
+      mergedKgHuRefBase = localOutDir / mergedKgHuRefBaseString,
+      mergedKgHuRef = bedBimFam(localOutDir / mergedKgHuRefBaseString),
+      mergedKgNonKgBase = localOutDir / mergedKgNonKgBaseString,
+      nonKgRemove = store.at(localOutDir / s"${mergedKgNonKgBaseString}.remove"),
+      nonKgIgnore = store.at(localOutDir / s"${mergedKgNonKgBaseString}.ignore"),
+      nonKgMono = store.at(localOutDir / s"${mergedKgNonKgBaseString}.mono"),
+      nonKgNomatch = store.at(localOutDir / s"${mergedKgNonKgBaseString}.nomatch"),
+      nonKgFlip = store.at(localOutDir / s"${mergedKgNonKgBaseString}.flip"),
+      nonKgForceA1 = store.at(localOutDir / s"${mergedKgNonKgBaseString}.force_a1"),
+      mergedKgVarIdUpdate = store.at(localOutDir / s"${mergedKgBaseString}_idUpdates.txt"),
+      mergedKgVarSnpLog = store.at(localOutDir / s"${mergedKgBaseString}_snpLog.log"))
 
   }.toMap
 
   val harmonizedData = HarmonizedData(
-    data = bedBimFam(harmonizedBase),
-    base = harmonizedBase,
-    mergeList = store.at(localOutDir / s"${harmonizedBase}.merge.txt"),
-    nonKgRemove = store.at(localOutDir / s"${harmonizedBase}.nonkg.remove"),
-    nonKgIgnore = store.at(localOutDir / s"${harmonizedBase}.nonkg.ignore"),
-    nonKgMono = store.at(localOutDir / s"${harmonizedBase}.nonkg.mono"),
-    nonKgNomatch = store.at(localOutDir / s"${harmonizedBase}.nonkg.nomatch"),
-    nonKgFlip = store.at(localOutDir / s"${harmonizedBase}.nonkg.flip"),
-    nonKgForceA1 = store.at(localOutDir / s"${harmonizedBase}.nonkg.force_a1"),
-    mergedKgVarIdUpdate = store.at(localOutDir / s"${harmonizedBase}_idUpdates.txt"),
-    mergedKgVarSnpLog = store.at(localOutDir / s"${harmonizedBase}_snpLog.log"),
-    forceA2 = store.at(localOutDir / s"${refBase}.force_a2.txt"),
-    refData = bedBimFam(refBase),
-    refBase = refBase,
-    vcf = store.at(localOutDir / s"${refBase}.vcf.gz"),
-    tbi = store.at(localOutDir / s"${refBase}.vcf.gz.tbi"))
+    data = bedBimFam(localOutDir / harmonizedBaseString),
+    base = localOutDir / harmonizedBaseString,
+    mergeList = store.at(localOutDir / s"${harmonizedBaseString}.merge.txt"),
+    nonKgRemove = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
+    nonKgIgnore = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
+    nonKgMono = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.mono"),
+    nonKgNomatch = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.nomatch"),
+    nonKgFlip = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.flip"),
+    nonKgForceA1 = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.force_a1"),
+    mergedKgVarIdUpdate = store.at(localOutDir / s"${harmonizedBaseString}_idUpdates.txt"),
+    mergedKgVarSnpLog = store.at(localOutDir / s"${harmonizedBaseString}_snpLog.log"),
+    forceA2 = store.at(localOutDir / s"${refBaseString}.force_a2.txt"),
+    refData = bedBimFam(localOutDir / refBaseString),
+    refBase = localOutDir / refBaseString,
+    vcf = store.at(localOutDir / s"${refBaseString}.vcf.gz"),
+    tbi = store.at(localOutDir / s"${refBaseString}.vcf.gz.tbi"))
 
   array -> Array(
     rawData = rawData,
