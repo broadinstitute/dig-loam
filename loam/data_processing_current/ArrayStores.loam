@@ -33,13 +33,45 @@ final case class AnnotatedData(
 
 final case class AnnotatedChrData(
   data: Seq[Store],
-  base: Path)
+  base: Path,
+  mergedKgBase: Path,
+  mergedKg: Seq[Store],
+  mergedKgHuRefBase: Path,
+  mergedKgHuRef: Seq[Store],
+  mergedKgNonKgBase: Path,
+  nonKgRemove: Store,
+  nonKgIgnore: Store,
+  nonKgMono: Store,
+  nonKgNomatch: Store,
+  nonKgFlip: Store,
+  nonKgForceA1: Store,
+  mergedKgVarIdUpdate: Store,
+  mergedKgVarSnpLog: Store)
+
+final case class HarmonizedData(
+  data: Seq[Store],
+  base: Path,
+  mergeList: Store,
+  nonKgRemove: Store,
+  nonKgIgnore: Store,
+  nonKgMono: Store,
+  nonKgNomatch: Store,
+  nonKgFlip: Store,
+  nonKgForceA1: Store,
+  mergedKgVarIdUpdate: Store,
+  mergedKgVarSnpLog: Store,
+  forceA2: Store,
+  refData: Seq[Store],
+  refBase: Path,
+  vcf: Store,
+  tbi: Store)
 
 final case class Array(
   rawData: RawData,
   preparedData: PreparedData,
   annotatedData: AnnotatedData,
-  annotatedChrData: Map[Int, AnnotatedChrData])
+  annotatedChrData: Map[Int, AnnotatedChrData],
+  harmonizedData: HarmonizedData)
 
 val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
@@ -48,6 +80,8 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val rawBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.raw"
   val preparedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
   val annotatedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
+  val harmonizedBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
+  val refBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.ref"
 
   val rawData = RawData(
     data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
@@ -87,62 +121,52 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val annotatedChrData = ( 1 until { if ( arrayCfg.xChr ) 23 else 22 } ).map { chr =>
 
     val chrBase = localOutDir / s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
+    val mergedKgBase = localOutDir / s"${chrBase}.harmkg"
+    val mergedKgHuRefBase = localOutDir / s"${mergedKgBase}.huref"
+    val mergedKgNonKgBase = localOutDir / s"${mergedKgBase}.nonkg"
 
     chr -> AnnotatedChrData(
       data = bedBimFam(chrBase),
-      base = chrBase)
+      base = chrBase,
+      mergedKgBase = mergedKgBase,
+      mergedKg = bedBimFam(mergedKgBase),
+      mergedKgHuRefBase = mergedKgHuRefBase,
+      mergedKgHuRef = bedBimFam(mergedKgHuRefBase),
+      mergedKgNonKgBase = mergedKgNonKgBase,
+      nonKgRemove = store.at(localOutDir / s"${mergedKgNonKgBase}.remove"),
+      nonKgIgnore = store.at(localOutDir / s"${mergedKgNonKgBase}.ignore"),
+      nonKgMono = store.at(localOutDir / s"${mergedKgNonKgBase}.mono"),
+      nonKgNomatch = store.at(localOutDir / s"${mergedKgNonKgBase}.nomatch"),
+      nonKgFlip = store.at(localOutDir / s"${mergedKgNonKgBase}.flip"),
+      nonKgForceA1 = store.at(localOutDir / s"${mergedKgNonKgBase}.force_a1"),
+      mergedKgVarIdUpdate = store.at(localOutDir / s"${mergedKgBase}_idUpdates.txt"),
+      mergedKgVarSnpLog = store.at(localOutDir / s"${mergedKgBase}_snpLog.log"))
 
   }.toMap
+
+  val harmonizedData = HarmonizedData(
+    data = bedBimFam(harmonizedBase),
+    base = harmonizedBase,
+    mergeList = store.at(localOutDir / s"${harmonizedBase}.merge.txt"),
+    nonKgRemove = store.at(localOutDir / s"${harmonizedBase}.nonkg.remove"),
+    nonKgIgnore = store.at(localOutDir / s"${harmonizedBase}.nonkg.ignore"),
+    nonKgMono = store.at(localOutDir / s"${harmonizedBase}.nonkg.mono"),
+    nonKgNomatch = store.at(localOutDir / s"${harmonizedBase}.nonkg.nomatch"),
+    nonKgFlip = store.at(localOutDir / s"${harmonizedBase}.nonkg.flip"),
+    nonKgForceA1 = store.at(localOutDir / s"${harmonizedBase}.nonkg.force_a1"),
+    mergedKgVarIdUpdate = store.at(localOutDir / s"${harmonizedBase}_idUpdates.txt"),
+    mergedKgVarSnpLog = store.at(localOutDir / s"${harmonizedBase}_snpLog.log"),
+    forceA2 = store.at(localOutDir / s"${refBase}.force_a2.txt"),
+    refData = bedBimFam(refBase),
+    refBase = refBase,
+    vcf = store.at(localOutDir / s"${refBase}.vcf.gz"),
+    tbi = store.at(localOutDir / s"${refBase}.vcf.gz.tbi"))
 
   array -> Array(
     rawData = rawData,
     preparedData = preparedData,
     annotatedData = annotatedData,
-    annotatedChrData = annotatedChrData)
+    annotatedChrData = annotatedChrData,
+    harmonizedData = harmonizedData)
 
 }.toMap
-
-//val endChr = if (arrayDataXChr) 23 else 22
-//    val paramsByArrByChr = (1 to endChr).map { chr =>
-//    
-//      val rawChrBase = s"${projectId}.${arrayId}.chr$chr"
-//      val harmKgChrBase = s"${rawChrBase}.harmkg"
-//      val harmKgChrName = localOutDir / harmKgChrBase
-//      val harmKgHuRefChrName = localOutDir / s"${harmKgChrBase}.huref"
-//      val rawChrName = localOutDir / rawChrBase
-//      val kgVcfChr = store.at(
-//          kgVcfBaseWild
-//            .replace("[CHROMOSOME]", s"$chr")
-//            .replace("23.phase3_shapeit2_mvncall_integrated_v5a",
-//                     "X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
-//      val kgLegendChr = store.at(
-//          kgLegendWild
-//            .replace("[CHROMOSOME]", s"$chr")
-//            .replace("23",
-//                     "X")).asInput
-//      val humanReference = store.at(
-//          humanReferenceWild
-//            .replace("[CHROMOSOME]", s"$chr")
-//            .replace("23",
-//                     "X")).asInput
-//    
-//      chr -> Chr(
-//        rawChrName = rawChrName,
-//        rawChr = bedBimFam(rawChrName),
-//        harmKgChrName = harmKgChrName,
-//        harmKgHuRefChrName = harmKgHuRefChrName,
-//        harmKgChr = bedBimFam(harmKgChrName),
-//        harmKgHuRefChr = bedBimFam(harmKgHuRefChrName),
-//        kgVcfChr = kgVcfChr,
-//        kgLegendChr = kgLegendChr,
-//        humanReference = humanReference,
-//        harmNonKgChrRemove = store.at(localOutDir / s"${harmKgChrBase}.nonkg.remove"),
-//        harmNonKgChrIgnore = store.at(localOutDir / s"${harmKgChrBase}.nonkg.ignore"),
-//        harmNonKgChrMono = store.at(localOutDir / s"${harmKgChrBase}.nonkg.mono"),
-//        harmNonKgChrNomatch = store.at(localOutDir / s"${harmKgChrBase}.nonkg.nomatch"),
-//        harmNonKgChrFlip = store.at(localOutDir / s"${harmKgChrBase}.nonkg.flip"),
-//        harmNonKgChrForceA1 = store.at(localOutDir / s"${harmKgChrBase}.nonkg.force_a1"),
-//        harmKgChrVarIdUpdate = store.at(localOutDir / s"${harmKgChrBase}_idUpdates.txt"),
-//        harmKgChrVarSnpLog = store.at(localOutDir / s"${harmKgChrBase}_snpLog.log"),
-//        harmMergeLine = s"${localOutDir}/${harmKgChrBase}")
-//    }

@@ -39,6 +39,13 @@ def main(args=None):
 		with open(f) as fin:
 			force_a1_list = force_a1_list + fin.read().splitlines()
 
+	print "reading id updates files"
+	id_updates_df = pd.DataFrame({'chr': [], 'pos': [], 'originalId': [], 'newId': []})
+	for f in args.id_updates_in.split(","):
+		df = pd.read_table(f, sep="\t", dtype=str)
+		if df.shape[0] > 0:
+			id_updates_df = id_updates_df.append(df, ignore_index=True)
+
 	print "reading snp log files"
 	snp_log_df = pd.DataFrame({'chr': [], 'pos': [], 'id': [], 'alleles': [], 'action': [], 'message': []})
 	for f in args.snp_log_in.split(","):
@@ -65,6 +72,8 @@ def main(args=None):
 	with open(args.force_a1_out, 'w') as out:
 		out.write("\n".join(force_a1_list))
 
+	id_updates_df[['chr', 'pos', 'originalId', 'newId']].to_csv(args.id_updates_out, index=False, header=True, sep="\t")
+
 	snp_log_df[['chr', 'pos', 'id', 'alleles', 'action', 'message']].to_csv(args.snp_log_out, index=False, header=True, sep="\t")
 
 if __name__ == "__main__":
@@ -76,6 +85,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--ignore-in', help='a comma separated list of files', required=True)
 	requiredArgs.add_argument('--flip-in', help='a comma separated list of files', required=True)
 	requiredArgs.add_argument('--force-a1-in', help='a comma separated list of files', required=True)
+	requiredArgs.add_argument('--id-updates-in', help='a comma separated list of files', required=True)
 	requiredArgs.add_argument('--snp-log-in', help='a comma separated list of files', required=True)
 	requiredArgs.add_argument('--remove-out', help='an output filename', required=True)
 	requiredArgs.add_argument('--remove-mono-out', help='an output filename', required=True)
@@ -83,6 +93,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--ignore-out', help='an output filename', required=True)
 	requiredArgs.add_argument('--flip-out', help='an output filename', required=True)
 	requiredArgs.add_argument('--force-a1-out', help='an output filename', required=True)
+	requiredArgs.add_argument('--id-updates-out', help='an output filename', required=True)
 	requiredArgs.add_argument('--snp-log-out', help='an output filename', required=True)
 	args = parser.parse_args()
 	main(args)
