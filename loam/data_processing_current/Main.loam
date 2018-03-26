@@ -6,6 +6,8 @@ import InputStores._
 import ArrayStores._
 import Prepare._
 import Harmonize._
+import Load._
+import Filter._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -17,13 +19,8 @@ for {
 } yield { 
 
   Prepare(array.id)
-
-}
-
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
   Harmonize(array.id)
+  Load(array.id)
+  Filter(array.id)
 
 }

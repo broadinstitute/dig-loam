@@ -39,11 +39,11 @@ object InputStores {
   }.toMap
   
   val regionsExclude = store.at(path(projectConfig.regionsExclude)).asInput
-  val regionsExcludeGoogle = store.at(path(projectConfig.regionsExclude)).asInput
+  val regionsExcludeGoogle = store.at(uri(projectConfig.regionsExcludeGoogle)).asInput
   val kgPurcellVcf = store.at(path(projectConfig.kgPurcellVcf)).asInput
-  val kgPurcellVcfGoogle = store.at(path(projectConfig.kgPurcellVcfGoogle)).asInput
+  val kgPurcellVcfGoogle = store.at(uri(projectConfig.kgPurcellVcfGoogle)).asInput
   val kgSample = store.at(path(projectConfig.kgSample)).asInput
-  val kgSampleGoogle = store.at(path(projectConfig.kgSampleGoogle)).asInput
+  val kgSampleGoogle = store.at(uri(projectConfig.kgSampleGoogle)).asInput
   val pheno = store.at(path(projectConfig.pheno)).asInput
 
 }

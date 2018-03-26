@@ -11,6 +11,8 @@ import PipelineConfig._
 import ArrayStores._
 import InputStores._
 
+import scala.collection.immutable.ListMap
+
 def Harmonize(array: String): Unit = {
 
   for {
@@ -120,14 +122,14 @@ def Harmonize(array: String): Unit = {
   
   }
 
-  val nonKgRemoveString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgMonoString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgNomatchString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.nonKgNomatch.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgIgnoreString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.nonKgIgnore.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgFlipString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.nonKgFlip.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgForceA1String = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.nonKgForceA1.toString.split("@")(1)}"""}.mkString(",")
-  val mergedKgVarIdUpdateString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
-  val mergedKgVarSnpLogString = arrayStores(array).annotatedChrData.map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgRemoveString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgMonoString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgNomatchString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgNomatch.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgIgnoreString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgIgnore.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgFlipString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgFlip.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgForceA1String = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgForceA1.toString.split("@")(1)}"""}.mkString(",")
+  val mergedKgVarIdUpdateString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
+  val mergedKgVarSnpLogString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
   
   ugerWith(mem=8) {
   

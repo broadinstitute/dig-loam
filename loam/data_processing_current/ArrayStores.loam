@@ -64,14 +64,27 @@ final case class HarmonizedData(
   refData: Seq[Store],
   refBase: Path,
   vcf: Store,
-  tbi: Store)
+  tbi: Store,
+  vcfGoogle: Store,
+  tbiGoogle: Store,
+  vdsGoogle: Store,
+  variantQcGoogle: Store)
+
+final case class FilteredData(
+  dataGoogle: Seq[Store],
+  baseGoogle: URI,
+  prunedInGoogle: Store,
+  data: Seq[Store],
+  base: Path,
+  vdsGoogle: Store)
 
 final case class Array(
   rawData: RawData,
   preparedData: PreparedData,
   annotatedData: AnnotatedData,
   annotatedChrData: Map[Int, AnnotatedChrData],
-  harmonizedData: HarmonizedData)
+  harmonizedData: HarmonizedData,
+  filteredData: FilteredData)
 
 val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
@@ -81,6 +94,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
   val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
+  val filteredBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.filtered"
 
   val rawData = RawData(
     data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
@@ -159,13 +173,26 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     refData = bedBimFam(localOutDir / refBaseString),
     refBase = localOutDir / refBaseString,
     vcf = store.at(localOutDir / s"${refBaseString}.vcf.gz"),
-    tbi = store.at(localOutDir / s"${refBaseString}.vcf.gz.tbi"))
+    tbi = store.at(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
+    vcfGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz"),
+    tbiGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
+    vdsGoogle = store.at(googleOutDir / s"${refBaseString}.vds"),
+    variantQcGoogle = store.at(googleOutDir / s"${refBaseString}.variantqc.tsv"))
+
+  val filteredData = FilteredData(
+    dataGoogle = bedBimFam(googleOutDir / filteredBaseString),
+    baseGoogle = googleOutDir / filteredBaseString,
+    prunedInGoogle = store.at(googleOutDir / s"${filteredBaseString}.prunedin.tsv"),
+    data = bedBimFam(localOutDir / filteredBaseString),
+    base = localOutDir / filteredBaseString,
+    vdsGoogle = store.at(googleOutDir / s"${filteredBaseString}.vds"))
 
   array -> Array(
     rawData = rawData,
     preparedData = preparedData,
     annotatedData = annotatedData,
     annotatedChrData = annotatedChrData,
-    harmonizedData = harmonizedData)
+    harmonizedData = harmonizedData,
+    filteredData = filteredData)
 
 }.toMap
