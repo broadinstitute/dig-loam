@@ -1,6 +1,7 @@
 import ProjectConfig._
+import PipelineConfig._
 
-object InputStores {
+object ProjectStores {
 
   val kgVcf = (1 to 23).map { chr =>
   
@@ -45,5 +46,7 @@ object InputStores {
   val kgSample = store.at(path(projectConfig.kgSample)).asInput
   val kgSampleGoogle = store.at(uri(projectConfig.kgSampleGoogle)).asInput
   val pheno = store.at(path(projectConfig.pheno)).asInput
+  val ancestryInferred = store.at(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryOutliers = store.at(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
 
 }

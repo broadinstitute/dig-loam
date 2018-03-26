@@ -1,8 +1,8 @@
 /**
- * Load Step
- *  Description: Generate the Hail VDS from VCF file
- *  Requires: Hail
- */
+  * Load Step
+  *  Description: Generate the Hail VDS from VCF file
+  *  Requires: Hail
+  */
 import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._

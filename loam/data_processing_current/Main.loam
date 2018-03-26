@@ -2,12 +2,14 @@ import ProjectConfig._
 import PipelineConfig._
 import Directories._
 import StoreHelpers._
-import InputStores._
+import ProjectStores._
 import ArrayStores._
 import Prepare._
 import Harmonize._
 import Load._
-import Filter._
+import FilterForQc._
+import Kinship._
+import Ancestry._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -21,6 +23,19 @@ for {
   Prepare(array.id)
   Harmonize(array.id)
   Load(array.id)
-  Filter(array.id)
+  FilterForQc(array.id)
+  Kinship(array.id)
+  AncestryPca(array.id)
+  AncestryCluster(array.id)
+
+}
+
+MergeInferredAncestry()
+
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Pca(array.id)
 
 }

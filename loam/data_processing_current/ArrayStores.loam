@@ -68,15 +68,60 @@ final case class HarmonizedData(
   vcfGoogle: Store,
   tbiGoogle: Store,
   vdsGoogle: Store,
-  variantQcGoogle: Store)
+  variantQcGoogle: Store,
+  prunedInGoogle: Store)
 
-final case class FilteredData(
+final case class QcData(
   dataGoogle: Seq[Store],
   baseGoogle: URI,
-  prunedInGoogle: Store,
   data: Seq[Store],
   base: Path,
   vdsGoogle: Store)
+
+final case class KinshipData(
+  base: Path,
+  log: Store,
+  kin: Store,
+  kin0: Store,
+  kin0Related: Store,
+  famSizes: Store)
+
+final case class Ref1kgData(
+  data: Seq[Store],
+  base: Path,
+  gds: Store,
+  dataGoogle: Seq[Store],
+  baseGoogle: URI)
+
+final case class AncestryData(
+  inferred: Store)
+
+final case class AncestryPcaData(
+  base: Path,
+  log: Store,
+  scores: Store,
+  plots: Store,
+  pc1VsPc2: Store,
+  pc2VsPc3: Store)
+
+final case class AncestryClusterData(
+  base: Path,
+  log: Store,
+  fet: Store,
+  clu: Store,
+  klg: Store,
+  plots: Store,
+  pc1VsPc2: Store,
+  pc2VsPc3: Store,
+  centerPlots: Store,
+  no1kgPlots: Store,
+  xtab: Store,
+  groups: Store)
+
+final case class PcaData(
+  gds: Store,
+  log: Store,
+  scores: Store)
 
 final case class Array(
   rawData: RawData,
@@ -84,7 +129,13 @@ final case class Array(
   annotatedData: AnnotatedData,
   annotatedChrData: Map[Int, AnnotatedChrData],
   harmonizedData: HarmonizedData,
-  filteredData: FilteredData)
+  qcData: QcData,
+  kinshipData: KinshipData,
+  ref1kgData: Ref1kgData,
+  ancestryData: AncestryData,
+  ancestryPcaData: AncestryPcaData,
+  ancestryClusterData: AncestryClusterData,
+  pcaData: PcaData)
 
 val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
@@ -94,7 +145,13 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
   val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
-  val filteredBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.filtered"
+  val qcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.qc"
+  val kinshipBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.kinship"
+  val ref1kgBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref1kg"
+  val ancestryBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry"
+  val ancestryPcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.pca"
+  val ancestryClusterBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.cluster"
+  val pcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.pca"
 
   val rawData = RawData(
     data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
@@ -177,15 +234,60 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     vcfGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz"),
     tbiGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
     vdsGoogle = store.at(googleOutDir / s"${refBaseString}.vds"),
-    variantQcGoogle = store.at(googleOutDir / s"${refBaseString}.variantqc.tsv"))
+    variantQcGoogle = store.at(googleOutDir / s"${refBaseString}.variantqc.tsv"),
+    prunedInGoogle = store.at(googleOutDir / s"${refBaseString}.prunedin.tsv"))
 
-  val filteredData = FilteredData(
-    dataGoogle = bedBimFam(googleOutDir / filteredBaseString),
-    baseGoogle = googleOutDir / filteredBaseString,
-    prunedInGoogle = store.at(googleOutDir / s"${filteredBaseString}.prunedin.tsv"),
-    data = bedBimFam(localOutDir / filteredBaseString),
-    base = localOutDir / filteredBaseString,
-    vdsGoogle = store.at(googleOutDir / s"${filteredBaseString}.vds"))
+  val qcData = QcData(
+    dataGoogle = bedBimFam(googleOutDir / qcBaseString),
+    baseGoogle = googleOutDir / qcBaseString,
+    data = bedBimFam(localOutDir / qcBaseString),
+    base = localOutDir / qcBaseString,
+    vdsGoogle = store.at(googleOutDir / s"${qcBaseString}.vds"))
+
+  val kinshipData = KinshipData(
+    base = localOutDir / kinshipBaseString,
+    log = store.at(localOutDir / s"${kinshipBaseString}.log"),
+    kin = store.at(localOutDir / s"${kinshipBaseString}.kin"),
+    kin0 = store.at(localOutDir / s"${kinshipBaseString}.kin0"),
+    kin0Related = store.at(localOutDir / s"${kinshipBaseString}.kin0.related"),
+    famSizes = store.at(localOutDir / s"${kinshipBaseString}.famsizes.tsv"))
+
+  val ref1kgData = Ref1kgData(
+    data = bedBimFam(localOutDir / ref1kgBaseString),
+    base = localOutDir / ref1kgBaseString,
+    gds = store.at(localOutDir / s"${ref1kgBaseString}.gds"),
+    dataGoogle = bedBimFam(googleOutDir / ref1kgBaseString),
+    baseGoogle = googleOutDir / ref1kgBaseString)
+
+  val ancestryData = AncestryData(
+    inferred = store.at(localOutDir / s"${ancestryBaseString}.inferred.tsv"))
+
+  val ancestryPcaData = AncestryPcaData(
+    base = localOutDir / ancestryPcaBaseString,
+    log = store.at(localOutDir / s"${ancestryPcaBaseString}.log"),
+    scores = store.at(localOutDir / s"${ancestryPcaBaseString}.scores.tsv"),
+    plots = store.at(localOutDir / s"${ancestryPcaBaseString}.plots.pdf"),
+    pc1VsPc2 = store.at(localOutDir / s"${ancestryPcaBaseString}.plot.pc1vspc2.png"),
+    pc2VsPc3 = store.at(localOutDir / s"${ancestryPcaBaseString}.plot.pc2vspc3.png"))
+  
+  val ancestryClusterData = AncestryClusterData(
+    base = localOutDir / ancestryClusterBaseString,
+    log = store.at(localOutDir / s"${ancestryClusterBaseString}.log"),
+    fet = store.at(localOutDir / s"${ancestryClusterBaseString}.fet.1"),
+    clu = store.at(localOutDir / s"${ancestryClusterBaseString}.clu.1"),
+    klg = store.at(localOutDir / s"${ancestryClusterBaseString}.klg.1"),
+    plots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.pdf"),
+    pc1VsPc2 = store.at(localOutDir / s"${ancestryClusterBaseString}.plot.pc1vspc2.png"),
+    pc2VsPc3 = store.at(localOutDir / s"${ancestryClusterBaseString}.plot.pc2vspc3.png"),
+    centerPlots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.centers.pdf"),
+    no1kgPlots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
+    xtab = store.at(localOutDir / s"${ancestryClusterBaseString}.xtab"),
+    groups = store.at(localOutDir / s"${ancestryClusterBaseString}.groups.tsv"))
+
+  val pcaData = PcaData(
+    gds = store.at(localOutDir / s"${pcaBaseString}.gds"),
+    log = store.at(localOutDir / s"${pcaBaseString}.log"),
+    scores = store.at(localOutDir / s"${pcaBaseString}.scores.tsv"))
 
   array -> Array(
     rawData = rawData,
@@ -193,6 +295,12 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     annotatedData = annotatedData,
     annotatedChrData = annotatedChrData,
     harmonizedData = harmonizedData,
-    filteredData = filteredData)
+    qcData = qcData,
+    kinshipData = kinshipData,
+    ref1kgData = ref1kgData,
+    ancestryData = ancestryData,
+    ancestryPcaData = ancestryPcaData,
+    ancestryClusterData = ancestryClusterData,
+    pcaData = pcaData)
 
 }.toMap
