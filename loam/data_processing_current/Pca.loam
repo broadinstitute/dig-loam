@@ -15,16 +15,18 @@ def Pca(array: String): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rPcair
       --cpus 4
-      --plink-in ${arrayStores(array).qcData.base}
+      --plink-in ${arrayStores(array).prunedData.base}
       --gds-out ${arrayStores(array).pcaData.gds}
       --exclude ${ProjectStores.ancestryOutliers}
       --ancestry ${ProjectStores.ancestryInferred}
       --id ${projectConfig.projectId}
       --scores ${arrayStores(array).pcaData.scores}
       > ${arrayStores(array).pcaData.log}"""
-      .in(arrayStores(array).qcData.data :+ ProjectStores.ancestryInferred :+ ProjectStores.ancestryOutliers})
+      .in(arrayStores(array).prunedData.data :+ ProjectStores.ancestryInferred :+ ProjectStores.ancestryOutliers)
       .out(arrayStores(array).pcaData.gds, arrayStores(array).pcaData.log, arrayStores(array).pcaData.scores)
       .using("R-3.4")
       .named(s"${arrayStores(array).pcaData.scores}".split("/").last)
 
   }
+
+}

@@ -71,7 +71,7 @@ final case class HarmonizedData(
   variantQcGoogle: Store,
   prunedInGoogle: Store)
 
-final case class QcData(
+final case class PrunedData(
   dataGoogle: Seq[Store],
   baseGoogle: URI,
   data: Seq[Store],
@@ -123,19 +123,86 @@ final case class PcaData(
   log: Store,
   scores: Store)
 
+final case class SexcheckData(
+  sexcheck: Store,
+  sexcheckGoogle: Store,
+  problems: Store,
+  problemsGoogle: Store)
+
+final case class SampleQcData(
+  stats: Store,
+  statsGoogle: Store,
+  statsAdj: Store,
+  corrPlots: Store,
+  boxPlots: Store,
+  discreteness: Store,
+  pcaLoadings: Store,
+  pcaPlots: Store,
+  pcaScores: Store,
+  outliers: Store,
+  outliersPlotsPdf: Store,
+  outliersPlotsPng: Store)
+
+final case class SampleQcPcaClusterData(
+  base: Path,
+  fet: Store,
+  clu: Store,
+  klg: Store,
+  log: Store,
+  outliers: Store,
+  plots: Store,
+  xtab: Store)
+
+final case class SampleQcMetricClusterData(
+  base: Path,
+  fet: Store,
+  clu: Store,
+  klg: Store,
+  log: Store)
+
+final case class FinalData(
+  samplesExclude: Store,
+  samplesExcludeGoogle: Store,
+  variantsExclude: Store,
+  variantsExcludeGoogle: Store)
+
+final case class VariantQcData(
+  stats: Store,
+  statsGoogle: Store)
+
+final case class CleanData(
+  data: Seq[Store],
+  base: Path,
+  gds: Store,
+  dataGoogle: Seq[Store],
+  baseGoogle: URI,
+  vcf: Store,
+  tbi: Store,
+  vcfGoogle: Store,
+  vdsGoogle: Store,
+  pcaScores: Store,
+  pcaLog: Store)
+
 final case class Array(
   rawData: RawData,
   preparedData: PreparedData,
   annotatedData: AnnotatedData,
   annotatedChrData: Map[Int, AnnotatedChrData],
   harmonizedData: HarmonizedData,
-  qcData: QcData,
+  prunedData: PrunedData,
   kinshipData: KinshipData,
   ref1kgData: Ref1kgData,
   ancestryData: AncestryData,
   ancestryPcaData: AncestryPcaData,
   ancestryClusterData: AncestryClusterData,
-  pcaData: PcaData)
+  pcaData: PcaData,
+  sexcheckData: SexcheckData,
+  sampleQcData: SampleQcData,
+  sampleQcPcaClusterData: SampleQcPcaClusterData,
+  sampleQcMetricClusterData: Map[String, SampleQcMetricClusterData],
+  finalData: FinalData,
+  variantQcData: VariantQcData,
+  cleanData: CleanData)
 
 val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
@@ -152,6 +219,10 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val ancestryPcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.pca"
   val ancestryClusterBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.cluster"
   val pcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.pca"
+  val sampleQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.sampleqc"
+  val finalBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.final"
+  val variantQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.variantqc"
+  val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
   val rawData = RawData(
     data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
@@ -237,7 +308,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     variantQcGoogle = store.at(googleOutDir / s"${refBaseString}.variantqc.tsv"),
     prunedInGoogle = store.at(googleOutDir / s"${refBaseString}.prunedin.tsv"))
 
-  val qcData = QcData(
+  val prunedData = PrunedData(
     dataGoogle = bedBimFam(googleOutDir / qcBaseString),
     baseGoogle = googleOutDir / qcBaseString,
     data = bedBimFam(localOutDir / qcBaseString),
@@ -289,18 +360,89 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     log = store.at(localOutDir / s"${pcaBaseString}.log"),
     scores = store.at(localOutDir / s"${pcaBaseString}.scores.tsv"))
 
+  val sexcheckData = SexcheckData(
+    sexcheck = store.at(localOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
+    sexcheckGoogle = store.at(googleOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
+    problems = store.at(localOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
+    problemsGoogle = store.at(googleOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"))
+
+  val sampleQcData = SampleQcData(
+    stats = store.at(localOutDir / s"${sampleQcBaseString}.stats.tsv"),
+    statsGoogle = store.at(googleOutDir / s"${sampleQcBaseString}.stats.tsv"),
+    statsAdj = store.at(localOutDir / s"${sampleQcBaseString}.stats.adj.tsv"),
+    corrPlots = store.at(localOutDir / s"${sampleQcBaseString}.corr.pdf"),
+    boxPlots = store.at(localOutDir / s"${sampleQcBaseString}.boxplots.pdf"),
+    discreteness = store.at(localOutDir / s"${sampleQcBaseString}.discreteness.txt"),
+    pcaLoadings = store.at(localOutDir / s"${sampleQcBaseString}.pca.loadings.tsv"),
+    pcaPlots = store.at(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
+    pcaScores = store.at(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
+    outliers = store.at(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
+    outliersPlotsPdf = store.at(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"),
+    outliersPlotsPng = store.at(localOutDir / s"${sampleQcBaseString}.outliers.plots.png"))
+
+  val sampleQcPcaClusterData = SampleQcPcaClusterData(
+    base = localOutDir / s"${sampleQcBaseString}.pca.cluster",
+    fet = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.fet.1"),
+    clu = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.clu.1"),
+    klg = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.klg.1"),
+    log = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.log"),
+    outliers = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.outliers.tsv"),
+    plots = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.plots.pdf"),
+    xtab = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.xtab"))
+
+  val sampleQcMetricClusterData = projectConfig.sampleQcMetrics.map { metric =>
+  
+      metric -> SampleQcMetricClusterData(
+        base = localOutDir / s"${sampleQcBaseString}.${metric}.cluster",
+        fet = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.fet.1"),
+        clu = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.clu.1"),
+        klg = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.klg.1"),
+        log = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.log"))
+
+  }.toMap
+
+  val finalData = FinalData(
+    samplesExclude = store.at(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
+    samplesExcludeGoogle = store.at(googleOutDir / s"${finalBaseString}.samples.exclude.txt"),
+    variantsExclude = store.at(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
+    variantsExcludeGoogle = store.at(googleOutDir / s"${finalBaseString}.variants.exclude.txt"))
+
+  val variantQcData = VariantQcData(
+    stats = store.at(localOutDir / s"${variantQcBaseString}.stats.tsv"),
+    statsGoogle = store.at(googleOutDir / s"${variantQcBaseString}.stats.tsv"))
+
+  val cleanData = CleanData(
+    data = bedBimFam(localOutDir / cleanBaseString),
+    base = localOutDir / cleanBaseString,
+    gds = store.at(localOutDir / s"${cleanBaseString}.gds"),
+    dataGoogle = bedBimFam(googleOutDir / cleanBaseString),
+    baseGoogle = googleOutDir / cleanBaseString,
+    vcf = store.at(localOutDir / s"${cleanBaseString}.vcf.gz"),
+    tbi = store.at(localOutDir / s"${cleanBaseString}.vcf.gz.tbi"),
+    vcfGoogle = store.at(googleOutDir / s"${cleanBaseString}.vcf.gz"),
+    vdsGoogle = store.at(googleOutDir / s"${cleanBaseString}.vds"),
+    pcaScores = store.at(googleOutDir / s"${cleanBaseString}.pca.scores.tsv"),
+    pcaLog = store.at(googleOutDir / s"${cleanBaseString}.pca.log"))
+
   array -> Array(
     rawData = rawData,
     preparedData = preparedData,
     annotatedData = annotatedData,
     annotatedChrData = annotatedChrData,
     harmonizedData = harmonizedData,
-    qcData = qcData,
+    prunedData = prunedData,
     kinshipData = kinshipData,
     ref1kgData = ref1kgData,
     ancestryData = ancestryData,
     ancestryPcaData = ancestryPcaData,
     ancestryClusterData = ancestryClusterData,
-    pcaData = pcaData)
+    pcaData = pcaData,
+    sexcheckData = sexcheckData,
+    sampleQcData = sampleQcData,
+    sampleQcPcaClusterData = sampleQcPcaClusterData,
+    sampleQcMetricClusterData = sampleQcMetricClusterData,
+    finalData = finalData,
+    variantQcData = variantQcData,
+    cleanData = cleanData)
 
 }.toMap

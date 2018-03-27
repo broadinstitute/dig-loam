@@ -10,6 +10,9 @@ import Load._
 import FilterForQc._
 import Kinship._
 import Ancestry._
+import Pca._
+import SampleQc._
+import FilterFinal._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -37,5 +40,7 @@ for {
 } yield { 
 
   Pca(array.id)
+  SampleQc(array.id)
+  FilterFinal(array.id)
 
 }

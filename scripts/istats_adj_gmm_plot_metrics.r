@@ -33,7 +33,7 @@ if( length(oliers) > 0) {
 pdf(args$boxplots,width=ceiling(length(data_names)/10)*7, height=7)
 for(m in metrics) {
 	print(m)
-	cl<-read.table(gsub("tsv",paste(m,".clu.1",sep=""),args$stats_adj), as.is=T, skip=1)
+	cl<-read.table(gsub("stats.adj.tsv",paste(m,".clu.1",sep=""),args$stats_adj), as.is=T, skip=1)
 	cl_levels<-c()
 	cl_names<-c()
 	if(1 %in% cl$V1) {

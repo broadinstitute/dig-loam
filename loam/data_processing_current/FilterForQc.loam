@@ -17,17 +17,17 @@ def FilterForQc(array: String): Unit = {
       --regions-exclude ${ProjectStores.regionsExcludeGoogle}
       --variant-qc-out ${arrayStores(array).harmonizedData.variantQcGoogle}
       --variants-prunedin-out ${arrayStores(array).harmonizedData.prunedInGoogle}
-      --filt-pruned-vds-out ${arrayStores(array).qcData.vdsGoogle}
-      --filt-pruned-plink-out ${arrayStores(array).qcData.baseGoogle}"""
+      --filt-pruned-vds-out ${arrayStores(array).prunedData.vdsGoogle}
+      --filt-pruned-plink-out ${arrayStores(array).prunedData.baseGoogle}"""
       .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.regionsExcludeGoogle)
-      .out(arrayStores(array).qcData.dataGoogle :+ arrayStores(array).qcData.vdsGoogle :+ arrayStores(array).harmonizedData.variantQcGoogle :+ arrayStores(array).harmonizedData.prunedInGoogle)
+      .out(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).prunedData.vdsGoogle :+ arrayStores(array).harmonizedData.variantQcGoogle :+ arrayStores(array).harmonizedData.prunedInGoogle)
       .named(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilter.google".split("/").last)
   
   }
   
   local {
   
-    googleCopy(arrayStores(array).qcData.dataGoogle, arrayStores(array).qcData.data)
+    googleCopy(arrayStores(array).prunedData.dataGoogle, arrayStores(array).prunedData.data)
   
   }
 

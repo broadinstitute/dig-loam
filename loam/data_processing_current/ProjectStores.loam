@@ -46,7 +46,9 @@ object ProjectStores {
   val kgSample = store.at(path(projectConfig.kgSample)).asInput
   val kgSampleGoogle = store.at(uri(projectConfig.kgSampleGoogle)).asInput
   val pheno = store.at(path(projectConfig.pheno)).asInput
+  val phenoGoogle = store.at(googleOutDir / s"${projectConfig.pheno}".split("/").last)
   val ancestryInferred = store.at(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryInferredGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryOutliers = store.at(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
 
 }
