@@ -300,10 +300,10 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     forceA2 = store.at(localOutDir / s"${refBaseString}.force_a2.txt"),
     refData = bedBimFam(localOutDir / refBaseString),
     refBase = localOutDir / refBaseString,
-    vcf = store.at(localOutDir / s"${refBaseString}.vcf.gz"),
-    tbi = store.at(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
-    vcfGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz"),
-    tbiGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
+    vcf = store.at(localOutDir / s"${refBaseString}.vcf.bgz"),
+    tbi = store.at(localOutDir / s"${refBaseString}.vcf.bgz.tbi"),
+    vcfGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.bgz"),
+    tbiGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.bgz.tbi"),
     vdsGoogle = store.at(googleOutDir / s"${refBaseString}.vds"),
     variantQcGoogle = store.at(googleOutDir / s"${refBaseString}.variantqc.tsv"),
     prunedInGoogle = store.at(googleOutDir / s"${refBaseString}.prunedin.tsv"))
@@ -417,12 +417,12 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     gds = store.at(localOutDir / s"${cleanBaseString}.gds"),
     dataGoogle = bedBimFam(googleOutDir / cleanBaseString),
     baseGoogle = googleOutDir / cleanBaseString,
-    vcf = store.at(localOutDir / s"${cleanBaseString}.vcf.gz"),
-    tbi = store.at(localOutDir / s"${cleanBaseString}.vcf.gz.tbi"),
-    vcfGoogle = store.at(googleOutDir / s"${cleanBaseString}.vcf.gz"),
+    vcf = store.at(localOutDir / s"${cleanBaseString}.vcf.bgz"),
+    tbi = store.at(localOutDir / s"${cleanBaseString}.vcf.bgz.tbi"),
+    vcfGoogle = store.at(googleOutDir / s"${cleanBaseString}.vcf.bgz"),
     vdsGoogle = store.at(googleOutDir / s"${cleanBaseString}.vds"),
-    pcaScores = store.at(googleOutDir / s"${cleanBaseString}.pca.scores.tsv"),
-    pcaLog = store.at(googleOutDir / s"${cleanBaseString}.pca.log"))
+    pcaScores = store.at(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
+    pcaLog = store.at(localOutDir / s"${cleanBaseString}.pca.log"))
 
   array -> Array(
     rawData = rawData,
