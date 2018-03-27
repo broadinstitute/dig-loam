@@ -13,7 +13,7 @@ if(inherits(x, "try-error")) {
 } else {
 	ids<-c(x$ID1,x$ID2)
 	out<-as.data.frame(sort(table(ids),decreasing=T))
-	names(out)[1]<-"FREQ"
-	out$IID<-row.names(out)
+    names(out)[1]<-"IID"
+	names(out)[2]<-"FREQ"
 	write.table(out[,c("IID","FREQ")],args$out,row.names=F,col.names=F,quote=F,append=F,sep="\t")
 }

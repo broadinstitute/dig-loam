@@ -166,14 +166,14 @@ def SampleQc(array: String): Unit = {
   
     cmd"""$binRscript --vanilla --verbose
       $rIstatsAdjGmmPlotMetrics
-      --metrics ${projectConfig.sampleQcMetrics.mkString(",")}
+      --ind-clu-files "${metricCluFiles.mkString(",")}"
       --stats ${arrayStores(array).sampleQcData.stats}
       --stats-adj ${arrayStores(array).sampleQcData.statsAdj}
       --outliers ${arrayStores(array).sampleQcPcaClusterData.outliers}
       --boxplots ${arrayStores(array).sampleQcData.boxPlots}
       --discreteness ${arrayStores(array).sampleQcData.discreteness}
       --outliers-table ${arrayStores(array).sampleQcData.outliers}"""
-      .in(arrayStores(array).sampleQcData.stats, arrayStores(array).sampleQcData.statsAdj, arrayStores(array).sampleQcPcaClusterData.outliers)
+      .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
       .out(arrayStores(array).sampleQcData.boxPlots, arrayStores(array).sampleQcData.discreteness, arrayStores(array).sampleQcData.outliers)
       .using("R-3.4")
       .named(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)

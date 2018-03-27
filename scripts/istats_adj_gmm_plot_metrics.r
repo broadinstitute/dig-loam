@@ -4,7 +4,7 @@ library(gridExtra)
 library(argparse)
 
 parser <- ArgumentParser()
-parser$add_argument("--metrics", dest="metrics", type="character", help="A comma separated list of sample QC metrics")
+parser$add_argument("--ind-clu-files", dest="ind_clu_files", type="character", help="a comma separated list of metrics and cluster files, each separated by 3 underscores")
 parser$add_argument("--stats", dest="stats", type="character", help="A sample qc stats file")
 parser$add_argument("--stats-adj", dest="stats_adj", type="character", help="An adjusted sample qc stats file")
 parser$add_argument("--outliers", dest="outliers", type="character", help="A sample qc outliers file")
@@ -19,7 +19,15 @@ gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)
   hcl(h=hues, l=65, c=100)[1:n]
 }
-metrics<-unlist(strsplit(args$metrics,","))
+
+clust_files_list<-list()
+for(f in unlist(strsplit(args$ind_clu_files,","))) {
+	metric<-unlist(strsplit(f,"___"))[1]
+	metric_file<-unlist(strsplit(f,"___"))[2]
+	clust_files_list[metric]<-metric_file
+}
+
+metrics<-names(clust_files_list)
 np<-0
 np<-np+1
 data_orig<-read.table(args$stats,header=T,as.is=T,stringsAsFactors=F)
@@ -32,8 +40,8 @@ if( length(oliers) > 0) {
 }
 pdf(args$boxplots,width=ceiling(length(data_names)/10)*7, height=7)
 for(m in metrics) {
-	print(m)
-	cl<-read.table(gsub("stats.adj.tsv",paste(m,".clu.1",sep=""),args$stats_adj), as.is=T, skip=1)
+    print(paste(m,clust_files_list[[m]],sep=" "))
+	cl<-read.table(clust_files_list[[m]], as.is=T, skip=1)
 	cl_levels<-c()
 	cl_names<-c()
 	if(1 %in% cl$V1) {
