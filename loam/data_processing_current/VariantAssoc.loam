@@ -1,0 +1,108 @@
+/**
+  * Association Step
+  *  Description: Run association tests
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+
+def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel): Unit = {
+
+  val array = configCohort.array
+
+  google {
+
+    hail"""$pyHailListSamples
+      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+      --pheno-in ${ProjectStores.phenoGoogle}
+      --iid-col ${projectConfig.phenoId}
+      --pheno-col ${configModel.pheno}
+      --test ${configModel.test}
+      --covars "${configModel.covars}"
+      --out-pheno-prelim ${assocStores((configCohort, configModel)).phenoPrelimGoogle}
+      --out-samples ${assocStores((configCohort, configModel)).samplesIncludeGoogle}"""
+    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .out(assocStores((configCohort, configModel)).phenoPrelimGoogle, assocStores((configCohort, configModel)).samplesIncludeGoogle)
+    .named(s"${assocStores((configCohort, configModel)).phenoPrelim}.google".split("/").last)
+
+  }
+    
+  local {
+
+    googleCopy(assocStores((configCohort, configModel)).phenoPrelimGoogle, assocStores((configCohort, configModel)).phenoPrelim)
+    googleCopy(assocStores((configCohort, configModel)).samplesIncludeGoogle, assocStores((configCohort, configModel)).samplesInclude)
+
+  }
+  
+  ugerWith(cores=4, mem=4) {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rGeneratePheno
+      --cpus 4
+      --gds-in ${arrayStores(array).pcaData.gds}
+      --pheno-in ${ProjectStores.pheno}
+      --ancestry-in ${ProjectStores.ancestryInferred}
+      --ancestry-keep ${configCohort.ancestry.mkString(",")}
+      --pheno-col ${configModel.pheno}
+      --iid-col ${projectConfig.phenoId}
+      --samples-include ${assocStores((configCohort, configModel)).samplesInclude}
+      --variants-exclude ID ${arrayStores(array).finalData.variantsExclude}
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
+      --out-pheno ${assocStores((configCohort, configModel)).pheno}
+      --out-pcs ${assocStores((configCohort, configModel)).pcs}
+      > ${assocStores((configCohort, configModel)).phenoLog}"""
+      .in(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, assocStores((configCohort, configModel)).samplesInclude, arrayStores(array).finalData.variantsExclude)
+      .out(assocStores((configCohort, configModel)).pheno, assocStores((configCohort, configModel)).pcs, assocStores((configCohort, configModel)).phenoLog)
+      .using("R-3.4")
+      .named(s"${assocStores((configCohort, configModel)).pheno}".split("/").last)
+
+  }
+  
+  local {
+
+    googleCopy(assocStores((configCohort, configModel)).pheno, assocStores((configCohort, configModel)).phenoGoogle)
+    googleCopy(assocStores((configCohort, configModel)).pcs, assocStores((configCohort, configModel)).pcsGoogle)
+
+  }
+  
+  google {
+
+    hail"""$pyHailAssoc
+      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+      --pheno-in ${assocStores((configCohort, configModel)).phenoGoogle}
+      --iid-col ${projectConfig.phenoId}
+      --pheno-col ${configModel.pheno}
+      --pcs-include ${assocStores((configCohort, configModel)).pcsGoogle}
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
+      --out ${assocStores((configCohort, configModel)).resultsGoogle}"""
+        .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assocStores((configCohort, configModel)).phenoGoogle :+ assocStores((configCohort, configModel)).pcsGoogle)
+        .out(assocStores((configCohort, configModel)).resultsGoogle)
+        .named(s"${assocStores((configCohort, configModel)).results}.google".split("/").last)
+  
+  }
+  
+  local {
+
+    googleCopy(assocStores((configCohort, configModel)).resultsGoogle, assocStores((configCohort, configModel)).results)
+
+  }
+  
+  uger {
+
+    cmd"""$binTabix -f -b 2 -e 2 ${assocStores((configCohort, configModel)).results}"""
+      .in(assocStores((configCohort, configModel)).results)
+      .out(assocStores((configCohort, configModel)).tbi)
+      .named(s"${assocStores((configCohort, configModel)).tbi}".split("/").last)
+
+  }
+
+}

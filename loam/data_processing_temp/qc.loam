@@ -2353,7 +2353,7 @@ def qc3(i: Int): Unit = {
 
   uger {
 
-    cmd"""awk -v var=${paramsCohort.cohortAncestry.mkString(",")} '{ split(var,arr,","); for (a in arr) { if(arr[a] == $$2) print $$1, $$1 } }' ${ancestryInferredMerged} > ${paramsCohort.cohortSamples}"""
+    cmd"""awk -v var=${paramsCohort.cohortAncestry.mkString(",")} '{ split(var,arr,","); for (a in arr) { if(arr[a] == $$2) print $$1 } }' ${ancestryInferredMerged} | xargs -i grep -w {} ${paramsArr.harmRefFiltName}.fam | awk '{print $$1"\t"$$1}' > ${paramsCohort.cohortSamples}"""
     .in(ancestryInferredMerged)
     .out(paramsCohort.cohortSamples)
     .named(s"${paramsCohort.cohortSamples}".split("/").last)

@@ -13,6 +13,7 @@ import Ancestry._
 import Pca._
 import SampleQc._
 import FilterFinal._
+import VariantAssoc._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -42,5 +43,14 @@ for {
   Pca(array.id)
   SampleQc(array.id)
   FilterFinal(array.id)
+
+}
+
+for {
+  cohort <- projectConfig.Cohorts if cohort.report;
+  model <- projectConfig.Models
+} yield { 
+
+  VariantAssoc(configCohort = cohort, configModel = model)
 
 }

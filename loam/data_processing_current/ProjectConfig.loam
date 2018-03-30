@@ -23,9 +23,15 @@ final case class ConfigMerge(
   cohorts_metas: Seq[String],
   report: Boolean)
 
-final case class ConfigKnownLoci(
+final case class ConfigModel(
+  pheno: String,
+  trans: String,
   test: String,
   covars: String,
+  phase: Int)
+
+final case class ConfigKnownLoci(
+  model: ConfigModel,
   data: String,
   hiLd: String,
   ancestry: Seq[String],
@@ -35,18 +41,6 @@ final case class ConfigKnownLoci(
   desc: String,
   tag: String,
   citation: String)
-
-final case class ConfigPhenotype(
-  phenoName: String,
-  phenoLongName: String,
-  trans: String,
-  tests: Seq[String],
-  covars: Seq[String],
-  knownLoci: Seq[ConfigKnownLoci])
-
-final case class ConfigPhase(
-  n: Int,
-  phenotypes: Seq[ConfigPhenotype])
 
 final case class ProjectConfig(
   projectId: String,
@@ -87,7 +81,8 @@ final case class ProjectConfig(
   Cohorts: Seq[ConfigCohort],
   Metas: Seq[ConfigMeta],
   Merges: Seq[ConfigMerge],
-  Phases: Seq[ConfigPhase])
+  Models: Seq[ConfigModel],
+  KnownLoci: Seq[ConfigKnownLoci])
 
 val projectConfig = ProjectConfig(
 
@@ -193,67 +188,115 @@ val projectConfig = ProjectConfig(
 
   },
 
-  Phases = {
-
-    var i: Int = 0
+  Models = {
 
     for {
-      phase <- dataConfig.getObjList("phases")
+      phase <- 0 until dataConfig.getObjList("phases").size;
+      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size;
+      test <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("tests").size;
+      covars <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("covars").size
     } yield {
 
-      i = i + 1
+      ConfigModel(
+        pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
+        trans = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("trans"),
+        test = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("tests")(test),
+        covars = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("covars")(covars),
+        phase = dataConfig.getObjList("phases")(phase).getInt("id"))
+    }
 
-      val phenotypes = {
+  },
 
-        var j: Int = 0
+  KnownLoci = {
 
-        for {
-          phenotype <- dataConfig.getObjList("phases")(i-1).getObjList("phenotypes")
-        } yield {
+    for {
+      phase <- 0 until dataConfig.getObjList("phases").size;
+      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size;
+      knownloci <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci").size
+    } yield {
 
-          j = j + 1
-
-          val knownLoci = {
-
-            for {
-              knownloci <- dataConfig.getObjList("phases")(i-1).getObjList("phenotypes")(j-1).getObjList("knownLoci")
-            } yield {
-
-              ConfigKnownLoci(
-                test = knownloci.getStr("test"),
-                covars = knownloci.getStr("covars"),
-                data = knownloci.getStr("data"),
-                hiLd = knownloci.getStr("hiLd"),
-                ancestry = knownloci.getStrList("ancestry"),
-                n = if(knownloci.isDefined("n")) { knownloci.getStr("n") } else { "" },
-                nCase = if(knownloci.isDefined("nCase")) { knownloci.getStr("nCase") } else { "" },
-                nCtrl = if(knownloci.isDefined("nCtrl")) { knownloci.getStr("nCtrl") } else { "" },
-                desc = knownloci.getStr("desc"),
-                tag = knownloci.getStr("tag"),
-                citation = knownloci.getStr("citation"))
-
-            }
-
-          }
-
-          ConfigPhenotype(
-            phenoName = phenotype.getStr("phenoName"),
-            phenoLongName = phenotype.getStr("phenoLongName"),
-            trans = phenotype.getStr("trans"),
-            tests = phenotype.getStrList("tests"),
-            covars = phenotype.getStrList("covars"),
-            knownLoci = knownLoci)
-
-        }
-
-      }
-
-      ConfigPhase(
-        n = i,
-        phenotypes = phenotypes)
+      ConfigKnownLoci(
+        model = ConfigModel(
+          pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
+          trans = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("trans"),
+          test = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("test"),
+          covars = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("covars"),
+          phase = dataConfig.getObjList("phases")(phase).getInt("id")),
+        data = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("data"),
+        hiLd = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("hiLd"),
+        ancestry = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStrList("ancestry"),
+        n = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("n") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("n") } else { "" },
+        nCase = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("nCase") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("nCase") } else { "" },
+        nCtrl = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("nCtrl") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("nCtrl") } else { "" },
+        desc = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("desc"),
+        tag = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("tag"),
+        citation = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("citation"))
 
     }
 
   }
+
+  //Phases = {
+  //
+  //  var i: Int = 0
+  //
+  //  for {
+  //    phase <- dataConfig.getObjList("phases")
+  //  } yield {
+  //
+  //    i = i + 1
+  //
+  //    val phenotypes = {
+  //
+  //      var j: Int = 0
+  //
+  //      for {
+  //        phenotype <- dataConfig.getObjList("phases")(i-1).getObjList("phenotypes")
+  //      } yield {
+  //
+  //        j = j + 1
+  //
+  //        val knownLoci = {
+  //
+  //          for {
+  //            knownloci <- dataConfig.getObjList("phases")(i-1).getObjList("phenotypes")(j-1).getObjList("knownLoci")
+  //          } yield {
+  //
+  //            ConfigKnownLoci(
+  //              test = knownloci.getStr("test"),
+  //              covars = knownloci.getStr("covars"),
+  //              data = knownloci.getStr("data"),
+  //              hiLd = knownloci.getStr("hiLd"),
+  //              ancestry = knownloci.getStrList("ancestry"),
+  //              n = if(knownloci.isDefined("n")) { knownloci.getStr("n") } else { "" },
+  //              nCase = if(knownloci.isDefined("nCase")) { knownloci.getStr("nCase") } else { "" },
+  //              nCtrl = if(knownloci.isDefined("nCtrl")) { knownloci.getStr("nCtrl") } else { "" },
+  //              desc = knownloci.getStr("desc"),
+  //              tag = knownloci.getStr("tag"),
+  //              citation = knownloci.getStr("citation"))
+  //
+  //          }
+  //
+  //        }
+  //
+  //        ConfigPhenotype(
+  //          phenoName = phenotype.getStr("phenoName"),
+  //          phenoLongName = phenotype.getStr("phenoLongName"),
+  //          trans = phenotype.getStr("trans"),
+  //          tests = phenotype.getStrList("tests"),
+  //          covars = phenotype.getStrList("covars"),
+  //          knownLoci = knownLoci)
+  //
+  //      }
+  //
+  //    }
+  //
+  //    ConfigPhase(
+  //      n = i,
+  //      phenotypes = phenotypes)
+  //
+  //  }
+  //
+  //}
 
 )
