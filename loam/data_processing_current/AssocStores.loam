@@ -18,53 +18,34 @@ final case class Assoc(
   samplesExclude: Store,
   samplesExcludeGoogle: Store)
 
-val assocStores = ( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (c, m) } ).map { assoc => 
+val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (None, c, m) } ) ++
+    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); m <- projectConfig.Models; if t.report } yield { (Some(t), c, m) } )).map { assoc => 
 
-  val cohort = assoc._1
-  val model = assoc._2
-
-  val modelCovarsString = model.covars.replace("+","_")
-
-  assoc -> Assoc(
-    phenoPrelim = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.prelim_pheno.tsv"),
-    phenoPrelimGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.prelim_pheno.tsv"),
-    samplesInclude = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.include"),
-    samplesIncludeGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.include"),
-    phenoLog = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.log"),
-    pheno = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.tsv"),
-    pcs = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pcs.include"),
-    phenoGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.tsv"),
-    pcsGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pcs.include"),
-    results = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz"),
-    tbi = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz.tbi"),
-    resultsGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz"),
-    samplesExclude = store.at(localOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.exclude"),
-    samplesExcludeGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.exclude"))
-
-}.toMap
-
-val assocMetaStores = ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e); m <- projectConfig.Models; if t.report } yield { (t, c, m) } ).map { assoc => 
-
-  val meta = assoc._1
+  val meta: Option[ConfigMeta] = assoc._1
   val cohort = assoc._2
   val model = assoc._3
 
+  val prefix = meta match {
+    case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}"
+    case None => s"${projectConfig.projectId}.${cohort.id}"
+  }
+
   val modelCovarsString = model.covars.replace("+","_")
 
   assoc -> Assoc(
-    phenoPrelim = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.prelim_pheno.tsv"),
-    phenoPrelimGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.prelim_pheno.tsv"),
-    samplesInclude = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.include"),
-    samplesIncludeGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.include"),
-    phenoLog = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.log"),
-    pheno = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.tsv"),
-    pcs = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pcs.include"),
-    phenoGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.tsv"),
-    pcsGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pcs.include"),
-    results = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz"),
-    tbi = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz.tbi"),
-    resultsGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz"),
-    samplesExclude = store.at(localOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.exclude"),
-    samplesExcludeGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.exclude"))
+    phenoPrelim = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.prelim_pheno.tsv"),
+    phenoPrelimGoogle = store.at(googleOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.prelim_pheno.tsv"),
+    samplesInclude = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.include"),
+    samplesIncludeGoogle = store.at(googleOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.include"),
+    phenoLog = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.log"),
+    pheno = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.tsv"),
+    pcs = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pcs.include"),
+    phenoGoogle = store.at(googleOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pheno.tsv"),
+    pcsGoogle = store.at(googleOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.pcs.include"),
+    results = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz"),
+    tbi = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz.tbi"),
+    resultsGoogle = store.at(googleOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.results.tsv.bgz"),
+    samplesExclude = store.at(localOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.exclude"),
+    samplesExcludeGoogle = store.at(googleOutDir / s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}.samples.exclude"))
 
 }.toMap

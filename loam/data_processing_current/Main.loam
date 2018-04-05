@@ -14,12 +14,16 @@ import Pca._
 import SampleQc._
 import FilterFinal._
 import VariantAssoc._
+import CrossCohort._
+import Impute._
+import Meta._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
+// Array specific QC steps up to ancestry inferrence
 for {
   array <- projectConfig.Arrays
 } yield { 
@@ -34,8 +38,10 @@ for {
 
 }
 
+// Reconcile inferred ancestry
 MergeInferredAncestry()
 
+// Array specific QC steps post ancestry inference
 for {
   array <- projectConfig.Arrays
 } yield { 
@@ -46,11 +52,71 @@ for {
 
 }
 
+// Generate imputation ready data files
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  FilterImpute(array.id)
+
+}
+
+// Cohort variant association
 for {
   cohort <- projectConfig.Cohorts if cohort.report;
   model <- projectConfig.Models
 } yield { 
 
-  VariantAssoc(configCohort = cohort, configModel = model)
+  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+
+}
+
+// Meta-analysis cross-cohort qc prep
+for {
+  meta <- projectConfig.Metas if meta.report;
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+} yield {
+
+  CrossCohortPrep(configMeta = meta, configCohort = cohort)
+
+}
+
+// Meta-analysis cross-array kinship
+for {
+  meta <- projectConfig.Metas if meta.report
+} yield {
+
+  CrossCohortKinship(meta)
+
+}
+
+// Meta-analysis calculate cross-cohort kinship sample exclusions
+for {
+  meta <- projectConfig.Metas if meta.report;
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+} yield {
+
+  CrossCohortExclude(configMeta = meta, configCohort = cohort)
+
+}
+
+// Meta-analysis specific cohort variant association
+for {
+  meta <- projectConfig.Metas if meta.report;
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id);
+  model <- projectConfig.Models
+} yield { 
+
+  VariantAssoc(configCohort = cohort, configModel = model, configMeta = Some(meta))
+
+}
+
+// Meta-analysis
+for {
+  meta <- projectConfig.Metas if meta.report;
+  model <- projectConfig.Models
+} yield {
+
+  MetaAnalysis(configModel = model, configMeta = meta)
 
 }

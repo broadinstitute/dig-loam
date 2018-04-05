@@ -65,6 +65,8 @@ final case class HarmonizedData(
   refBase: Path,
   vcf: Store,
   tbi: Store,
+  imputeData: Seq[Store],
+  imputeBase: Path,
   vcfGoogle: Store,
   tbiGoogle: Store,
   vdsGoogle: Store,
@@ -164,6 +166,7 @@ final case class FinalData(
   samplesExclude: Store,
   samplesExcludeGoogle: Store,
   variantsExclude: Store,
+  variantsExcludeIds: Store,
   variantsExcludeGoogle: Store)
 
 final case class VariantQcData(
@@ -212,6 +215,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
   val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
+  val imputeBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.impute"
   val qcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.qc"
   val kinshipBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.kinship"
   val ref1kgBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref1kg"
@@ -302,6 +306,8 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     refBase = localOutDir / refBaseString,
     vcf = store.at(localOutDir / s"${refBaseString}.vcf.gz"),
     tbi = store.at(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
+    imputeData = bedBimFam(localOutDir / imputeBaseString),
+    imputeBase = localOutDir / imputeBaseString,
     vcfGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz"),
     tbiGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
     vdsGoogle = store.at(googleOutDir / s"${refBaseString}.vds"),
@@ -405,6 +411,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     samplesExclude = store.at(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
     samplesExcludeGoogle = store.at(googleOutDir / s"${finalBaseString}.samples.exclude.txt"),
     variantsExclude = store.at(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
+    variantsExcludeIds = store.at(localOutDir / s"${finalBaseString}.variants.exclude.ids.txt"),
     variantsExcludeGoogle = store.at(googleOutDir / s"${finalBaseString}.variants.exclude.txt"))
 
   val variantQcData = VariantQcData(

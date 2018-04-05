@@ -14,6 +14,7 @@ parser$add_argument("--ancestry-keep", dest="ancestry_keep", type="character", h
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
 parser$add_argument("--samples-include", dest="samples_include", type="character", help="a final list of sample IDs to include")
+parser$add_argument("--samples-exclude", dest="samples_exclude", type="character", help="a list of sample IDs to exclude")
 parser$add_argument("--variants-exclude", nargs=2, dest="variants_exclude", default=NULL, type="character", help="A column name or 1-based number for variant IDs followed by the filename")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
@@ -92,6 +93,12 @@ samples_incl<-scan(file=args$samples_include,what="character")
 variants_excl_df<-read.table(args$variants_exclude[2],header=T,as.is=T,stringsAsFactors=F,sep="\t")
 variants_excl<-variants_excl_df[,args$variants_exclude[1]]
 samples_incl<-iids[iids %in% samples_incl & iids %in% pheno[,args$iid_col]]
+
+if(args$samples_exclude != "") {
+	samples_excl<-scan(file=args$samples_exclude,what="character")
+    samples_incl<-samples_incl[! samples_incl %in% samples_excl]
+}
+
 variants_incl<-vids[! vids %in% variants_excl]
 
 kinship<-NULL
