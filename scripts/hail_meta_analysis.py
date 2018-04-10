@@ -36,15 +36,14 @@ def main(args=None):
 	nCols = [x + "_n" for x in cohorts]
 	maleCols = [x + "_male" for x in cohorts]
 	femaleCols = [x + "_female" for x in cohorts]
-	caseCols = [x + "_case" for x in cohorts if x in kt.columns]
-	ctrlCols = [x + "_ctrl" for x in cohorts if x in kt.columns]
+	caseCols = [x + "_case" for x in cohorts if x + "_case" in kt.columns]
+	ctrlCols = [x + "_ctrl" for x in cohorts if x + "_ctrl" in kt.columns]
 	kt = kt.annotate("n = [" + ",".join([x for x in nCols]) + "].sum(), male = [" + ",".join([x for x in maleCols]) + "].sum(), female = [" + ",".join([x for x in femaleCols]) + "].sum()")
 	if len(caseCols) > 0:
 		kt = kt.annotate("case = [" + ",".join([x for x in caseCols]) + "].sum()")
 	
 	if len(ctrlCols) > 0:
 		kt = kt.annotate("ctrl = [" + "+".join([x for x in ctrlCols]) + "].sum()")
-	
 	# calculate weighted average avgaf, minaf, and maxaf
 	afCols = [x + "_af" for x in cohorts]
 	kt = kt.annotate("afmin = [" + ",".join([x + "_af" for x in cohorts]) + "].min()")
@@ -89,7 +88,13 @@ def main(args=None):
 	
 	# add variant attribute columns and select output
 	kt = kt.annotate("uidstr = str(uid), chr = uid.contig, pos = uid.start, ref = uid.ref, alt = uid.alt")
-	kt = kt.select(['chr','pos','uidstr','id','ref','alt','n','male','female','afmin','afmax','afavg','dir','beta','se','or','zscore','pval'])
+	cols_keep = ['chr','pos','uidstr','id','ref','alt','n','male','female']
+	if 'case' in kt.columns:
+		cols_keep = cols_keep + ['case']
+	if 'ctrl' in kt.columns:
+		cols_keep = cols_keep + ['ctrl']
+	cols_keep = cols_keep + ['afmin','afmax','afavg','dir','beta','se','or','zscore','pval']
+	kt = kt.select(cols_keep)
 
 	ktout = kt.to_pandas(expand=False)
 	ktout[['chr','pos']] = ktout[['chr','pos']].astype(int)
