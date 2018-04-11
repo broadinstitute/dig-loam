@@ -1,0 +1,16 @@
+import ProjectConfig._
+import PipelineConfig._
+import StoreHelpers._
+
+final case class TablesData(
+  variantsSummary: Store)
+
+final case class QcReport(
+  tablesData: TablesData)
+
+val qcReportStores = QcReport(
+
+  tablesData = TablesData(
+    variantsSummary = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.variants.summary.tbl"))
+
+)

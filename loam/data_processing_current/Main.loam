@@ -17,6 +17,7 @@ import VariantAssoc._
 import CrossCohort._
 import Impute._
 import Meta._
+import QcReport._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -71,6 +72,16 @@ for {
 
 }
 
+// Cohort variant association for known loci
+for {
+  cohort <- projectConfig.Cohorts if cohort.report;
+  known <- projectConfig.KnownLoci
+} yield { 
+
+  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
+
+}
+
 // Meta-analysis cross-cohort qc prep
 for {
   meta <- projectConfig.Metas if meta.report;
@@ -111,6 +122,17 @@ for {
 
 }
 
+// Meta-analysis specific cohort variant association for known loci
+for {
+  meta <- projectConfig.Metas if meta.report;
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id);
+  known <- projectConfig.KnownLoci
+} yield { 
+
+  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
+
+}
+
 // Meta-analysis
 for {
   meta <- projectConfig.Metas if meta.report;
@@ -120,3 +142,17 @@ for {
   MetaAnalysis(configModel = model, configMeta = meta)
 
 }
+
+// Meta-analysis for known loci
+for {
+  meta <- projectConfig.Metas if meta.report;
+  known <- projectConfig.KnownLoci
+} yield {
+
+  MetaAnalysisKnownLoci(configKnownLoci = known, configMeta = meta)
+
+}
+
+// QC Report
+QcReport()
+

@@ -27,7 +27,8 @@ final case class MetaResultsData(
 final case class Meta(
   metaCohortData: Map[String, MetaCohortData],
   metaKinshipData: MetaKinshipData,
-  metaResultsData: Map[ConfigModel, MetaResultsData])
+  metaResultsData: Map[ConfigModel, MetaResultsData],
+  metaKnownLociResultsData: Map[ConfigKnownLoci, MetaResultsData])
 
 val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
 
@@ -71,9 +72,22 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
 
   }.toMap
 
+  val metaKnownLociResultsData = projectConfig.KnownLoci.map { known =>
+
+    val modelCovarsString = known.model.covars.replace("+","_")
+    val metaKnownLociResultsBaseString = s"${projectConfig.projectId}.${meta}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}.known_loci"
+
+    known -> MetaResultsData(
+      results = store.at(localOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz"),
+      resultsGoogle = store.at(googleOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz"),
+      tbi = store.at(localOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz.tbi"))
+
+  }.toMap
+
   meta -> Meta(
     metaCohortData = metaCohortData,
     metaKinshipData = metaKinshipData,
-    metaResultsData = metaResultsData)
+    metaResultsData = metaResultsData,
+    metaKnownLociResultsData = metaKnownLociResultsData)
 
 }.toMap

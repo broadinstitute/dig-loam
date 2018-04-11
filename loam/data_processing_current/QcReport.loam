@@ -1,0 +1,261 @@
+/**
+  * QC Report Step
+  *  Description: Generate QC Report
+  *  Requires: R-3.4, Python, convert, pdflatex
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+import MetaStores._
+import QcReportStores._
+
+def QcReport(): Unit = {
+
+  val arrayFreqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).rawData.freq.toString.split("@")(1)}" } }
+  val arrayIndelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).rawData.indel.toString.split("@")(1)}" } }
+  val arrayMultiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).preparedData.multiallelic.toString.split("@")(1)}" } }
+  val arrayDupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).rawData.dupRemove.toString.split("@")(1)}" } }
+
+  uger {
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rVariantsSummaryTable
+      --freq-in "${arrayFreqStrings.mkString(",")}"
+      --indel-in "${arrayIndelStrings.mkString(",")}"
+      --multi-in "${arrayMultiStrings.mkString(",")}"
+      --dupl-in "${arrayDupRemoveStrings.mkString(",")}"
+      --out ${qcReportStores.tablesData.variantsSummary}"""
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
+      .out(qcReportStores.tablesData.variantsSummary)
+      .using("R-3.4")
+      .named(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
+
+    //cmd"""$binRscript --vanilla --verbose
+    //  $rAncestryClusterTable
+    //  --cluster-in "${arrayClusterGroups.mkString(",")}"
+    //  --ancestry-in "${arrayAncestryInferred.mkString(",")}"
+    //  --final-in ${ancestryInferredMerged}
+    //  --cluster-out ${reportQcAncestryClusterTable}
+    //  --final-out ${reportQcAncestryFinalTable}"""
+    //  .in(Params.paramsByArrSorted.map(_.ancestryClusterGroups) ++ Params.paramsByArrSorted.map(_.ancestryInferred) :+ ancestryInferredMerged)
+    //  .out(reportQcAncestryClusterTable, reportQcAncestryFinalTable)
+    //  .using("R-3.4")
+    //  .named(s"$reportQcAncestryFinalTable".split("/").last)
+    //
+    //cmd"""$binPython $pyGenerateQcReportIntro
+    //  --id $projectId
+    //  --authors "$qcReportAuthors" 
+    //  --out ${reportQcIntro} 
+    //  --array-data ${arrayDataStrings.mkString(",")}"""
+    //  .in(Params.paramsByArrSorted.map(_.arrayData))
+    //  .out(reportQcIntro)
+    //  .named(s"$reportQcIntro".split("/").last)
+    //
+    //if (nArrays > 1) {
+    //
+    //  cmd"""$binRscript --vanilla --verbose
+    //  $rUpsetplotBimFam
+    //  --input "${harmRefFamStrings.mkString(",")}"
+    //  --type fam
+    //  --out $reportQcSampleUpsetplotPdf"""
+    //  .in(Params.paramsByArrSorted.map(_.arrayData))
+    //  .out(reportQcSampleUpsetplotPdf)
+    //  .using("R-3.4")
+    //  .named(s"$reportQcSampleUpsetplotPdf".split("/").last)
+    //  
+    //  cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSampleUpsetplotPdf}[0] $reportQcSampleUpsetplotPng"""
+    //  .in(reportQcSampleUpsetplotPdf)
+    //  .out(reportQcSampleUpsetplotPng)
+    //  .named(s"$reportQcSampleUpsetplotPng".split("/").last)
+    //  
+    //  cmd"""$binRscript --vanilla --verbose
+    //  $rUpsetplotBimFam
+    //  --input "${harmRefBimStrings.mkString(",")}"
+    //  --type bim
+    //  --out $reportQcVariantUpsetplotPdf"""
+    //  .in(Params.paramsByArrSorted.flatMap(_.harm))
+    //  .out(reportQcVariantUpsetplotPdf)
+    //  .using("R-3.4")
+    //  .named(s"$reportQcVariantUpsetplotPdf".split("/").last)
+    //  
+    //  cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantUpsetplotPdf}[0] $reportQcVariantUpsetplotPng"""
+    //  .in(reportQcVariantUpsetplotPdf)
+    //  .out(reportQcVariantUpsetplotPng)
+    //  .named(s"$reportQcVariantUpsetplotPng".split("/").last)
+    //  
+    //  cmd"""$binPython $pyGenerateQcReportData
+    //  --narrays $nArrays
+    //  --samples-upset-diagram ${reportQcSampleUpsetplotPng}
+    //  --variants-summary-table ${reportQcVariantSummaryTable} 
+    //  --variants-upset-diagram ${reportQcVariantUpsetplotPng} 
+    //  --out ${reportQcData}"""
+    //  .in(reportQcSampleUpsetplotPng, reportQcVariantSummaryTable)
+    //  .out(reportQcData)
+    //  .named(s"$reportQcData".split("/").last)
+    //
+    //} else {
+    //
+    //  cmd"""$binPython $pyGenerateQcReportData
+    //  --narrays $nArrays
+    //  --fam "${harmRefFamStrings(0)}"
+    //  --variants-summary-table ${reportQcVariantSummaryTable} 
+    //  --bim "${harmRefBimStrings(0)}"
+    //  --out ${reportQcData}"""
+    //  .in(Params.paramsByArrSorted.flatMap(_.harmRef) :+ reportQcVariantSummaryTable)
+    //  .out(reportQcData)
+    //  .named(s"$reportQcData".split("/").last)
+    //
+    //}
+    //
+    //cmd"""$binPython $pyGenerateQcReportAncestry
+    //  --kg-merged-bim "${arrayMergedKgBims.mkString(",")}"
+    //  --pca-plots "${arrayPcaScoresPlots.mkString(",")}"
+    //  --cluster-plots "${arrayClusterPlots.mkString(",")}"
+    //  --cluster-table ${reportQcAncestryClusterTable}
+    //  --final-table ${reportQcAncestryFinalTable}
+    //  --out ${reportQcAncestry}"""
+    //  .in(Params.paramsByArrSorted.flatMap(_.harmRef1kg) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryPcaScoresPlotPc2VsPc3) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc1VsPc2) ++ Params.paramsByArrSorted.map(_.ancestryClusterPlotPc2VsPc3) :+ reportQcAncestryClusterTable :+ reportQcAncestryFinalTable)
+    //  .out(reportQcAncestry)
+    //  .named(s"$reportQcAncestry".split("/").last)
+    //
+    //cmd"""$binPython $pyGenerateQcReportIbdSexcheck
+    //  --filtered-bim "${arrayharmRefFilteredBims.mkString(",")}"
+    //  --kin0-related "${arrayKin0Related.mkString(",")}"
+    //  --famsizes "${arrayFamsizes.mkString(",")}"
+    //  --sexcheck-problems "${arraySexcheckProblems.mkString(",")}"
+    //  --out ${reportQcIbdSexcheck}"""
+    //  .in(Params.paramsByArrSorted.flatMap(_.harmRefFiltPruned) ++ Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems))
+    //  .out(reportQcIbdSexcheck)
+    //  .named(s"$reportQcIbdSexcheck".split("/").last)
+    //
+    //cmd"""$binRscript --vanilla --verbose
+    //  $rMakeMetricDistPlot
+    //  --sampleqc ${Params.paramsByArrSorted.head.sampleqcStats}
+    //  --metric nHet
+    //  --out ${sampleQcMetricDistUnadjPdf}
+    //  """
+    //  .in(Params.paramsByArrSorted.head.sampleqcStats)
+    //  .out(sampleQcMetricDistUnadjPdf)
+    //  .using("R-3.4")
+    //  .named(s"$sampleQcMetricDistUnadjPdf".split("/").last)
+    //
+    //cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistUnadjPdf}[0] $sampleQcMetricDistUnadjPng"""
+    //  .in(sampleQcMetricDistUnadjPdf)
+    //  .out(sampleQcMetricDistUnadjPng)
+    //  .named(s"$sampleQcMetricDistUnadjPng".split("/").last)
+    //
+    //cmd"""$binRscript --vanilla --verbose
+    //  $rMakeMetricDistPlot
+    //  --sampleqc ${Params.paramsByArrSorted.head.sampleqcStatsAdj}
+    //  --metric nHet_res
+    //  --out ${sampleQcMetricDistAdjPdf}
+    //  """
+    //  .in(Params.paramsByArrSorted.head.sampleqcStatsAdj)
+    //  .out(sampleQcMetricDistAdjPdf)
+    //  .using("R-3.4")
+    //  .named(s"$sampleQcMetricDistAdjPdf".split("/").last)
+    //
+    //cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${sampleQcMetricDistAdjPdf}[0] $sampleQcMetricDistAdjPng"""
+    //  .in(sampleQcMetricDistAdjPdf)
+    //  .out(sampleQcMetricDistAdjPng)
+    //  .named(s"$sampleQcMetricDistAdjPng".split("/").last)
+    //
+    //cmd"""$binRscript --vanilla --verbose
+    //  $rMakeOutlierTable
+    //  --ancestry-inferred-outliers ${ancestryInferredMergedOutliers}
+    //  --kinship-related ${arrayKin0Related.mkString(",")}
+    //  --kinship-famsizes ${arrayFamsizes.mkString(",")}
+    //  --sampleqc-outliers ${arraySampleqcOutliers.mkString(",")}
+    //  --sexcheck-problems ${arraySexcheckProblems.mkString(",")}
+    //  --final-exclusions ${arrayFinalSampleExclusions.mkString(",")}
+    //  --out ${reportQcSampleqcTable}"""
+    //  .in(Params.paramsByArrSorted.map(_.kinKin0Related) ++ Params.paramsByArrSorted.map(_.kinFamsizes) ++ Params.paramsByArrSorted.map(_.sampleqcStatsAdjOutliersTable) ++ Params.paramsByArrSorted.map(_.sampleqcSexcheckProblems) ++ Params.paramsByArrSorted.map(_.finalSampleExclusions) :+ ancestryInferredMergedOutliers)
+    //  .out(reportQcSampleqcTable)
+    //  .using("R-3.4")
+    //  .named(s"$reportQcSampleqcTable".split("/").last)
+    //
+    //cmd"""$binRscript --vanilla --verbose
+    //  $rUpsetplotBimFam
+    //  --input "${arrayCleanFamStrings.mkString(",")}"
+    //  --type fam
+    //  --ancestry ${ancestryInferredMerged}
+    //  --out ${reportQcSamplesRemainingUpsetplotPdf}"""
+    //  .in(Params.paramsByArrSorted.flatMap(_.clean) :+ ancestryInferredMerged)
+    //  .out(reportQcSamplesRemainingUpsetplotPdf)
+    //  .using("R-3.4")
+    //  .named(s"$reportQcSamplesRemainingUpsetplotPdf".split("/").last)
+    //
+    //cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcSamplesRemainingUpsetplotPdf}[0] $reportQcSamplesRemainingUpsetplotPng"""
+    //  .in(reportQcSamplesRemainingUpsetplotPdf)
+    //  .out(reportQcSamplesRemainingUpsetplotPng)
+    //  .named(s"$reportQcSamplesRemainingUpsetplotPng".split("/").last)
+    //
+    //cmd"""$binPython $pyGenerateQcReportSampleqc
+    //  --compare-dist-nhet-unadj ${sampleQcMetricDistUnadjPng}
+    //  --compare-dist-nhet-adj ${sampleQcMetricDistAdjPng}
+    //  --compare-dist-nhet-label ${Params.paramsByArrSorted.head.arrayId}
+    //  --sampleqc-outliers ${arraySampleqcOutlierPlots.mkString(",")}
+    //  --sampleqc-summary-table ${reportQcSampleqcTable}
+    //  --samples-upset-diagram ${reportQcSamplesRemainingUpsetplotPng}
+    //  --out ${reportQcSampleqc}"""
+    //  .in(Params.paramsByArrSorted.map(_.sampleqcOutlierPlotPng) :+ sampleQcMetricDistUnadjPng :+ sampleQcMetricDistAdjPng :+ reportQcSampleqcTable :+ reportQcSamplesRemainingUpsetplotPng)
+    //  .out(reportQcSampleqc)
+    //  .named(s"$reportQcSampleqc".split("/").last)
+    //
+    //if (nArrays > 1) {
+    //
+    //  cmd"""$binRscript --vanilla --verbose
+    //    $rUpsetplotBimFam
+    //    --input "${arrayCleanBimStrings.mkString(",")}"
+    //    --type bim
+    //    --out ${reportQcVariantsRemainingUpsetplotPdf}"""
+    //    .in(Params.paramsByArrSorted.flatMap(_.clean))
+    //    .out(reportQcVariantsRemainingUpsetplotPdf)
+    //    .using("R-3.4")
+    //    .named(s"$reportQcVariantsRemainingUpsetplotPdf".split("/").last)
+    //	
+    //  cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${reportQcVariantsRemainingUpsetplotPdf}[0] $reportQcVariantsRemainingUpsetplotPng"""
+    //    .in(reportQcVariantsRemainingUpsetplotPdf)
+    //    .out(reportQcVariantsRemainingUpsetplotPng)
+    //    .named(s"$reportQcVariantsRemainingUpsetplotPng".split("/").last)
+    //
+    //  cmd"""$binPython $pyGenerateQcReportVariantqc
+    //    --variants-upset-diagram ${reportQcVariantsRemainingUpsetplotPng}
+    //    --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
+    //    --out ${reportQcVariantqc}"""
+    //    .in(Params.paramsByArrSorted.map(_.finalVariantExclusions) :+ reportQcVariantsRemainingUpsetplotPng)
+    //    .out(reportQcVariantqc)
+    //    .named(s"$reportQcVariantqc".split("/").last)
+    //
+    //} else {
+    //
+    //  cmd"""$binPython $pyGenerateQcReportVariantqc
+    //    --bim "${arrayCleanBimStrings(0)}"
+    //    --variant-exclusions "${arrayFinalVariantExclusions.mkString(",")}"
+    //    --out ${reportQcVariantqc}"""
+    //    .in(Params.paramsByArrSorted.flatMap(_.clean) ++ Params.paramsByArrSorted.map(_.finalVariantExclusions))
+    //    .out(reportQcVariantqc)
+    //    .named(s"$reportQcVariantqc".split("/").last)
+    //
+    //}
+    //
+    //cmd"""$binPython $pyGenerateQcReportBibliography
+    //  --out ${reportQcBibliography}"""
+    //  .out(reportQcBibliography)
+    //  .named(s"$reportQcBibliography".split("/").last)
+    //
+    //cmd"""cat ${reportQcIntro} ${reportQcData} ${reportQcAncestry} ${reportQcIbdSexcheck} ${reportQcSampleqc} ${reportQcVariantqc} ${reportQcBibliography} > $reportQcTex"""
+    //  .in(reportQcIntro, reportQcData, reportQcAncestry, reportQcIbdSexcheck, reportQcSampleqc, reportQcVariantqc, reportQcBibliography)
+    //  .out(reportQcTex)
+    //  .named(s"$reportQcTex".split("/").last)
+    //
+    //cmd"""$binPdflatex --output-directory=${localOutDir} $reportQcTex; sleep 5; $binPdflatex --output-directory=${localOutDir} $reportQcTex """
+    //  .in(reportQcTex)
+    //  .out(reportQcPdf)
+    //  .named(s"$reportQcPdf".split("/").last)
+  
+  }
+
+}
