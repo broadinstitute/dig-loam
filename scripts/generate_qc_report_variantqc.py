@@ -50,7 +50,7 @@ def main(args=None):
 		if args.variants_upset_diagram is not None:
 			text=r"""\begin{figure}[H]
 					\centering
-					\includegraphics[width=0.75\linewidth]{""" + args.variants_upset_diagram + r"""}
+					\includegraphics[width=0.75\linewidth,page=1]{""" + args.variants_upset_diagram + r"""}
 					\caption{Variants remaining for analysis}
 					\label{fig:variantsRemaining}
 				\end{figure}"""

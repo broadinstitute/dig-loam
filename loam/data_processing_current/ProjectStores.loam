@@ -41,6 +41,7 @@ object ProjectStores {
   
   val regionsExclude = store.at(path(projectConfig.regionsExclude)).asInput
   val regionsExcludeGoogle = store.at(uri(projectConfig.regionsExcludeGoogle)).asInput
+  val genePositions = store.at(path(projectConfig.genePositions)).asInput
   val kgPurcellVcf = store.at(path(projectConfig.kgPurcellVcf)).asInput
   val kgPurcellVcfGoogle = store.at(uri(projectConfig.kgPurcellVcfGoogle)).asInput
   val kgSample = store.at(path(projectConfig.kgSample)).asInput

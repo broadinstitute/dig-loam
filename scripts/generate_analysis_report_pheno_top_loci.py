@@ -67,7 +67,7 @@ def main(args=None):
 						delim = r"\\" if nplots % 2 == 0 else r"%"
 						text.extend([r"   \begin{subfigure}{.5\textwidth}",
 							r"      \centering",
-							r"      \includegraphics[width=\linewidth]{" + r + r"}",
+							r"      \includegraphics[width=\linewidth,page=1]{" + r + r"}",
 							r"      \caption{" + v + r" $\pm 100 kb$}",
 							r"      \label{fig:regPlot" + model + "_" + v + r"}",
 							r"   \end{subfigure}" + delim])
@@ -76,7 +76,7 @@ def main(args=None):
 					v = reg[model][0].split("regplot_")[1].split(".")[0].split("_")[0]
 					text.extend([r"\begin{figure}[h!]",
 							r"   \centering",
-							r"   \includegraphics[width=.5\linewidth]{" + reg[model][0] + "}",
+							r"   \includegraphics[width=.5\linewidth,page=1]{" + reg[model][0] + "}",
 							r"   \caption{Regional plot for model " + model.replace(r'_',r'\_') + r": " + v + r" $\pm 100 kb$}",
 							r"   \label{fig:regPlot" + model + "_" + v + "}",
 							r"\end{figure}"])

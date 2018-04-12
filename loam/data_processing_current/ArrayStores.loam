@@ -102,9 +102,7 @@ final case class AncestryPcaData(
   base: Path,
   log: Store,
   scores: Store,
-  plots: Store,
-  pc1VsPc2: Store,
-  pc2VsPc3: Store)
+  plots: Store)
 
 final case class AncestryClusterData(
   base: Path,
@@ -113,8 +111,6 @@ final case class AncestryClusterData(
   clu: Store,
   klg: Store,
   plots: Store,
-  pc1VsPc2: Store,
-  pc2VsPc3: Store,
   centerPlots: Store,
   no1kgPlots: Store,
   xtab: Store,
@@ -142,8 +138,7 @@ final case class SampleQcData(
   pcaPlots: Store,
   pcaScores: Store,
   outliers: Store,
-  outliersPlotsPdf: Store,
-  outliersPlotsPng: Store)
+  outliersPlotsPdf: Store)
 
 final case class SampleQcPcaClusterData(
   base: Path,
@@ -343,9 +338,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     base = localOutDir / ancestryPcaBaseString,
     log = store.at(localOutDir / s"${ancestryPcaBaseString}.log"),
     scores = store.at(localOutDir / s"${ancestryPcaBaseString}.scores.tsv"),
-    plots = store.at(localOutDir / s"${ancestryPcaBaseString}.plots.pdf"),
-    pc1VsPc2 = store.at(localOutDir / s"${ancestryPcaBaseString}.plot.pc1vspc2.png"),
-    pc2VsPc3 = store.at(localOutDir / s"${ancestryPcaBaseString}.plot.pc2vspc3.png"))
+    plots = store.at(localOutDir / s"${ancestryPcaBaseString}.plots.pdf"))
   
   val ancestryClusterData = AncestryClusterData(
     base = localOutDir / ancestryClusterBaseString,
@@ -354,8 +347,6 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     clu = store.at(localOutDir / s"${ancestryClusterBaseString}.clu.1"),
     klg = store.at(localOutDir / s"${ancestryClusterBaseString}.klg.1"),
     plots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.pdf"),
-    pc1VsPc2 = store.at(localOutDir / s"${ancestryClusterBaseString}.plot.pc1vspc2.png"),
-    pc2VsPc3 = store.at(localOutDir / s"${ancestryClusterBaseString}.plot.pc2vspc3.png"),
     centerPlots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.centers.pdf"),
     no1kgPlots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
     xtab = store.at(localOutDir / s"${ancestryClusterBaseString}.xtab"),
@@ -383,8 +374,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     pcaPlots = store.at(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
     pcaScores = store.at(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
     outliers = store.at(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
-    outliersPlotsPdf = store.at(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"),
-    outliersPlotsPng = store.at(localOutDir / s"${sampleQcBaseString}.outliers.plots.png"))
+    outliersPlotsPdf = store.at(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"))
 
   val sampleQcPcaClusterData = SampleQcPcaClusterData(
     base = localOutDir / s"${sampleQcBaseString}.pca.cluster",

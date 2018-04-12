@@ -13,7 +13,7 @@ def main(args=None):
 
 		text=r"""\begin{figure}[H]
 					\centering
-					\includegraphics[width=0.75\linewidth]{""" + args.samples_upset_diagram + r"""}
+					\includegraphics[width=0.75\linewidth,page=1]{""" + args.samples_upset_diagram + r"""}
 					\caption{Samples remaining for analysis after quality control}
 					\label{fig:samplesUpsetDiagram}
 				\end{figure}"""
@@ -21,7 +21,7 @@ def main(args=None):
 
 		text=r"""\begin{figure}[H]
 					\centering
-					\includegraphics[width=0.75\linewidth]{""" + args.variants_upset_diagram + r"""}
+					\includegraphics[width=0.75\linewidth,page=1]{""" + args.variants_upset_diagram + r"""}
 					\caption{Variants remaining for analysis after quality control}
 					\label{fig:variantsUpsetDiagram}
 				\end{figure}"""

@@ -34,7 +34,7 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsubsection{Principal Component Adjustment and Normalization of Sample Metrics}"); f.write("\n")
 
-		text=r"""Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:nhetCompare}} shows the nHet metric for {0} samples before and after adjustment.""".format(args.compare_dist_nhet_label.replace("_","\_"))
+		text=r"""Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:metricCompare}} shows the {0} metric for {1} samples before and after adjustment.""".format(args.compare_dist_metric.replace("_res",""), args.compare_dist_label.replace("_","\_"))
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=r"""\begin{figure}[H]
@@ -42,17 +42,17 @@ def main(args=None):
 			\centering
 			\begin{subfigure}{\textwidth}
 				\centering
-				\includegraphics[width=\linewidth]{""" + args.compare_dist_nhet_unadj + r"""}
-				\caption{nHet Original}
-				\label{fig:nhet}
+				\includegraphics[width=\linewidth,page=1]{""" + args.compare_dist_unadj + r"""}
+				\caption{""" + args.compare_dist_metric.replace("_res","") + r""" Original}
+				\label{fig:metric}
 			\end{subfigure}\newline
 			\begin{subfigure}{\textwidth}
 				\centering
-				\includegraphics[width=\linewidth]{""" + args.compare_dist_nhet_adj + r"""}
-				\caption{nHet Adjusted}
-				\label{fig:nhetAdj}
+				\includegraphics[width=\linewidth,page=1]{""" + args.compare_dist_adj + r"""}
+				\caption{""" + args.compare_dist_metric.replace("_res","") + r""" Adjusted}
+				\label{fig:metricAdj}
 			\end{subfigure}
-			\label{fig:nhetCompare}
+			\label{fig:metricCompare}
 		\end{figure}"""
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
@@ -111,7 +111,7 @@ def main(args=None):
 			m = a.split("___")[1]
 			text=r"""\begin{figure}[H]
 				\centering
-				\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio]{""" + m + r"""}
+				\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio,page=1]{""" + m + r"""}
 				\caption{Adjusted sample metric distributions for """ + l.replace("_","\_") + r"""}
 				\label{fig:adjSampleMetricDist""" + l + r"""}
 			\end{figure}"""
@@ -159,7 +159,7 @@ def main(args=None):
 
 		text=r"""\begin{figure}[H]
 				\centering
-				\includegraphics[width=0.75\linewidth]{""" + args.samples_upset_diagram + r"""}
+				\includegraphics[width=0.75\linewidth,page=1]{""" + args.samples_upset_diagram + r"""}
 				\caption{Samples remaining for analysis}
 				\label{fig:samplesRemaining}
 			\end{figure}"""
@@ -171,9 +171,10 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
-	requiredArgs.add_argument('--compare-dist-nhet-unadj', help='an nHet plot', required=True)
-	requiredArgs.add_argument('--compare-dist-nhet-adj', help='an nHet adjusted plot', required=True)
-	requiredArgs.add_argument('--compare-dist-nhet-label', help='an array label', required=True)
+	requiredArgs.add_argument('--compare-dist-unadj', help='an nHet plot', required=True)
+	requiredArgs.add_argument('--compare-dist-adj', help='an nHet adjusted plot', required=True)
+	requiredArgs.add_argument('--compare-dist-label', help='an array label', required=True)
+	requiredArgs.add_argument('--compare-dist-metric', help='a metric', required=True)
 	requiredArgs.add_argument('--sampleqc-outliers', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--sampleqc-summary-table', help='a sampleqc summary table', required=True)
 	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining', required=True)

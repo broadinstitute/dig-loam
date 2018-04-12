@@ -3,14 +3,61 @@ import PipelineConfig._
 import StoreHelpers._
 
 final case class TablesData(
-  variantsSummary: Store)
+  variantsSummary: Store,
+  clusters: Store,
+  ancestry: Store,
+  sampleQc: Store)
+
+final case class TexData(
+  intro: Store,
+  data: Store,
+  ancestry: Store,
+  ibdSexcheck: Store,
+  sampleQc: Store,
+  variantQc: Store,
+  bibliography: Store)
+
+final case class FigureData(
+  samplesUpsetPlotPdf: Store,
+  variantsUpsetPlotPdf: Store,
+  metricDistUnadjPdf: Store,
+  metricDistAdjPdf: Store,
+  samplesRemainingUpsetPlotPdf: Store,
+  variantsRemainingUpsetPlotPdf: Store)
 
 final case class QcReport(
-  tablesData: TablesData)
+  tablesData: TablesData,
+  texData: TexData,
+  figureData: FigureData,
+  tex: Store,
+  pdf: Store)
 
 val qcReportStores = QcReport(
 
   tablesData = TablesData(
-    variantsSummary = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.variants.summary.tbl"))
+    variantsSummary = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.variants.summary.tbl"),
+    clusters = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.clusters.tbl"),
+    ancestry = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.ancestry.tbl"),
+    sampleQc = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.sampleqc.tbl")),
+
+  texData = TexData(
+    intro = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.intro.tex"),
+    data = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.data.tex"),
+    ancestry = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.ancestry.tex"),
+    ibdSexcheck = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.ibd_sexcheck.tex"),
+    sampleQc = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.sampleqc.tex"),
+    variantQc = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.variantqc.tex"),
+    bibliography = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.bibliography.tex")),
+
+  figureData = FigureData(
+    samplesUpsetPlotPdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.samples.upsetplot.pdf"),
+    variantsUpsetPlotPdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.variants.upsetplot.pdf"),
+    metricDistUnadjPdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.metric_dist_unadj.pdf"),
+    metricDistAdjPdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.metric_dist_adj.pdf"),
+    samplesRemainingUpsetPlotPdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.samples_remaining.upsetplot.pdf"),
+    variantsRemainingUpsetPlotPdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.variants_remaining.upsetplot.pdf")),
+
+  tex = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.tex"),
+  pdf = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.pdf")
 
 )

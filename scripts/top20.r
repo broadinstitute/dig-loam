@@ -57,11 +57,13 @@ x <- head(x, n=20)
 
 known_vars <- c()
 known_genes <- c()
-if(length(strsplit(args$known_loci,",")) > 0) {
-	for(k in strsplit(args$known_loci,",")) {
-		known <- read.table(k, header=T, as.is=T, stringsAsFactors=F)
-		known_vars <- c(known_vars, known$SNP_A, known$SNP_B)
-		known_genes <- c(known_genes, known$CLOSEST_GENE)
+if(args$known_loci != "") {
+	if(length(unlist(strsplit(args$known_loci,","))) > 0) {
+		for(k in unlist(strsplit(args$known_loci,","))) {
+			known <- read.table(k, header=T, as.is=T, stringsAsFactors=F)
+			known_vars <- c(known_vars, known$SNP_A, known$SNP_B)
+			known_genes <- c(known_genes, known$CLOSEST_GENE)
+		}
 	}
 }
 known_vars <- unique(known_vars)

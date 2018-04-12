@@ -62,16 +62,6 @@ def AncestryPca(array: String): Unit = {
       .out(arrayStores(array).ancestryPcaData.plots)
       .using("R-3.4")
       .named(s"${arrayStores(array).ancestryPcaData.plots}".split("/").last)
-    
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${arrayStores(array).ancestryPcaData.plots}[0] ${arrayStores(array).ancestryPcaData.pc1VsPc2}"""
-      .in(arrayStores(array).ancestryPcaData.plots)
-      .out(arrayStores(array).ancestryPcaData.pc1VsPc2)
-      .named(s"${arrayStores(array).ancestryPcaData.pc1VsPc2}".split("/").last)
-    
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${arrayStores(array).ancestryPcaData.plots}[1] ${arrayStores(array).ancestryPcaData.pc2VsPc3}"""
-      .in(arrayStores(array).ancestryPcaData.plots)
-      .out(arrayStores(array).ancestryPcaData.pc2VsPc3)
-      .named(s"${arrayStores(array).ancestryPcaData.pc2VsPc3}".split("/").last)
 
   }
 
@@ -126,17 +116,7 @@ def AncestryCluster(array: String): Unit = {
       .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
       .using("R-3.4")
       .named(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${arrayStores(array).ancestryClusterData.plots}[0] ${arrayStores(array).ancestryClusterData.pc1VsPc2}"""
-      .in(arrayStores(array).ancestryClusterData.plots)
-      .out(arrayStores(array).ancestryClusterData.pc1VsPc2)
-      .named(s"${arrayStores(array).ancestryClusterData.pc1VsPc2}".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${arrayStores(array).ancestryClusterData.plots}[1] ${arrayStores(array).ancestryClusterData.pc2VsPc3}"""
-      .in(arrayStores(array).ancestryClusterData.plots)
-      .out(arrayStores(array).ancestryClusterData.pc2VsPc3)
-      .named(s"${arrayStores(array).ancestryClusterData.pc2VsPc3}".split("/").last)
-  
+
   }
 
 }

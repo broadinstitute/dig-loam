@@ -51,7 +51,7 @@ def main(args=None):
 				l = a.split("___")[0]
 				if i == 1:
 					text1 = r"Figures \ref{fig:ancestryPcaPlots" + l + r"}"
-				elif i < len(bim_list) - 1:
+				elif i < len(pca_list) - 1:
 					text1 = text1 + r", \ref{fig:ancestryPcaPlots" + l + r"}"
 				else:
 					if len(pca_list) == 2:
@@ -66,19 +66,18 @@ def main(args=None):
 
 		for a in pca_list:
 			l = a.split("___")[0]
-			p1 = a.split("___")[1]
-			p2 = a.split("___")[2]
+			p = a.split("___")[1]
 			text = [r"\begin{figure}[H]",
 				r"   \centering",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth]{" + p1 + r"}",
+				r"      \includegraphics[width=\linewidth,page=1]{" + p + r"}",
 				r"      \caption{PC1 vs. PC2}",
 				r"      \label{fig:ancestryPca1vs2Plot" + l + r"}",
 				r"   \end{subfigure}%",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth]{" + p2 + r"}",
+				r"      \includegraphics[width=\linewidth,page=2]{" + p + r"}",
 				r"      \caption{PC2 vs. PC3}",
 				r"      \label{fig:ancestryPca2vs3Plot" + l + r"}",
 				r"   \end{subfigure}",
@@ -111,19 +110,18 @@ def main(args=None):
 
 		for a in cluster_list:
 			l = a.split("___")[0]
-			p1 = a.split("___")[1]
-			p2 = a.split("___")[2]
+			p = a.split("___")[1]
 			text = [r"\begin{figure}[H]",
 				r"   \centering",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth]{" + p1 + r"}",
+				r"      \includegraphics[width=\linewidth,page=1]{" + p + r"}",
 				r"      \caption{PC1 vs. PC2}",
 				r"      \label{fig:ancestryClusterPc1vs2Plot" + l + r"}",
 				r"   \end{subfigure}%",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth]{" + p2 + r"}",
+				r"      \includegraphics[width=\linewidth,page=2]{" + p + r"}",
 				r"      \caption{PC2 vs. PC3}",
 				r"      \label{fig:ancestryClusterPc2vs3Plot" + l + r"}",
 				r"   \end{subfigure}",
@@ -197,8 +195,8 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--kg-merged-bim', help='a comma separated list of array labels and bim files from merging array and 1kg data, each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--pca-plots', help='a comma separated list of array labels and two PCA plots (PC1 vs PC2 and PC2 vs PC3), each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--cluster-plots', help='a comma separated list of array labels and two PCA cluster plots (PC1 vs PC2 and PC2 vs PC3), each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--pca-plots', help='a comma separated list of array labels and PCA plot pdfs, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--cluster-plots', help='a comma separated list of array labels and PCA cluster plot pdfs, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--cluster-table', help='an ancestry cluster table', required=True)
 	requiredArgs.add_argument('--final-table', help='a final ancestry table', required=True)
 	args = parser.parse_args()

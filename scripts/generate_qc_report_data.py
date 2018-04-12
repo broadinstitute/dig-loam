@@ -18,7 +18,7 @@ def main(args=None):
 			
 			text=r"""\begin{figure}[H]
 					 \centering
-					 \includegraphics[width=0.75\linewidth]{""" + args.samples_upset_diagram + """}
+					 \includegraphics[width=0.75\linewidth,page=1]{""" + args.samples_upset_diagram + """}
 					 \caption{Samples distributed by genotyping array}
 					 \label{fig:samplesUpsetDiagram}
 				  \end{figure}"""
@@ -92,7 +92,7 @@ def main(args=None):
 			
 			text=r"""\begin{figure}[H]
 					\centering
-					\includegraphics[width=0.75\linewidth]{""" + args.variants_upset_diagram + """}
+					\includegraphics[width=0.75\linewidth,page=1]{""" + args.variants_upset_diagram + """}
 					\caption{Variants remaining for analysis}
 					\label{fig:variantsUpsetDiagram}
 				\end{figure}"""

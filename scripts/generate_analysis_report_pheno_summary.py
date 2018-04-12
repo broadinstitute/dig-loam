@@ -120,7 +120,7 @@ def main(args=None):
 			delim = r"\\" if n % 2 == 0 else r"%"
 			text.extend([r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth]{" + dist_plots[a] + r"}",
+				r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[a] + r"}",
 				r"      \caption{" + a + r"}",
 				r"      \label{fig:distPlot" + args.pheno_name + a + r"}",
 				r"   \end{subfigure}" + delim])
@@ -138,7 +138,7 @@ def main(args=None):
 			delim = r"\\" if n % 2 == 0 else r"%"
 			text.extend([r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth]{" + strat_dist_plots[a] + r"}",
+				r"      \includegraphics[width=\linewidth,page=1]{" + strat_dist_plots[a] + r"}",
 				r"      \caption{" + a + r"}",
 				r"      \label{fig:stratDistPlot" + args.pheno_name + a + r"}",
 				r"   \end{subfigure}" + delim])

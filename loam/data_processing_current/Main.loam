@@ -17,6 +17,9 @@ import VariantAssoc._
 import CrossCohort._
 import Impute._
 import Meta._
+import ResultsSummary._
+import AssocStores._
+import MetaStores._
 import QcReport._
 
 import loamstream.conf.DataConfig
@@ -153,6 +156,25 @@ for {
 
 }
 
+// Cohort Results Summary
+for {
+  cohort <- projectConfig.Cohorts if cohort.report;
+  model <- projectConfig.Models
+} yield { 
+
+  ResultsSummary(configModel = model, id = cohort.id, results = assocStores((None, cohort, model)).results)
+
+}
+
+// Meta Results Summary
+for {
+  meta <- projectConfig.Metas if meta.report;
+  model <- projectConfig.Models
+} yield { 
+
+  ResultsSummary(configModel = model, id = meta.id, results = metaStores(meta.id).metaResultsData(model).results)
+
+}
+
 // QC Report
 QcReport()
-

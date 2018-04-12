@@ -189,12 +189,7 @@ def SampleQc(array: String): Unit = {
       .out(arrayStores(array).sampleQcData.outliersPlotsPdf)
       .using("R-3.4")
       .named(s"${arrayStores(array).sampleQcData.outliersPlotsPdf}".split("/").last)
-  
-    cmd"""$binConvert -density 300 -depth 8 -quality 100 -flatten ${arrayStores(array).sampleQcData.outliersPlotsPdf}[0] ${arrayStores(array).sampleQcData.outliersPlotsPng}"""
-      .in(arrayStores(array).sampleQcData.outliersPlotsPdf)
-      .out(arrayStores(array).sampleQcData.outliersPlotsPng)
-      .named(s"${arrayStores(array).sampleQcData.outliersPlotsPng}".split("/").last)
-  
+
   }
   
   /**
