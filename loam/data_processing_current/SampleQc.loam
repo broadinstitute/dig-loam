@@ -156,7 +156,7 @@ def SampleQc(array: String): Unit = {
       m <- arrayStores(array).sampleQcMetricClusterData.map(e => e._1).toSeq
     } yield {
   
-      m + "___" + s"${arrayStores(array).sampleQcMetricClusterData(m).clu.toString.split("@")(1)}"
+      m + "___" + s"""${arrayStores(array).sampleQcMetricClusterData(m).clu.toString.split("@")(1)}"""
   
     }
   

@@ -1,0 +1,439 @@
+/**
+  * Analysis Report Step
+  *  Description: Generate Analysis Report
+  *  Requires: R-3.4, Python, convert, pdflatex
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+import MetaStores._
+import QcReportStores._
+import AnalysisReportStores._
+import ResultsSummaryStores._
+import PhenotypeStores._
+
+def AnalysisReportGlobal(phase: Int): Unit = {
+
+  uger {
+
+    cmd"""$binPython $pyGenerateAnalysisReportIntro
+      --id ${projectConfig.projectId}
+      --phase ${phase.toString}
+      --authors "${projectConfig.analysisReportAuthors.mkString(",")}"
+      --out-tex ${analysisReportStores(phase).globalData.intro}
+      --out-input ${analysisReportStores(phase).globalData.introInput}"""
+      .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
+      .out(analysisReportStores(phase).globalData.intro, analysisReportStores(phase).globalData.introInput)
+      .named(s"${analysisReportStores(phase).globalData.intro}".split("/").last)
+
+  }
+
+  val arraysString = {
+
+    for {
+      array <- projectConfig.Arrays
+    } yield {
+      array.liftOver match {
+        case Some(s) => array.id + "___" + array.filename.split("/").last + "___" + array.format + "___" + array.liftOver.get.split("/").last + "___" + array.xChr.toString
+        case None => array.id + "___" + array.filename.split("/").last + "___" + array.format + "___NA___" + array.xChr.toString
+      }
+    }
+
+  }
+
+  val cohortsString = {
+
+    for {
+      cohort <- projectConfig.Cohorts
+    } yield {
+      cohort.id + "___" + cohort.array + "___" + cohort.ancestry.mkString("+") + "___" + cohort.report.toString
+    }
+
+  }
+
+  val metasString = {
+
+    for {
+      meta <- projectConfig.Metas
+      cohort <- meta.cohorts
+    } yield {
+      meta.id + "___" + meta.report.toString + "___" + cohort + "___" + s"""${metaStores(meta.id).metaCohortData(cohort).kinshipSamplesExclude.toString.split("@")(1)}"""
+    }
+
+  }
+
+  val mergesString = {
+
+    for {
+      merge <- projectConfig.Merges
+    } yield {
+      merge.id + "___" + merge.cohorts_metas.mkString("+") + "___" + merge.report.toString
+    }
+
+  }
+
+  uger {
+
+    cmd"""$binPython $pyGenerateAnalysisReportData
+      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}
+      --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}
+      --arrays "${arraysString.mkString(",")}"
+      --out-tex ${analysisReportStores(phase).globalData.data}
+      --out-input ${analysisReportStores(phase).globalData.dataInput}"""
+      .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+      .out(analysisReportStores(phase).globalData.data, analysisReportStores(phase).globalData.dataInput)
+      .named(s"${analysisReportStores(phase).globalData.data}".split("/").last)
+
+    cmd"""$binPython $pyGenerateAnalysisReportStrategy
+      --cohorts "${cohortsString.mkString(",")}"
+      --metas "${metasString.mkString(",")}"
+      --merges "${mergesString.mkString(",")}"
+      --out-tex ${analysisReportStores(phase).globalData.strategy}
+      --out-input ${analysisReportStores(phase).globalData.strategyInput}"""
+      .out(metaStores.flatMap(e => e._2.metaCohortData.map(e => e._2.kinshipSamplesExclude)).toSeq :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.strategyInput)
+      .named(s"${analysisReportStores(phase).globalData.strategy}".split("/").last)
+
+  }
+
+  val knownLociCitations = {
+
+    for {
+      known <- projectConfig.KnownLoci
+    } yield {
+      known.tag + "___" + known.citation
+    }
+
+  }
+
+  uger {
+
+    cmd"""$binPython $pyGenerateAnalysisReportBibliography
+      --names "${projectConfig.analysisReportAcknowledgements}"
+      --known-loci-citations "${knownLociCitations.mkString(",,,")}"
+      --out-tex ${analysisReportStores(phase).globalData.bibliography}
+      --out-input ${analysisReportStores(phase).globalData.bibliographyInput}"""
+      .out(analysisReportStores(phase).globalData.bibliography, analysisReportStores(phase).globalData.bibliographyInput)
+      .named(s"${analysisReportStores(phase).globalData.bibliography}".split("/").last)
+
+  }
+
+}
+
+def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
+
+  val reportAnalysisPhenoDistPlotStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+    } yield {
+
+      cohort.id + "___" + s"""${phenotypeStores((None, cohort, pheno)).figureData.distPlot.toString.split("@")(1)}"""
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+    } yield {
+
+      meta.id + "___" + cohort.id + "___" + s"""${phenotypeStores((Some(meta), cohort, pheno)).figureData.distPlot.toString.split("@")(1)}"""
+
+    })
+
+  }
+
+  val reportAnalysisModelPhenoFileStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      cohort.id + "___" + cohort.array + "___" + cohort.ancestry.mkString("+") + "___" + model.trans + "___" + model.covars + "___" + s"""${assocStores((None, cohort, model)).pcs.toString.split("@")(1)}""" + "___" + s"""${assocStores((None, cohort, model)).pheno.toString.split("@")(1)}"""
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      meta.id + "___" + cohort.id + "___" + cohort.array + "___" + cohort.ancestry.mkString("+") + "___" + model.trans + "___" + model.covars + "___" + s"""${assocStores((Some(meta), cohort, model)).pcs.toString.split("@")(1)}""" + "___" + s"""${assocStores((Some(meta), cohort, model)).pheno.toString.split("@")(1)}"""
+
+    })
+
+  }
+
+  uger {
+
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
+      --dist-plot "${reportAnalysisPhenoDistPlotStrings.mkString(",")}"
+      --pheno-master ${ProjectStores.pheno}
+      --id-col ${projectConfig.phenoId}
+      --sex-col ${projectConfig.phenoSrSex}
+      --model-files "${reportAnalysisModelPhenoFileStrings.mkString(",")}"
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --ancestry ${ProjectStores.ancestryInferred}
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).summary}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).summaryInput}"""
+      .in(assocStores.map(e => e._2.pheno).toSeq ++ assocStores.map(e => e._2.pcs).toSeq ++ phenotypeStores.map(e => e._2.figureData.distPlot).toSeq :+ ProjectStores.ancestryInferred :+ ProjectStores.pheno)
+      .out(analysisReportStores(phase).phenoData(pheno).summary, analysisReportStores(phase).phenoData(pheno).summaryInput)
+      .named(s"${analysisReportStores(phase).phenoData(pheno).summary}".split("/").last)
+
+  }
+
+  val reportAnalysisModelQqPlotStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.qqPlotPng.toString.split("@")(1)}"""
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      meta.id + "___" + cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.qqPlotPng.toString.split("@")(1)}"""
+
+    })
+
+  }
+
+  val reportAnalysisModelMhtPlotStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.mhtPlotPng.toString.split("@")(1)}"""
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      meta.id + "___" + cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.mhtPlotPng.toString.split("@")(1)}"""
+
+    })
+
+  }
+
+  uger {
+
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
+      --qq-plots "${reportAnalysisModelQqPlotStrings.mkString(",")}"
+      --mht-plots "${reportAnalysisModelMhtPlotStrings.mkString(",")}"
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).calibration}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).calibrationInput}"""
+      .in(resultsSummaryStores.map(e => e._2.resultsSummaryData.qqPlotPng).toSeq ++ resultsSummaryStores.map(e => e._2.resultsSummaryData.mhtPlotPng).toSeq)
+      .out(analysisReportStores(phase).phenoData(pheno).calibration, analysisReportStores(phase).phenoData(pheno).calibrationInput)
+      .named(s"${analysisReportStores(phase).phenoData(pheno).calibration}".split("/").last)
+
+  }
+
+  val reportAnalysisModelTop20AnnotAlignedRiskStrings = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+  
+      cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.top20AnnotAlignedRisk.toString.split("@")(1)}"""
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+  
+      meta.id + "___" + cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.top20AnnotAlignedRisk.toString.split("@")(1)}"""
+  
+    })
+  
+  }
+  
+  val reportAnalysisModelRegplotsStrings = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""" + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}"""
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+  
+      meta.id + "___" + cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""" + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}"""
+  
+    })
+  
+  }
+  
+  uger {
+    
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
+      --top-results "${reportAnalysisModelTop20AnnotAlignedRiskStrings.mkString(",")}"
+      --regionals "${reportAnalysisModelRegplotsStrings.mkString(",")}"
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).topLoci}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).topLociInput}"""
+      .in(resultsSummaryStores.map(e => e._2.resultsSummaryData.top20AnnotAlignedRisk).toSeq ++ resultsSummaryStores.map(e => e._2.resultsSummaryData.regPlotsPdf).toSeq)
+      .out(analysisReportStores(phase).phenoData(pheno).topLoci, analysisReportStores(phase).phenoData(pheno).topLociInput)
+      .named(s"${analysisReportStores(phase).phenoData(pheno).topLoci}".split("/").last)
+  
+  }
+  
+  val reportAnalysisModelTop50KnownStrings = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      known <- projectConfig.KnownLoci if known.model.pheno == pheno
+    } yield {
+      cohort.id + "___" + known.model.trans + "___" + known.model.covars + "___" + s"""${resultsKnownLociSummaryStores((cohort.id, known)).resultsKnownLociSummaryData.top50.toString.split("@")(1)}"""
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      known <- projectConfig.KnownLoci if known.model.pheno == pheno
+    } yield {
+  
+      meta.id + "___" + cohort.id + "___" + known.model.trans + "___" + known.model.covars + "___" + s"""${resultsKnownLociSummaryStores((meta.id, known)).resultsKnownLociSummaryData.top50.toString.split("@")(1)}"""
+  
+    })
+  
+  }
+  
+  val reportAnalysisModelTop50KnownDesc = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      known <- projectConfig.KnownLoci if known.model.pheno == pheno
+    } yield {
+      cohort.id + "___" + known.model.trans + "___" + known.model.covars + "___" + known.desc
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      known <- projectConfig.KnownLoci if known.model.pheno == pheno
+    } yield {
+  
+      meta.id + "___" + cohort.id + "___" + known.model.trans + "___" + known.model.covars + "___" + known.desc
+  
+    })
+  
+  }
+  
+  val reportAnalysisModelTop50KnownTag = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      known <- projectConfig.KnownLoci if known.model.pheno == pheno
+    } yield {
+      cohort.id + "___" + known.model.trans + "___" + known.model.covars + "___" + known.tag
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      known <- projectConfig.KnownLoci if known.model.pheno == pheno
+    } yield {
+  
+      meta.id + "___" + cohort.id + "___" + known.model.trans + "___" + known.model.covars + "___" + known.tag
+  
+    })
+  
+  }
+  
+  uger {
+    
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
+      --top-known-loci "${reportAnalysisModelTop50KnownStrings.mkString(",")}"
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --desc "${reportAnalysisModelTop50KnownDesc.mkString(",,,")}"
+      --tag "${reportAnalysisModelTop50KnownTag.mkString(",")}"
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).knownLoci}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).knownLociInput}"""
+      .in(resultsKnownLociSummaryStores.map(e => e._2.resultsKnownLociSummaryData.top50).toSeq)
+      .out(analysisReportStores(phase).phenoData(pheno).knownLoci, analysisReportStores(phase).phenoData(pheno).knownLociInput)
+      .named(s"${analysisReportStores(phase).phenoData(pheno).knownLoci}".split("/").last)
+  
+  }
+
+}
+
+def AnalysisReportCompile(phase: Int): Unit = {
+
+  reportAnalysisResultsList = { 
+
+    for {
+      pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
+    } yield {
+
+      Seq(analysisReportStores(phase).phenoData(pheno).summary, analysisReportStores(phase).phenoData(pheno).calibration, analysisReportStores(phase).phenoData(pheno).topLoci, analysisReportStores(phase).phenoData(pheno).knownLoci)
+
+    }
+
+  }.flatten
+
+  reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.toString.split("@")(1)}""")
+
+  uger {
+
+    cmd"""cat ${analysisReportStores(phase).globalData.intro} ${analysisReportStores(phase).globalData.data} ${analysisReportStores(phase).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliography} > $reportAnalysisTex"""
+      .in(reportAnalysisResultsList :+ analysisReportStores(phase).globalData.intro :+ analysisReportStores(phase).globalData.data :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.bibliography)
+      .out(analysisReportStores(phase).globalData.tex)
+      .named(s"${analysisReportStores(phase).globalData.tex}".split("/").last)
+
+  }
+
+  reportAnalysisResultsInputList = { 
+
+    for {
+      pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
+    } yield {
+
+      Seq(analysisReportStores(phase).phenoData(pheno).summaryInput, analysisReportStores(phase).phenoData(pheno).calibrationInput, analysisReportStores(phase).phenoData(pheno).topLociInput, analysisReportStores(phase).phenoData(pheno).knownLociInput)
+
+    }
+
+  }.flatten
+
+  reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.toString.split("@")(1)}""")
+
+  uger {
+    
+    cmd"""cat ${analysisReportStores(phase).globalData.introInput} ${analysisReportStores(phase).globalData.dataInput} ${analysisReportStores(phase).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliographyInput} > ${analysisReportStores(phase).globalData.input}"""
+      .in(reportAnalysisResultsInputList :+ analysisReportStores(phase).globalData.introInput :+ analysisReportStores(phase).globalData.dataInput :+ analysisReportStores(phase).globalData.strategyInput :+ analysisReportStores(phase).globalData.bibliographyInput)
+      .out(analysisReportStores(phase).globalData.input)
+      .named(s"${analysisReportStores(phase).globalData.input}".split("/").last)
+    
+    cmd"""$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(phase).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(phase).globalData.tex}"""
+      .in(analysisReportStores(phase).globalData.tex)
+      .out(analysisReportStores(phase).globalData.pdf)
+      .named(s"${analysisReportStores(phase).globalData.pdf}".split("/").last)
+
+  }
+
+}

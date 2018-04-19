@@ -13,10 +13,10 @@ import QcReportStores._
 
 def QcReport(): Unit = {
 
-  val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).rawData.freq.toString.split("@")(1)}" } }
-  val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).rawData.indel.toString.split("@")(1)}" } }
-  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).preparedData.multiallelic.toString.split("@")(1)}" } }
-  val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).rawData.dupRemove.toString.split("@")(1)}" } }
+  val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).rawData.freq.toString.split("@")(1)}""" } }
+  val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).rawData.indel.toString.split("@")(1)}""" } }
+  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).preparedData.multiallelic.toString.split("@")(1)}""" } }
+  val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).rawData.dupRemove.toString.split("@")(1)}""" } }
 
   uger {
   
@@ -34,8 +34,8 @@ def QcReport(): Unit = {
 
   }
 
-  val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).ancestryClusterData.groups.toString.split("@")(1)}" } }
-  val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).ancestryData.inferred.toString.split("@")(1)}" } }
+  val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).ancestryClusterData.groups.toString.split("@")(1)}""" } }
+  val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).ancestryData.inferred.toString.split("@")(1)}""" } }
 
   uger {
 
@@ -126,8 +126,8 @@ def QcReport(): Unit = {
   }
 
   val ref1kgBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).ref1kgData.base}.bim" } }
-  val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).ancestryPcaData.plots}" } }
-  val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).ancestryClusterData.plots}" } }
+  val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).ancestryPcaData.plots.toString.split("@")(1)}""" } }
+  val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).ancestryClusterData.plots.toString.split("@")(1)}""" } }
 
   uger {
 
@@ -145,9 +145,9 @@ def QcReport(): Unit = {
   }
 
   val refPrunedBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).prunedData.base}.bim" } }
-  val kin0RelatedStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).kinshipData.kin0Related.toString.split("@")(1)}" } }
-  val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).kinshipData.famSizes.toString.split("@")(1)}" } }
-  val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).sexcheckData.problems.toString.split("@")(1)}" } }
+  val kin0RelatedStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).kinshipData.kin0Related.toString.split("@")(1)}""" } }
+  val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).kinshipData.famSizes.toString.split("@")(1)}""" } }
+  val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).sexcheckData.problems.toString.split("@")(1)}""" } }
 
   uger {
     
@@ -185,8 +185,8 @@ def QcReport(): Unit = {
 
   }
 
-  val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).sampleQcData.outliers.toString.split("@")(1)}" } }
-  val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).finalData.samplesExclude.toString.split("@")(1)}" } }
+  val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).sampleQcData.outliers.toString.split("@")(1)}""" } }
+  val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).finalData.samplesExclude.toString.split("@")(1)}""" } }
 
   uger {
     
@@ -223,7 +223,7 @@ def QcReport(): Unit = {
 
   }
 
-  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).sampleQcData.outliersPlotsPdf.toString.split("@")(1)}" } }
+  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.toString.split("@")(1)}""" } }
 
   uger {
 
@@ -242,7 +242,7 @@ def QcReport(): Unit = {
 
   }
 
-  val finalVariantExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).finalData.variantsExclude.toString.split("@")(1)}" } }
+  val finalVariantExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"""${arrayStores(a).finalData.variantsExclude.toString.split("@")(1)}""" } }
   val cleanBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { a + "___" + s"${arrayStores(a).cleanData.base}.bim" } }
     
   if (projectConfig.nArrays > 1) {

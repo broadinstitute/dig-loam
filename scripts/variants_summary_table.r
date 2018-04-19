@@ -83,10 +83,21 @@ for(f in unlist(strsplit(args$freq_in,','))) {
 }
 
 cat("Array\tFreq\tUnpl\tAuto\tX\tY\tX(PAR)\tMito\tInDel\tMulti\tDup\tTotal\n",file=args$out)
+cat("{}\t\\textbf{Freq}\t\\textbf{Unpl}\t\\textbf{Auto}\t\\textbf{X}\t\\textbf{Y}\t\\textbf{X(PAR)}\t\\textbf{Mito}\t\\textbf{InDel}\t\\textbf{Multi}\t\\textbf{Dup}\t\\textbf{Total}\n",file=args$out,append=T)
+i<-0
 for(x in names(vars_list)) {
-	cat(paste(gsub("_","\\\\_",x),"\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",sep=""),file=args$out,append=T)
-	write.table(cbind('{}',row.names(vars_list[[x]]),vars_list[[x]]),args$out,row.names=F,col.names=F,quote=F,sep="\t",append=T)
+	i<-i+1
+	if(i %% 2 == 0) {
+		pre<-""
+	} else {
+		pre<-"\\cellcolor{Gray}"
+	}
+	cat(paste(pre,"\\textbf{",gsub("_","\\\\_",x),"}\t",paste(rep(paste(pre,"{}",sep=""),11),collapse="\t"),"\n",sep=""),file=args$out,append=T)
+	write.table(lapply(cbind('{}',row.names(vars_list[[x]]),vars_list[[x]]), function(x) paste(pre,x,sep="")),args$out,row.names=F,col.names=F,quote=F,sep="\t",append=T)
+	#cat(paste("\\textbf{",gsub("_","\\\\_",x),"}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",sep=""),file=args$out,append=T)
+	#write.table(cbind('{}',row.names(vars_list[[x]]),vars_list[[x]]),args$out,row.names=F,col.names=F,quote=F,sep="\t",append=T)
 	if(x != names(vars_list[[x]])[length(names(vars_list[[x]]))]) {
-		cat("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",file=args$out,append=T)
+		cat(paste(paste(rep(paste(pre,"{}",sep=""),12),collapse="\t"),"\n",sep=""),file=args$out,append=T)
+		#cat("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",file=args$out,append=T)
 	}
 }

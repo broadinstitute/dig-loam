@@ -51,5 +51,5 @@ if(unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))] ==
 
 # green: #16BE72
 # blue: #1F76B4
-upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=1, number.angles = 0, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 3))
+upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=1, number.angles = 30, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 2))
 dev.off()

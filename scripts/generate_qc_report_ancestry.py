@@ -67,7 +67,8 @@ def main(args=None):
 		for a in pca_list:
 			l = a.split("___")[0]
 			p = a.split("___")[1]
-			text = [r"\begin{figure}[H]",
+			text = [
+				r"\begin{figure}[H]",
 				r"   \centering",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
@@ -111,7 +112,8 @@ def main(args=None):
 		for a in cluster_list:
 			l = a.split("___")[0]
 			p = a.split("___")[1]
-			text = [r"\begin{figure}[H]",
+			text = [
+				r"\begin{figure}[H]",
 				r"   \centering",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
@@ -143,50 +145,46 @@ def main(args=None):
 			text1 = text1 + ") and assigning each sample to the population determined using the highest technology"
 		else:
 			text1="Table \ref{table:ancestryFinalTable} describes the final population assignments."
-		text=r"""The resulting clusters are then combined with the nearest 1000 Genomes cohort. Table \ref{{table:ancestryClusterTable}} describes the classification using this method. {0}.""".format(text1)
+		text=r"The resulting clusters are then combined with the nearest 1000 Genomes cohort. Table \ref{{table:ancestryClusterTable}} describes the classification using this method. {0}.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text=r"""\begin{table}[H]
-			\caption{Inferred ancestry by dataset and cluster}
-			\begin{center}
-				\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%
-					\sffamily
-					\pgfplotstabletypeset[
-						font=\footnotesize,
-						col sep=tab,
-						columns={Data,Population,Clusters,Samples},
-						column type={>{\fontseries{bx}\selectfont}c},
-						columns/Data/.style={column name=, string type},
-						columns/Population/.style={column name=Population, string type, column type={>{\fontseries{bx}\selectfont}r}},
-						columns/Clusters/.style={column name=Clusters, string type},
-						columns/Samples/.style={column name=Samples, string type, column type={>{\fontseries{bx}\selectfont}l}},
-						postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},
-						every head row/.style={before row={\toprule}, after row={\midrule}},
-						every last row/.style={after row=\bottomrule}
-					]{""" + args.cluster_table + r"""}}
-			\label{table:ancestryClusterTable}
-			\end{center}
-		\end{table}
-		\begin{table}[H]
-		\caption{Final inferred ancestry}
-			\begin{center}
-				\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%
-					\sffamily
-					\pgfplotstabletypeset[
-						font=\footnotesize,
-						col sep=tab,
-						columns={Population,Samples},
-						column type={>{\fontseries{bx}\selectfont}c},
-						columns/Population/.style={column name=Population, string type, column type={>{\fontseries{bx}\selectfont}r}},
-						columns/Samples/.style={column name=Samples, string type, column type={>{\fontseries{bx}\selectfont}l}},
-						postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},
-						every head row/.style={before row={\toprule}, after row={\midrule}},
-						every last row/.style={after row=\bottomrule}
-					]{""" + args.final_table + r"""}}
-			\label{table:ancestryFinalTable}
-			\end{center}
-		\end{table}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		text=[
+			r"\begin{ThreePartTable}",
+			r"	\pgfplotstabletypeset[",
+			r"		font=\footnotesize\sffamily,",
+			r"		col sep=tab,",
+			r"		columns={Data,Population,Clusters,Samples},",
+			r"		column type={>{\fontseries{bx}\selectfont}c},",
+			r"		columns/Data/.style={column name=, string type},",
+			r"		columns/Population/.style={column name=Population, string type, column type={>{\fontseries{bx}\selectfont}r}},",
+			r"		columns/Clusters/.style={column name=Clusters, string type},",
+			r"		columns/Samples/.style={column name=Samples, string type, column type={>{\fontseries{bx}\selectfont}l}},",
+			r"		postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
+			r"		every head row/.append style={before row={\caption{Inferred ancestry by dataset and cluster}\label{table:ancestryClusterTable}\\\toprule}, after row=\midrule\endfirsthead},",
+			r"		every first row/.append style={before row={\multicolumn{4}{c}{}\\ \caption[]{... continued from previous page}\\\\\toprule}, after row=\midrule\endhead},",
+			r"		every last row/.style={after row=\bottomrule},",
+			r"		empty cells with={}",
+			r"	]{" + args.cluster_table + r"}"",
+			r"\end{ThreePartTable}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+
+		text=[
+			r"\begin{ThreePartTable}",
+			r"	\pgfplotstabletypeset[",
+			r"		font=\footnotesize\sffamily,",
+			r"		col sep=tab,",
+			r"		columns={Population,Samples},",
+			r"		column type={>{\fontseries{bx}\selectfont}c},",
+			r"		columns/Population/.style={column name=Population, string type, column type={>{\fontseries{bx}\selectfont}r}},",
+			r"		columns/Samples/.style={column name=Samples, string type, column type={>{\fontseries{bx}\selectfont}l}},",
+			r"		postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
+			r"		every head row/.append style={before row={\caption{Final inferred ancestry}\label{table:ancestryFinalTable}\\\toprule}, after row=\midrule\endfirsthead},",
+			r"		every first row/.append style={before row={\multicolumn{2}{c}{}\\ \caption[]{... continued from previous page}\\\\\toprule}, after row=\midrule\endhead},",
+			r"		every last row/.style={after row=\bottomrule},",
+			r"		empty cells with={}",
+			r"	]{" + args.final_table + r"}",
+			r"	\end{ThreePartTable}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

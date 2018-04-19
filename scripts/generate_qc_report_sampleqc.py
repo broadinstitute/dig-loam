@@ -10,65 +10,67 @@ def main(args=None):
 		print "writing sampleqc section"
 		f.write("\n"); f.write(r"\subsection{Sample Outlier Detection}"); f.write("\n")
 
-		text=r"""Each sample was evaluated for inclusion in association tests based on 10 sample-by-variant metrics (Table \ref{table:sampleMetricDefinitions}), calculated using Hail \cite{hail}."""
+		text=r"Each sample was evaluated for inclusion in association tests based on 10 sample-by-variant metrics (Table \ref{table:sampleMetricDefinitions}), calculated using Hail \cite{hail}."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text=r"""\begin{table}[H]
-			\caption{Sample Metrics}
-			\centering
-			\begin{tabular}{>{\bfseries}r l}
-				nNonRef & nHet + nHomVar \\
-				nHet & Number of heterozygous variants \\
-				nCalled & nHomRef + nHet + nHomVar \\
-				callRate & Fraction of variants with called genotypes \\
-				rTiTv &  Transition/transversion ratio \\
-				het & Inbreeding coefficient \\
-				hetHigh & Inbreeding coefficient for variants with \(MAF >= 0.03\) \\
-				hetLow & Inbreeding coefficient for variants with \(MAF < 0.03\) \\
-				nHomVar & Number of homozygous alternate variants \\
-				rHetHomVar & Het/HomVar ratio across all variants
-			\end{tabular}
-			\label{table:sampleMetricDefinitions}
-		\end{table}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		text=[
+			r"\begin{table}[H]",
+			r"	\caption{Sample Metrics}",
+			r"	\centering",
+			r"	\begin{tabular}{>{\bfseries}r l}",
+			r"		nNonRef & nHet + nHomVar \\",
+			r"		nHet & Number of heterozygous variants \\",
+			r"		nCalled & nHomRef + nHet + nHomVar \\",
+			r"		callRate & Fraction of variants with called genotypes \\",
+			r"		rTiTv &  Transition/transversion ratio \\",
+			r"		het & Inbreeding coefficient \\",
+			r"		hetHigh & Inbreeding coefficient for variants with \(MAF >= 0.03\) \\",
+			r"		hetLow & Inbreeding coefficient for variants with \(MAF < 0.03\) \\",
+			r"		nHomVar & Number of homozygous alternate variants \\",
+			r"		rHetHomVar & Het/HomVar ratio across all variants",
+			r"	\end{tabular}",
+			r"	\label{table:sampleMetricDefinitions}",
+			r"\end{table}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Principal Component Adjustment and Normalization of Sample Metrics}"); f.write("\n")
 
-		text=r"""Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:metricCompare}} shows the {0} metric for {1} samples before and after adjustment.""".format(args.compare_dist_metric.replace("_res",""), args.compare_dist_label.replace("_","\_"))
+		text=r"Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:metricCompare}} shows the {0} metric for {1} samples before and after adjustment.".format(args.compare_dist_metric.replace("_res",""), args.compare_dist_label.replace("_","\_"))
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text=r"""\begin{figure}[H]
-			\caption{Comparison of nHet distributions before and after adjustment / normalization}
-			\centering
-			\begin{subfigure}{\textwidth}
-				\centering
-				\includegraphics[width=\linewidth,page=1]{""" + args.compare_dist_unadj + r"""}
-				\caption{""" + args.compare_dist_metric.replace("_res","") + r""" Original}
-				\label{fig:metric}
-			\end{subfigure}\newline
-			\begin{subfigure}{\textwidth}
-				\centering
-				\includegraphics[width=\linewidth,page=1]{""" + args.compare_dist_adj + r"""}
-				\caption{""" + args.compare_dist_metric.replace("_res","") + r""" Adjusted}
-				\label{fig:metricAdj}
-			\end{subfigure}
-			\label{fig:metricCompare}
-		\end{figure}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		text=[
+			r"\begin{figure}[H]",
+			r"	\caption{Comparison of nHet distributions before and after adjustment / normalization}",
+			r"	\centering",
+			r"	\begin{subfigure}{\textwidth}",
+			r"		\centering",
+			r"		\includegraphics[width=\linewidth,page=1]{" + args.compare_dist_unadj + r"}",
+			r"		\caption{" + args.compare_dist_metric.replace("_res","") + r" Original}",
+			r"		\label{fig:metric}",
+			r"	\end{subfigure}\newline",
+			r"	\begin{subfigure}{\textwidth}",
+			r"		\centering",
+			r"		\includegraphics[width=\linewidth,page=1]{" + args.compare_dist_adj + r"}",
+			r"		\caption{" + args.compare_dist_metric.replace("_res","") + r" Adjusted}",
+			r"		\label{fig:metricAdj}",
+			r"	\end{subfigure}",
+			r"	\label{fig:metricCompare}",
+			r"\end{figure}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Individual Sample Metric Clustering}"); f.write("\n")
 
-		text=r"""For outlier detection, we clustered the samples into Gaussian distributed subsets with respect to each PCARM using the software Klustakwik \cite{klustakwik}. During this process, samples that did not fit into any Gaussian distributed set of samples were identified and flagged for removal."""
+		text=r"For outlier detection, we clustered the samples into Gaussian distributed subsets with respect to each PCARM using the software Klustakwik \cite{klustakwik}. During this process, samples that did not fit into any Gaussian distributed set of samples were identified and flagged for removal."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Principal Components of Variation in PCARM's}"); f.write("\n")
 
-		text=r"""In addition to outliers along individual sample metrics, there may be samples that exhibit deviation from the norm across multiple metrics. In order to identify these samples, we calculated principal components explaining 95\% of the variation in all 10 PCARMs combined. """
+		text=r"In addition to outliers along individual sample metrics, there may be samples that exhibit deviation from the norm across multiple metrics. In order to identify these samples, we calculated principal components explaining 95\% of the variation in all 10 PCARMs combined."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Combined PCARM Clustering}"); f.write("\n")
 
-		text=r"""All samples were clustered into Gaussian distributed subsets along the principal components of the PCARM's, again using Klustakwik \cite{klustakwik}. This effectively removed any samples that were far enough outside the distribution on more than one PCARM, but not necessarily flagged as an outlier on any of the individual metrics alone."""
+		text=r"All samples were clustered into Gaussian distributed subsets along the principal components of the PCARM's, again using Klustakwik \cite{klustakwik}. This effectively removed any samples that were far enough outside the distribution on more than one PCARM, but not necessarily flagged as an outlier on any of the individual metrics alone."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Plots of Sample Outliers}"); f.write("\n")
@@ -90,80 +92,79 @@ def main(args=None):
 					text_insert = text_insert + r" and \ref{fig:adjSampleMetricDist" + l + r"}"
 				else:
 					text_insert = text_insert + r", and \ref{fig:adjSampleMetricDist" + l + r"}"
-		text=r"""The distributions for each PCARM and any outliers (cluster = 1) found are shown in {0}. Samples are labeled according to Table \ref{{table:sampleOutlierLegend}}.""".format(text_insert)
+		text=r"The distributions for each PCARM and any outliers (cluster = 1) found are shown in {0}. Samples are labeled according to Table \ref{{table:sampleOutlierLegend}}.".format(text_insert)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text=r"""\begin{table}[H]
-			\caption{Sample Legend for Outlier Plots}
-			\centering
-			\begin{tabular}{>{\bfseries}r l}
-				Grey & Clustered into Gaussian distributed subsets (not Flagged) \\
-				Orange & Flagged as outlier based on individual PCARM's \\
-				Blue & Flagged as outlier based on PC's of PCARM's \\
-				Green & Flagged as outlier for both methods
-			\end{tabular}
-			\label{table:sampleOutlierLegend}
-		\end{table}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		text=[
+			r"\begin{table}[H]",
+			r"	\caption{Sample Legend for Outlier Plots}",
+			r"	\centering",
+			r"	\begin{tabular}{>{\bfseries}r l}",
+			r"		Grey & Clustered into Gaussian distributed subsets (not Flagged) \\",
+			r"		Orange & Flagged as outlier based on individual PCARM's \\",
+			r"		Blue & Flagged as outlier based on PC's of PCARM's \\",
+			r"		Green & Flagged as outlier for both methods",
+			r"	\end{tabular}",
+			r"	\label{table:sampleOutlierLegend}",
+			r"\end{table}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		for a in args.sampleqc_outliers.split(","):
 			l = a.split("___")[0]
 			m = a.split("___")[1]
-			text=r"""\begin{figure}[H]
-				\centering
-				\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio,page=1]{""" + m + r"""}
-				\caption{Adjusted sample metric distributions for """ + l.replace("_","\_") + r"""}
-				\label{fig:adjSampleMetricDist""" + l + r"""}
-			\end{figure}"""
-			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+			text=[
+				r"\begin{figure}[H]",
+				r"	\centering",
+				r"	\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio,page=1]{" + m + r"}",
+				r"	\caption{Adjusted sample metric distributions for " + l.replace("_","\_") + r"}",
+				r"	\label{fig:adjSampleMetricDist""" + l + r"}",
+				r"\end{figure}"]
+			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
-		text=r"""Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across both genotyping technologies. Note that "PCA(Metrics)" results from the clustering of the PCs of the 10 PCARM's combined, so "Metrics + PCA(Metrics)" is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."""
-
+		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across both genotyping technologies. Note that \"PCA(Metrics)\" results from the clustering of the PCs of the 10 PCARM's combined, so \"Metrics + PCA(Metrics)\" is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
-		
-		text=r"""\begin{table}[H]
-			\caption{Samples flagged for removal}
-			\begin{center}
-				\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%
-					\sffamily
-					\pgfplotstabletypeset[
-						font=\footnotesize,
-						col sep=tab,"""
+
+		text=[
+					r"\begin{ThreePartTable}",
+					r"	\pgfplotstabletypeset[",
+					r"		font=\footnotesize\sffamily,",
+					r"		col sep=tab,"]
 		tbl = pd.read_table(args.sampleqc_summary_table)
 		cols = tbl.columns
-		text = text + r"""
-						columns={{{0}}},""".format(",".join(cols))		
-		text = text + r"""
-						column type={>{\fontseries{bx}\selectfont}c},"""
+		text.extend([
+					r"		columns={{{0}}},".format(",".join(cols))])
+		text.extend([
+					r"		column type={>{\fontseries{bx}\selectfont}c},"])
 		for c in cols:
 			if c == cols[0]:
-				text = text + r"""
-						columns/""" + c + r"""/.style={column name=, string type, column type={>{\fontseries{bx}\selectfont}r}},"""
+				text.extend(
+					r"		columns/" + c + r"/.style={column name=, string type, column type={>{\fontseries{bx}\selectfont}r}},"])
 			elif c == cols[len(cols)-1]:
-				text = text + r"""
-						columns/""" + c + r"""/.style={column name=""" + c.replace("_","\_") + r""", string type, column type={>{\fontseries{bx}\selectfont}l}},"""
+				text.extend([
+					r"		columns/" + c + r"/.style={column name=" + c.replace("_","\_") + r", string type, column type={>{\fontseries{bx}\selectfont}l}},"])
 			else:
-				text = text + r"""
-						columns/""" + c + r"""/.style={column name=""" + c.replace("_","\_") + r""", string type},"""
-		text = text + r"""
-						postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},
-						every head row/.style={before row={\toprule}, after row={\midrule}},
-						every last row/.style={before row=\bottomrule}
-					]{""" + args.sampleqc_summary_table + r"""}}
-			\label{table:outlierSummaryTable}
-			\end{center}
-		\end{table}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+				text.extend([
+					r"		columns/" + c + r"/.style={column name=" + c.replace("_","\_") + r", string type},"])
+		text.extend([
+					r"		postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
+					r"		every head row/.append style={before row={\caption{Samples flagged for removal}\label{table:outlierSummaryTable}\\\toprule}, after row=\midrule\endfirsthead},",
+					r"		every first row/.append style={before row={\multicolumn{" + str(len(cols)) + r"}{c}{}\\ \caption[]{... continued from previous page}\\\\\toprule}, after row=\midrule\endhead},",
+					r"		every last row/.style={after row=\bottomrule},",
+					r"		empty cells with={}",
+					r"	]{" + args.sampleqc_summary_table + r"}",
+					r"\end{ThreePartTable}"])
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		text=r"""\begin{figure}[H]
-				\centering
-				\includegraphics[width=0.75\linewidth,page=1]{""" + args.samples_upset_diagram + r"""}
-				\caption{Samples remaining for analysis}
-				\label{fig:samplesRemaining}
-			\end{figure}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		text=[
+			r"\begin{figure}[H]",
+			r"	\centering",
+			r"	\includegraphics[width=0.75\linewidth,page=1]{" + args.samples_upset_diagram + r"}",
+			r"	\caption{Samples remaining for analysis}",
+			r"	\label{fig:samplesRemaining}",
+			r"\end{figure}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

@@ -99,7 +99,8 @@ for(a in arrays) {
 }
 header = paste(header,"\tTotal",sep="")
 ncols = ncols + 1
-cat(header,"\n",file=args$out)
+cat(paste(header,"\n",sep=""),file=args$out)
+cat(paste(paste("\\textbf{",unlist(strsplit(unlist(strsplit(gsub("_","\\\\_",header),"\t")),"\t")),sep="",collapse="}\t"),"}\n",sep=""),file=args$out,append=T)
 
 for(m in unique(unlist(metrics))) {
 	l = gsub("_res$","",m)
@@ -109,14 +110,14 @@ for(m in unique(unlist(metrics))) {
 	n<-unlist(sapply(ids, function(z) z[m]))
 	n<-n[! is.na(n)]
 	l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
-	cat(l,"\n",file=args$out, append=T)
+	cat(paste(l,"\n",sep=""),file=args$out, append=T)
 }
 spacer = "{}"
 for(i in 1:(ncols-1)) {
 	spacer<-paste(spacer,"\t{}",sep="")
 }
 spacer<-paste(spacer,sep="")
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l="PCA(Metrics)"
 for(a in arrays) {
@@ -125,9 +126,9 @@ for(a in arrays) {
 n<-unlist(sapply(ids, function(z) z['metric pca']))
 n<-n[! is.na(n)]
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l = "Metrics+PCA(Metrics)"
 ids_allmetrics<-c()
@@ -140,11 +141,11 @@ for(a in arrays) {
 	ids_allmetrics<-c(ids_allmetrics,id)
 }
 l = paste(l,paste("\t",length(unique(ids_allmetrics)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
-cat(spacer,"\n",file=args$out,append=T)
-cat(spacer,"\n",file=args$out,append=T)
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l="Duplicates"
 for(a in arrays) {
@@ -153,9 +154,9 @@ for(a in arrays) {
 n<-unlist(sapply(ids, function(z) z['duplicate']))
 n<-n[! is.na(n)]
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l="Cryptic Relatedness"
 for(a in arrays) {
@@ -166,9 +167,9 @@ if(length(n) > 0) {
 	n<-n[! is.na(n)]
 }
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l="Sexcheck"
 for(a in arrays) {
@@ -177,9 +178,9 @@ for(a in arrays) {
 n<-unlist(sapply(ids, function(z) z['sex check']))
 n<-n[! is.na(n)]
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l="Ancestry Outlier"
 for(a in arrays) {
@@ -190,11 +191,11 @@ if(length(n) > 0) {
 	n<-n[! is.na(n)]
 }
 l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
-cat(spacer,"\n",file=args$out,append=T)
-cat(spacer,"\n",file=args$out,append=T)
-cat(spacer,"\n",file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
+cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
 
 l = "Total"
 ids_allmetrics<-c()
@@ -203,4 +204,4 @@ for(a in arrays) {
 	ids_allmetrics<-c(ids_allmetrics,unique(unlist(ids[[a]])))
 }
 l = paste(l,paste("\t",length(unique(ids_allmetrics)),sep=""),sep="")
-cat(l,"\n",file=args$out, append=T)
+cat(paste(l,"\n",sep=""),file=args$out, append=T)

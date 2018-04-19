@@ -11,6 +11,9 @@ source=$8
 out=$9
 
 nSig=`wc -l $sigregions | awk '{print $1}'`
+exitCode=0
+
+echo "$nSig significant variants found" > ${out}.log
 
 if [ "$nSig" -gt "1" ]; then
 	prefixArray=()
@@ -35,29 +38,24 @@ if [ "$nSig" -gt "1" ]; then
 		log=${prefix}.log
 		logArray+=("$log")
 		(echo -e "id\tpval"; $tabix $results ${regionChr}:${regionStart}-${regionEnd} | awk -v pcol=$pcol '{if($pcol != "NA") { if(substr($4 ,0, 2) != "rs") { print "chr"$1":"$2"\t"$pcol } else print $4"\t"$pcol} }') > $data
-		$locuszoom \
-		--metal $data \
-		--chr $regionChr \
-		--start $regionStart \
-		--end $regionEnd \
-		--markercol id \
-		--pvalcol pval \
-		--pop $pop \
-		--build $build \
-		--source $source \
-		--no-date \
-		--prefix $prefix \
-		--cache None \
-		> $log
+		options="--metal $data --chr $regionChr --start $regionStart --end $regionEnd --markercol id --pvalcol pval --no-date --prefix $prefix --cache None --build $build --pop $pop --source $source"
+		if [ "$regionChr" -ge "23" ]; then
+			options="$options --no-ld"
+		fi
+		echo "Locuszoom arguments: $options" >> ${out}.log
+		$locuszoom $options > $log
+		exitCode=$?
 	done < $sigregions
 	$ghostscript -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dFirstPage=1 -dLastPage=1 -sOutputFile=${out}.pdf $(IFS=" "; echo "${pdfArray[*]}")
-	cat $(IFS=" "; echo "${logArray[*]}") > ${out}.log
+	if [ "$exitCode" == "0" ]; then
+		exitCode=$?
+	fi
+	cat $(IFS=" "; echo "${logArray[*]}") >> ${out}.log
 	rm $(IFS=" "; echo "${logArray[*]}")
 	rm $(IFS=" "; echo "${dataArray[*]}")
 	rm -r $(IFS=" "; echo "${dirArray[*]}")
 else
 	touch ${out}.pdf
-	echo "no significant variants found" > ${out}.log
 fi
 
-exit 0
+exit $exitCode

@@ -31,19 +31,6 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   }
 
-  //val hiLdFiles = {
-  //
-  //  for {
-  //    x <- (( for { c <- projectConfig.Cohorts; k <- projectConfig.KnownLoci.filter(e => e.model.pheno == configModel.pheno); if c.report } yield { (None, c, k) } ) ++
-  //      ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); k <- projectConfig.KnownLoci.filter(e => e.model.pheno == configModel.pheno); if t.report } yield { (Some(t), c, k) } ))
-  //  } yield {
-  //
-  //    knownLociStores(x).hiLd
-  //
-  //  }
-  //
-  //}.distinct
-
   val hiLdFiles = knownLociStores.filter(e => e._1._3.model.pheno == configModel.pheno).map(e => e._2.hiLd).toSeq.distinct
 
   val hiLdStrings = {
@@ -52,7 +39,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       x <- hiLdFiles
     } yield {
 
-      s"${x.toString.split("@")(1)}"
+      s"""${x.toString.split("@")(1)}"""
 
     }
 
@@ -111,12 +98,36 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       ${results}
       EUR
       hg19
-      1000G_Nov2014
+      1000G_Apr2017
       ${summaryStores.resultsSummaryData.regPlotsBase}"""
       .in(results, summaryStores.resultsSummaryData.sigRegions)
       .out(summaryStores.resultsSummaryData.regPlotsPdf)
+      .using("R-3.4")
       .named(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
   
+  }
+
+}
+
+def ResultsKnownLociSummary(configKnownLoci: ConfigKnownLoci, id: String, results: Store, known_data: Store, hiLd: Store): Unit = {
+
+  uger {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rTop50Known
+      --results ${results}
+      --known-loci ${known_data}
+      --known-ld ${hiLd}
+      --known-loci-n "${configKnownLoci.n}"
+      --known-loci-case "${configKnownLoci.nCase}"
+      --known-loci-ctrl "${configKnownLoci.nCtrl}"
+      --test ${configKnownLoci.model.test}
+      --out ${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}"""
+      .in(results, known_data, hiLd)
+      .out(resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50)
+      .using("R-3.4")
+      .named(s"${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}".split("/").last)
+
   }
 
 }

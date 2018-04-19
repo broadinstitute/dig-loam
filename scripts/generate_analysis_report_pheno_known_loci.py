@@ -18,8 +18,8 @@ def main(args=None):
 	for s in args.desc.split(",,,"):
 		desc[s.split("___")[0]] = s.split("___")[1]
 
-	result_cols = ['chr','pos','id','alt','ref','n','case','ctrl','af','beta','se','or','pval','cohort','gene','r2','id_known','n_known','case_known','ctrl_known','beta_known','se_known','or_known','pval_known']
-	report_cols = ['CHR','POS','ID','EA','OA','N','CASE','CTRL','FREQ','EFFECT','STDERR','OR','P','COHORT',r"GENE\textsubscript{CLOSEST}",r"R\textsuperscript{2}",r"ID\textsubscript{KNOWN}",r"N\textsubscript{KNOWN}",r"CASE\textsubscript{KNOWN}",r"CTRL\textsubscript{KNOWN}",r"EFFECT\textsubscript{KNOWN}",r"STDERR\textsubscript{KNOWN}",r"OR\textsubscript{KNOWN}",r"P\textsubscript{KNOWN}"]
+	result_cols = ['chr','pos','id','alt','ref','n','case','ctrl','af','afavg','afmin','afmax','beta','se','or','pval','dir','cohort','gene','r2','id_known','n_known','case_known','ctrl_known','beta_known','se_known','or_known','pval_known']
+	report_cols = ['CHR','POS','ID','EA','OA','N','CASE','CTRL','FREQ','FREQ\textsubscript{AVG}','FREQ\textsubscript{MIN}','FREQ\textsubscript{MAX}','EFFECT','STDERR','OR','P','DIR','COHORT',r"GENE\textsubscript{CLOSEST}",r"R\textsuperscript{2}",r"ID\textsubscript{KNOWN}",r"N\textsubscript{KNOWN}",r"CASE\textsubscript{KNOWN}",r"CTRL\textsubscript{KNOWN}",r"EFFECT\textsubscript{KNOWN}",r"STDERR\textsubscript{KNOWN}",r"OR\textsubscript{KNOWN}",r"P\textsubscript{KNOWN}"]
 	cols = dict(zip(result_cols,report_cols))
 	types = {'chr': 'string type', 'pos': 'string type', 'id': 'string type', 'alt': 'verb string type', 'ref': 'verb string type', 'gene': 'string type', 'cohort': 'verb string type', 'dir': 'verb string type', 'id_known': 'string type'}
 
@@ -38,27 +38,31 @@ def main(args=None):
 				df = df[[c for c in result_cols if c in df.columns]]
 	
 				text = []
-				text.extend([r"\begin{table}[H]",
-					r"   \begin{center}",
-					r"   \caption{Top known loci in " + model.replace(r'_',r'\_') + r" (\textbf{bold} variants indicate matching direction of effect)}",
-					r"   \resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
-					r"      \pgfplotstabletypeset[",
-					r"         font=\footnotesize,",
-					r"         col sep=tab,",
-					r"         columns={" + ",".join(df.columns.tolist()) + r"},",
-					r"         column type={>{\fontseries{bx}\selectfont}c},"])
+				text.extend([
+							r"\begin{table}[H]",
+							r"   \begin{center}",
+							r"   \caption{Top known loci in " + model.replace(r'_',r'\_') + r" (\textbf{bold} variants indicate matching direction of effect)}",
+							r"   \resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
+							r"      \pgfplotstabletypeset[",
+							r"         font=\footnotesize,",
+							r"         col sep=tab,",
+							r"         columns={" + ",".join(df.columns.tolist()) + r"},",
+							r"         column type={>{\fontseries{bx}\selectfont}c},"])
 				for c in df.columns.tolist():
 					if c in types:
-						text.extend([r"         columns/" + c + r"/.style={column name=" + cols[c] + r", " + types[c] + r"},"])
+						text.extend([
+							r"         columns/" + c + r"/.style={column name=" + cols[c] + r", " + types[c] + r"},"])
 					else:
-						text.extend([r"         columns/" + c + r"/.style={column name=" + cols[c] + r"},"])
-				text.extend([r"         postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
-					r"         every head row/.style={before row={\toprule}, after row={\midrule}},",
-					r"         every last row/.style={after row=\bottomrule}",
-					r"         ]{" + top[model] + r"}}",
-					r"   \label{table:topLoci" + args.pheno_name + r"}",
-					r"   \end{center}",
-					r"\end{table}"])
+						text.extend([
+							r"         columns/" + c + r"/.style={column name=" + cols[c] + r"},"])
+				text.extend([
+							r"         postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
+							r"         every head row/.style={before row={\toprule}, after row={\midrule}},",
+							r"         every last row/.style={after row=\bottomrule}",
+							r"         ]{" + top[model] + r"}}",
+							r"   \label{table:topLoci" + args.pheno_name + r"}",
+							r"   \end{center}",
+							r"\end{table}"])
 				f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 				text = r"\ExecuteMetaData[\currfilebase.input]{"  + args.pheno_long_name.replace(" ","-") + r"-top-known-loci-in-" + model.replace("_","-") + r"}"

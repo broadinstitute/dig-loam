@@ -11,18 +11,19 @@ def main(args=None):
 		print "writing duplicates and excessive sharing section"
 		f.write("\n"); f.write(r"\subsection{Duplicates and Excessive Sharing of Identity-by-Descent (IBD)}"); f.write("\n")
 
-		text=r"""Sample pair kinship coefficients were determined using KING \cite{king} relationship inference software, which offers a robust algorithm for relationship inference under population stratification. Prior to inferring relationships, we filtered variants with low callrate, variants with low minor allele frequency, variants with positions in known high LD regions \cite{umichHiLd}, and known Type 2 diabetes associated loci using the software Hail \cite{hail}. Then an LD pruned dataset was created. The specific filters that were used are listed below."""
+		text=r"Sample pair kinship coefficients were determined using KING \cite{king} relationship inference software, which offers a robust algorithm for relationship inference under population stratification. Prior to inferring relationships, we filtered variants with low callrate, variants with low minor allele frequency, variants with positions in known high LD regions \cite{umichHiLd}, and known Type 2 diabetes associated loci using the software Hail \cite{hail}. Then an LD pruned dataset was created. The specific filters that were used are listed below."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text=r"""\begin{itemize}
-			\item v.altAllele.isSNP 
-			\item ! v.altAllele.isComplex
-			\item {["A","C","G","T"]}.toSet.contains(v.altAllele.ref)
-			\item {["A","C","G","T"]}.toSet.contains(v.altAllele.alt)
-			\item va.qc.AF >= 0.01
-			\item va.qc.callRate >= 0.98
-		\end{itemize}"""
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		text=[
+			r"\begin{itemize}",
+			r"	\item v.altAllele.isSNP",
+			r"	\item ! v.altAllele.isComplex",
+			r"	\item {[\"A\",\"C\",\"G\",\"T\"]}.toSet.contains(v.altAllele.ref)",
+			r"	\item {[\"A\",\"C\",\"G\",\"T\"]}.toSet.contains(v.altAllele.alt)",
+			r"	\item va.qc.AF >= 0.01",
+			r"	\item va.qc.callRate >= 0.98",
+			r"\end{itemize}"]
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		bim_list = args.filtered_bim.split(",")
 		if len(bim_list) > 1:
@@ -45,7 +46,7 @@ def main(args=None):
 			m = args.filtered_bim.split("___")[1]
 			df = pd.read_table(m, header=None)
 			text1 = "{0:,d}".format(df.shape[0]) + " variants"
-		text=r"""After filtering there were {0} remaining.""".format(text1)
+		text=r"After filtering there were {0} remaining.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		kin0_list = args.kin0_related.split(",")
@@ -72,7 +73,7 @@ def main(args=None):
 			df = pd.read_table(m)
 			df = df[df['Kinship'] > 0.4]
 			text1 = "{0:,d}".format(df.shape[0])
-		text=r"""In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data.""".format(text1)
+		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		fam_list = args.famsizes.split(",")
@@ -103,7 +104,7 @@ def main(args=None):
 			m = a.split("___")[1]
 			df = pd.read_table(m, header=None)
 			text1 = "{0:,d}".format(df.shape[0])
-		text=r"""In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.""".format(text1)
+		text=r"In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		print "writing sex check section"
@@ -148,7 +149,7 @@ def main(args=None):
 			else:
 				nnomatch = 0
 				nnoimpute = 0
-		text=r"""Each array was checked for genotype / clinical data agreement for sex. There were {0} samples that were flagged as a 'PROBLEM' by Hail because it was unable to impute sex and there were {1} samples that were flagged for removal because the genotype based sex did not match their clinical sex.""".format(text_noimpute, text_nomatch)
+		text=r"Each array was checked for genotype / clinical data agreement for sex. There were {0} samples that were flagged as a 'PROBLEM' by Hail because it was unable to impute sex and there were {1} samples that were flagged for removal because the genotype based sex did not match their clinical sex.".format(text_noimpute, text_nomatch)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"

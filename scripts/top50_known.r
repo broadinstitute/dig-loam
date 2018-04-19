@@ -57,7 +57,18 @@ cols_keep<-c("chr","pos","id","ref","alt","n")
 if(args$test %in% c("wald","lrt","firth")) {
 	cols_keep<-c(cols_keep,"case","ctrl")
 }
-cols_keep<-c(cols_keep,"af")
+if("af" %in% names(x)) {
+	cols_keep<-c(cols_keep,"af")
+}
+if("afavg" %in% names(x)) {
+	cols_keep<-c(cols_keep,"afavg")
+}
+if("afmin" %in% names(x)) {
+	cols_keep<-c(cols_keep,"afmin")
+}
+if("afmax" %in% names(x)) {
+	cols_keep<-c(cols_keep,"afmax")
+}
 if(args$test %in% c("wald","lrt","firth")) {
 	x$or <- exp(x$beta)
 	cols_keep<-c(cols_keep,"or")
@@ -68,8 +79,11 @@ cols_keep<-c(cols_keep,"pval")
 if("dir" %in% names(x)) {
 	cols_keep<-c(cols_keep,"dir")
 }
-cols_keep<-c(cols_keep,"cohort")
+if("cohort" %in% names(x)) {
+	cols_keep<-c(cols_keep,"cohort")
+}
 x<-x[,cols_keep]
+x<-x[! is.na(x['pval']),]
 
 for(i in 1:nrow(x)) {
 	if("beta" %in% names(x)) {
@@ -147,8 +161,6 @@ for(i in 1:nrow(x)) {
 
 x <- x[x$status != "remove",]
 
-print(x[x$id == "rs4458523",])
-
 for(i in 1:nrow(x)) {
 	if(x$status[i] == "rev") {
 		ref <- x$ref_known[i]
@@ -171,8 +183,6 @@ for(i in 1:nrow(x)) {
 		if("or_known" %in% names(x)) x$or_known[i] <- 1 / x$or_known[i]
 	}
 }
-
-print(x[x$id == "rs4458523",])
 
 x <- x[order(-x$ident, -x$r2, x$pval_known),]
 x <- x[! duplicated(x$CLOSEST_GENE),]

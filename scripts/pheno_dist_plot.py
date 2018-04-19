@@ -24,7 +24,7 @@ def dist_boxplot(v, **kwargs):
 
 def main(args=None):
 
-	print "reading results from file"
+	print "reading phenotypes from file"
 	df = pd.read_table(args.pheno, sep="\t")
 	df['ID'] = df['ID'].astype(str)
 	pops = ['AFR','AMR','EAS','EUR','SAS']
@@ -35,12 +35,18 @@ def main(args=None):
 		df = df.merge(anc)
 	else:
 		df['POP'] = "ALL"
-	
-	print "reading in clean fam file"
+
+	print "extracting samples in clean fam file"
 	samples_df = pd.read_table(args.fam, header=None)
 	samples = samples_df[1].astype(str).tolist()
 	df = df[df['ID'].isin(samples)]
-	
+
+	print "excluding samples in samples exclude file"
+	if args.samples_exclude != "":
+		with open(args.samples_exclude) as f:
+			exclude = [line.strip() for line in f]
+		df = df[~df['ID'].isin(exclude)]
+
 	df.dropna(subset = [args.pheno_name], inplace=True)
 
 	if args.strat:
@@ -122,6 +128,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--pheno', help='a phenotype file name', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a phenotype name', required=True)
 	requiredArgs.add_argument('--fam', help='a fam file with clean samples', required=True)
+	requiredArgs.add_argument('--samples-exclude', help='a sample exclusions file ("" = ignored)', required=True)
 	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
 	args = parser.parse_args()
 	main(args)

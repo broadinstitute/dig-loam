@@ -36,25 +36,26 @@ def main(args=None):
 				failed = mo.read().splitlines()
 			text1 = "{0:,d}".format(len(failed)) + " variants"
 
-		text=r"""Variant quality was assessed using call rate and Hardy Weinberg equilibrium (HWE). We calculate HWE using controls only within any of 4 major ancestral populations; EUR, AFR, SAS and EAS. There must have been at least 100 samples in a population to trigger a filter. This conservative approach minimizes the influence from admixture in other population groups. This procedure resulted in flagging {0} for removal.""".format(text1)
+		text=r"Variant quality was assessed using call rate and Hardy Weinberg equilibrium (HWE). We calculate HWE using controls only within any of 4 major ancestral populations; EUR, AFR, SAS and EAS. There must have been at least 100 samples in a population to trigger a filter. This conservative approach minimizes the influence from admixture in other population groups. This procedure resulted in flagging {0} for removal.".format(text1)
 
 		if args.variants_upset_diagram is not None:
-			text = text + """ Figure \ref{{fig:variantsRemaining}} shows the number of variants remaining for analysis after applying filters."""
+			text = text + r" Figure \ref{fig:variantsRemaining} shows the number of variants remaining for analysis after applying filters."
 
 		else:
 			bim=pd.read_table(args.bim.split("___")[1], low_memory=False, header=None)
-			text = text + """ After applying variant filters, there were {0:,d} variants remaining for analysis.""".format(bim.shape[0])
+			text = text + r" After applying variant filters, there were {0:,d} variants remaining for analysis.".format(bim.shape[0])
 
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if args.variants_upset_diagram is not None:
-			text=r"""\begin{figure}[H]
-					\centering
-					\includegraphics[width=0.75\linewidth,page=1]{""" + args.variants_upset_diagram + r"""}
-					\caption{Variants remaining for analysis}
-					\label{fig:variantsRemaining}
-				\end{figure}"""
-			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+			text=[
+				r"\begin{figure}[H]",
+				r"	\centering",
+				r"	\includegraphics[width=0.75\linewidth,page=1]{" + args.variants_upset_diagram + r"}",
+				r"	\caption{Variants remaining for analysis}",
+				r"	\label{fig:variantsRemaining}",
+				r"\end{figure}"]
+			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

@@ -73,6 +73,7 @@ val rMakeMetricDistPlot                        = path(pipelineConfig.getStr("scr
 val rMakeSampleqcOutlierPlot                   = path(pipelineConfig.getStr("scripts.rMakeSampleqcOutlierPlot"))
 val rTop20                                     = path(pipelineConfig.getStr("scripts.rTop20"))
 val rTop50Known                                = path(pipelineConfig.getStr("scripts.rTop50Known"))
+val rMetaExclusionsTable                       = path(pipelineConfig.getStr("scripts.rMetaExclusionsTable"))
 
 //Google Cloud-Facing
 val gsutil                  = path("/humgen/diabetes2/users/dig/loamstream/google-cloud-sdk/bin/gsutil")

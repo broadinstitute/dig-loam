@@ -7,15 +7,41 @@ def main(args=None):
 
 	top = collections.OrderedDict()
 	for s in args.top_results.split(","):
-		top[s.split("___")[0]] = s.split("___")[1]
+		ss = s.split("___")
+		if len(ss) > 4:
+			ss[1] = " ".join([ss[0],ss[1]])
+			del ss[0]
+		if ss[2] == "":
+			ss[2] = "unadj"
+		else:
+			ss[2] = "adj " + ss[2]
+		if ss[1] != "":
+			id = ss[0] + " " + ss[1] + " " + ss[2]
+		else:
+			id = ss[0] + " " + ss[2]
+		top[id] = ss[3]
 
 	reg = collections.OrderedDict()
 	if args.regionals != "":
 		for s in args.regionals.split(","):
-			reg[s.split("___")[0]] = s.split("___")[1].split(";")
+			ss = s.split("___")
+			if len(ss) > 5:
+				ss[1] = " ".join([ss[0],ss[1]])
+				del ss[0]
+			if ss[2] == "":
+				ss[2] = "unadj"
+			else:
+				ss[2] = "adj " + ss[2]
+			if ss[1] != "":
+				id = ss[0] + " " + ss[1] + " " + ss[2]
+			else:
+				id = ss[0] + " " + ss[2]
+			reg[id] = {}
+			reg[id]['sigregions'] = ss[3]
+			reg[id]['regplots'] = ss[4]
 
-	result_cols = ['chr', 'pos', 'id', 'alt', 'ref', 'gene', 'cohort', 'dir', 'n', 'case', 'ctrl', 'mac', 'af', 'beta', 'se', 'sigmaG2', 'or', 'tstat', 'zstat', 'chi2', 'pval']
-	report_cols = ['CHR', 'POS', 'ID', 'EA', 'OA', r"GENE\textsubscript{CLOSEST}", 'COHORT', 'DIR', 'N', 'CASE', 'CTRL', 'MAC', 'FREQ', 'EFFECT', 'STDERR', 'SIGMAG2', 'OR', 'T', 'Z', 'CHI2', 'P']
+	result_cols = ['chr', 'pos', 'id', 'alt', 'ref', 'gene', 'cohort', 'dir', 'n', 'male', 'female', 'case', 'ctrl', 'mac', 'af', 'afavg', 'afmin', 'afmax', 'beta', 'se', 'sigmaG2', 'or', 'tstat', 'zstat', 'chi2', 'zscore', 'pval']
+	report_cols = ['CHR', 'POS', 'ID', 'EA', 'OA', r"GENE\textsubscript{CLOSEST}", 'COHORT', 'DIR', 'N', 'MALE', 'FEMALE', 'CASE', 'CTRL', 'MAC', 'FREQ', 'FREQ\textsubscript{AVG}', 'FREQ\textsubscript{MIN}', 'FREQ\textsubscript{MAX}','EFFECT', 'STDERR', 'SIGMAG2', 'OR', 'T', 'Z', 'CHI2', 'ZSCORE', 'P']
 	cols = dict(zip(result_cols,report_cols))
 	types = {'chr': 'string type', 'pos': 'string type', 'id': 'string type', 'alt': 'verb string type', 'ref': 'verb string type', 'gene': 'string type', 'cohort': 'verb string type', 'dir': 'verb string type'}
 
@@ -32,55 +58,69 @@ def main(args=None):
 			df = df[[c for c in result_cols if c in df.columns]]
 
 			text = []
-			text.extend([r"\begin{table}[H]",
-				r"   \begin{center}",
-				r"   \caption{Top variants in " + model.replace(r'_',r'\_') + r" (\textbf{bold} variants indicate previously identified associations)}",
-				r"   \resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
-				r"      \pgfplotstabletypeset[",
-				r"         font=\footnotesize,",
-				r"         col sep=tab,",
-				r"         columns={" + ",".join(df.columns.tolist()) + r"},",
-				r"         column type={>{\fontseries{bx}\selectfont}c},"])
+			text.extend([
+						r"\begin{table}[H]",
+						r"   \begin{center}",
+						r"   \caption{Top variants in " + model.replace(r'_',r'\_') + r" (\textbf{bold} variants indicate previously identified associations)}",
+						r"   \resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
+						r"      \pgfplotstabletypeset[",
+						r"         font=\footnotesize,",
+						r"         col sep=tab,",
+						r"         columns={" + ",".join(df.columns.tolist()) + r"},",
+						r"         column type={>{\fontseries{bx}\selectfont}c},"])
 			for c in df.columns.tolist():
 				if c in types:
-					text.extend([r"         columns/" + c + r"/.style={column name=" + cols[c] + r", " + types[c] + r"},"])
+					text.extend([
+						r"         columns/" + c + r"/.style={column name=" + cols[c] + r", " + types[c] + r"},"])
 				else:
-					text.extend([r"         columns/" + c + r"/.style={column name=" + cols[c] + r"},"])
-			text.extend([r"         postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
-				r"         every head row/.style={before row={\toprule}, after row={\midrule}},",
-				r"         every last row/.style={after row=\bottomrule}",
-				r"         ]{" + top[model] + r"}}",
-				r"   \label{table:topLoci" + args.pheno_name + r"}",
-				r"   \end{center}",
-				r"\end{table}"])
+					text.extend([
+						r"         columns/" + c + r"/.style={column name=" + cols[c] + r"},"])
+			text.extend([
+						r"         postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
+						r"         every head row/.style={before row={\toprule}, after row={\midrule}},",
+						r"         every last row/.style={after row=\bottomrule}",
+						r"         ]{" + top[model] + r"}}",
+						r"   \label{table:topLoci" + args.pheno_name + r"}",
+						r"   \end{center}",
+						r"\end{table}"])
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 			if model in reg:
 				text = []
 				nplots = 0
-				if len(reg[model]) > 1:
-					text.extend([r"\begin{figure}[h!]",
-							r"   \centering"])
-					for r in reg[model]:
-						v = r.split("regplot_")[1].split(".")[0].split("_")[0]
-						nplots = nplots + 1
-						delim = r"\\" if nplots % 2 == 0 else r"%"
-						text.extend([r"   \begin{subfigure}{.5\textwidth}",
-							r"      \centering",
-							r"      \includegraphics[width=\linewidth,page=1]{" + r + r"}",
-							r"      \caption{" + v + r" $\pm 100 kb$}",
-							r"      \label{fig:regPlot" + model + "_" + v + r"}",
-							r"   \end{subfigure}" + delim])
-					text.extend([r"   \caption{Regional plots for model " + model.replace(r'_',r'\_') + r"}",r"   \label{fig:regPlots" + model + r"}",r"\end{figure}"])
+				try:
+					sigdf = pd.read_table(reg[model]['sigregions'], header=None, sep="\t")
+				except pd.errors.EmptyDataError:
+					pass
 				else:
-					v = reg[model][0].split("regplot_")[1].split(".")[0].split("_")[0]
-					text.extend([r"\begin{figure}[h!]",
-							r"   \centering",
-							r"   \includegraphics[width=.5\linewidth,page=1]{" + reg[model][0] + "}",
-							r"   \caption{Regional plot for model " + model.replace(r'_',r'\_') + r": " + v + r" $\pm 100 kb$}",
-							r"   \label{fig:regPlot" + model + "_" + v + "}",
-							r"\end{figure}"])
-				f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+					if sigdf.shape[0] > 0:
+						if sigdf.shape[0] > 1:
+							text.extend([
+									r"\begin{figure}[h!]",
+									r"   \centering"])
+							for idx, row in sigdf.iterrows():
+								nplots = nplots + 1
+								delim = r"\\" if nplots % 2 == 0 else r"%"
+								text.extend([
+									r"   \begin{subfigure}{.5\textwidth}",
+									r"      \centering",
+									r"      \includegraphics[width=\linewidth,page=" + nplots + r"]{" + reg[model]['regplots'] + r"}",
+									r"      \caption{" + row[3] + r" $\pm 100 kb$}",
+									r"      \label{fig:regPlot" + model.replace(" ","") + "_" + row[3] + r"}",
+									r"   \end{subfigure}" + delim])
+							text.extend([
+									r"   \caption{Regional plots for model " + model.replace(r'_',r'\_') + r"}",
+									r"   \label{fig:regPlots" + model.replace(" ","") + r"}",
+									r"\end{figure}"])
+						else:
+							text.extend([
+									r"\begin{figure}[h!]",
+									r"   \centering",
+									r"   \includegraphics[width=.5\linewidth,page=1]{" + reg[model]['regplots'] + "}",
+									r"   \caption{Regional plot for model " + model.replace(r'_',r'\_') + r": " + sigdf[3][0] + r" $\pm 100 kb$}",
+									r"   \label{fig:regPlot" + model.replace(" ","") + "_" + sigdf[3][0] + "}",
+									r"\end{figure}"])
+						f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		text = r"\ExecuteMetaData[\currfilebase.input]{"  + args.pheno_long_name.replace(" ","-") + r"-top-associations}"
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")

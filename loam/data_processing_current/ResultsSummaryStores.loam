@@ -12,8 +12,14 @@ final case class ResultsSummaryData(
   regPlotsPdf: Store,
   regPlotsBase: Path)
 
+final case class ResultsKnownLociSummaryData(
+  top50: Store)
+
 final case class ResultsSummary(
   resultsSummaryData: ResultsSummaryData)
+
+final case class ResultsKnownLociSummary(
+  resultsKnownLociSummaryData: ResultsKnownLociSummaryData)
 
 val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (c.id, m) } ) ++
     ( for { t <- projectConfig.Metas; m <- projectConfig.Models; if t.report } yield { (t.id, m) } )).map { rs => 
@@ -39,5 +45,23 @@ val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConf
 
   rs -> ResultsSummary(
     resultsSummaryData = resultsSummaryData)
+
+}.toMap
+
+val resultsKnownLociSummaryStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.KnownLoci; if c.report } yield { (c.id, k) } ) ++
+    ( for { t <- projectConfig.Metas; k <- projectConfig.KnownLoci; if t.report } yield { (t.id, k) } )).map { rskl => 
+
+  val id = rskl._1
+  val known = rskl._2
+
+  val modelCovarsString = known.model.covars.replace("+","_")
+
+  val prefix = s"${projectConfig.projectId}.${id}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}"
+
+  val resultsKnownLociSummaryData = ResultsKnownLociSummaryData(
+    top50 = store.at(localOutDir / s"${prefix}.known_loci.top50.tsv"))
+
+  rskl -> ResultsKnownLociSummary(
+    resultsKnownLociSummaryData = resultsKnownLociSummaryData)
 
 }.toMap

@@ -50,6 +50,13 @@ header=r"""\documentclass[11pt]{article}
 \renewcommand{\subsubsection}{\FloatBarrier\Oldsubsubsection}
 \captionsetup[table]{singlelinecheck=off}
 \linespread{1.3}
+\usepackage{longtable}
+\pgfplotstableset{
+	begin table=\begin{longtable},
+	end table=\end{longtable},
+}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
 """
 
 
@@ -117,7 +124,7 @@ def main(args=None):
 			geno_platforms_text = "distributed across {0:d} different genotype arrays".format(nArrays)
 		else:
 			geno_platforms_text = "genotyped on a single array"
-		text = """This document contains details of our in-house quality control procedure and its application to the {0:s} dataset. We received genotypes for {1:,d} unique samples {2:s}. Quality control was performed on these data to detect samples and variants that did not fit our standards for inclusion in association testing. After harmonizing with modern reference data, the highest quality variants were used in a battery of tests to assess the quality of each sample. Duplicate pairs, samples exhibiting excessive sharing of identity by descent, samples whose genotypic sex did not match their clinical sex, and outliers detected among several sample-by-variant statistics have been flagged for removal from further analysis. Additionally, genotypic ancestry was inferred with respect to a modern reference panel, allowing for variant filtering and association analyses to be performed within population as needed.""".format(args.id, nSamples, geno_platforms_text)
+		text = "This document contains details of our in-house quality control procedure and its application to the {0:s} dataset. We received genotypes for {1:,d} unique samples {2:s}. Quality control was performed on these data to detect samples and variants that did not fit our standards for inclusion in association testing. After harmonizing with modern reference data, the highest quality variants were used in a battery of tests to assess the quality of each sample. Duplicate pairs, samples exhibiting excessive sharing of identity by descent, samples whose genotypic sex did not match their clinical sex, and outliers detected among several sample-by-variant statistics have been flagged for removal from further analysis. Additionally, genotypic ancestry was inferred with respect to a modern reference panel, allowing for variant filtering and association analyses to be performed within population as needed.".format(args.id, nSamples, geno_platforms_text)
 		if nArrays > 1:
 			text = text + "With the exception of inferring each samples ancestry, QC was performed on each array separately as much as possible, allowing for flexibility in the way the data can be used in downstream analyses."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")

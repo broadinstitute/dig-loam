@@ -52,6 +52,13 @@ header=r"""\documentclass[11pt]{article}
 \renewcommand{\subsubsection}{\FloatBarrier\Oldsubsubsection}
 \captionsetup[table]{singlelinecheck=off}
 \linespread{1.3}
+\usepackage{longtable}
+\pgfplotstableset{
+	begin table=\begin{longtable},
+	end table=\end{longtable},
+}
+\usepackage{threeparttable}
+\usepackage{threeparttablex}
 """
 
 
@@ -93,7 +100,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Introduction}"); f.write("\n")
 
-		text = r"""\ExecuteMetaData[\currfilebase.input]{introduction}"""
+		text = r"\ExecuteMetaData[\currfilebase.input]{introduction}"
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	with open(args.out_input,'w') as f:
