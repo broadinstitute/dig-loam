@@ -8,15 +8,51 @@ def main(args=None):
 
 	top = collections.OrderedDict()
 	for s in args.top_known_loci.split(","):
-		top[s.split("___")[0]] = s.split("___")[1]
+		ss = s.split("___")
+		if len(ss) > 4:
+			ss[1] = " ".join([ss[0],ss[1]])
+			del ss[0]
+		if ss[2] == "":
+			ss[2] = "unadj"
+		else:
+			ss[2] = "adj " + ss[2]
+		if ss[1] != "":
+			id = ss[0] + " " + ss[1] + " " + ss[2]
+		else:
+			id = ss[0] + " " + ss[2]
+		top[id] = ss[3]
 
 	tag = collections.OrderedDict()
 	for s in args.tag.split(","):
-		tag[s.split("___")[0]] = s.split("___")[1]
+		ss = s.split("___")
+		if len(ss) > 4:
+			ss[1] = " ".join([ss[0],ss[1]])
+			del ss[0]
+		if ss[2] == "":
+			ss[2] = "unadj"
+		else:
+			ss[2] = "adj " + ss[2]
+		if ss[1] != "":
+			id = ss[0] + " " + ss[1] + " " + ss[2]
+		else:
+			id = ss[0] + " " + ss[2]
+		tag[id] = ss[3]
 
 	desc = collections.OrderedDict()
 	for s in args.desc.split(",,,"):
-		desc[s.split("___")[0]] = s.split("___")[1]
+		ss = s.split("___")
+		if len(ss) > 4:
+			ss[1] = " ".join([ss[0],ss[1]])
+			del ss[0]
+		if ss[2] == "":
+			ss[2] = "unadj"
+		else:
+			ss[2] = "adj " + ss[2]
+		if ss[1] != "":
+			id = ss[0] + " " + ss[1] + " " + ss[2]
+		else:
+			id = ss[0] + " " + ss[2]
+		desc[id] = ss[3]
 
 	result_cols = ['chr','pos','id','alt','ref','n','case','ctrl','af','afavg','afmin','afmax','beta','se','or','pval','dir','cohort','gene','r2','id_known','n_known','case_known','ctrl_known','beta_known','se_known','or_known','pval_known']
 	report_cols = ['CHR','POS','ID','EA','OA','N','CASE','CTRL','FREQ','FREQ\textsubscript{AVG}','FREQ\textsubscript{MIN}','FREQ\textsubscript{MAX}','EFFECT','STDERR','OR','P','DIR','COHORT',r"GENE\textsubscript{CLOSEST}",r"R\textsuperscript{2}",r"ID\textsubscript{KNOWN}",r"N\textsubscript{KNOWN}",r"CASE\textsubscript{KNOWN}",r"CTRL\textsubscript{KNOWN}",r"EFFECT\textsubscript{KNOWN}",r"STDERR\textsubscript{KNOWN}",r"OR\textsubscript{KNOWN}",r"P\textsubscript{KNOWN}"]

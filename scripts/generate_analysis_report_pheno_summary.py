@@ -50,7 +50,7 @@ def main(args=None):
 			r"	\begin{tabular}{rrrrr" + 'c'*(len(cols)-5) + "}",
 			r"		\toprule"]
 	sample_table.extend([
-			r"		" + ' & '.join([r"\textbf{" + x.replace('Mean','\\bm{$\\mu$}').replace('Median','\\bm{$\\tilde{x}$}').replace('StdDev','\\bm{$\\sigma$}') + r"}" for x in cols]) + r" \\"])
+			r"		" + ' & '.join([r"\textbf{" + x.replace('Mean','\\bm{$\\mu$}').replace('Median','\\bm{$\\tilde{x}$}').replace('StdDev','\\bm{$\\sigma$}') + r"}" for x in cols]).replace("_","\_") + r" \\"])
 	sample_table.extend([
 			r"		\midrule"])
 	i = 0

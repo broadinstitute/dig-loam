@@ -22,7 +22,7 @@ def main(args=None):
 				r"			\midrule"]
 		for c in args.cohorts.split(","):
 			cohort_tbl.extend([
-				r"			" + " & ".join(c.split('___')) + r" \\"])
+				r"			" + " & ".join(c.split('___')).replace("_","\_") + r" \\"])
 		cohort_tbl.extend([
 				r"			\bottomrule",
 				r"		\end{tabular}",
@@ -59,10 +59,10 @@ def main(args=None):
 						kinshipRemoved = kin.read().splitlines()
 					if i == 1:
 						meta_tbl.extend([
-							r"			" + m[0] + " & " + m[1] + " & " + c + " & " + str(len(kinshipRemoved)) + r" \\"])
+							r"			" + m[0].replace("_","\_") + " & " + m[1].replace("_","\_") + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + r" \\"])
 					else:
 						meta_tbl.extend([
-							r"			" + " & & " + c + " & " + str(len(kinshipRemoved)) + r" \\"])
+							r"			" + " & & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + r" \\"])
 			meta_tbl.extend([
 							r"			\bottomrule",
 							r"		\end{tabular}",
@@ -84,7 +84,7 @@ def main(args=None):
 					r"			\midrule"]
 			for m in args.merges.split(","):
 				merge_tbl.extend([
-					r"			" + " & ".join(m.split('___')) + r" \\"])
+					r"			" + " & ".join(m.split('___')).replace("_","\_") + r" \\"])
 			merge_tbl.extend([
 					r"			\bottomrule",
 					r"		\end{tabular}",

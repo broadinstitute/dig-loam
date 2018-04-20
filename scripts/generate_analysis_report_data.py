@@ -22,7 +22,7 @@ def main(args=None):
 			r"		\midrule"]
 		for a in args.arrays.split(","):
 			array_tbl.extend([
-			r"		" + " & ".join(a.split('___')) + r" \\"])
+			r"		" + " & ".join(a.split('___')).replace("_","\_") + r" \\"])
 		array_tbl.extend([
 			r"		\bottomrule",
 			r"		\end{tabular}",

@@ -104,7 +104,7 @@ def main(args=None):
 								text.extend([
 									r"   \begin{subfigure}{.5\textwidth}",
 									r"      \centering",
-									r"      \includegraphics[width=\linewidth,page=" + nplots + r"]{" + reg[model]['regplots'] + r"}",
+									r"      \includegraphics[width=\linewidth,page=" + str(nplots) + r"]{" + reg[model]['regplots'] + r"}",
 									r"      \caption{" + row[3] + r" $\pm 100 kb$}",
 									r"      \label{fig:regPlot" + model.replace(" ","") + "_" + row[3] + r"}",
 									r"   \end{subfigure}" + delim])

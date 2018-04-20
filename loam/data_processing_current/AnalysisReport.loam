@@ -264,14 +264,13 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
     })
   
   }
-  
+
   val reportAnalysisModelRegplotsStrings = {
   
     (for {
       cohort <- projectConfig.Cohorts if cohort.report
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
-
       cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""" + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}"""
   
     }) ++
@@ -280,13 +279,13 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
-  
-      meta.id + "___" + cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""" + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}"""
+
+      meta.id + "___" + cohort.id + "___" + model.trans + "___" + model.covars + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""" + "___" + s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}"""
   
     })
   
   }
-  
+
   uger {
     
     cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
@@ -385,7 +384,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
 
 def AnalysisReportCompile(phase: Int): Unit = {
 
-  reportAnalysisResultsList = { 
+  val reportAnalysisResultsList = { 
 
     for {
       pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
@@ -397,18 +396,18 @@ def AnalysisReportCompile(phase: Int): Unit = {
 
   }.flatten
 
-  reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.toString.split("@")(1)}""")
+  val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.toString.split("@")(1)}""")
 
   uger {
 
-    cmd"""cat ${analysisReportStores(phase).globalData.intro} ${analysisReportStores(phase).globalData.data} ${analysisReportStores(phase).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliography} > $reportAnalysisTex"""
+    cmd"""cat ${analysisReportStores(phase).globalData.intro} ${analysisReportStores(phase).globalData.data} ${analysisReportStores(phase).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliography} > ${analysisReportStores(phase).globalData.tex}"""
       .in(reportAnalysisResultsList :+ analysisReportStores(phase).globalData.intro :+ analysisReportStores(phase).globalData.data :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.bibliography)
       .out(analysisReportStores(phase).globalData.tex)
       .named(s"${analysisReportStores(phase).globalData.tex}".split("/").last)
 
   }
 
-  reportAnalysisResultsInputList = { 
+  val reportAnalysisResultsInputList = { 
 
     for {
       pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
@@ -420,7 +419,7 @@ def AnalysisReportCompile(phase: Int): Unit = {
 
   }.flatten
 
-  reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.toString.split("@")(1)}""")
+  val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.toString.split("@")(1)}""")
 
   uger {
     

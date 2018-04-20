@@ -12,6 +12,7 @@ final case class GlobalData(
   bibliography: Store,
   bibliographyInput: Store,
   tex: Store,
+  input: Store,
   pdf: Store)
 
 final case class PhenoData(
@@ -42,6 +43,7 @@ val analysisReportStores = projectConfig.Models.map(m => m.phase).distinct.sorte
     bibliography = store.at(localOutDir / s"${baseString}.bibliography"),
     bibliographyInput = store.at(localOutDir / s"${baseString}.bibliography.input"),
     tex = store.at(localOutDir / s"${baseString}.tex"),
+    input = store.at(localOutDir / s"${baseString}.input"),
     pdf = store.at(localOutDir / s"${baseString}.pdf"))
 
   val phenoData = projectConfig.Models.map(m => m.pheno).distinct.map { pheno =>
