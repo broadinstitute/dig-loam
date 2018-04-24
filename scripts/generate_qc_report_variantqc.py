@@ -11,28 +11,24 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Variant QC}"); f.write("\n")
 
-		var_list = args.variant_exclusions.split(",")
-		if len(var_list) > 1:
+		if len(args.variant_exclusions) > 1:
 			i = 0
-			for a in var_list:
+			for x in args.variant_exclusions:
 				i = i + 1
-				l = a.split("___")[0]
-				m = a.split("___")[1]
-				with open(m) as mo:
+				array = x.split(",")[0]
+				with open(x.split(",")[1]) as mo:
 					failed = mo.read().splitlines()
 				if i == 1:
-					text1 = "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
-				elif i < len(var_list)-1:
-					text1 = text1 + ", " + "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
+					text1 = "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
+				elif i < len(args.variant_exclusions)-1:
+					text1 = text1 + ", " + "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
 				else:
-					if len(var_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
+					if len(args.variant_exclusions) == 2:
+						text1 = text1 + " and " + "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(len(failed)) + " " + l.replace("_","\_") + " variants"
+						text1 = text1 + ", and " + "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
 		else:
-			l = args.variant_exclusions.split("___")[0]
-			m = args.variant_exclusions.split("___")[1]
-			with open(m) as mo:
+			with open(args.variant_exclusions.split(",")[1]) as mo:
 				failed = mo.read().splitlines()
 			text1 = "{0:,d}".format(len(failed)) + " variants"
 
@@ -65,6 +61,6 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--variants-upset-diagram', help='an upset diagram for variants remaining')
 	requiredArgs.add_argument('--bim', help='a bim file')
-	requiredArgs.add_argument('--variant-exclusions', help='a comma separated list of labels and variant exclusion files, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--variant-exclusions', nargs='+', help='a list of labels and variant exclusion files, each separated by comma', required=True)
 	args = parser.parse_args()
 	main(args)

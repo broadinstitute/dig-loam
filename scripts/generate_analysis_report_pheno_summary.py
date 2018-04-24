@@ -11,8 +11,8 @@ def main(args=None):
 	sex = sex[[args.id_col,args.sex_col]]
 
 	model_files = {}
-	for s in args.model_files.split(","):
-		ss = s.split("___")
+	for s in args.model_files:
+		ss = s.split(",")
 		if len(ss) > 7:
 			ss[1] = " ".join([ss[0],ss[1]])
 			del ss[0]
@@ -42,15 +42,15 @@ def main(args=None):
 		cols.extend(['Max','Min','Mean','Median','StdDev'])
 
 	sample_table = [
-			r"\begin{ThreePartTable}[H]",
+			r"\begin{table}[H]",
 			r"	\footnotesize",
-			r"	\caption{" + args.pheno_long_name + " summarized by cohort and adjustments}",
-			r"	\centering",
-			r"	\label{table:samplesTable" + args.pheno_name + r"}",
+			r"	\caption{" + args.pheno_long_name.replace("_","\_") + " summarized by cohort and adjustments}",
+			r"	\begin{center}",
+			r"	\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
 			r"	\begin{tabular}{rrrrr" + 'c'*(len(cols)-5) + "}",
 			r"		\toprule"]
 	sample_table.extend([
-			r"		" + ' & '.join([r"\textbf{" + x.replace('Mean','\\bm{$\\mu$}').replace('Median','\\bm{$\\tilde{x}$}').replace('StdDev','\\bm{$\\sigma$}') + r"}" for x in cols]).replace("_","\_") + r" \\"])
+			r"		" + ' & '.join([r"\textbf{" + x.replace('Mean','\\bm{$\\mu$}').replace('Median','\\bm{$\\tilde{x}$}').replace('StdDev','\\bm{$\\sigma$}') + r"}" for x in cols]) + r"\\"])
 	sample_table.extend([
 			r"		\midrule"])
 	i = 0
@@ -60,8 +60,6 @@ def main(args=None):
 			color = r"		\rowcolor{Gray}"
 		else:
 			color = r"		\rowcolor{white}"
-		sample_table.extend([color,"		" + cohort[0].replace("_","\_") + " & " + cohort[1].replace("_","\_") + " & " + cohort[2].replace("_","\_") + ' & {} '*(len(cols)-3) + r" \\"])
-		sample_table.extend([color,"		{} " + ' & {} '*(len(cols)-1) + r" \\"])
 		j = 0
 		for model in model_files[cohort].keys():
 			j = j + 1
@@ -80,22 +78,28 @@ def main(args=None):
 				row.extend([round(np.mean(df_temp[args.pheno_name]),3)])
 				row.extend([round(np.median(df_temp[args.pheno_name]),3)])
 				row.extend([round(np.std(df_temp[args.pheno_name]),3)])
-			if j == 1:
-				sample_table.extend([color,"		" + cohort[0].replace("_","\_") + " & " + cohort[1].replace("_","\_") + " & " + cohort[2].replace("_","\_") + " & " + model[0].replace("_","\_") + " & " + model[1].replace("_","\_") + " & " + " & ".join([str(r) for r in row]) + r" \\"])
+			if j < len(model_files[cohort].keys()):
+				lineEnd = r"\\*"
 			else:
-				sample_table.extend([color,"		{} & {} & {} & " + model[0].replace("_","\_") + " & " + model[1].replace("_","\_") + " & " + " & ".join([str(r) for r in row]) + r" \\"])
+				lineEnd = r"\\"
+			if j == 1:
+				sample_table.extend([color + "		" + cohort[0].replace("_","\_") + " & " + cohort[1].replace("_","\_") + " & " + cohort[2].replace("_","\_") + " & " + model[0].replace("_","\_") + " & " + model[1].replace("_","\_") + " & " + " & ".join([str(r).replace("_","\_") for r in row]) + lineEnd])
+			else:
+				sample_table.extend([color + "		{} & {} & {} & " + model[0].replace("_","\_") + " & " + model[1].replace("_","\_") + " & " + " & ".join([str(r).replace("_","\_") for r in row]) + lineEnd])
 	sample_table.extend([
 			r"		\bottomrule",
-			r"	\end{tabular}",
-			r"\end{ThreePartTable}"])
+			r"	\end{tabular}}",
+			r"	\end{center}",
+			r"	\label{table:samplesTable" + args.pheno_name.replace("_","") + r"}",
+			r"\end{table}"])
 
 
 	dist_plots = {}
-	for s in args.dist_plot.split(","):
-		if len(s.split("___")) > 2:
-			dist_plots[" ".join(s.split("___")[0].replace("_","\_"),s.split("___")[1].replace("_","\_"))] = s.split("___")[2]
+	for s in args.dist_plot:
+		if len(s.split(",")) > 2:
+			dist_plots[" ".join([s.split(",")[0],s.split(",")[1]])] = s.split(",")[2]
 		else:
-			dist_plots[s.split("___")[0].replace("_","\_")] = s.split("___")[1]
+			dist_plots[s.split(",")[0]] = s.split(",")[1]
 
 	## open latex file for writing
 	with open(args.out_tex,'w') as f:
@@ -119,12 +123,12 @@ def main(args=None):
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
 				r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[c] + r"}",
-				r"      \caption{" + " ".join(c) + r"}",
-				r"      \label{fig:distPlot" + args.pheno_name + "".join(c) + r"}",
+				r"      \caption{" + c.replace("_","\_") + r"}",
+				r"      \label{fig:distPlot" + args.pheno_name.replace("_","") + c.replace("_","") + r"}",
 				r"   \end{subfigure}" + delim])
 		text.extend([
 				r"   \caption{Distribution of " + args.pheno_name.replace("_","\_") + r"}",
-				r"   \label{fig:distPlots" + args.pheno_name + r"}",
+				r"   \label{fig:distPlots" + args.pheno_name.replace("_","") + r"}",
 				r"\end{figure}"])
 
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
@@ -141,11 +145,11 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--dist-plot', help='a comma separated list of cohort labels and phenotype distribution plots, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--dist-plot', nargs='+', help='a list of cohort labels and phenotype distribution plots, each separated by comma', required=True)
 	requiredArgs.add_argument('--pheno-master', help='a master phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in phenotype master file', required=True)
 	requiredArgs.add_argument('--sex-col', help='a column name for sample sex in phenotype master file', required=True)
-	requiredArgs.add_argument('--model-files', help='a comma separated list of cohort labels, model names, and phenotype files, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--model-files', nargs='+', help='a list of cohort labels, model names, and phenotype files, each separated by comma', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a column name for phenotype', required=True)
 	requiredArgs.add_argument('--pheno-long-name', help='a full name for phenotype (used in section titles)', required=True)
 	requiredArgs.add_argument('--ancestry', help='an ancestry file', required=True)

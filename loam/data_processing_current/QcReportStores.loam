@@ -9,6 +9,7 @@ final case class TablesData(
   sampleQc: Store)
 
 final case class TexData(
+  header: Store,
   intro: Store,
   data: Store,
   ancestry: Store,
@@ -41,6 +42,7 @@ val qcReportStores = QcReport(
     sampleQc = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.sampleqc.tbl")),
 
   texData = TexData(
+    header = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.header.tex"),
     intro = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.intro.tex"),
     data = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.data.tex"),
     ancestry = store.at(localOutDir / s"${projectConfig.projectId}.qcreport.ancestry.tex"),

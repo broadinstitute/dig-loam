@@ -223,4 +223,7 @@ for(i in 1:nrow(x)) {
 	}
 }
 
+# replace _ with \_ to make compatible with pgfplotstabletypeset
+x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
+
 write.table(x, args$out, row.names=F, col.names=T, quote=F, append=F, sep="\t")

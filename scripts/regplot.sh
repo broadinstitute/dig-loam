@@ -15,7 +15,7 @@ exitCode=0
 
 echo "$nSig significant variants found" > ${out}.log
 
-if [ "$nSig" -gt "1" ]; then
+if [ "$nSig" -ge "1" ]; then
 	prefixArray=()
 	dataArray=()
 	dirArray=()

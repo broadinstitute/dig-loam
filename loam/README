@@ -7,5 +7,5 @@ data_processing_v1:
    Branched off to refactor and add meta-analysis and imputed data support
 
 data_processing_v2 (currently in data_processing_current):
-   FUSION version
-   Adds meta-analysis, imputed data support, and the concept of cohorts
+   This version was used to process FUSION and NUS Phase 1
+   Adds meta-analysis, and the concept of cohorts/metas/merges

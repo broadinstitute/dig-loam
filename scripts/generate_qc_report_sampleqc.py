@@ -16,26 +16,29 @@ def main(args=None):
 		text=[
 			r"\begin{table}[H]",
 			r"	\caption{Sample Metrics}",
-			r"	\centering",
+			r"	\begin{center}",
 			r"	\begin{tabular}{>{\bfseries}r l}",
-			r"		nNonRef & nHet + nHomVar \\",
-			r"		nHet & Number of heterozygous variants \\",
-			r"		nCalled & nHomRef + nHet + nHomVar \\",
-			r"		callRate & Fraction of variants with called genotypes \\",
-			r"		rTiTv &  Transition/transversion ratio \\",
-			r"		het & Inbreeding coefficient \\",
-			r"		hetHigh & Inbreeding coefficient for variants with \(MAF >= 0.03\) \\",
-			r"		hetLow & Inbreeding coefficient for variants with \(MAF < 0.03\) \\",
-			r"		nHomVar & Number of homozygous alternate variants \\",
-			r"		rHetHomVar & Het/HomVar ratio across all variants",
+			r"		\toprule",
+			r"		nNonRef & nHet + nHomVar\\",
+			r"		nHet & Number of heterozygous variants\\",
+			r"		nCalled & nHomRef + nHet + nHomVar\\",
+			r"		callRate & Fraction of variants with called genotypes\\",
+			r"		rTiTv &  Transition/transversion ratio\\",
+			r"		het & Inbreeding coefficient\\",
+			r"		hetHigh & Inbreeding coefficient for variants with \(MAF >= 0.03\)\\",
+			r"		hetLow & Inbreeding coefficient for variants with \(MAF < 0.03\)\\",
+			r"		nHomVar & Number of homozygous alternate variants\\",
+			r"		rHetHomVar & Het/HomVar ratio across all variants\\",
+			r"		\bottomrule",
 			r"	\end{tabular}",
+			r"	\end{center}",
 			r"	\label{table:sampleMetricDefinitions}",
 			r"\end{table}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Principal Component Adjustment and Normalization of Sample Metrics}"); f.write("\n")
 
-		text=r"Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:metricCompare}} shows the {0} metric for {1} samples before and after adjustment.".format(args.compare_dist_metric.replace("_res",""), args.compare_dist_label.replace("_","\_"))
+		text=r"Due to possible population substructure, the sample metrics exhibit some multi-modality in their distributions. To evaluate more normally distributed data, we calculated principal component adjusted residuals of the metrics using the top 10 principal components (PCARM's). Figure \ref{{fig:metricCompare}} shows the {0} metric for {1} samples before and after adjustment.".format(args.compare_dist_metric.replace("_res","").replace("_","\_"), args.compare_dist_label.replace("_","\_"))
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -45,13 +48,13 @@ def main(args=None):
 			r"	\begin{subfigure}{\textwidth}",
 			r"		\centering",
 			r"		\includegraphics[width=\linewidth,page=1]{" + args.compare_dist_unadj + r"}",
-			r"		\caption{" + args.compare_dist_metric.replace("_res","") + r" Original}",
+			r"		\caption{" + args.compare_dist_metric.replace("_res","").replace("_","\_") + r" Original}",
 			r"		\label{fig:metric}",
 			r"	\end{subfigure}\newline",
 			r"	\begin{subfigure}{\textwidth}",
 			r"		\centering",
 			r"		\includegraphics[width=\linewidth,page=1]{" + args.compare_dist_adj + r"}",
-			r"		\caption{" + args.compare_dist_metric.replace("_res","") + r" Adjusted}",
+			r"		\caption{" + args.compare_dist_metric.replace("_res","").replace("_","\_") + r" Adjusted}",
 			r"		\label{fig:metricAdj}",
 			r"	\end{subfigure}",
 			r"	\label{fig:metricCompare}",
@@ -77,57 +80,61 @@ def main(args=None):
 
 		text_insert=""
 		i = 0
-		for a in args.sampleqc_outliers.split(","):
+		for x in args.sampleqc_outliers:
 			i = i + 1
-			l = a.split("___")[0]
+			array = x.split(",")[0]
 			if i == 1:
-				if len(args.sampleqc_outliers.split(",")) > 1:
-					text_insert = r"Figures \ref{fig:adjSampleMetricDist" + l + r"}"
+				if len(args.sampleqc_outliers) > 1:
+					text_insert = r"Figures \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 				else:
-					text_insert = r"Figure \ref{fig:adjSampleMetricDist" + l + r"}"
-			elif i < len(args.sampleqc_outliers.split(",")) - 1:
-				text_insert = text_insert + r", \ref{fig:adjSampleMetricDist" + l + r"}"
+					text_insert = r"Figure \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
+			elif i < len(args.sampleqc_outliers) - 1:
+				text_insert = text_insert + r", \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 			else:
-				if len(args.sampleqc_outliers.split(",")) == 2:
-					text_insert = text_insert + r" and \ref{fig:adjSampleMetricDist" + l + r"}"
+				if len(args.sampleqc_outliers) == 2:
+					text_insert = text_insert + r" and \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 				else:
-					text_insert = text_insert + r", and \ref{fig:adjSampleMetricDist" + l + r"}"
+					text_insert = text_insert + r", and \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 		text=r"The distributions for each PCARM and any outliers (cluster = 1) found are shown in {0}. Samples are labeled according to Table \ref{{table:sampleOutlierLegend}}.".format(text_insert)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
 			r"\begin{table}[H]",
 			r"	\caption{Sample Legend for Outlier Plots}",
-			r"	\centering",
+			r"	\begin{center}",
 			r"	\begin{tabular}{>{\bfseries}r l}",
-			r"		Grey & Clustered into Gaussian distributed subsets (not Flagged) \\",
-			r"		Orange & Flagged as outlier based on individual PCARM's \\",
-			r"		Blue & Flagged as outlier based on PC's of PCARM's \\",
-			r"		Green & Flagged as outlier for both methods",
+			r"		\toprule",
+			r"		Grey & Clustered into Gaussian distributed subsets (not Flagged)\\*",
+			r"		Orange & Flagged as outlier based on individual PCARM's\\*",
+			r"		Blue & Flagged as outlier based on PC's of PCARM's\\*",
+			r"		Green & Flagged as outlier for both methods\\*",
+			r"		\bottomrule",
 			r"	\end{tabular}",
+			r"	\end{center}",
 			r"	\label{table:sampleOutlierLegend}",
 			r"\end{table}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		for a in args.sampleqc_outliers.split(","):
-			l = a.split("___")[0]
-			m = a.split("___")[1]
+		for x in args.sampleqc_outliers:
+			array = x.split(",")[0]
 			text=[
 				r"\begin{figure}[H]",
 				r"	\centering",
-				r"	\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio,page=1]{" + m + r"}",
-				r"	\caption{Adjusted sample metric distributions for " + l.replace("_","\_") + r"}",
-				r"	\label{fig:adjSampleMetricDist""" + l + r"}",
+				r"	\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio,page=1]{" + x.split(",")[1] + r"}",
+				r"	\caption{Adjusted sample metric distributions for " + array.replace("_","\_") + r"}",
+				r"	\label{fig:adjSampleMetricDist""" + array.replace("_","") + r"}",
 				r"\end{figure}"]
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
-		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across both genotyping technologies. Note that \"PCA(Metrics)\" results from the clustering of the PCs of the 10 PCARM's combined, so \"Metrics + PCA(Metrics)\" is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
+		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across both genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 10 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
-					r"\begin{ThreePartTable}",
+					r"\begin{table}[H]",
+					r"	\caption{Samples flagged for removal}",
+					r"	\begin{center}",
 					r"	\pgfplotstabletypeset[",
 					r"		font=\footnotesize\sffamily,",
 					r"		col sep=tab,"]
@@ -139,7 +146,7 @@ def main(args=None):
 					r"		column type={>{\fontseries{bx}\selectfont}c},"])
 		for c in cols:
 			if c == cols[0]:
-				text.extend(
+				text.extend([
 					r"		columns/" + c + r"/.style={column name=, string type, column type={>{\fontseries{bx}\selectfont}r}},"])
 			elif c == cols[len(cols)-1]:
 				text.extend([
@@ -149,12 +156,21 @@ def main(args=None):
 					r"		columns/" + c + r"/.style={column name=" + c.replace("_","\_") + r", string type},"])
 		text.extend([
 					r"		postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
-					r"		every head row/.append style={before row={\caption{Samples flagged for removal}\label{table:outlierSummaryTable}\\\toprule}, after row=\midrule\endfirsthead},",
-					r"		every first row/.append style={before row={\multicolumn{" + str(len(cols)) + r"}{c}{}\\ \caption[]{... continued from previous page}\\\\\toprule}, after row=\midrule\endhead},",
-					r"		every last row/.style={after row=\bottomrule},",
+					r"		every head row/.append style={",
+					r"			before row=",
+					r"				\toprule,",
+					r"			after row=",
+					r"				\midrule",
+					r"		},",
+					r"		every last row/.style={",
+					r"			after row=",
+					r"				\bottomrule",
+					r"		},",
 					r"		empty cells with={}",
 					r"	]{" + args.sampleqc_summary_table + r"}",
-					r"\end{ThreePartTable}"])
+					r"	\end{center}",
+					r"	\label{table:outlierSummaryTable}",
+					r"\end{table}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		text=[
@@ -176,7 +192,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--compare-dist-adj', help='an nHet adjusted plot', required=True)
 	requiredArgs.add_argument('--compare-dist-label', help='an array label', required=True)
 	requiredArgs.add_argument('--compare-dist-metric', help='a metric', required=True)
-	requiredArgs.add_argument('--sampleqc-outliers', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--sampleqc-outliers', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--sampleqc-summary-table', help='a sampleqc summary table', required=True)
 	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining', required=True)
 	args = parser.parse_args()

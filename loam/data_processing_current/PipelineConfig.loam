@@ -33,6 +33,7 @@ val pyMhtPlot                                  = path(pipelineConfig.getStr("scr
 val shRegPlot                                  = path(pipelineConfig.getStr("scripts.shRegPlot"))
 val pyExtractTopRegions                        = path(pipelineConfig.getStr("scripts.pyExtractTopRegions"))
 val pyCompileExclusions                        = path(pipelineConfig.getStr("scripts.pyCompileExclusions"))
+val pyGenerateReportHeader                     = path(pipelineConfig.getStr("scripts.pyGenerateReportHeader"))
 val pyGenerateQcReportIntro                    = path(pipelineConfig.getStr("scripts.pyGenerateQcReportIntro"))
 val pyGenerateQcReportData                     = path(pipelineConfig.getStr("scripts.pyGenerateQcReportData"))
 val pyGenerateQcReportAncestry                 = path(pipelineConfig.getStr("scripts.pyGenerateQcReportAncestry"))

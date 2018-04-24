@@ -98,7 +98,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       ${results}
       EUR
       hg19
-      1000G_Apr2017
+      1000G_Nov2014
       ${summaryStores.resultsSummaryData.regPlotsBase}"""
       .in(results, summaryStores.resultsSummaryData.sigRegions)
       .out(summaryStores.resultsSummaryData.regPlotsPdf)

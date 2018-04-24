@@ -1,7 +1,7 @@
 library(argparse)
 
 parser <- ArgumentParser()
-parser$add_argument("--input", dest="input", type="character", help="a comma separated list of labels and files, each delimited by three underscores (eg. ex___file1,omni___file2)")
+parser$add_argument("--input", nargs='+', dest="input", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--type", choices=c("bim","fam"), dest="type", type="character", help="a file type")
 parser$add_argument("--ancestry", dest="ancestry", type="character", help="an inferred ancestry file")
 parser$add_argument("--out", dest="out", type="character", help="an output filename ending in '.png' or '.pdf'")
@@ -11,12 +11,10 @@ print(args)
 
 barcolors <- list(AFR="#08306B",AMR="#41AB5D",EAS="#000000",EUR="#F16913",SAS="#3F007D")
 
-library(UpSetR)
-
 ids<-list()
-for(inp in unlist(strsplit(args$input,","))) {
-	l<-unlist(strsplit(inp,"___"))[1]
-	f<-unlist(strsplit(inp,"___"))[2]
+for(inp in args$input) {
+	l<-unlist(strsplit(inp,","))[1]
+	f<-unlist(strsplit(inp,","))[2]
 	tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
 	if(args$type == "fam") {
 		if(! is.null(args$ancestry)) {
@@ -49,7 +47,15 @@ if(unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))] ==
 	stop(paste("output extension ",unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))]," not supported",sep=""))
 }
 
+#library(VennDiagram)
+#olap<-calculate.overlap(ids)
+#print(names(olap))
+#for(idx in names(olap)) {
+#	print(length(olap[[idx]]))
+#}
+
+library(UpSetR)
 # green: #16BE72
 # blue: #1F76B4
-upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=1, number.angles = 30, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 2))
+upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=3, number.angles = -35, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 2))
 dev.off()

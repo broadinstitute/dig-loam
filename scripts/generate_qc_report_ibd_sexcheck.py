@@ -15,94 +15,85 @@ def main(args=None):
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
-			r"\begin{itemize}",
-			r"	\item v.altAllele.isSNP",
-			r"	\item ! v.altAllele.isComplex",
-			r"	\item {[\"A\",\"C\",\"G\",\"T\"]}.toSet.contains(v.altAllele.ref)",
-			r"	\item {[\"A\",\"C\",\"G\",\"T\"]}.toSet.contains(v.altAllele.alt)",
-			r"	\item va.qc.AF >= 0.01",
-			r"	\item va.qc.callRate >= 0.98",
-			r"\end{itemize}"]
+			r"\begin{samepage}",
+			r"	\begin{itemize}",
+			r"		\item v.altAllele.isSNP",
+			r"		\item ! v.altAllele.isComplex",
+			r"		\item {[`A',`C',`G',`T']}.toSet.contains(v.altAllele.ref)",
+			r"		\item {[`A',`C',`G',`T']}.toSet.contains(v.altAllele.alt)",
+			r"		\item va.qc.AF >= 0.01",
+			r"		\item va.qc.callRate >= 0.98",
+			r"	\end{itemize}",
+			r"\end{samepage}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		bim_list = args.filtered_bim.split(",")
-		if len(bim_list) > 1:
+		if len(args.filtered_bim) > 1:
 			i = 0
-			for a in bim_list:
+			for x in args.filtered_bim:
 				i = i + 1
-				l = a.split("___")[0]
-				m = a.split("___")[1]
-				df = pd.read_table(m, header=None)
+				array = x.split(",")[0]
+				df = pd.read_table(x.split(",")[1], header=None)
 				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
-				elif i < len(bim_list)-1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
+					text1 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
+				elif i < len(args.filtered_bim)-1:
+					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
 				else:
-					if len(bim_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
+					if len(args.filtered_bim) == 2:
+						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_") + " variants"
+						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
 		else:
-			m = args.filtered_bim.split("___")[1]
-			df = pd.read_table(m, header=None)
+			df = pd.read_table(args.filtered_bim.split(",")[1], header=None)
 			text1 = "{0:,d}".format(df.shape[0]) + " variants"
 		text=r"After filtering there were {0} remaining.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		kin0_list = args.kin0_related.split(",")
-		if len(kin0_list) > 1:
+		if len(args.kin0_related) > 1:
 			i = 0
-			for a in kin0_list:
+			for x in args.kin0_related:
 				i = i + 1
-				l = a.split("___")[0]
-				m = a.split("___")[1]
-				df = pd.read_table(m)
+				array = x.split(",")[0]
+				df = pd.read_table(x.split(",")[1])
 				df = df[df['Kinship'] > 0.4]
 				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
-				elif i < len(kin0_list)-1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
+					text1 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
+				elif i < len(args.kin0_related)-1:
+					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
 				else:
-					if len(kin0_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
+					if len(args.kin0_related) == 2:
+						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
+						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
 		else:
-			l = args.kin0_related.split("___")[0]
-			m = args.kin0_related.split("___")[1]
-			df = pd.read_table(m)
+			df = pd.read_table(args.kin0_related.split(",")[1])
 			df = df[df['Kinship'] > 0.4]
 			text1 = "{0:,d}".format(df.shape[0])
 		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		fam_list = args.famsizes.split(",")
-		if len(fam_list) > 0:
+		if len(args.famsizes) > 0:
 			i = 0
-			for a in fam_list:
+			for x in args.famsizes:
 				i = i + 1
-				l = a.split("___")[0]
-				m = a.split("___")[1]
+				array = x.split(",")[0]
 				try:
-					df = pd.read_table(m, header=None)
+					df = pd.read_table(x.split(",")[1], header=None)
 				except pandas.io.common.EmptyDataError:
-					print "skipping empty famsize file " + m
+					print "skipping empty famsize file " + x.split(",")[1]
 					df = pd.DataFrame()
 				else:
 					df = df[df[1] >= 10]
 				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
-				elif i < len(bim_list) -1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
+					text1 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
+				elif i < len(args.famsizes) -1:
+					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
 				else:
-					if len(bim_list) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
+					if len(args.famsizes) == 2:
+						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
 					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + l.replace("_","\_")
+						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
 		else:
-			l = a.split("___")[0]
-			m = a.split("___")[1]
-			df = pd.read_table(m, header=None)
+			df = pd.read_table(args.famsizes.split(",")[1], header=None)
 			text1 = "{0:,d}".format(df.shape[0])
 		text=r"In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
@@ -110,16 +101,14 @@ def main(args=None):
 		print "writing sex check section"
 		f.write("\n"); f.write(r"\subsection{Sex Chromosome Check}"); f.write("\n")
 
-		sex_list = args.sexcheck_problems.split(",")
 		text_nomatch=""
 		text_noimpute={}
-		if len(sex_list) > 0:
+		if len(args.sexcheck_problems) > 0:
 			i = 0
-			for a in sex_list:
+			for x in args.sexcheck_problems:
 				i = i + 1
-				l = a.split("___")[0]
-				m = a.split("___")[1]
-				df = pd.read_table(m)
+				array = x.split(",")[0]
+				df = pd.read_table(x.split(",")[1])
 				if df.shape[0] > 0:
 					nnomatch = df[~np.isnan(df['isFemale'])].shape[0]
 					nnoimpute = df[np.isnan(df['isFemale'])].shape[0]
@@ -127,22 +116,20 @@ def main(args=None):
 					nnomatch = 0
 					nnoimpute = 0
 				if i == 1:
-					text_nomatch = str(nnomatch) + " " + l.replace("_","\_")
-					text_noimpute = str(nnoimpute) + " " + l.replace("_","\_")
-				elif i < len(sex_list) -1:
-					text_nomatch = text_nomatch + ", " + str(nnomatch) + " " + l.replace("_","\_")
-					text_noimpute = text_noimpute + ", " + str(nnoimpute) + " " + l.replace("_","\_")
+					text_nomatch = str(nnomatch) + " " + array.replace("_","\_")
+					text_noimpute = str(nnoimpute) + " " + array.replace("_","\_")
+				elif i < len(args.sexcheck_problems) -1:
+					text_nomatch = text_nomatch + ", " + str(nnomatch) + " " + array.replace("_","\_")
+					text_noimpute = text_noimpute + ", " + str(nnoimpute) + " " + array.replace("_","\_")
 				else:
-					if len(sex_list) == 2:
-						text_nomatch = text_nomatch + " and " + str(nnomatch) + " " + l.replace("_","\_")
-						text_noimpute = text_noimpute + " and " + str(nnoimpute) + " " + l.replace("_","\_")
+					if len(args.sexcheck_problems) == 2:
+						text_nomatch = text_nomatch + " and " + str(nnomatch) + " " + array.replace("_","\_")
+						text_noimpute = text_noimpute + " and " + str(nnoimpute) + " " + array.replace("_","\_")
 					else:
-						text_nomatch = text_nomatch + ", and " + str(nnomatch) + " " + l.replace("_","\_")
-						text_noimpute = text_noimpute + ", and " + str(nnoimpute) + " " + l.replace("_","\_")
+						text_nomatch = text_nomatch + ", and " + str(nnomatch) + " " + array.replace("_","\_")
+						text_noimpute = text_noimpute + ", and " + str(nnoimpute) + " " + array.replace("_","\_")
 		else:
-			l = args.sexcheck_problems.split("___")[0]
-			m = args.sexcheck_problems.split("___")[1]
-			df = pd.read_table(m)
+			df = pd.read_table(args.sexcheck_problems.split(",")[1])
 			if df.shape[0] > 0:
 				nnomatch = df[~np.isnan(df['isFemale'])].shape[0]
 				nnoimpute = df[np.isnan(df['isFemale'])].shape[0]
@@ -158,9 +145,9 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
-	requiredArgs.add_argument('--filtered-bim', help='a comma separated list of array labels and filtered bim files, each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--kin0-related', help='a comma separated list of array labels and kin0 related files, each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--famsizes', help='a comma separated list of array labels and famsizes files, each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--sexcheck-problems', help='a comma separated list of array labels and sexcheck problems files, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--filtered-bim', nargs='+', help='a comma separated list of array labels and filtered bim files, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--kin0-related', nargs='+', help='a comma separated list of array labels and kin0 related files, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--famsizes', nargs='+', help='a comma separated list of array labels and famsizes files, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--sexcheck-problems', nargs='+', help='a comma separated list of array labels and sexcheck problems files, each separated by 3 underscores', required=True)
 	args = parser.parse_args()
 	main(args)
