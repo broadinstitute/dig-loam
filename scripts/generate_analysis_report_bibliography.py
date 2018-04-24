@@ -52,7 +52,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--known-loci-citations', help='a comma separated list of tags and citations, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--known-loci-citations', help='a 3 comma separated list of tags and citations, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--names', help='a comma separated list of names for acknowledgement', required=True)
 	requiredArgs.add_argument('--out-tex', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--out-input', help='an output file name with extension .input', required=True)

@@ -1,26 +1,41 @@
-#library(Hmisc)
 library(reshape2)
 library(ggplot2)
-args<-commandArgs(trailingOnly=T)
+library(argparse)
+
+parser <- ArgumentParser()
+parser$add_argument("--pca-scores", dest="pca_scores", type="character", help="A file containing PCA scores")
+parser$add_argument("--cluster", dest="cluster", type="character", help="A klustakwik cluster file")
+parser$add_argument("--pheno-file", dest="pheno_file", type="character", help="A phenotype file")
+parser$add_argument("--id", dest="id", type="character", help="A project id")
+parser$add_argument("--pheno", dest="pheno", type="character", help="A phenotype file column name")
+parser$add_argument("--sr-race", dest="sr_race", type="character", help="A phenotype file self reported race column name")
+parser$add_argument("--cluster-plots", dest="cluster_plots", type="character", help="An output filename for cluster plots")
+parser$add_argument("--xtabs", dest="xtabs", type="character", help="An output filename for cross tabs")
+parser$add_argument("--plots-centers", dest="plots_centers", type="character", help="An output filename for cluster plots with centers")
+parser$add_argument("--cluster-groups", dest="cluster_groups", type="character", help="An output filename for cluster groups")
+parser$add_argument("--ancestry-inferred", dest="ancestry_inferred", type="character", help="An output filename for inferred ancestry")
+parser$add_argument("--cluster-plots-no1kg", dest="cluster_plots_no1kg", type="character", help="An output filename for cluster plots without 1kg samples")
+args<-parser$parse_args()
+
 print(args)
 
-dat<-read.table(args[1], header=T, as.is=T, stringsAsFactors=F)
-cl<-read.table(args[2], as.is=T, skip=1, stringsAsFactors=F)
+dat<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F)
+cl<-read.table(args$cluster, as.is=T, skip=1, stringsAsFactors=F)
 names(cl)[1]<-"CLUSTER"
 dat<-cbind(dat,cl)
-pheno<-read.table(args[3], header=T, as.is=T, stringsAsFactors=F, sep="\t")
-pheno<-pheno[,c(args[5],args[6])]
+pheno<-read.table(args$pheno_file, header=T, as.is=T, stringsAsFactors=F, sep="\t")
+pheno<-pheno[,c(args$pheno,args$sr_race)]
 names(pheno)[1]<-"IID"
 dat<-merge(dat,pheno,all.x=T)
 
-outfile<-paste(unlist(strsplit(args[1],"/"))[1:(length(unlist(strsplit(args[1],"/")))-1)],args[4],sep="/")
+outfile<-paste(unlist(strsplit(args$pca_scores,"/"))[1:(length(unlist(strsplit(args$pca_scores,"/")))-1)],args$id,sep="/")
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)
   hcl(h=hues, l=65, c=100)[1:n]
 }
 color<-gg_color_hue(max(dat$CLUSTER))
 
-pdf(args[7],width=7, height=7)
+pdf(args$cluster_plots,width=7, height=7)
 for(i in grep("^PC",names(dat))[-length(grep("^PC",names(dat)))]) {
 	p<-ggplot(dat, aes(dat[,i],dat[,i+1])) +
 		geom_point(aes(color=factor(CLUSTER),shape=factor(GROUP))) +
@@ -41,7 +56,7 @@ dev.off()
 clusters_unknown<-c()
 clusters_exclude<-c()
 for(i in unique(dat$CLUSTER)[unique(dat$CLUSTER) != 1]) {
-	if(nrow(dat[dat$CLUSTER == i & dat$GROUP == args[4],]) > 0) {
+	if(nrow(dat[dat$CLUSTER == i & dat$GROUP == args$id,]) > 0) {
 		clusters_unknown<-c(clusters_unknown,i)
 	} else {
 		clusters_exclude<-c(clusters_exclude,i)
@@ -49,7 +64,7 @@ for(i in unique(dat$CLUSTER)[unique(dat$CLUSTER) != 1]) {
 }
 
 i<-0
-cohorts_1kg<-unique(dat$GROUP)[unique(dat$GROUP) != args[4]]
+cohorts_1kg<-unique(dat$GROUP)[unique(dat$GROUP) != args$id]
 for(c in cohorts_1kg) {
 	i<-i+1
 	if(i == 1) {
@@ -65,9 +80,9 @@ i<-0
 for(c in clusters_unknown) {
 	i<-i+1
 	if(i == 1) {
-		centers_unknown<-colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args[4],])
+		centers_unknown<-colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args$id,])
 	} else {
-		centers_unknown<-rbind(centers_unknown,colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args[4],]))
+		centers_unknown<-rbind(centers_unknown,colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args$id,]))
 	}
 }
 for(c in clusters_exclude) {
@@ -103,7 +118,7 @@ for(i in 1:(nrow(centers_unknown)-(1+length(clusters_exclude)))) {
 # centers_unknown$ASSIGNED[! as.integer(row.names(centers_unknown)) %in% c(clusters_exclude,1) & centers_unknown$ratio < 1.5]<-centers_unknown$closest1[! as.integer(row.names(centers_unknown)) %in% c(clusters_exclude,1) & centers_unknown$ratio < 1.5]
 
 bd<-as.data.frame.matrix(table(dat[,c("CLUSTER","GROUP")]))
-bd<-cbind(bd,as.data.frame.matrix(table(dat[,c("CLUSTER",args[6])])))
+bd<-cbind(bd,as.data.frame.matrix(table(dat[,c("CLUSTER",args$sr_race)])))
 bd$cluster<-as.integer(row.names(bd))
 centers_unknown$ASSIGNED<-"OUTLIERS"
 centers_unknown$cluster<-as.integer(row.names(centers_unknown))
@@ -118,12 +133,12 @@ for(i in 1:nrow(centers_unknown)) {
 		}
 	}
 }
-sink(file=args[8])
+sink(file=args$xtabs)
 print(centers_unknown)
 sink()
 
 centers_unknown_included<-centers_unknown[! centers_unknown$cluster %in% c(clusters_exclude,1),]
-pdf(args[9],width=7, height=7)
+pdf(args$plots_centers,width=7, height=7)
 for(i in seq(1,2)) {
 	p<-ggplot(dat, aes(dat[,paste("PC",i,sep="")],dat[,paste("PC",i+1,sep="")])) +
 		geom_point(aes(color=factor(CLUSTER),shape=factor(GROUP))) +
@@ -154,7 +169,7 @@ for(i in 1:nrow(centers_unknown)) {
 		}
 	}
 }
-write.table(a,args[10],row.names=F,col.names=F,sep="\t",append=F,quote=F)
+write.table(a,args$cluster_groups,row.names=F,col.names=F,sep="\t",append=F,quote=F)
 
 dat$ASSIGNED<-"OUTLIERS"
 for(i in 1:nrow(a)) {
@@ -162,7 +177,7 @@ for(i in 1:nrow(a)) {
 }
 
 ### WRITE ASSIGMENTS TO FILES
-write.table(dat[which(dat$GROUP == args[4]),c("IID","ASSIGNED")],args[11],col.names=F,row.names=F,quote=F,append=F,sep="\t")
+write.table(dat[which(dat$GROUP == args$id),c("IID","ASSIGNED")],args$ancestry_inferred,col.names=F,row.names=F,quote=F,append=F,sep="\t")
 
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)
@@ -170,8 +185,8 @@ gg_color_hue <- function(n) {
 }
 color<-gg_color_hue(max(dat$CLUSTER))
 
-dat<-dat[which(dat$GROUP == args[4] & dat$ASSIGNED != "OUTLIERS"),]
-pdf(args[12],width=7, height=7)
+dat<-dat[which(dat$GROUP == args$id & dat$ASSIGNED != "OUTLIERS"),]
+pdf(args$cluster_plots_no1kg,width=7, height=7)
 for(i in seq(1,9)) {
 	p<-ggplot(dat, aes(dat[,paste("PC",i,sep="")],dat[,paste("PC",i+1,sep="")])) +
 		geom_point(aes(color=factor(CLUSTER),shape=factor(ASSIGNED))) +

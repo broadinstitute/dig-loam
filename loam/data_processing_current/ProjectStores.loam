@@ -1,0 +1,55 @@
+import ProjectConfig._
+import PipelineConfig._
+
+object ProjectStores {
+
+  val kgVcf = (1 to 23).map { chr =>
+  
+    val vcf = if(chr < 23) { 
+        store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr") + ".vcf.gz").asInput
+      } else {
+        store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr").replace("23.phase3_shapeit2_mvncall_integrated_v5a","X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
+      }
+  
+    chr -> vcf
+  
+  }.toMap
+  
+  val kgLegend = (1 to 23).map { chr =>
+  
+    val legend = if(chr < 23) { 
+        store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr")).asInput
+      } else {
+        store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr").replace("23","X")).asInput
+      }
+  
+    chr -> legend
+  
+  }.toMap
+  
+  val humanReference = (1 to 23).map { chr =>
+  
+    val ref = if(chr < 23) { 
+        store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
+      } else {
+        store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr").replace("23","X")).asInput
+      }
+  
+    chr -> ref
+  
+  }.toMap
+  
+  val regionsExclude = store.at(path(projectConfig.regionsExclude)).asInput
+  val regionsExcludeGoogle = store.at(uri(projectConfig.regionsExcludeGoogle)).asInput
+  val genePositions = store.at(path(projectConfig.genePositions)).asInput
+  val kgPurcellVcf = store.at(path(projectConfig.kgPurcellVcf)).asInput
+  val kgPurcellVcfGoogle = store.at(uri(projectConfig.kgPurcellVcfGoogle)).asInput
+  val kgSample = store.at(path(projectConfig.kgSample)).asInput
+  val kgSampleGoogle = store.at(uri(projectConfig.kgSampleGoogle)).asInput
+  val pheno = store.at(path(projectConfig.pheno)).asInput
+  val phenoGoogle = store.at(googleOutDir / s"${projectConfig.pheno}".split("/").last)
+  val ancestryInferred = store.at(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryInferredGoogle = store.at(googleOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryOutliers = store.at(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
+
+}

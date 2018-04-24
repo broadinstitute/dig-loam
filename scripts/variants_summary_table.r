@@ -1,41 +1,41 @@
 library(argparse)
 
 parser <- ArgumentParser()
-parser$add_argument("--freq-in", dest="freq_in", type="character", help="Plink --freq file")
-parser$add_argument("--indel-in", dest="indel_in", type="character", help="indel list")
-parser$add_argument("--multi-in", dest="multi_in", type="character", help="multiallelic variants list")
-parser$add_argument("--dupl-in", dest="dupl_in", type="character", help="duplicate variants list")
+parser$add_argument("--freq-in", nargs='+', dest="freq_in", type="character", help="Plink --freq file list")
+parser$add_argument("--indel-in", nargs='+', dest="indel_in", type="character", help="indel list")
+parser$add_argument("--multi-in", nargs='+', dest="multi_in", type="character", help="multiallelic variants list")
+parser$add_argument("--dupl-in", nargs='+', dest="dupl_in", type="character", help="duplicate variants list")
 parser$add_argument("--out", dest="out", type="character", help="an output filename")
 args<-parser$parse_args()
 
 print(args)
 
 indels<-list()
-for(f in unlist(strsplit(args$indel_in,','))) {
-	x<-unlist(strsplit(f,"___"))[1]
-	y<-unlist(strsplit(f,"___"))[2]
+for(f in args$indel_in) {
+	x<-unlist(strsplit(f,","))[1]
+	y<-unlist(strsplit(f,","))[2]
 	indels[[x]]<-scan(file=y, what="character")
 }
 
 multis<-list()
-for(f in unlist(strsplit(args$multi_in,','))) {
-	x<-unlist(strsplit(f,"___"))[1]
-	y<-unlist(strsplit(f,"___"))[2]
+for(f in args$multi_in) {
+	x<-unlist(strsplit(f,","))[1]
+	y<-unlist(strsplit(f,","))[2]
 	multis[[x]]<-scan(file=y, what="character")
 }
 
 dupls<-list()
-for(f in unlist(strsplit(args$dupl_in,','))) {
-	x<-unlist(strsplit(f,"___"))[1]
-	y<-unlist(strsplit(f,"___"))[2]
+for(f in args$dupl_in) {
+	x<-unlist(strsplit(f,","))[1]
+	y<-unlist(strsplit(f,","))[2]
 	dupls[[x]]<-scan(file=y, what="character")
 }
 
 dfs<-list()
 vars_list<-list()
-for(f in unlist(strsplit(args$freq_in,','))) {
-	x<-unlist(strsplit(f,"___"))[1]
-	y<-unlist(strsplit(f,"___"))[2]
+for(f in args$freq_in) {
+	x<-unlist(strsplit(f,","))[1]
+	y<-unlist(strsplit(f,","))[2]
 
 	dfs[[x]]<-read.table(y,header=T,as.is=T,stringsAsFactors=F)
 
@@ -83,10 +83,9 @@ for(f in unlist(strsplit(args$freq_in,','))) {
 }
 
 cat("Array\tFreq\tUnpl\tAuto\tX\tY\tX(PAR)\tMito\tInDel\tMulti\tDup\tTotal\n",file=args$out)
+cat("NA\tFreq\tUnpl\tAuto\tX\tY\tX(PAR)\tMito\tInDel\tMulti\tDup\tTotal\n",file=args$out,append=T)
 for(x in names(vars_list)) {
-	cat(paste(gsub("_","\\\\_",x),"\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",sep=""),file=args$out,append=T)
-	write.table(cbind('{}',row.names(vars_list[[x]]),vars_list[[x]]),args$out,row.names=F,col.names=F,quote=F,sep="\t",append=T)
-	if(x != names(vars_list[[x]])[length(names(vars_list[[x]]))]) {
-		cat("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",file=args$out,append=T)
-	}
+	outdf<-data.frame(cbind(c(x,rep('NA',length(row.names(vars_list[[x]]))-1)),row.names(vars_list[[x]]),vars_list[[x]]))
+	outdf<-data.frame(lapply(outdf,function(x) gsub("_","\\\\_",x)))
+	write.table(outdf,args$out,row.names=F,col.names=F,quote=F,sep="\t",append=T)
 }

@@ -1,7 +1,16 @@
 library(reshape2)
-args<-commandArgs(trailingOnly=T)
-data<-read.table(args[1],header=T,as.is=T,stringsAsFactors=F)
-pcs<-read.table(args[2],header=T,as.is=T,stringsAsFactors=F)
+library(argparse)
+
+parser <- ArgumentParser()
+parser$add_argument("--sampleqc-stats", dest="sampleqc_stats", type="character", help="A sample qc stats file")
+parser$add_argument("--pca-scores", dest="pca_scores", type="character", help="A file containing PCA scores")
+parser$add_argument("--out", dest="out", type="character", help="an output file name")
+args<-parser$parse_args()
+
+print(args)
+
+data<-read.table(args$sampleqc_stats,header=T,as.is=T,stringsAsFactors=F)
+pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F)
 pcs$POP<-NULL
 pcs$GROUP<-NULL
 out<-merge(data,pcs,all.y=T)
@@ -12,4 +21,4 @@ for(x in names(out)[grep("^PC|IID",names(out),invert=TRUE)]) {
 		names(out)[names(out) == "res"]<-paste(x,"_res",sep="")
 	}
 }
-write.table(out[,c("IID",names(out)[grep("_res",names(out))])],args[3],row.names=F,col.names=T,sep="\t",quote=F,append=F)
+write.table(out[,c("IID",names(out)[grep("_res",names(out))])],args$out,row.names=F,col.names=T,sep="\t",quote=F,append=F)

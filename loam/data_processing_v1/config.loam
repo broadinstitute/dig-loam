@@ -1,0 +1,13 @@
+val dataConfig       = loadConfig("dataConfig", "")
+val pipelineConfig   = loadConfig("pipelineConfig", "")
+
+val sampleQcMetrics         = pipelineConfig.getStrList("sampleQcMetrics")
+val ancestryOutliersKeep    = pipelineConfig.getStrList("ancestryOutliersKeep")
+val duplicatesKeep          = pipelineConfig.getStrList("duplicatesKeep")
+val famsizeKeep             = pipelineConfig.getStrList("famsizeKeep")
+val sampleqcKeep            = pipelineConfig.getStrList("sampleqcKeep")
+val sexcheckKeep            = pipelineConfig.getStrList("sexcheckKeep")
+
+val projectId       = dataConfig.getStr("projectId")
+val localOutDir     = path(pipelineConfig.getStr("outputDirs.local"))
+val googleOutDir    = uri(pipelineConfig.getStr("outputDirs.google"))

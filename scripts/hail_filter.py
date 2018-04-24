@@ -24,12 +24,6 @@ def main(args=None):
 	vds = vds.filter_variants_table(exclude_regions_list, keep=False)
 	vds.summarize().report()
 
-	print "writing filtered vds dataset"
-	vds.write(args.filt_vds_out, overwrite=True)
-	
-	print "writing Plink files to disk"
-	vds.export_plink(args.filt_plink_out, fam_expr='famID = s, id = s')
-
 	print "extracting pruned set of variants"
 	vds = vds.ld_prune(num_cores=multiprocessing.cpu_count())
 	vds.export_variants(args.variants_prunedin_out, expr="v")
@@ -48,8 +42,6 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--regions-exclude', help='a list of Tabix formatted regions to exclude from QC', required=True)
 	requiredArgs.add_argument('--variant-qc-out', help='an output filename for variant QC filters', required=True)
 	requiredArgs.add_argument('--variants-prunedin-out', help='an output filename for pruned variant list', required=True)
-	requiredArgs.add_argument('--filt-vds-out', help='a filtered hail vds dataset name', required=True)
-	requiredArgs.add_argument('--filt-plink-out', help='a filtered Plink dataset name', required=True)
 	requiredArgs.add_argument('--filt-pruned-vds-out', help='a pruned and filtered hail vds dataset name', required=True)
 	requiredArgs.add_argument('--filt-pruned-plink-out', help='a pruned and filtered Plink dataset name', required=True)
 	args = parser.parse_args()
