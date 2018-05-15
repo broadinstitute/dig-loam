@@ -1,0 +1,263 @@
+val dataConfig = loadConfig("dataConfig", "")
+
+final case class ConfigArray(
+  id: String,
+  filename: String,
+  format: String,
+  liftOver: Option[String] = None,
+  xChr: Boolean)
+
+final case class ConfigCohort(
+  id: String,
+  array: String,
+  ancestry: Seq[String],
+  report: Boolean)
+
+final case class ConfigMeta(
+  id: String,
+  cohorts: Seq[String],
+  report: Boolean)
+
+final case class ConfigMerge(
+  id: String,
+  cohorts_metas: Seq[String],
+  report: Boolean)
+
+final case class ConfigPheno(
+  phase: Int,
+  pheno: String,
+  name: String)
+
+final case class ConfigModel(
+  pheno: String,
+  trans: String,
+  test: String,
+  covars: String,
+  phase: Int)
+
+final case class ConfigKnownLoci(
+  model: ConfigModel,
+  data: String,
+  hiLd: String,
+  ancestry: Seq[String],
+  n: String,
+  nCase: String,
+  nCtrl: String,
+  desc: String,
+  tag: String,
+  citation: String)
+
+final case class ProjectConfig(
+  projectId: String,
+  regionsExclude: String,
+  regionsExcludeGoogle: String,
+  genePositions: String,
+  kgPurcellVcf: String,
+  kgPurcellVcfGoogle: String,
+  kgSample: String,
+  kgSampleGoogle: String,
+  kgSampleId: String,
+  kgSamplePop: String,
+  kgSampleGroup: String,
+  kgVcfBaseWild: String,
+  kgLegendWild: String,
+  humanReferenceWild: String,
+  pheno: String,
+  phenoId: String,
+  phenoSrSex: String,
+  phenoSrRace: String,
+  phenoStatus: String,
+  qcReportAuthors: Seq[String],
+  analysisReportAuthors: Seq[String],
+  analysisReportAcknowledgements: Seq[String],
+  nAncestryInferenceFeatures: Int,
+  sampleQcMetrics: Seq[String],
+  ancestryOutliersKeep: Seq[String],
+  duplicatesKeep: Seq[String],
+  famsizeKeep: Seq[String],
+  sampleqcKeep: Seq[String],
+  sexcheckKeep: Seq[String],
+  ancestryInferenceFeatures: String,
+  nArrays: Int,
+  nCohorts: Int,
+  nMetas: Int,
+  nPhases: Int,
+  nMetrics: Int,
+  Arrays: Seq[ConfigArray],
+  Cohorts: Seq[ConfigCohort],
+  Metas: Seq[ConfigMeta],
+  Merges: Seq[ConfigMerge],
+  Phenos: Seq[ConfigPheno],
+  Models: Seq[ConfigModel],
+  KnownLoci: Seq[ConfigKnownLoci])
+
+val projectConfig = ProjectConfig(
+
+  // required global values in conf file
+  projectId = dataConfig.getStr("projectId"),
+  regionsExclude = dataConfig.getStr("regionsExclude"),
+  regionsExcludeGoogle = dataConfig.getStr("regionsExcludeGoogle"),
+  genePositions = dataConfig.getStr("genePositions"),
+  kgPurcellVcf = dataConfig.getStr("kgPurcellVcf"),
+  kgPurcellVcfGoogle = dataConfig.getStr("kgPurcellVcfGoogle"),
+  kgSample = dataConfig.getStr("kgSample"),
+  kgSampleGoogle = dataConfig.getStr("kgSampleGoogle"),
+  kgSampleId = dataConfig.getStr("kgSampleId"),
+  kgSamplePop = dataConfig.getStr("kgSamplePop"),
+  kgSampleGroup = dataConfig.getStr("kgSampleGroup"),
+  kgVcfBaseWild = dataConfig.getStr("kgVcfBaseWild"),
+  kgLegendWild = dataConfig.getStr("kgLegendWild"),
+  humanReferenceWild = dataConfig.getStr("humanReferenceWild"),
+  pheno = dataConfig.getStr("pheno"),
+  phenoId = dataConfig.getStr("phenoId"),
+  phenoSrSex = dataConfig.getStr("phenoSrSex"),
+  phenoSrRace = dataConfig.getStr("phenoSrRace"),
+  phenoStatus = dataConfig.getStr("phenoStatus"),
+  qcReportAuthors = dataConfig.getStrList("qcReportAuthors"),
+  analysisReportAuthors = dataConfig.getStrList("analysisReportAuthors"),
+  analysisReportAcknowledgements = dataConfig.getStrList("analysisReportAcknowledgements"),
+  nAncestryInferenceFeatures = dataConfig.getInt("nAncestryInferenceFeatures"),
+  sampleQcMetrics = dataConfig.getStrList("sampleQcMetrics"),
+  ancestryOutliersKeep = dataConfig.getStrList("ancestryOutliersKeep"),
+  duplicatesKeep = dataConfig.getStrList("duplicatesKeep"),
+  famsizeKeep = dataConfig.getStrList("famsizeKeep"),
+  sampleqcKeep = dataConfig.getStrList("sampleqcKeep"),
+  sexcheckKeep = dataConfig.getStrList("sexcheckKeep"),
+
+  // inferred global values
+  ancestryInferenceFeatures = if (dataConfig.isDefined("nAncestryInferenceFeatures")) { "1" * dataConfig.getInt("nAncestryInferenceFeatures") + "0" * (20 - dataConfig.getInt("nAncestryInferenceFeatures")) } else { "1" * 3 + "0" * (20 - 3) },
+  nArrays = dataConfig.getObjList("arrays").size,
+  nCohorts = dataConfig.getObjList("cohorts").size,
+  nMetas = dataConfig.getObjList("metas").size,
+  nPhases = dataConfig.getObjList("phases").size,
+  nMetrics = dataConfig.getStrList("sampleQcMetrics").size,
+
+  // arrays
+  Arrays = {
+
+    for {
+      array <- dataConfig.getObjList("arrays")
+    } yield {
+
+      ConfigArray(
+        id = array.getStr("id"),
+        filename = array.getStr("filename"),
+        format = array.getStr("format"),
+        liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
+        xChr = array.getBool("xChr"))
+
+    }
+
+  },
+
+  Cohorts = {
+
+    for {
+      cohort <- dataConfig.getObjList("cohorts")
+    } yield {
+
+      ConfigCohort(
+        id = cohort.getStr("id"),
+        array = cohort.getStr("array"),
+        ancestry = cohort.getStrList("ancestry"),
+        report = cohort.getBool("report"))
+
+    }
+
+  },
+
+  Metas = {
+
+    for {
+      meta <- dataConfig.getObjList("metas")
+    } yield {
+
+      ConfigMeta(
+        id = meta.getStr("id"),
+        cohorts = meta.getStrList("cohorts"),
+        report = meta.getBool("report"))
+
+    }
+
+  },
+
+  Merges = {
+
+    for {
+      merge <- dataConfig.getObjList("merges")
+    } yield {
+
+      ConfigMerge(
+        id = merge.getStr("id"),
+        cohorts_metas = merge.getStrList("cohorts_metas"),
+        report = merge.getBool("report"))
+
+    }
+
+  },
+
+  Phenos = {
+
+    for {
+      phase <- 0 until dataConfig.getObjList("phases").size
+      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size
+    } yield {
+
+      ConfigPheno(
+        phase = dataConfig.getObjList("phases")(phase).getInt("id"),
+        pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
+        name = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("name"))
+
+    }
+
+  },
+
+  Models = {
+
+    for {
+      phase <- 0 until dataConfig.getObjList("phases").size
+      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size
+      test <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("tests").size
+      covars <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("covars").size
+    } yield {
+
+      ConfigModel(
+        pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
+        trans = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("trans"),
+        test = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("tests")(test),
+        covars = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("covars")(covars),
+        phase = dataConfig.getObjList("phases")(phase).getInt("id"))
+    }
+
+  },
+
+  KnownLoci = {
+
+    for {
+      phase <- 0 until dataConfig.getObjList("phases").size
+      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size
+      knownloci <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci").size
+    } yield {
+
+      ConfigKnownLoci(
+        model = ConfigModel(
+          pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
+          trans = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("trans"),
+          test = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("test"),
+          covars = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("covars"),
+          phase = dataConfig.getObjList("phases")(phase).getInt("id")),
+        data = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("data"),
+        hiLd = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("hiLd"),
+        ancestry = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStrList("ancestry"),
+        n = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("n") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("n") } else { "" },
+        nCase = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("nCase") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("nCase") } else { "" },
+        nCtrl = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("nCtrl") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("nCtrl") } else { "" },
+        desc = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("desc"),
+        tag = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("tag"),
+        citation = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("citation"))
+
+    }
+
+  }
+
+)

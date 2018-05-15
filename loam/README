@@ -6,6 +6,6 @@ data_processing_v1:
    The initial run of these data sets did not require meta-analysis or imputed data as input
    Branched off to refactor and add meta-analysis and imputed data support
 
-data_processing_v2 (currently in data_processing_current):
+data_processing_v2:
    This version was used to process FUSION and NUS Phase 1
    Adds meta-analysis, and the concept of cohorts/metas/merges

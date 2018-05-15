@@ -1,0 +1,160 @@
+/**
+  * Harmonize Step
+  *  Description: Align data strand to 1KG reference. Also, update reference allele and variant ID to match 1KG
+  *  Requires: Plink1.9 and, at least, Genotype Harmonizer v1.4.18
+  *  Notes:
+  *     Could also add --variants and --mafAlign as pipeline options, but for now these are static
+  *     To save time, this will be run in parallel by chromosome number
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+import scala.collection.immutable.ListMap
+
+def Harmonize(array: String): Unit = {
+
+  for {
+
+    (chr, chrData) <- arrayStores(array).annotatedChrData
+
+  } yield { 
+
+    uger {
+
+	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --output-chr MT --out ${chrData.base} --memory 3000 --threads 1"""
+        .in(arrayStores(array).annotatedData.data)
+        .out(chrData.data)
+        .named(s"${chrData.base}".split("/").last)
+
+    }
+
+    ugerWith(mem=8, maxRunTime=6) {
+    
+      cmd"""$binGenotypeHarmonizer
+      --input ${chrData.base}
+      --inputType PLINK_BED
+      --output ${chrData.mergedKgBase}
+      --outputType PLINK_BED
+      --ref ${ProjectStores.kgVcf(chr)}
+      --refType VCF
+      --keep
+      --update-id
+      --variants 1000
+      --mafAlign 0.1
+      --update-id
+      --update-reference-allele
+      --debug"""
+        .in(chrData.data :+ ProjectStores.kgVcf(chr))
+        .out(chrData.mergedKg :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
+        .named(s"${chrData.mergedKgBase}".split("/").last)
+    
+    }
+
+    uger {
+      
+      cmd"""$binPython $pyAlignNon1kgVariants
+      --legend ${ProjectStores.kgLegend(chr)}
+      --bim ${chrData.mergedKgBase}.bim
+      --ref ${ProjectStores.humanReference(chr)}
+      --out-remove ${chrData.nonKgRemove}
+      --out-ignore ${chrData.nonKgIgnore}
+      --out-mono ${chrData.nonKgMono}
+      --out-nomatch ${chrData.nonKgNomatch}
+      --out-flip ${chrData.nonKgFlip}
+      --out-force-a1 ${chrData.nonKgForceA1}"""
+        .in(chrData.mergedKg :+ ProjectStores.kgLegend(chr))
+        .out(chrData.nonKgRemove, chrData.nonKgIgnore, chrData.nonKgMono,chrData.nonKgNomatch, chrData.nonKgFlip, chrData.nonKgForceA1)
+        .named(s"${chrData.mergedKgNonKgBase}".split("/").last)
+      
+      cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --make-bed --out ${chrData.mergedKgHuRefBase} --memory 3000 --threads 1"""
+        .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
+        .out(chrData.mergedKgHuRef)
+        .named(s"${chrData.mergedKgHuRefBase}".split("/").last)
+    
+    }
+  
+  }
+
+  val mergedKgHuRefLines = {
+
+    for {
+      chr <- arrayStores(array).annotatedChrData.map(e => e._1).toSeq.sortWith(_ < _)
+    } yield {
+
+      s"${arrayStores(array).annotatedChrData(chr).mergedKgHuRefBase}"
+
+    }
+
+  }
+
+  uger {
+  
+    cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(array).harmonizedData.mergeList}"""
+      .out(arrayStores(array).harmonizedData.mergeList)
+      .named(s"${arrayStores(array).harmonizedData.mergeList}".split("/").last)
+  
+    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(array).harmonizedData.mergeList} --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory 3000 --threads 1"""
+      .in(arrayStores(array).annotatedChrData.map(e => e._2).flatMap(e => e.mergedKgHuRef).toSeq :+ arrayStores(array).harmonizedData.mergeList)
+      .out(arrayStores(array).harmonizedData.data)
+      .named(s"${arrayStores(array).harmonizedData.base}".split("/").last)
+  
+    cmd"""awk '{print $$2,$$5}' ${arrayStores(array).harmonizedData.base}.bim > ${arrayStores(array).harmonizedData.forceA2}"""
+      .in(arrayStores(array).harmonizedData.data)
+      .out(arrayStores(array).harmonizedData.forceA2)
+      .named(s"${arrayStores(array).harmonizedData.forceA2}".split("/").last)
+  
+    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
+      .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
+      .out(arrayStores(array).harmonizedData.refData)
+      .named(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
+    
+    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
+      .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
+      .out(arrayStores(array).harmonizedData.vcf)
+      .named(s"${arrayStores(array).harmonizedData.vcf}".split("/").last)
+    
+    cmd"""$binTabix -f -p vcf ${arrayStores(array).harmonizedData.vcf}"""
+      .in(arrayStores(array).harmonizedData.vcf)
+      .out(arrayStores(array).harmonizedData.tbi)
+      .named(s"${arrayStores(array).harmonizedData.tbi}".split("/").last)
+  
+  }
+
+  val nonKgRemoveString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgMonoString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgNomatchString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgNomatch.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgIgnoreString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgIgnore.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgFlipString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgFlip.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgForceA1String = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgForceA1.toString.split("@")(1)}"""}.mkString(",")
+  val mergedKgVarIdUpdateString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
+  val mergedKgVarSnpLogString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
+  
+  ugerWith(mem=8) {
+  
+    cmd"""$binPython $pyMergeVariantLists
+      --remove-in "$nonKgRemoveString"
+      --remove-mono-in "$nonKgMonoString"
+      --remove-nomatch-in "$nonKgNomatchString"
+      --ignore-in "$nonKgIgnoreString"
+      --flip-in "$nonKgFlipString"
+      --force-a1-in "$nonKgForceA1String"
+      --id-updates-in "$mergedKgVarIdUpdateString"
+      --snp-log-in "$mergedKgVarSnpLogString"
+      --remove-out ${arrayStores(array).harmonizedData.nonKgRemove}
+      --remove-mono-out ${arrayStores(array).harmonizedData.nonKgMono}
+      --remove-nomatch-out ${arrayStores(array).harmonizedData.nonKgNomatch}
+      --ignore-out ${arrayStores(array).harmonizedData.nonKgIgnore}
+      --flip-out ${arrayStores(array).harmonizedData.nonKgFlip}
+      --force-a1-out ${arrayStores(array).harmonizedData.nonKgForceA1}
+      --id-updates-out ${arrayStores(array).harmonizedData.mergedKgVarIdUpdate}
+      --snp-log-out ${arrayStores(array).harmonizedData.mergedKgVarSnpLog}
+      """
+      .in(arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgRemove).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgMono).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgNomatch).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgIgnore).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgFlip).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgForceA1).toSeq ++arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.mergedKgVarIdUpdate).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.mergedKgVarSnpLog).toSeq)
+      .out(arrayStores(array).harmonizedData.nonKgRemove, arrayStores(array).harmonizedData.nonKgNomatch, arrayStores(array).harmonizedData.nonKgMono, arrayStores(array).harmonizedData.nonKgIgnore, arrayStores(array).harmonizedData.nonKgFlip, arrayStores(array).harmonizedData.nonKgForceA1, arrayStores(array).harmonizedData.mergedKgVarIdUpdate, arrayStores(array).harmonizedData.mergedKgVarSnpLog)
+      .named(s"${arrayStores(array).harmonizedData.base}.pyMergeVariantLists".split("/").last)
+  
+  }
+
+}
