@@ -15,7 +15,7 @@ def main(args=None):
 		files[r.split("___")[0]] = r.split("___")[2]
 	
 	if len(set(tests.values())) > 1:
-		stop("inverse variance weighted meta analysis cannot be performed on results from multiple different statistical tests!")
+		stop("inverse variance weighted meta analysis cannot be performed on results resulting from different statistical tests!")
 	
 	i = 0
 	for c in cohorts:
@@ -43,7 +43,8 @@ def main(args=None):
 		kt = kt.annotate("case = [" + ",".join([x for x in caseCols]) + "].sum()")
 	
 	if len(ctrlCols) > 0:
-		kt = kt.annotate("ctrl = [" + "+".join([x for x in ctrlCols]) + "].sum()")
+		kt = kt.annotate("ctrl = [" + ",".join([x for x in ctrlCols]) + "].sum()")
+
 	# calculate weighted average avgaf, minaf, and maxaf
 	afCols = [x + "_af" for x in cohorts]
 	kt = kt.annotate("afmin = [" + ",".join([x + "_af" for x in cohorts]) + "].min()")

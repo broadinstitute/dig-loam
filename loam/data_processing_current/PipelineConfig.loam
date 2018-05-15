@@ -10,9 +10,7 @@ val binGhostscript          = path(pipelineConfig.getStr("binaries.binGhostscrip
 val binKlustakwik           = path(pipelineConfig.getStr("binaries.binKlustakwik"))
 val binPython               = path(pipelineConfig.getStr("binaries.binPython"))
 val binLocuszoom            = path(pipelineConfig.getStr("binaries.binLocuszoom"))
-val binConvert              = path(pipelineConfig.getStr("binaries.binConvert"))
 val binPdflatex             = path(pipelineConfig.getStr("binaries.binPdflatex"))
-val binBgzip                = path(pipelineConfig.getStr("binaries.binBgzip"))
 val binRscript              = path(pipelineConfig.getStr("binaries.binRscript"))
 
 // Scripts

@@ -145,6 +145,7 @@ def main(args=None):
 		text=[
 			r"\begin{table}[H]",
 			r"	\caption{Inferred ancestry by dataset and cluster}",
+			r"	\label{table:ancestryClusterTable}",
 			r"	\begin{center}",
 			r"	\pgfplotstabletypeset[",
 			r"		font=\footnotesize\sffamily,",
@@ -177,7 +178,6 @@ def main(args=None):
 			r"		},",
 			r"		empty cells with={}",
 			r"	]{" + args.cluster_table + r"}",
-			r"	\label{table:ancestryClusterTable}",
 			r"	\end{center}",
 			r"\end{table}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
@@ -185,6 +185,7 @@ def main(args=None):
 		text=[
 			r"\begin{table}[H]",
 			r"	\caption{Final inferred ancestry}",
+			r"	\label{table:ancestryFinalTable}",
 			r"	\begin{center}",
 			r"	\pgfplotstabletypeset[",
 			r"		font=\footnotesize\sffamily,",
@@ -207,7 +208,6 @@ def main(args=None):
 			r"		},",
 			r"		empty cells with={}",
 			r"	]{" + args.final_table + r"}",
-			r"	\label{table:ancestryFinalTable}",
 			r"	\end{center}",
 			r"\end{table}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")

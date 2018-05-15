@@ -64,7 +64,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       meta <- projectConfig.Metas
       cohort <- meta.cohorts
     } yield {
-      Seq(meta.id, cohort, s"""${metaStores(meta.id).metaCohortData(cohort).kinshipSamplesExclude.toString.split("@")(1)}""", meta.report.toString).mkString(",")
+      Seq(meta.id, cohort, s"""${metaStores(meta.id).metaCohortData(cohort).kinshipSamplesExclude.path}""", meta.report.toString).mkString(",")
     }
 
   }
@@ -82,8 +82,8 @@ def AnalysisReportGlobal(phase: Int): Unit = {
   uger {
 
     cmd"""$binPython $pyGenerateAnalysisReportData
-      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}
-      --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}
+      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+      --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
       --arrays ${arraysString.mkString(" ")}
       --out-tex ${analysisReportStores(phase).globalData.data}
       --out-input ${analysisReportStores(phase).globalData.dataInput}"""
@@ -134,7 +134,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       cohort <- projectConfig.Cohorts if cohort.report
     } yield {
 
-      Seq(cohort.id, s"""${phenotypeStores((None, cohort, pheno)).figureData.distPlot.toString.split("@")(1)}""").mkString(",")
+      Seq(cohort.id, s"""${phenotypeStores((None, cohort, pheno)).figureData.distPlot.path.toAbsolutePath()}""").mkString(",")
 
     }) ++
     (for {
@@ -142,7 +142,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
     } yield {
 
-      Seq(meta.id, cohort.id, s"""${phenotypeStores((Some(meta), cohort, pheno)).figureData.distPlot.toString.split("@")(1)}""").mkString(",")
+      Seq(meta.id, cohort.id, s"""${phenotypeStores((Some(meta), cohort, pheno)).figureData.distPlot.path.toAbsolutePath()}""").mkString(",")
 
     })
 
@@ -155,7 +155,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(cohort.id, cohort.array, cohort.ancestry.mkString("+"), model.trans, model.covars, s"""${assocStores((None, cohort, model)).pcs.toString.split("@")(1)}""", s"""${assocStores((None, cohort, model)).pheno.toString.split("@")(1)}""").mkString(",")
+      Seq(cohort.id, cohort.array, cohort.ancestry.mkString("+"), model.trans, model.covars, s"""${assocStores((None, cohort, model)).pcs.path}""", s"""${assocStores((None, cohort, model)).pheno.path}""").mkString(",")
 
     }) ++
     (for {
@@ -164,7 +164,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(meta.id, cohort.id, cohort.array, cohort.ancestry.mkString("+"), model.trans, model.covars, s"""${assocStores((Some(meta), cohort, model)).pcs.toString.split("@")(1)}""", s"""${assocStores((Some(meta), cohort, model)).pheno.toString.split("@")(1)}""").mkString(",")
+      Seq(meta.id, cohort.id, cohort.array, cohort.ancestry.mkString("+"), model.trans, model.covars, s"""${assocStores((Some(meta), cohort, model)).pcs.path}""", s"""${assocStores((Some(meta), cohort, model)).pheno.path}""").mkString(",")
 
     })
 
@@ -196,7 +196,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.qqPlotPng.toString.split("@")(1)}""").mkString(",")
+      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.qqPlotPng.path.toAbsolutePath()}""").mkString(",")
 
     }) ++
     (for {
@@ -204,7 +204,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.qqPlotPng.toString.split("@")(1)}""").mkString(",")
+      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.qqPlotPng.path.toAbsolutePath()}""").mkString(",")
 
     })
 
@@ -217,7 +217,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.mhtPlotPng.toString.split("@")(1)}""").mkString(",")
+      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}""").mkString(",")
 
     }) ++
     (for {
@@ -225,7 +225,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.mhtPlotPng.toString.split("@")(1)}""").mkString(",")
+      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}""").mkString(",")
 
     })
 
@@ -253,7 +253,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
   
-      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.top20AnnotAlignedRisk.toString.split("@")(1)}""").mkString(",")
+      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.top20AnnotAlignedRisk.path.toAbsolutePath()}""").mkString(",")
   
     }) ++
     (for {
@@ -261,7 +261,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
   
-      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.top20AnnotAlignedRisk.toString.split("@")(1)}""").mkString(",")
+      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.top20AnnotAlignedRisk.path.toAbsolutePath()}""").mkString(",")
   
     })
   
@@ -274,7 +274,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""", s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}""").mkString(",")
+      Seq(cohort.id, model.trans, model.covars, s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.path}""", s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.regPlotsPdf.path.toAbsolutePath()}""").mkString(",")
   
     }) ++
     (for {
@@ -282,7 +282,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       model <- projectConfig.Models if model.pheno == pheno
     } yield {
 
-      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.sigRegions.toString.split("@")(1)}""", s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.regPlotsPdf.toString.split("@")(1)}""").mkString(",")
+      Seq(meta.id, model.trans, model.covars, s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.sigRegions.path}""", s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.regPlotsPdf.path.toAbsolutePath()}""").mkString(",")
   
     })
   
@@ -316,7 +316,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
           known <- projectConfig.KnownLoci if known.model.pheno == pheno
         } yield {
       
-          Seq(cohort.id, known.model.trans, known.model.covars, s"""${resultsKnownLociSummaryStores((cohort.id, known)).resultsKnownLociSummaryData.top50.toString.split("@")(1)}""").mkString(",")
+          Seq(cohort.id, known.model.trans, known.model.covars, s"""${resultsKnownLociSummaryStores((cohort.id, known)).resultsKnownLociSummaryData.top50.path.toAbsolutePath()}""").mkString(",")
       
         }) ++
         (for {
@@ -324,7 +324,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
           known <- projectConfig.KnownLoci if known.model.pheno == pheno
         } yield {
       
-          Seq(meta.id, known.model.trans, known.model.covars, s"""${resultsKnownLociSummaryStores((meta.id, known)).resultsKnownLociSummaryData.top50.toString.split("@")(1)}""").mkString(",")
+          Seq(meta.id, known.model.trans, known.model.covars, s"""${resultsKnownLociSummaryStores((meta.id, known)).resultsKnownLociSummaryData.top50.path.toAbsolutePath()}""").mkString(",")
       
         })
       
@@ -416,7 +416,7 @@ def AnalysisReportCompile(phase: Int): Unit = {
 
   }.flatten
 
-  val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.toString.split("@")(1)}""")
+  val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.path}""")
 
   uger {
 
@@ -449,7 +449,7 @@ def AnalysisReportCompile(phase: Int): Unit = {
 
   }.flatten
 
-  val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.toString.split("@")(1)}""")
+  val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.path}""")
 
   uger {
     

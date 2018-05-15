@@ -15,6 +15,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\title{AMP-DCC Data Analysis Report \\")
 		f.write("\n"); f.write(args.id + r" \\")
 		f.write("\n"); f.write("Phase " + args.phase + "}"); f.write("\n")
+		f.write("\n"); f.write(r"\date{}"); f.write("\n")
 		f.write("\n"); f.write(r"\maketitle"); f.write("\n")
 
 		if len(args.authors.split(",")) == 1:
@@ -39,13 +40,12 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Introduction}"); f.write("\n")
 
-		text = r"\ExecuteMetaData[\currfilebase.input]{introduction}"
+		text = r"\ExecuteMetaData[\currfilebase.input]{Introduction}"
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	with open(args.out_input,'w') as f:
 
-		text = [r"%<*introduction>","%</introduction>"]
-		f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		f.write("\n".join([r"%<*Introduction>","%</Introduction>"]).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

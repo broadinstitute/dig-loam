@@ -13,10 +13,10 @@ import QcReportStores._
 
 def QcReport(): Unit = {
 
-  val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.freq.toString.split("@")(1)}""").mkString(",") } }
-  val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.indel.toString.split("@")(1)}""").mkString(",") } }
-  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.toString.split("@")(1)}""").mkString(",") } }
-  val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.toString.split("@")(1)}""").mkString(",") } }
+  val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.freq.path}""").mkString(",") } }
+  val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.indel.path}""").mkString(",") } }
+  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
+  val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
   uger {
   
@@ -34,8 +34,8 @@ def QcReport(): Unit = {
 
   }
 
-  val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.toString.split("@")(1)}""").mkString(",") } }
-  val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.toString.split("@")(1)}""").mkString(",") } }
+  val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
+  val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
 
   uger {
 
@@ -102,9 +102,9 @@ def QcReport(): Unit = {
       
       cmd"""$binPython $pyGenerateQcReportData
         --narrays ${projectConfig.nArrays}
-        --samples-upset-diagram ${qcReportStores.figureData.samplesUpsetPlotPdf}
-        --variants-summary-table ${qcReportStores.tablesData.variantsSummary} 
-        --variants-upset-diagram ${qcReportStores.figureData.variantsUpsetPlotPdf} 
+        --samples-upset-diagram ${qcReportStores.figureData.samplesUpsetPlotPdf.path.toAbsolutePath()}
+        --variants-summary-table ${qcReportStores.tablesData.variantsSummary.path.toAbsolutePath()} 
+        --variants-upset-diagram ${qcReportStores.figureData.variantsUpsetPlotPdf.path.toAbsolutePath()} 
         --out ${qcReportStores.texData.data}"""
         .in(qcReportStores.figureData.samplesUpsetPlotPdf, qcReportStores.tablesData.variantsSummary, qcReportStores.figureData.variantsUpsetPlotPdf)
         .out(qcReportStores.texData.data)
@@ -131,8 +131,8 @@ def QcReport(): Unit = {
   }
 
   val ref1kgBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).ref1kgData.base}.bim").mkString(",") } }
-  val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryPcaData.plots.toString.split("@")(1)}""").mkString(",") } }
-  val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.toString.split("@")(1)}""").mkString(",") } }
+  val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryPcaData.plots.path.toAbsolutePath()}""").mkString(",") } }
+  val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
 
   uger {
 
@@ -140,8 +140,8 @@ def QcReport(): Unit = {
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
       --pca-plots ${ancestryPcaPlotsStrings.mkString(" ")}
       --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
-      --cluster-table ${qcReportStores.tablesData.clusters}
-      --final-table ${qcReportStores.tablesData.ancestry}
+      --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
+      --final-table ${qcReportStores.tablesData.ancestry.path.toAbsolutePath()}
       --out ${qcReportStores.texData.ancestry}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
       .out(qcReportStores.texData.ancestry)
@@ -150,9 +150,9 @@ def QcReport(): Unit = {
   }
 
   val refPrunedBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).prunedData.base}.bim").mkString(",") } }
-  val kin0RelatedStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.kin0Related.toString.split("@")(1)}""").mkString(",") } }
-  val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.toString.split("@")(1)}""").mkString(",") } }
-  val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.toString.split("@")(1)}""").mkString(",") } }
+  val kin0RelatedStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.kin0Related.path}""").mkString(",") } }
+  val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
+  val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
 
   uger {
     
@@ -190,8 +190,8 @@ def QcReport(): Unit = {
 
   }
 
-  val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.toString.split("@")(1)}""").mkString(",") } }
-  val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.toString.split("@")(1)}""").mkString(",") } }
+  val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.path}""").mkString(",") } }
+  val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.path}""").mkString(",") } }
 
   uger {
     
@@ -228,18 +228,18 @@ def QcReport(): Unit = {
 
   }
 
-  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.toString.split("@")(1)}""").mkString(",") } }
+  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.path.toAbsolutePath()}""").mkString(",") } }
 
   uger {
 
     cmd"""$binPython $pyGenerateQcReportSampleqc
-      --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf}
-      --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf}
+      --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
+      --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
       --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
       --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
       --sampleqc-outliers ${sampleQcOutlierPlotsStrings.mkString(" ")}
-      --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc}
-      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}
+      --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
+      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
       --out ${qcReportStores.texData.sampleQc}"""
       .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.outliersPlotsPdf).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
       .out(qcReportStores.texData.sampleQc)
@@ -247,7 +247,7 @@ def QcReport(): Unit = {
 
   }
 
-  val finalVariantExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.variantsExclude.toString.split("@")(1)}""").mkString(",") } }
+  val finalVariantExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.variantsExclude.path}""").mkString(",") } }
   val cleanBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.bim").mkString(",") } }
     
   if (projectConfig.nArrays > 1) {
@@ -265,7 +265,7 @@ def QcReport(): Unit = {
         .named(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
   	  
       cmd"""$binPython $pyGenerateQcReportVariantqc
-        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}
+        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
         --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
         --out ${qcReportStores.texData.variantQc}"""
         .in(arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf)

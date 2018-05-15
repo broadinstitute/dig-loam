@@ -44,8 +44,7 @@ def main(args=None):
 
 	with open(args.out_input,'w') as f:
 
-		text = ["",r"%<*bibliography>","%</bibliography>"]
-		f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*bibliography>","%</bibliography>"]).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

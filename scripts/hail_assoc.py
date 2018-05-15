@@ -9,6 +9,9 @@ def main(args=None):
 	print "reading vds dataset"
 	vds = hc.read(args.vds_in)
 
+	print "repartitioning vds dataset"
+	vds = vds.repartition(200)
+
 	if args.extract:
 		print "extracting variants in list"
 		kt = hc.import_table(args.extract, impute=True, no_header=True).annotate('Variant = f0').key_by('Variant')

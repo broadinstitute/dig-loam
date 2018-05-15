@@ -90,7 +90,7 @@ def main(args=None):
 			r"		\bottomrule",
 			r"	\end{tabular}}",
 			r"	\end{center}",
-			r"	\label{table:samplesTable" + args.pheno_name.replace("_","") + r"}",
+			r"	\label{table:" + args.pheno_name.replace("_","-") + r"-Summary-Table}",
 			r"\end{table}"])
 
 
@@ -109,8 +109,9 @@ def main(args=None):
 		f.write("\n"); f.write(r"\section{" + args.pheno_long_name + r"}"); f.write("\n")
 		f.write("\n"); f.write(r"\subsection{Summary}"); f.write("\n")
 
-		text = r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_long_name.replace(" ","-") + r"-summary}"
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary}".encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Distributions}".encode('utf-8')); f.write("\n")
 
 		n = 0
 		text = [
@@ -124,21 +125,25 @@ def main(args=None):
 				r"      \centering",
 				r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[c] + r"}",
 				r"      \caption{" + c.replace("_","\_") + r"}",
-				r"      \label{fig:distPlot" + args.pheno_name.replace("_","") + c.replace("_","") + r"}",
+				r"      \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + r"-Distribution}",
 				r"   \end{subfigure}" + delim])
 		text.extend([
 				r"   \caption{Distribution of " + args.pheno_name.replace("_","\_") + r"}",
-				r"   \label{fig:distPlots" + args.pheno_name.replace("_","") + r"}",
+				r"   \label{fig:" + args.pheno_name.replace("_","-") + r"-Distributions}",
 				r"\end{figure}"])
-
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Table}".encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write("\n".join(sample_table).encode('utf-8')); f.write("\n")
 
 	with open(args.out_input,'w') as f:
 
-		text = ["",r"%<*" + args.pheno_long_name.replace(" ","-") + r"-summary>","%</" + args.pheno_long_name.replace(" ","-") + r"-summary>"]
-		f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*" + args.pheno_name.replace("_","-") + r"-Summary>","%</" + args.pheno_name.replace("_","-") + r"-Summary>"]).encode('utf-8')); f.write("\n")
+
+		f.write("\n".join(["",r"%<*" + args.pheno_name.replace("_","-") + r"-Summary-Distributions>","%</" + args.pheno_name.replace("_","-") + r"-Summary-Distributions>"]).encode('utf-8')); f.write("\n")
+
+		f.write("\n".join(["",r"%<*" + args.pheno_name.replace("_","-") + r"-Summary-Table>","%</" + args.pheno_name.replace("_","-") + r"-Summary-Table>"]).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

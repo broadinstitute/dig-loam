@@ -11,6 +11,10 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Strategy}"); f.write("\n")
 
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy}".encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy-Table-Cohorts}".encode('utf-8')); f.write("\n")
+
 		cohort_tbl=[
 				r"\begin{table}[H]",
 				r"	\caption{Cohorts available for analysis}",
@@ -32,9 +36,11 @@ def main(args=None):
 				r"		\bottomrule",
 				r"	\end{tabular}",
 				r"	\end{center}",
-				r"	\label{table:cohortsAvailable}",
+				r"	\label{table:Strategy-Table-Cohorts}",
 				r"\end{table}"])
 		f.write("\n"); f.write("\n".join(cohort_tbl).encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy-Table-Metas}".encode('utf-8')); f.write("\n")
 
 		if len(args.metas) > 0:
 			metas = {}
@@ -76,9 +82,11 @@ def main(args=None):
 							r"		\bottomrule",
 							r"	\end{tabular}",
 							r"	\end{center}",
-							r"	\label{table:metaAnalyses}",
+							r"	\label{table:Strategy-Table-Metas}",
 							r"\end{table}"])
 			f.write("\n"); f.write("\n".join(meta_tbl).encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy-Table-Merges}".encode('utf-8')); f.write("\n")
 
 		if len(args.merges) > 0:
 			merge_tbl=[
@@ -102,17 +110,16 @@ def main(args=None):
 					r"		\bottomrule",
 					r"	\end{tabular}",
 					r"	\end{center}",
-					r"	\label{table:mergedResults}",
+					r"	\label{table:Strategy-Table-Merges}",
 					r"\end{table}"])
 			f.write("\n"); f.write("\n".join(merge_tbl).encode('utf-8')); f.write("\n")
 
-		text = r"\ExecuteMetaData[\currfilebase.input]{strategy}"
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
-
 	with open(args.out_input,'w') as f:
 
-		text = ["",r"%<*strategy>","%</strategy>"]
-		f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Strategy>","%</Strategy>"]).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Strategy-Table-Cohorts>","%</Strategy-Table-Cohorts>"]).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Strategy-Table-Metas>","%</Strategy-Table-Metas>"]).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Strategy-Table-Merges>","%</Strategy-Table-Merges>"]).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

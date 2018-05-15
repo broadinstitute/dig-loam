@@ -14,6 +14,7 @@ def main(args=None):
 		## title page
 		f.write("\n"); f.write(r"\title{AMP-DCC Quality Control Report \\")
 		f.write("\n"); f.write(args.id.upper().replace("_","\_") + "}"); f.write("\n")
+		f.write("\n"); f.write(r"\date{}"); f.write("\n")
 		f.write("\n"); f.write(r"\maketitle"); f.write("\n")
 
 		if len(args.authors.split(",")) == 1:

@@ -14,13 +14,17 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Data}"); f.write("\n")
 
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Data}".encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Data-Table-Array-Information}".encode('utf-8')); f.write("\n")
+
 		array_tbl=[
 			r"\begin{table}[H]",
 			r"	\caption{Genotype array information}",
 			r"	\begin{center}",
 			r"	\begin{tabular}{rlclc}",
 			r"		\toprule",
-			r"		\textbf{ID} & \textbf{Filename} & \textbf{Format} & \textbf{LiftOver} & \textbf{Report}\\",
+			r"		\textbf{ID} & \textbf{Filename} & \textbf{Format} & \textbf{LiftOver} & \textbf{xChr}\\",
 			r"		\midrule"]
 		for a in args.arrays:
 			array_tbl.extend([
@@ -29,35 +33,38 @@ def main(args=None):
 			r"		\bottomrule",
 			r"	\end{tabular}",
 			r"	\end{center}",
-			r"	\label{table:genotypeArrayInformation}",
+			r"	\label{table:Data-Table-Array-Information}",
 			r"\end{table}"])
 		f.write("\n"); f.write("\n".join(array_tbl).encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Data-Figure-Samples-Upset-Diagram}".encode('utf-8')); f.write("\n")
 
 		text=[
 			r"\begin{figure}[H]",
 			r"\centering",
 			r"\includegraphics[width=0.75\linewidth,page=1]{" + args.samples_upset_diagram + r"}",
 			r"\caption{Samples remaining for analysis after quality control}",
-			r"\label{fig:samplesUpsetDiagram}",
+			r"\label{fig:Data-Figure-Samples-Upset-Diagram}",
 			r"\end{figure}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Data-Figure-Variants-Upset-Diagram}".encode('utf-8')); f.write("\n")
 
 		text=[
 			r"\begin{figure}[H]",
 			r"\centering",
 			r"\includegraphics[width=0.75\linewidth,page=1]{" + args.variants_upset_diagram + r"}",
 			r"\caption{Variants remaining for analysis after quality control}",
-			r"\label{fig:variantsUpsetDiagram}",
+			r"\label{fig:Data-Figure-Variants-Upset-Diagram}",
 			r"\end{figure}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		text = r"\ExecuteMetaData[\currfilebase.input]{data}"
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
-
 	with open(args.out_input,'w') as f:
 
-		text = ["",r"%<*data>","%</data>"]
-		f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Data>","%</Data>"]).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Data-Table-Array-Information>","%</Data-Table-Array-Information>"]).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Data-Figure-Samples-Upset-Diagram>","%</Data-Figure-Samples-Upset-Diagram>"]).encode('utf-8')); f.write("\n")
+		f.write("\n".join(["",r"%<*Data-Figure-Variants-Upset-Diagram>","%</Data-Figure-Variants-Upset-Diagram>"]).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 
