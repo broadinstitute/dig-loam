@@ -29,11 +29,9 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
+println("Loading Project Configuration File ...")
 val projectConfig = ProjectConfig.parse(loadConfig("dataConfig", ""))
-println("Success!")
-println("   id: " + projectConfig.id)
-println("   regionsExcludeGoogle: " + projectConfig.regionsExcludeGoogle)
-println("   genePositions: " + projectConfig.genePositions)
+println("... Project Configuration Loaded Successfully!")
 
 //// Array specific QC steps up to ancestry inferrence
 //for {

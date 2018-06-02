@@ -13,7 +13,7 @@ object ProjectConfig {
   def requiredStr(config: loamstream.conf.DataConfig, s: String): String = {
     Try(config.getStr(s)) match {
       case Success(o)           => o
-      case Failure(NonFatal(e)) => throw new ProjectConfigException("requiredStr: field '" + s + "' not found")
+      case Failure(NonFatal(e)) => throw new ProjectConfigException("required field '" + s + "' not found")
       case Failure(_)           => throw new ProjectConfigException("requiredStr: fatal error")
     }
   }
@@ -27,17 +27,27 @@ object ProjectConfig {
   }
 
   def parse(config: loamstream.conf.DataConfig): ProjectConfig = {
+
     val id = requiredStr(config, "id")
     id.matches("^[a-zA-Z0-9]*$") match {
       case false => throw new ProjectConfigException("'id' field value does not match regex format ^[a-zA-Z0-9]*$")
-      case true  =>
+      case true  => println("id = " + id)
     }
+
     val regionsExcludeGoogle = optionalStr(config, "regionsExcludeGoogle")
+    regionsExcludeGoogle match {
+      case Some(s) => println("regionsExcludeGoogle = " + regionsExcludeGoogle)
+      case None =>
+    }
+
     val genePositions = requiredStr(config, "genePositions")
+    println("genePositions = " + genePositions)
+
 	new ProjectConfig(
       id,
       regionsExcludeGoogle,
       genePositions)
+
   }
 
 }
