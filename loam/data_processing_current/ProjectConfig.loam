@@ -1,18 +1,43 @@
+import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
 
-case class ProjectConfig(
-  projectId: String)
+final case class ProjectConfigException(s: String) extends Exception(s)
+
+final case class ProjectConfig(
+  id: String,
+  regionsExcludeGoogle: Option[String],
+  genePositions: String)
 
 object ProjectConfig {
 
-  def parse(config: loamstream.conf.DataConfig): ProjectConfig = {
-
-    try {
-      new ProjectConfig(config.getStr("projectId"))
-    } catch {
-      case NonFatal(e) => throw new ConfigValidationException("projectId undefined", e)
+  def requiredStr(config: loamstream.conf.DataConfig, s: String): String = {
+    Try(config.getStr(s)) match {
+      case Success(o)           => o
+      case Failure(NonFatal(e)) => throw new ProjectConfigException("requiredStr: field '" + s + "' not found")
+      case Failure(_)           => throw new ProjectConfigException("requiredStr: fatal error")
     }
+  }
 
+  def optionalStr(config: loamstream.conf.DataConfig, s: String): Option[String] = {
+    Try(config.getStr(s)) match {
+      case Success(o)           => Some(o)
+      case Failure(NonFatal(e)) => None
+      case Failure(_)           => throw new ProjectConfigException("optionalStr: fatal error")
+    }
+  }
+
+  def parse(config: loamstream.conf.DataConfig): ProjectConfig = {
+    val id = requiredStr(config, "id")
+    id.matches("^[a-zA-Z0-9]*$") match {
+      case false => throw new ProjectConfigException("'id' field value does not match regex format ^[a-zA-Z0-9]*$")
+      case true  =>
+    }
+    val regionsExcludeGoogle = optionalStr(config, "regionsExcludeGoogle")
+    val genePositions = requiredStr(config, "genePositions")
+	new ProjectConfig(
+      id,
+      regionsExcludeGoogle,
+      genePositions)
   }
 
 }

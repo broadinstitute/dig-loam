@@ -30,6 +30,10 @@ import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
 val projectConfig = ProjectConfig.parse(loadConfig("dataConfig", ""))
+println("Success!")
+println("   id: " + projectConfig.id)
+println("   regionsExcludeGoogle: " + projectConfig.regionsExcludeGoogle)
+println("   genePositions: " + projectConfig.genePositions)
 
 //// Array specific QC steps up to ancestry inferrence
 //for {
