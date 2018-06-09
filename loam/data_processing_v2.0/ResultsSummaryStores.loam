@@ -1,0 +1,67 @@
+import ProjectConfig._
+import PipelineConfig._
+import StoreHelpers._
+
+final case class ResultsSummaryData(
+  sigRegions: Store,
+  top1000: Store,
+  top1000Genes: Store,
+  top20AnnotAlignedRisk: Store,
+  qqPlotPng: Store,
+  mhtPlotPng: Store,
+  regPlotsPdf: Store,
+  regPlotsBase: Path)
+
+final case class ResultsKnownLociSummaryData(
+  top50: Store)
+
+final case class ResultsSummary(
+  resultsSummaryData: ResultsSummaryData)
+
+final case class ResultsKnownLociSummary(
+  resultsKnownLociSummaryData: ResultsKnownLociSummaryData)
+
+val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (c.id, m) } ) ++
+    ( for { t <- projectConfig.Metas; m <- projectConfig.Models; if t.report } yield { (t.id, m) } )).map { rs => 
+
+  val id = rs._1
+  val model = rs._2
+
+  val modelCovarsString = model.covars.replace("+","_")
+
+  val prefix = s"${projectConfig.projectId}.${id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
+
+  val regPlotsBaseString = s"${prefix}.results.regplots"
+
+  val resultsSummaryData = ResultsSummaryData(
+    sigRegions = store.at(localOutDir / s"${prefix}.results.sigregions.tsv"),
+    top1000 = store.at(localOutDir / s"${prefix}.results.top1000.tsv"),
+    top1000Genes = store.at(localOutDir / s"${prefix}.results.top1000.genes.tsv"),
+    top20AnnotAlignedRisk = store.at(localOutDir / s"${prefix}.results.top20.annot.aligned_risk.tsv"),
+    qqPlotPng = store.at(localOutDir / s"${prefix}.results.qq.png"),
+    mhtPlotPng = store.at(localOutDir / s"${prefix}.results.mht.png"),
+    regPlotsBase = localOutDir / regPlotsBaseString,
+    regPlotsPdf = store.at(localOutDir / s"${regPlotsBaseString}.pdf"))
+
+  rs -> ResultsSummary(
+    resultsSummaryData = resultsSummaryData)
+
+}.toMap
+
+val resultsKnownLociSummaryStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.KnownLoci; if c.report } yield { (c.id, k) } ) ++
+    ( for { t <- projectConfig.Metas; k <- projectConfig.KnownLoci; if t.report } yield { (t.id, k) } )).map { rskl => 
+
+  val id = rskl._1
+  val known = rskl._2
+
+  val modelCovarsString = known.model.covars.replace("+","_")
+
+  val prefix = s"${projectConfig.projectId}.${id}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}"
+
+  val resultsKnownLociSummaryData = ResultsKnownLociSummaryData(
+    top50 = store.at(localOutDir / s"${prefix}.known_loci.top50.tsv"))
+
+  rskl -> ResultsKnownLociSummary(
+    resultsKnownLociSummaryData = resultsKnownLociSummaryData)
+
+}.toMap

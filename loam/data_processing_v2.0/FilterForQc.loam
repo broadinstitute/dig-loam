@@ -1,0 +1,34 @@
+/**
+  * Filter Step
+  *  Description: Generate filtered and filtered/pruned filesets for QC
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+def FilterForQc(array: String): Unit = {
+
+  google {
+  
+    hail"""$pyHailFilter
+      --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
+      --regions-exclude ${ProjectStores.regionsExcludeGoogle}
+      --variant-qc-out ${arrayStores(array).harmonizedData.variantQcGoogle}
+      --variants-prunedin-out ${arrayStores(array).harmonizedData.prunedInGoogle}
+      --filt-pruned-vds-out ${arrayStores(array).prunedData.vdsGoogle}
+      --filt-pruned-plink-out ${arrayStores(array).prunedData.baseGoogle}"""
+      .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.regionsExcludeGoogle)
+      .out(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).prunedData.vdsGoogle :+ arrayStores(array).harmonizedData.variantQcGoogle :+ arrayStores(array).harmonizedData.prunedInGoogle)
+      .named(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilter.google".split("/").last)
+  
+  }
+  
+  local {
+  
+    googleCopy(arrayStores(array).prunedData.dataGoogle, arrayStores(array).prunedData.data)
+  
+  }
+
+}
