@@ -73,8 +73,9 @@ def QcReport(): Unit = {
 
   }
 
-  val harmRefFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.fam").mkString(",") } }
-  val harmRefBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.bim").mkString(",") } }
+  val famStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.fam").mkString(",") } }
+  val bimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.bim").mkString(",") } }
+  val imissRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.imissRemove.path}""").mkString(",") } }
   
   if (projectConfig.nArrays > 1) {
 
@@ -82,7 +83,7 @@ def QcReport(): Unit = {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
-        --input ${harmRefFamStrings.mkString(" ")}
+        --input ${famStrings.mkString(" ")}
         --type fam
         --out ${qcReportStores.figureData.samplesUpsetPlotPdf}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data).toSeq)
@@ -92,7 +93,7 @@ def QcReport(): Unit = {
       
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
-        --input ${harmRefBimStrings.mkString(" ")}
+        --input ${bimStrings.mkString(" ")}
         --type bim
         --out ${qcReportStores.figureData.variantsUpsetPlotPdf}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
@@ -102,11 +103,12 @@ def QcReport(): Unit = {
       
       cmd"""$binPython $pyGenerateQcReportData
         --narrays ${projectConfig.nArrays}
+        --imiss ${imissRemoveStrings.mkString(" ")}
         --samples-upset-diagram ${qcReportStores.figureData.samplesUpsetPlotPdf.path.toAbsolutePath()}
         --variants-summary-table ${qcReportStores.tablesData.variantsSummary.path.toAbsolutePath()} 
         --variants-upset-diagram ${qcReportStores.figureData.variantsUpsetPlotPdf.path.toAbsolutePath()} 
         --out ${qcReportStores.texData.data}"""
-        .in(qcReportStores.figureData.samplesUpsetPlotPdf, qcReportStores.tablesData.variantsSummary, qcReportStores.figureData.variantsUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq :+ qcReportStores.figureData.samplesUpsetPlotPdf :+ qcReportStores.tablesData.variantsSummary :+ qcReportStores.figureData.variantsUpsetPlotPdf)
         .out(qcReportStores.texData.data)
         .named(s"${qcReportStores.texData.data}".split("/").last)
 
@@ -118,11 +120,12 @@ def QcReport(): Unit = {
   
       cmd"""$binPython $pyGenerateQcReportData
       --narrays ${projectConfig.nArrays}
-      --fam ${harmRefFamStrings(0)}
+      --imiss ${imissRemoveStrings.mkString(" ")}
+      --fam ${famStrings(0)}
       --variants-summary-table ${qcReportStores.tablesData.variantsSummary} 
-      --bim ${harmRefBimStrings(0)}
+      --bim ${bimStrings(0)}
       --out ${qcReportStores.texData.data}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq :+ qcReportStores.tablesData.variantsSummary)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq :+ qcReportStores.tablesData.variantsSummary)
       .out(qcReportStores.texData.data)
       .named(s"${qcReportStores.texData.data}".split("/").last)
 
@@ -138,6 +141,7 @@ def QcReport(): Unit = {
 
     cmd"""$binPython $pyGenerateQcReportAncestry
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
+      --features ${projectConfig.ancestryInferenceFeatures}
       --pca-plots ${ancestryPcaPlotsStrings.mkString(" ")}
       --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
       --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
@@ -200,11 +204,12 @@ def QcReport(): Unit = {
       --ancestry-inferred-outliers ${ProjectStores.ancestryOutliers}
       --kinship-related ${kin0RelatedStrings.mkString(" ")}
       --kinship-famsizes ${famSizesStrings.mkString(" ")}
+      --imiss ${imissRemoveStrings.mkString(" ")}
       --sampleqc-outliers ${sampleQcOutliersStrings.mkString(" ")}
       --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
       --final-exclusions ${finalSampleExclusionsStrings.mkString(" ")}
       --out ${qcReportStores.tablesData.sampleQc}"""
-      .in(arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
       .out(qcReportStores.tablesData.sampleQc)
       .using("R-3.4")
       .named(s"${qcReportStores.tablesData.sampleQc}".split("/").last)

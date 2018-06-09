@@ -30,6 +30,38 @@ def main(args=None):
 			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} samples.".format(args.fam.split("___")[0], fam.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
+		nImiss = {}
+		for x in args.imiss:
+			with open(x.split(",")[1]) as f:
+				nLines = len(f.readlines())
+				if nLines > 0:
+					nImiss[x.split(",")[0]] = nLines
+
+		text1 = "the array"
+		if len(nImiss) > 1:
+			i = 0
+			text1 = "each array"
+			for k, v in enumerate(nImiss):
+				i = i + 1
+				if i == 1:
+					text2 = "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
+				elif i < len(nImiss)-1:
+					text2 = text2 + ", " + "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
+				else:
+					if len(nImiss) == 2:
+						text2 = text2 + " and " + "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
+					else:
+						text2 = text2 + ", and " + "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
+		elif len(nImiss) == 1:
+			with open(x.split(",")[1]) as f:
+			df = pd.read_table(args.kg_merged_bim.split(",")[1], header=None)
+			text2 = "{0:,d}".format(df.shape[0]) + " samples"
+		else:
+			text2 = "no samples"
+
+		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. There were {1} removed from this data set.".format(text1, text2)
+		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
 		f.write("\n"); f.write(r"\subsection{Variants}"); f.write("\n")
 
 		text=r"Table \ref{table:variantsSummaryTable} gives an overview of the different variant classes and how they distributed across allele frequencies for each dataset. Note that the totals reflect the sum of the chromosomes only. A legend has been provided below the table for further inspection of the class definitions."
@@ -145,6 +177,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--narrays', type=int, help='an integer', required=True)
 	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples')
 	requiredArgs.add_argument('--fam', help='a fam file')
+	requiredArgs.add_argument('--imiss', nargs='+', help='a list of array labels and samples removed due to high missingness, each separated by comma', required=True)
 	requiredArgs.add_argument('--variants-summary-table', help='a variant summary table', required=True)
 	requiredArgs.add_argument('--variants-upset-diagram', help='an upset diagram for harmonized variants')
 	requiredArgs.add_argument('--bim', help='a bim file')

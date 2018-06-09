@@ -25,7 +25,7 @@ def main(args=None):
 				df = pd.read_table(x.split(",")[1], header=None)
 				if i == 1:
 					text2 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-				elif i < len(args.kg_merged_bim)-1:
+				elif i < len(args.kg_merged_bim):
 					text2 = text2 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
 				else:
 					if len(args.kg_merged_bim) == 2:
@@ -46,7 +46,7 @@ def main(args=None):
 				array = x.split(",")[0]
 				if i == 1:
 					text1 = r"Figures \ref{fig:ancestryPcaPlots" + array.replace("_","") + r"}"
-				elif i < len(args.pca_plots) - 1:
+				elif i < len(args.pca_plots):
 					text1 = text1 + r", \ref{fig:ancestryPcaPlots" + array.replace("_","") + r"}"
 				else:
 					if len(args.pca_plots) == 2:
@@ -100,7 +100,7 @@ def main(args=None):
 		else:
 			array = args.cluster_plots.split(",")[0]
 			text2 = r"Figure \ref{fig:ancestryClusterPlots" + array.replace("_","") + r"} clearly indicates"
-		text=r"Using the principal components of ancestry as features, we employed the signal processing software Klustakwik \cite{{klustakwik}} to model {0} as a mixture of Gaussians, identifying clusters, or population groups/subgroups. In order to generate clusters of sufficient size for statistical association tests, we used the first three principal components as features in the clustering algorithm. This number of PC's distinctly separates the five major 1000 Genomes population groups: AFR, AMR, EUR, EAS, and SAS. {1} the population structure in the datasets. In Klustakwik output, cluster 1 is always reserved for outliers, or samples that did not fit into any of the clusters found by the program.".format(text1, text2)
+		text=r"Using the principal components of ancestry as features, we employed the signal processing software Klustakwik \cite{{klustakwik}} to model {0} as a mixture of Gaussians, identifying clusters, or population groups/subgroups. In order to generate clusters of sufficient size for statistical association tests, we used the first {1} principal components as features in the clustering algorithm. This number of PC's distinctly separates the five major 1000 Genomes population groups: AFR, AMR, EUR, EAS, and SAS. {2} the population structure in the datasets. In Klustakwik output, cluster 1 is always reserved for outliers, or samples that did not fit into any of the clusters found by the program.".format(text1, str(args.features), text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		for x in args.cluster_plots:
@@ -219,6 +219,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--kg-merged-bim', nargs='+', help='a list of array labels and bim files from merging array and 1kg data, each separated by comma', required=True)
+	requiredArgs.add_argument('--features', help='an integer indicating how many PCs were used for ancestry inference', required=True)
 	requiredArgs.add_argument('--pca-plots', nargs='+', help='a list of array labels and PCA plot pdfs, each separated by comma', required=True)
 	requiredArgs.add_argument('--cluster-plots', nargs='+', help='a list of array labels and PCA cluster plot pdfs, each separated by comma', required=True)
 	requiredArgs.add_argument('--cluster-table', help='an ancestry cluster table', required=True)

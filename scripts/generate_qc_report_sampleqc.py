@@ -88,7 +88,7 @@ def main(args=None):
 					text_insert = r"Figures \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 				else:
 					text_insert = r"Figure \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
-			elif i < len(args.sampleqc_outliers) - 1:
+			elif i < len(args.sampleqc_outliers):
 				text_insert = text_insert + r", \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 			else:
 				if len(args.sampleqc_outliers) == 2:
@@ -128,7 +128,7 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
-		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across both genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 10 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
+		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 10 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[

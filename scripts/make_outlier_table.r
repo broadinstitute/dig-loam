@@ -4,6 +4,7 @@ parser <- ArgumentParser()
 parser$add_argument("--ancestry-inferred-outliers", dest="ancestry_inferred_outliers", type="character", help="a comma separated list of labels and files, each delimited by three underscores (eg. ex___file1,omni___file2)")
 parser$add_argument("--kinship-related", nargs='+', dest="kinship_related", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
 parser$add_argument("--kinship-famsizes", nargs='+', dest="kinship_famsizes", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
+parser$add_argument("--imiss", nargs='+', dest="imiss", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
 parser$add_argument("--sampleqc-outliers", nargs='+', dest="sampleqc_outliers", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
 parser$add_argument("--sexcheck-problems", nargs='+', dest="sexcheck_problems", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
 parser$add_argument("--final-exclusions", nargs='+', dest="final_exclusions", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
@@ -44,6 +45,19 @@ for(a in args$kinship_famsizes) {
 	}
 }
 
+print("reading imiss file")
+for(a in args$imiss) {
+	l<-unlist(strsplit(a,","))[1]
+	if(! l %in% ls(ids)) ids[[l]]<-list()
+	f<-unlist(strsplit(a,","))[2]
+	imiss_df<-try(read.table(f,header=F,as.is=T,stringsAsFactors=F), silent=TRUE)
+	if(inherits(imiss_df, "try-error")) {
+		ids[[l]][['extreme missingness']]<-c()
+	} else {
+		ids[[l]][['extreme missingness']]<-unique(imiss_df$V2)
+	}
+}
+
 print("reading sexcheck problems file")
 for(a in args$sexcheck_problems) {
 	l<-unlist(strsplit(a,","))[1]
@@ -79,7 +93,7 @@ for(a in args$final_exclusions) {
 
 for(a in ls(ids)[ls(ids) != "ancestry outlier"]) {
 	ids[[a]][['all removed']]<-ids[["ancestry outlier"]]
-	for(l in c("duplicate","cryptic relatedness","sex check",metrics[[a]],"metric pca")) {
+	for(l in c("extreme missingness","duplicate","cryptic relatedness","sex check",metrics[[a]],"metric pca")) {
 		ids[[a]][['all removed']]<-unique(c(ids[[a]][['all removed']],ids[[a]][[l]]))
 	}
 	ids[[a]][['manually reinstated']]<-ids[[a]][['all removed']][! ids[[a]][['all removed']] %in% ids[[a]][['final']]]
@@ -138,6 +152,17 @@ l = paste(l,paste("\t",length(unique(ids_allmetrics)),sep=""),sep="")
 cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
 cat(paste(spacer,"\n",sep=""),file=args$out,append=T)
+
+l="Extreme Missingness"
+for(a in arrays) {
+	l = paste(l,paste("\t",length(ids[[a]][['extreme missingness']]),sep=""),sep="")
+}
+n<-unlist(sapply(ids, function(z) z['extreme missingness']))
+if(length(n) > 0) {
+	n<-n[! is.na(n)]
+}
+l = paste(l,paste("\t",length(unique(n)),sep=""),sep="")
+cat(paste(l,"\n",sep=""),file=args$out, append=T)
 
 l="Duplicates"
 for(a in arrays) {
