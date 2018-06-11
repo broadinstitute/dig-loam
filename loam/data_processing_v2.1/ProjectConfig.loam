@@ -5,7 +5,9 @@ final case class ConfigArray(
   filename: String,
   format: String,
   liftOver: Option[String] = None,
-  xChr: Boolean)
+  xChr: Boolean,
+  yChr: Boolean,
+  mtChr: Boolean)
 
 final case class ConfigCohort(
   id: String,
@@ -59,8 +61,8 @@ final case class ProjectConfig(
   kgSampleId: String,
   kgSamplePop: String,
   kgSampleGroup: String,
-  kgVcfBaseWild: String,
-  kgLegendWild: String,
+  kgVcf: String,
+  kgIds: String,
   humanReferenceWild: String,
   pheno: String,
   phenoId: String,
@@ -105,8 +107,8 @@ val projectConfig = ProjectConfig(
   kgSampleId = dataConfig.getStr("kgSampleId"),
   kgSamplePop = dataConfig.getStr("kgSamplePop"),
   kgSampleGroup = dataConfig.getStr("kgSampleGroup"),
-  kgVcfBaseWild = dataConfig.getStr("kgVcfBaseWild"),
-  kgLegendWild = dataConfig.getStr("kgLegendWild"),
+  kgVcf = dataConfig.getStr("kgVcf"),
+  kgIds = dataConfig.getStr("kgIds"),
   humanReferenceWild = dataConfig.getStr("humanReferenceWild"),
   pheno = dataConfig.getStr("pheno"),
   phenoId = dataConfig.getStr("phenoId"),
@@ -144,7 +146,9 @@ val projectConfig = ProjectConfig(
         filename = array.getStr("filename"),
         format = array.getStr("format"),
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
-        xChr = array.getBool("xChr"))
+        xChr = array.getBool("xChr"),
+        yChr = array.getBool("yChr"),
+        mtChr = array.getBool("mtChr"))
 
     }
 

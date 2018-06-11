@@ -37,12 +37,13 @@ def complement(a):
 	return ''.join(comp)
 
 def main(args=None):
-	x=pd.read_table(args.legend,usecols=["id"],sep=" ")
+	with open(args.kg_ids) as f:
+		x=f.read().splitlines()
 	bim = pd.read_table(args.bim, header=None, sep=" ")
 	bim.columns = ["chr","rsid","cm","pos","a1","a2"]
 	bim['id'] = bim['rsid'].astype(str) + ":" + bim['pos'].astype(str) + ":" + bim['a1'].astype(str) + ":" + bim['a2'].astype(str)
 	bim['kg'] = 0
-	bim.loc[bim['id'].isin(x['id']),'kg'] = 1
+	bim.loc[bim['id'].isin(x),'kg'] = 1
 	bim['ref'] = bim['a1']
 	bim['alt'] = bim['a2']
 	bim['status'] = "ignore"
@@ -95,7 +96,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--legend', help='a 1kg legend file', required=True)
+	requiredArgs.add_argument('--kg-ids', help='a 1kg variant ids file', required=True)
 	requiredArgs.add_argument('--bim', help='a bim file already aligned with 1kg using genotype harmonizer', required=True)
 	requiredArgs.add_argument('--ref', help='a file containing entire human reference build 37', required=True)
 	requiredArgs.add_argument('--out-remove', help='output file name for list of variants to remove', required=True)

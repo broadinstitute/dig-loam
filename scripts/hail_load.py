@@ -8,6 +8,9 @@ def main(args=None):
 	vds = hc.import_vcf(args.vcf_in[1], force_bgz=True)
 	vds.summarize().report()
 
+	print "repartitioning vds dataset"
+	vds = vds.repartition(200)
+
 	print "splitting multiallelic variants and removing duplicates"
 	vds = vds.split_multi().deduplicate()
 

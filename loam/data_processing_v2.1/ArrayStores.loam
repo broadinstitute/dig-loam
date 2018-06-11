@@ -185,7 +185,7 @@ final case class Array(
   rawData: RawData,
   preparedData: PreparedData,
   annotatedData: AnnotatedData,
-  annotatedChrData: Map[Int, AnnotatedChrData],
+  annotatedChrData: Map[String, AnnotatedChrData],
   harmonizedData: HarmonizedData,
   prunedData: PrunedData,
   kinshipData: KinshipData,
@@ -258,7 +258,8 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
       case None => localOutDir / preparedBaseString 
     })
 
-  val annotatedChrData = ( 1 to { if ( arrayCfg.xChr ) 23 else 22 } ).map { chr =>
+  val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ (if (arrayCfg.xChr) Seq("X") else Seq.empty) ++ (if (arrayCfg.yChr) Seq("Y") else Seq.empty) ++ (if (arrayCfg.mtChr) Seq("MT") else Seq.empty)
+  val annotatedChrData = chrSeq.map { chr =>
 
     val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
     val mergedKgBaseString = s"${chrBaseString}.harmkg"

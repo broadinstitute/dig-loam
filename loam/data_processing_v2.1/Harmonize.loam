@@ -23,7 +23,7 @@ def Harmonize(array: String): Unit = {
 
     uger {
 
-	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --output-chr MT --out ${chrData.base} --memory 3000 --threads 1"""
+	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory 3000 --threads 1"""
         .in(arrayStores(array).annotatedData.data)
         .out(chrData.data)
         .named(s"${chrData.base}".split("/").last)
@@ -55,7 +55,7 @@ def Harmonize(array: String): Unit = {
     uger {
       
       cmd"""$binPython $pyAlignNon1kgVariants
-      --legend ${ProjectStores.kgLegend(chr)}
+      --kg-ids ${ProjectStores.kgIds(chr)}
       --bim ${chrData.mergedKgBase}.bim
       --ref ${ProjectStores.humanReference(chr)}
       --out-remove ${chrData.nonKgRemove}
@@ -64,11 +64,11 @@ def Harmonize(array: String): Unit = {
       --out-nomatch ${chrData.nonKgNomatch}
       --out-flip ${chrData.nonKgFlip}
       --out-force-a1 ${chrData.nonKgForceA1}"""
-        .in(chrData.mergedKg :+ ProjectStores.kgLegend(chr))
+        .in(chrData.mergedKg :+ ProjectStores.kgIds(chr))
         .out(chrData.nonKgRemove, chrData.nonKgIgnore, chrData.nonKgMono,chrData.nonKgNomatch, chrData.nonKgFlip, chrData.nonKgForceA1)
         .named(s"${chrData.mergedKgNonKgBase}".split("/").last)
       
-      cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --make-bed --out ${chrData.mergedKgHuRefBase} --memory 3000 --threads 1"""
+      cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory 3000 --threads 1"""
         .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
         .out(chrData.mergedKgHuRef)
         .named(s"${chrData.mergedKgHuRefBase}".split("/").last)
@@ -95,7 +95,7 @@ def Harmonize(array: String): Unit = {
       .out(arrayStores(array).harmonizedData.mergeList)
       .named(s"${arrayStores(array).harmonizedData.mergeList}".split("/").last)
   
-    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(array).harmonizedData.mergeList} --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory 3000 --threads 1"""
+    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(array).harmonizedData.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory 3000 --threads 1"""
       .in(arrayStores(array).annotatedChrData.map(e => e._2).flatMap(e => e.mergedKgHuRef).toSeq :+ arrayStores(array).harmonizedData.mergeList)
       .out(arrayStores(array).harmonizedData.data)
       .named(s"${arrayStores(array).harmonizedData.base}".split("/").last)
@@ -105,12 +105,12 @@ def Harmonize(array: String): Unit = {
       .out(arrayStores(array).harmonizedData.forceA2)
       .named(s"${arrayStores(array).harmonizedData.forceA2}".split("/").last)
   
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
+    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --output-chr MT --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.refData)
       .named(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
     
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
+    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.vcf)
       .named(s"${arrayStores(array).harmonizedData.vcf}".split("/").last)

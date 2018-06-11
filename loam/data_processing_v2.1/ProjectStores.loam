@@ -3,37 +3,27 @@ import PipelineConfig._
 
 object ProjectStores {
 
-  val kgVcf = (1 to 23).map { chr =>
+  val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ Seq("X","Y","MT")
+
+  val kgVcf = chrSeq.map { chr =>
   
-    val vcf = if(chr < 23) { 
-        store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr") + ".vcf.gz").asInput
-      } else {
-        store.at(projectConfig.kgVcfBaseWild.replace("[CHROMOSOME]", s"$chr").replace("23.phase3_shapeit2_mvncall_integrated_v5a","X.phase3_shapeit2_mvncall_integrated_v1b") + ".vcf.gz").asInput
-      }
+    val vcf = store.at(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr")).asInput
   
     chr -> vcf
   
   }.toMap
   
-  val kgLegend = (1 to 23).map { chr =>
+  val kgIds = chrSeq.map { chr =>
   
-    val legend = if(chr < 23) { 
-        store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr")).asInput
-      } else {
-        store.at(projectConfig.kgLegendWild.replace("[CHROMOSOME]", s"$chr").replace("23","X")).asInput
-      }
+    val ids = store.at(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr")).asInput
   
-    chr -> legend
+    chr -> ids
   
   }.toMap
   
-  val humanReference = (1 to 23).map { chr =>
+  val humanReference = chrSeq.map { chr =>
   
-    val ref = if(chr < 23) { 
-        store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
-      } else {
-        store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr").replace("23","X")).asInput
-      }
+    val ref = store.at(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
   
     chr -> ref
   

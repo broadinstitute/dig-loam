@@ -57,7 +57,7 @@ def Prepare(array: String): Unit = {
       .using("R-3.4")
       .named(s"${arrayStores(array).rawData.dupRemove}".split("/").last)
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --remove ${arrayStores(array).rawData.imissRemove} --exclude ${arrayStores(array).rawData.dupRemove} --make-bed --out ${arrayStores(array).preparedData.base}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --remove ${arrayStores(array).rawData.imissRemove} --exclude ${arrayStores(array).rawData.dupRemove} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(array).preparedData.base}"""
       .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove :+ arrayStores(array).rawData.dupRemove)
       .out(arrayStores(array).preparedData.data)
       .named(s"${arrayStores(array).preparedData.base}".split("/").last)
@@ -75,7 +75,7 @@ def Prepare(array: String): Unit = {
 
       uger {
       
-        cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(array).preparedData.base}.bim > ${arrayStores(array).preparedData.bed.get}"""
+        cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(array).preparedData.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(array).preparedData.bed.get}"""
           .in(arrayStores(array).preparedData.data)
           .out(arrayStores(array).preparedData.bed.get)
       
@@ -90,8 +90,8 @@ def Prepare(array: String): Unit = {
       }
       
       uger {
-      
-        cmd"""sed 's/^chr//g' ${arrayStores(array).preparedData.lifted.get} | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(array).preparedData.liftedUpdate.get}"""
+
+        cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(array).preparedData.lifted.get} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(array).preparedData.liftedUpdate.get}"""
           .in(arrayStores(array).preparedData.lifted.get)
           .out(arrayStores(array).preparedData.liftedUpdate.get)
       
@@ -104,6 +104,7 @@ def Prepare(array: String): Unit = {
           --extract ${arrayStores(array).preparedData.liftedExtract.get}
           --update-chr ${arrayStores(array).preparedData.liftedUpdate.get} 1 3
           --update-map ${arrayStores(array).preparedData.liftedUpdate.get} 2 3
+          --output-chr MT
           --make-bed
           --out ${arrayStores(array).annotatedData.base}"""
           .in(arrayStores(array).preparedData.data :+ arrayStores(array).preparedData.liftedExtract.get :+ arrayStores(array).preparedData.liftedUpdate.get)
