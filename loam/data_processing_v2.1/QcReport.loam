@@ -141,7 +141,7 @@ def QcReport(): Unit = {
 
     cmd"""$binPython $pyGenerateQcReportAncestry
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
-      --features ${projectConfig.ancestryInferenceFeatures}
+      --features ${projectConfig.nAncestryInferenceFeatures}
       --pca-plots ${ancestryPcaPlotsStrings.mkString(" ")}
       --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
       --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}

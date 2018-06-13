@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import collections
 
 def main(args=None):
 
@@ -15,26 +16,21 @@ def main(args=None):
 		text=r"Prior to association testing, it is useful to infer ancestry in relation to a modern reference panel representing the major human populations. While our particular sample QC process does not directly depend on this information, it is useful to downstream analysis when stratifying the calculation of certain variant statistics that are sensitive to population substructure (eg. Hardy Weinberg equilibrium). Additionally, ancestry inference may identify samples that do not seem to fit into a well-defined major population group, which would allow them to be flagged for removal from association testing."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text1 = "the array"
-		if len(args.kg_merged_bim) > 1:
-			i = 0
-			text1 = "each array"
-			for x in args.kg_merged_bim:
-				i = i + 1
-				array = x.split(",")[0]
-				df = pd.read_table(x.split(",")[1], header=None)
-				if i == 1:
-					text2 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-				elif i < len(args.kg_merged_bim):
-					text2 = text2 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-				else:
-					if len(args.kg_merged_bim) == 2:
-						text2 = text2 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-					else:
-						text2 = text2 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-		else:
-			df = pd.read_table(args.kg_merged_bim.split(",")[1], header=None)
-			text2 = "{0:,d}".format(df.shape[0]) + " variants"
+		text1 = "each array" if len(args.kg_merged_bim) > 1 else "the array"
+		text2_dict = collections.OrderedDict()
+		for x in args.kg_merged_bim:
+			df = pd.read_table(x.split(",")[1], header=None)
+			if df.shape[0] > 0:
+				text2_dict[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
+
+		if len(text2_dict) == 0:
+			text2 = "no variants"
+		if len(text2_dict) == 1:
+			text2 = text2_dict[text2_dict.keys()[0]] + " variants"
+		if len(text2_dict) == 2:
+			text2 = " and ".join([str(text2_dict[x]) + " " + x.replace("_","\_") for x in text2_dict.keys()[0:len(text2_dict.keys())]]) + " variants"
+		elif len(text2_dict) > 2:
+			text2 = ", ".join([str(text2_dict[x]) + " " + x.replace("_","\_") for x in text2_dict.keys()[0:(len(text2_dict.keys())-1)]]) + " and " + str(text2_dict[text2_dict.keys()[len(text2_dict.keys())-1]]) + " " + text2_dict.keys()[len(text2_dict.keys())-1].replace("_","\_") + " variants"
 
 		text=r"Initially, {0} was merged with reference data. In this case, the reference used was the entire set of 2,504 1000 Genomes Phase 3 Version 5 \cite{{1KG}} samples and our method restricted this merging to a set of 5,166 known ancestry informative SNPs. The merged data consisted of {1}. After merging, principal components (PCs) were computed using the PC-AiR \cite{{pcair}} method in the GENESIS R package. This particular algorithm allows for the calculation of PCs that reflect ancestry in the presence of known or cryptic relatedness. The 1000 Genomes samples were forced into the 'unrelated' set and the PC-AiR algorithm was used to find the 'unrelated' samples from the array data. Then PCs were calculated on them and projected onto the remaining samples.".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")

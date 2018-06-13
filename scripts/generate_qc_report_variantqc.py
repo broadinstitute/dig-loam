@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import collections
 
 def main(args=None):
 
@@ -11,26 +12,21 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Variant QC}"); f.write("\n")
 
-		if len(args.variant_exclusions) > 1:
-			i = 0
-			for x in args.variant_exclusions:
-				i = i + 1
-				array = x.split(",")[0]
-				with open(x.split(",")[1]) as mo:
-					failed = mo.read().splitlines()
-				if i == 1:
-					text1 = "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
-				elif i < len(args.variant_exclusions)-1:
-					text1 = text1 + ", " + "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
-				else:
-					if len(args.variant_exclusions) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
-					else:
-						text1 = text1 + ", and " + "{0:,d}".format(len(failed)) + " " + array.replace("_","\_") + " variants"
-		else:
-			with open(args.variant_exclusions.split(",")[1]) as mo:
+		text_dict = collections.OrderedDict()
+		for x in args.variant_exclusions:
+			with open(x.split(",")[1]) as mo:
 				failed = mo.read().splitlines()
-			text1 = "{0:,d}".format(len(failed)) + " variants"
+			if len(failed) > 0:
+				text_dict[x.split(",")[0]] = "{0:,d}".format(len(failed))
+
+		if len(text_dict) == 0:
+			text1 = "no variants"
+		if len(text_dict) == 1:
+			text1 = text_dict[text_dict.keys()[0]] + " variants"
+		if len(text_dict) == 2:
+			text1 = " and ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:len(text_dict.keys())]]) + " variants"
+		elif len(text_dict) > 2:
+			text1 = ", ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:(len(text_dict.keys())-1)]]) + " and " + str(text_dict[text_dict.keys()[len(text_dict.keys())-1]]) + " " + text_dict.keys()[len(text_dict.keys())-1].replace("_","\_") + " variants"
 
 		text=r"Variant quality was assessed using call rate and Hardy Weinberg equilibrium (HWE). We calculate HWE using controls only within any of 4 major ancestral populations; EUR, AFR, SAS and EAS. There must have been at least 100 samples in a population to trigger a filter. This conservative approach minimizes the influence from admixture in other population groups. This procedure resulted in flagging {0} for removal.".format(text1)
 

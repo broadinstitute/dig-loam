@@ -41,8 +41,8 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       array <- projectConfig.Arrays
     } yield {
       array.liftOver match {
-        case Some(s) => Seq(array.id, array.filename.split("/").last, array.format, array.liftOver.get.split("/").last, array.xChr.toString).mkString(",")
-        case None => Seq(array.id, array.filename.split("/").last, array.format, "N/A", array.xChr.toString).mkString(",")
+        case Some(s) => Seq(array.id, array.filename.split("/").last, array.format, array.liftOver.get.split("/").last, array.xChr.toString, array.yChr.toString, array.mtChr.toString).mkString(",")
+        case None => Seq(array.id, array.filename.split("/").last, array.format, "N/A", array.xChr.toString, array.yChr.toString, array.mtChr.toString).mkString(",")
       }
     }
 

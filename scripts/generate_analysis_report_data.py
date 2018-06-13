@@ -21,10 +21,11 @@ def main(args=None):
 		array_tbl=[
 			r"\begin{table}[H]",
 			r"	\caption{Genotype array information}",
+			r"  \footnotesize",
 			r"	\begin{center}",
-			r"	\begin{tabular}{rlclc}",
+			r"	\begin{tabular}{rlclccc}",
 			r"		\toprule",
-			r"		\textbf{ID} & \textbf{Filename} & \textbf{Format} & \textbf{LiftOver} & \textbf{xChr}\\",
+			r"		\textbf{ID} & \textbf{Filename} & \textbf{Format} & \textbf{LiftOver} & \textbf{xChr} & \textbf{yChr} & \textbf{mtChr}\\",
 			r"		\midrule"]
 		for a in args.arrays:
 			array_tbl.extend([

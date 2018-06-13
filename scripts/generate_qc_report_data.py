@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import collections
 
 def main(args=None):
 
@@ -12,8 +13,30 @@ def main(args=None):
 		f.write("\n"); f.write(r"\section{Data}"); f.write("\n")
 		f.write("\n"); f.write(r"\subsection{Samples}"); f.write("\n")
 
+		nImiss = collections.OrderedDict()
+		for x in args.imiss:
+			with open(x.split(",")[1]) as f_imiss:
+				nLines = len(f_imiss.readlines())
+				if nLines > 0:
+					nImiss[x.split(",")[0]] = nLines
+
+		text1 = "each array" if len(nImiss) > 1 else "the array"
+		text2 = "There were " if len(nImiss) != 1 or nImiss[nImiss.keys()[0]] != 1 else "There was "
+		if len(nImiss) == 0:
+			text2 = text2 + "no"
+		if len(nImiss) == 1:
+			text2 = text2 + str(nImiss[nImiss.keys()[0]]) 
+		if len(nImiss) == 2:
+			text2 = text2 + " and ".join([str(nImiss[x]) + " " + x.replace("_","\_") for x in nImiss.keys()[0:(len(nImiss.keys()))]])
+		elif len(nImiss) > 2:
+			text2 = text2 + ", ".join([str(nImiss[x]) + " " + x.replace("_","\_") for x in nImiss.keys()[0:(len(nImiss.keys())-1)]]) + " and " + str(nImiss[nImiss.keys()[len(nImiss.keys())-1]]) + " " + nImiss.keys()[len(nImiss.keys())-1].replace("_","\_")
+		text2 = text2 + " samples " if len(nImiss) != 1 or nImiss[nImiss.keys()[0]] != 1 else text2 + " sample"
+
+		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. There were {1} removed from this data set.".format(text1, text2)
+		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
 		if args.samples_upset_diagram is not None:
-			text=r"The following diagram (Figure \ref{{fig:samplesUpsetDiagram}}) describes the sample distribution over the {0:d} genotype arrays, along with their intersection sizes.".format(args.narrays)
+			text=r"The following diagram (Figure \ref{{fig:samplesUpsetDiagram}}) describes the remaining sample distribution over the {0:d} genotype arrays, along with their intersection sizes.".format(args.narrays)
 			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 			
 			text=[
@@ -27,40 +50,8 @@ def main(args=None):
 
 		else:
 			fam=pd.read_table(args.fam.split("___")[1], low_memory=False, header=None)
-			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} samples.".format(args.fam.split("___")[0], fam.shape[0])
+			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split("___")[0], fam.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
-
-		nImiss = {}
-		for x in args.imiss:
-			with open(x.split(",")[1]) as f:
-				nLines = len(f.readlines())
-				if nLines > 0:
-					nImiss[x.split(",")[0]] = nLines
-
-		text1 = "the array"
-		if len(nImiss) > 1:
-			i = 0
-			text1 = "each array"
-			for k, v in enumerate(nImiss):
-				i = i + 1
-				if i == 1:
-					text2 = "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
-				elif i < len(nImiss)-1:
-					text2 = text2 + ", " + "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
-				else:
-					if len(nImiss) == 2:
-						text2 = text2 + " and " + "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
-					else:
-						text2 = text2 + ", and " + "{0:,d}".format(v) + " " + k.replace("_","\_") + " samples"
-		elif len(nImiss) == 1:
-			with open(x.split(",")[1]) as f:
-			df = pd.read_table(args.kg_merged_bim.split(",")[1], header=None)
-			text2 = "{0:,d}".format(df.shape[0]) + " samples"
-		else:
-			text2 = "no samples"
-
-		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. There were {1} removed from this data set.".format(text1, text2)
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Variants}"); f.write("\n")
 

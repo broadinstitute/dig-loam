@@ -14,79 +14,79 @@ import Pca._
 import SampleQc._
 import FilterFinal._
 import VariantAssoc._
-//import CrossCohort._
+import CrossCohort._
 import Impute._
-//import Meta._
-//import ResultsSummary._
-//import AssocStores._
-//import MetaStores._
-//import Phenotype._
-//import QcReport._
-//import AnalysisReport._
+import Meta._
+import ResultsSummary._
+import AssocStores._
+import MetaStores._
+import Phenotype._
+import QcReport._
+import AnalysisReport._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-// Array specific QC steps up to ancestry inferrence
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  Prepare(array.id)
-  Harmonize(array.id)
-  Load(array.id)
-  FilterForQc(array.id)
-  Kinship(array.id)
-  AncestryPca(array.id)
-  AncestryCluster(array.id)
-
-}
-
-// Reconcile inferred ancestry
-MergeInferredAncestry()
-
-// Array specific QC steps post ancestry inference
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  Pca(array.id)
-  SampleQc(array.id)
-  FilterFinal(array.id)
-
-}
-
-// Generate imputation ready data files
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  FilterImpute(array.id)
-
-}
-
-// Cohort variant association
-for {
-  cohort <- projectConfig.Cohorts if cohort.report
-  model <- projectConfig.Models
-} yield { 
-
-  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
-
-}
-
-// Cohort variant association for known loci
-for {
-  cohort <- projectConfig.Cohorts if cohort.report
-  known <- projectConfig.KnownLoci
-} yield { 
-
-  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
-
-}
-
+//// Array specific QC steps up to ancestry inferrence
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  Prepare(array.id)
+//  Harmonize(array.id)
+//  Load(array.id)
+//  FilterForQc(array.id)
+//  Kinship(array.id)
+//  AncestryPca(array.id)
+//  AncestryCluster(array.id)
+//
+//}
+//
+//// Reconcile inferred ancestry
+//MergeInferredAncestry()
+//
+//// Array specific QC steps post ancestry inference
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  Pca(array.id)
+//  SampleQc(array.id)
+//  FilterFinal(array.id)
+//
+//}
+//
+//// Generate imputation ready data files
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  FilterImpute(array.id)
+//
+//}
+//
+//// Cohort variant association
+//for {
+//  cohort <- projectConfig.Cohorts if cohort.report
+//  model <- projectConfig.Models
+//} yield { 
+//
+//  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+//
+//}
+//
+//// Cohort variant association for known loci
+//for {
+//  cohort <- projectConfig.Cohorts if cohort.report
+//  known <- projectConfig.KnownLoci
+//} yield { 
+//
+//  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
+//
+//}
+//
 //// Meta-analysis cross-cohort qc prep
 //for {
 //  meta <- projectConfig.Metas if meta.report
@@ -197,10 +197,10 @@ for {
 //  ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
 //
 //}
-//
-//// QC Report
-//QcReport()
-//
+
+// QC Report
+QcReport()
+
 //// Generate Phenotype Figures for Cohorts
 //for {
 //  cohort <- projectConfig.Cohorts if cohort.report
@@ -249,4 +249,3 @@ for {
 //AnalysisReportCompile(phase = phase)
 //
 //}
-//

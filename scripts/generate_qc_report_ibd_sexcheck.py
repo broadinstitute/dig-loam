@@ -2,6 +2,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import pandas.io.common
+import collections
 
 def main(args=None):
 
@@ -27,116 +28,106 @@ def main(args=None):
 			r"\end{samepage}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		if len(args.filtered_bim) > 1:
-			i = 0
-			for x in args.filtered_bim:
-				i = i + 1
-				array = x.split(",")[0]
-				df = pd.read_table(x.split(",")[1], header=None)
-				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-				elif i < len(args.filtered_bim)-1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-				else:
-					if len(args.filtered_bim) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_") + " variants"
-		else:
-			df = pd.read_table(args.filtered_bim.split(",")[1], header=None)
-			text1 = "{0:,d}".format(df.shape[0]) + " variants"
+		text_dict = collections.OrderedDict()
+		for x in args.filtered_bim:
+			df = pd.read_table(x.split(",")[1], header=None)
+			if df.shape[0] > 0:
+				text_dict[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
+
+		if len(text_dict) == 0:
+			text1 = "no variants"
+		if len(text_dict) == 1:
+			text1 = text_dict[text_dict.keys()[0]] + " variants"
+		if len(text_dict) == 2:
+			text1 = " and ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:(len(text_dict.keys()))]]) + " variants"
+		elif len(text_dict) > 2:
+			text1 = ", ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:(len(text_dict.keys())-1)]]) + " and " + str(text_dict[text_dict.keys()[len(text_dict.keys())-1]]) + " " + text_dict.keys()[len(text_dict.keys())-1].replace("_","\_") + " variants"
+
 		text=r"After filtering there were {0} remaining.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		if len(args.kin0_related) > 1:
-			i = 0
-			for x in args.kin0_related:
-				i = i + 1
-				array = x.split(",")[0]
-				df = pd.read_table(x.split(",")[1])
-				df = df[df['Kinship'] > 0.4]
-				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-				elif i < len(args.kin0_related)-1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-				else:
-					if len(args.kin0_related) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-		else:
-			df = pd.read_table(args.kin0_related.split(",")[1])
+		text_dict = collections.OrderedDict()
+		for x in args.kin0_related:
+			df = pd.read_table(x.split(",")[1])
 			df = df[df['Kinship'] > 0.4]
-			text1 = "{0:,d}".format(df.shape[0])
+			if df.shape[0] > 0:
+				text_dict[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
+
+		if len(text_dict) == 0:
+			text1 = "no"
+		if len(text_dict) == 1:
+			text1 = text_dict[text_dict.keys()[0]]
+		if len(text_dict) == 2:
+			text1 = " and ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:len(text_dict.keys())]])
+		elif len(text_dict) > 2:
+			text1 = ", ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:(len(text_dict.keys())-1)]]) + " and " + str(text_dict[text_dict.keys()[len(text_dict.keys())-1]]) + " " + text_dict.keys()[len(text_dict.keys())-1].replace("_","\_")
+
 		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		if len(args.famsizes) > 0:
-			i = 0
-			for x in args.famsizes:
-				i = i + 1
-				array = x.split(",")[0]
-				try:
-					df = pd.read_table(x.split(",")[1], header=None)
-				except pandas.io.common.EmptyDataError:
-					print "skipping empty famsize file " + x.split(",")[1]
-					df = pd.DataFrame()
-				else:
-					df = df[df[1] >= 10]
-				if i == 1:
-					text1 = "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-				elif i < len(args.famsizes) -1:
-					text1 = text1 + ", " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-				else:
-					if len(args.famsizes) == 2:
-						text1 = text1 + " and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-					else:
-						text1 = text1 + ", and " + "{0:,d}".format(df.shape[0]) + " " + array.replace("_","\_")
-		else:
-			df = pd.read_table(args.famsizes.split(",")[1], header=None)
-			text1 = "{0:,d}".format(df.shape[0])
+
+		text_dict = collections.OrderedDict()
+		for x in args.famsizes:
+			try:
+				df = pd.read_table(x.split(",")[1], header=None)
+			except pandas.io.common.EmptyDataError:
+				print "skipping empty famsize file " + x.split(",")[1]
+				df = pd.DataFrame()
+			else:
+				df = df[df[1] >= 10]	
+			if df.shape[0] > 0:
+				text_dict[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
+
+		if len(text_dict) == 0:
+			text1 = "no"
+		if len(text_dict) == 1:
+			text1 = text_dict[text_dict.keys()[0]]
+		if len(text_dict) == 2:
+			text1 = " and ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:len(text_dict.keys())]])
+		elif len(text_dict) > 2:
+			text1 = ", ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:(len(text_dict.keys())-1)]]) + " and " + str(text_dict[text_dict.keys()[len(text_dict.keys())-1]]) + " " + text_dict.keys()[len(text_dict.keys())-1].replace("_","\_")
+
 		text=r"In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		print "writing sex check section"
 		f.write("\n"); f.write(r"\subsection{Sex Chromosome Check}"); f.write("\n")
 
-		text_nomatch=""
-		text_noimpute={}
-		if len(args.sexcheck_problems) > 0:
-			i = 0
-			for x in args.sexcheck_problems:
-				i = i + 1
-				array = x.split(",")[0]
-				df = pd.read_table(x.split(",")[1])
-				if df.shape[0] > 0:
-					nnomatch = df[~np.isnan(df['isFemale'])].shape[0]
-					nnoimpute = df[np.isnan(df['isFemale'])].shape[0]
-				else:
-					nnomatch = 0
-					nnoimpute = 0
-				if i == 1:
-					text_nomatch = str(nnomatch) + " " + array.replace("_","\_")
-					text_noimpute = str(nnoimpute) + " " + array.replace("_","\_")
-				elif i < len(args.sexcheck_problems) -1:
-					text_nomatch = text_nomatch + ", " + str(nnomatch) + " " + array.replace("_","\_")
-					text_noimpute = text_noimpute + ", " + str(nnoimpute) + " " + array.replace("_","\_")
-				else:
-					if len(args.sexcheck_problems) == 2:
-						text_nomatch = text_nomatch + " and " + str(nnomatch) + " " + array.replace("_","\_")
-						text_noimpute = text_noimpute + " and " + str(nnoimpute) + " " + array.replace("_","\_")
-					else:
-						text_nomatch = text_nomatch + ", and " + str(nnomatch) + " " + array.replace("_","\_")
-						text_noimpute = text_noimpute + ", and " + str(nnoimpute) + " " + array.replace("_","\_")
-		else:
-			df = pd.read_table(args.sexcheck_problems.split(",")[1])
+		text1_dict = collections.OrderedDict()
+		text2_dict = collections.OrderedDict()
+		for x in args.sexcheck_problems:
+			df = pd.read_table(x.split(",")[1])
 			if df.shape[0] > 0:
-				nnomatch = df[~np.isnan(df['isFemale'])].shape[0]
-				nnoimpute = df[np.isnan(df['isFemale'])].shape[0]
-			else:
-				nnomatch = 0
-				nnoimpute = 0
-		text=r"Each array was checked for genotype / clinical data agreement for sex. There were {0} samples that were flagged as a 'PROBLEM' by Hail because it was unable to impute sex and there were {1} samples that were flagged for removal because the genotype based sex did not match their clinical sex.".format(text_noimpute, text_nomatch)
+				df_nomatch = df[~np.isnan(df['isFemale'])]
+				df_noimpute = df[np.isnan(df['isFemale'])]
+				if df_nomatch.shape[0] > 0:
+					text1_dict[x.split(",")[0]] = "{0:,d}".format(df_nomatch.shape[0])
+				if df_noimpute.shape[0] > 0:
+					text2_dict[x.split(",")[0]] = "{0:,d}".format(df_noimpute.shape[0])
+
+		text1 = "There were " if len(text1_dict) != 1 or text1_dict[text1_dict.keys()[0]] != '1' else "There was "
+		if len(text1_dict) == 0:
+			text1 = text1 + "no"
+		if len(text1_dict) == 1:
+			text1 = text1 + str(text1_dict[text1_dict.keys()[0]])
+		if len(text1_dict) == 2:
+			text1 = text1 + " and ".join([str(text1_dict[x]) + " " + x.replace("_","\_") for x in text1_dict.keys()[0:len(text1_dict.keys())]])
+		elif len(text1_dict) > 2:
+			text1 = text1 + ", ".join([str(text1_dict[x]) + " " + x.replace("_","\_") for x in text1_dict.keys()[0:(len(text1_dict.keys())-1)]]) + " and " + str(text1_dict[text1_dict.keys()[len(text1_dict.keys())-1]]) + " " + text1_dict.keys()[len(text1_dict.keys())-1].replace("_","\_")
+		text1 = text1 + " samples that were" if len(text1_dict) != 1 or text1_dict[text1_dict.keys()[0]] != '1' else text1 + " sample that was"
+
+		text2 = "there were " if len(text2_dict) != 1 or text2_dict[text2_dict.keys()[0]] != '1' else "there was "
+		if len(text2_dict) == 0:
+			text2 = text2 + "no"
+		if len(text2_dict) == 1:
+			text2 = text2 + str(text2_dict[text2_dict.keys()[0]])
+		if len(text2_dict) == 2:
+			text2 = text2 + " and ".join([str(text2_dict[x]) + " " + x.replace("_","\_") for x in text2_dict.keys()[0:len(text2_dict.keys())]])
+		elif len(text2_dict) > 2:
+			text2 = text2 + ", ".join([str(text2_dict[x]) + " " + x.replace("_","\_") for x in text2_dict.keys()[0:(len(text2_dict.keys())-1)]]) + " and " + str(text2_dict[text2_dict.keys()[len(text2_dict.keys())-1]]) + " " + text2_dict.keys()[len(text2_dict.keys())-1].replace("_","\_")
+		text2 = text2 + " samples that were" if len(text2_dict) != 1 or text2_dict[text2_dict.keys()[0]] != '1' else text2 + " sample that was"
+
+		text=r"Each array was checked for genotype / clinical data agreement for sex. {0} flagged as a 'PROBLEM' by Hail because it was unable to impute sex and {1} flagged for removal because the genotype based sex did not match their clinical sex.".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"

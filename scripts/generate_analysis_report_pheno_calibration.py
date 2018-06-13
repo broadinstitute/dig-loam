@@ -111,16 +111,18 @@ def main(args=None):
 		f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration>","%</"  + args.pheno_name.replace("_","-") + r"-Calibration>"]).encode('utf-8')); f.write("\n")
 
 		for cohort in qq_plots:
-			for model in qq_plots[cohort]:
 
-				f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration-QQ-" + cohort.replace("_","-") + r">","%</"  + args.pheno_name.replace("_","-") + r"-Calibration-QQ-" + cohort.replace("_","-") + r">"]).encode('utf-8')); f.write("\n")
+			f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration-QQ-" + cohort.replace("_","-") + r">","%</"  + args.pheno_name.replace("_","-") + r"-Calibration-QQ-" + cohort.replace("_","-") + r">"]).encode('utf-8')); f.write("\n")
+
+			for model in qq_plots[cohort]:
 
 				f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration-QQ-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + r">","%</"  + args.pheno_name.replace("_","-") + r"-Calibration-QQ-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + r">"]).encode('utf-8')); f.write("\n")
 
 		for cohort in mht_plots:
-			for model in mht_plots[cohort]:
 
-				f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration-Manhattan-" + cohort.replace("_","-") + r">","%</"  + args.pheno_name.replace("_","-") + r"-Calibration-Manhattan-" + cohort.replace("_","-") + r">"]).encode('utf-8')); f.write("\n")
+			f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration-Manhattan-" + cohort.replace("_","-") + r">","%</"  + args.pheno_name.replace("_","-") + r"-Calibration-Manhattan-" + cohort.replace("_","-") + r">"]).encode('utf-8')); f.write("\n")
+
+			for model in mht_plots[cohort]:
 
 				f.write("\n"); f.write("\n".join([r"%<*" + args.pheno_name.replace("_","-") + r"-Calibration-Manhattan-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + r">","%</"  + args.pheno_name.replace("_","-") + r"-Calibration-Manhattan-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + r">"]).encode('utf-8')); f.write("\n")
 

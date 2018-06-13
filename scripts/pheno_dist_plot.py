@@ -60,7 +60,7 @@ def main(args=None):
 		if args.strat:
 
 			print "generating distribution plots stratified by ancestry"
-			g = sns.FacetGrid(df, col="POP", sharex=False, sharey=True, size=6, aspect=0.3)
+			g = sns.FacetGrid(df, col="POP", col_order=sort(df['POP'].unique()), sharex=False, sharey=True, size=6, aspect=0.3)
 			g.map(dist_boxplot, args.pheno_name)
 
 			## format facets
@@ -93,7 +93,7 @@ def main(args=None):
 			df.replace({args.pheno_name: {vals[1]: 'Case', vals[0]: 'Control'}}, inplace=True)
 			print "generating count plot"
 			fig, ax = plt.subplots()
-			ax = sns.countplot(x="POP", hue=args.pheno_name, data=df)
+			ax = sns.countplot(x="POP", hue=args.pheno_name, data=df, order=sort(df['POP'].unique()), hue_order=['Case','Control'])
 			for p in ax.patches:
 				height = p.get_height() if not np.isnan(p.get_height()) else 0
 				ax.text(p.get_x() + p.get_width()/2., height, '%d' % int(height), ha="center", va="bottom")
@@ -110,7 +110,7 @@ def main(args=None):
 			df.replace({args.pheno_name: {vals[1]: 'Case', vals[0]: 'Control'}}, inplace=True)
 			print "generating count plot"
 			fig, ax = plt.subplots()
-			ax = sns.countplot(x=args.pheno_name, data=df)
+			ax = sns.countplot(x=args.pheno_name, data=df, order=['Case','Control'])
 			for p in ax.patches:
 				height = p.get_height() if not np.isnan(p.get_height()) else 0
 				ax.text(p.get_x() + p.get_width()/2., height, '%d' % int(height), ha="center", va="bottom")

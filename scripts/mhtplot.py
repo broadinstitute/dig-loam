@@ -46,10 +46,10 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 		chrs.extend(['MT'])
 
 	if not bicolor:
-		chr_hex = ["#08306B","#41AB5D","#000000","#F16913","#3F007D","#EF3B2C","#08519C","#238B45","#252525","#D94801","#54278F","#CB181D","#2171B5","#006D2C","#525252","#A63603","#6A51A3","#A50F15","#4292C6","#00441B","#737373","#7F2704","#807DBA","#67000D"]
+		chr_hex = ["#08306B","#41AB5D","#000000","#F16913","#3F007D","#EF3B2C","#08519C","#238B45","#252525","#D94801","#54278F","#CB181D","#2171B5","#006D2C","#525252","#A63603","#6A51A3","#A50F15","#4292C6","#00441B","#737373","#7F2704","#807DBA","#67000D","#6BAED6"]
 	else:
-		chr_hex = ["#08589e","#4eb3d3"]*12
-	
+		chr_hex = ["#08589e","#4eb3d3"]*12 + ["#08589e"]
+
 	if nchr == 1:
 		df[gpos] = df[pos]
 		df['chr_hex'] = "#08589e"
@@ -98,7 +98,7 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 			else:
 				ticks.append(df.loc[df[chr] == chrs[i],gpos].iloc[0])
 			df.loc[df[chr] == chrs[i],'chr_hex'] = chr_hex[i]
-		x_labels = chrs
+		x_labels = [a.replace('MT','\nMT') if a == 'MT' else a for a in chrs]
 	
 	if df.shape[0] >= 1000000:
 		sig = 5.4e-8
@@ -119,7 +119,7 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 	plt.clf()
 	plt.figure(figsize=(16,4))
 	for i in range(len(chrs)):
-		plt.scatter(df.loc[df[chr] == chrs[i], gpos], df.loc[df[chr] == chrs[i], logp], c=chr_hex[i], s=8)
+		plt.scatter(df.loc[df[chr] == chrs[i], gpos], df.loc[df[chr] == chrs[i], logp], c=chr_hex[i], s=8, clip_on=False)
 	plt.axhline(y = -1 * np.log10(sig), linewidth=0.75, color="#B8860B")
 	plt.xlabel("Chromosome")
 	plt.xticks(ticks, x_labels)
@@ -128,6 +128,9 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 	plt.xlim(min(df[gpos]), max(df[gpos]))
 	plt.ylim(yMin, yMax)
 	plt.annotate(r"$gws \approx {0:.3g}$".format(sig), xy=(max(df[gpos]), yMax), horizontalalignment='right', verticalalignment='bottom', color="#B8860B", size='small', weight='bold', annotation_clip = False)
+	ax = plt.gca()
+	for xtick, color in zip(ax.get_xticklabels(), chr_hex[0:len(chrs)]):
+		xtick.set_color(color)
 	plt.savefig(file, bbox_inches='tight', dpi=300)
 
 def main(args=None):

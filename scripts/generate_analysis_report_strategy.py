@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import collections
 
 def main(args=None):
 
@@ -43,13 +44,13 @@ def main(args=None):
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy-Table-Metas}".encode('utf-8')); f.write("\n")
 
 		if len(args.metas) > 0:
-			metas = {}
+			metas = collections.OrderedDict()
 			for m in args.metas:
 				ms = m.split(",")
 				if not ms[0] in metas:
-					metas[ms[0]] = {}
+					metas[ms[0]] = collections.OrderedDict()
 				if not ms[1] in metas[ms[0]]:
-					metas[ms[0]][ms[1]] = {}
+					metas[ms[0]][ms[1]] = collections.OrderedDict()
 				metas[ms[0]][ms[1]]['kin'] = ms[2]
 				metas[ms[0]][ms[1]]['report'] = ms[3]
 

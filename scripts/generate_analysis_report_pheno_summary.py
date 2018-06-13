@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import collections
 
 def main(args=None):
 
@@ -10,16 +11,16 @@ def main(args=None):
 	sex = pd.read_table(args.pheno_master, sep="\t")
 	sex = sex[[args.id_col,args.sex_col]]
 
-	model_files = {}
+	model_files = collections.OrderedDict()
 	for s in args.model_files:
 		ss = s.split(",")
 		if len(ss) > 7:
 			ss[1] = " ".join([ss[0],ss[1]])
 			del ss[0]
 		if not (ss[0],ss[1],ss[2]) in model_files:
-			model_files[(ss[0],ss[1],ss[2])] = {}
+			model_files[(ss[0],ss[1],ss[2])] = collections.OrderedDict()
 		if not (ss[3],ss[4]) in model_files[(ss[0],ss[1],ss[2])]:
-			model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])] = {}
+			model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])] = collections.OrderedDict()
 		with open(ss[5]) as f:
 			model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pcs'] = len(f.read().splitlines())
 		model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pheno'] = pd.read_table(ss[6],sep="\t")
@@ -94,7 +95,7 @@ def main(args=None):
 			r"\end{table}"])
 
 
-	dist_plots = {}
+	dist_plots = collections.OrderedDict()
 	for s in args.dist_plot:
 		if len(s.split(",")) > 2:
 			dist_plots[" ".join([s.split(",")[0],s.split(",")[1]])] = s.split(",")[2]
