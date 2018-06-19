@@ -39,12 +39,6 @@ INVN <- function(x){
 	return(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x))))
 }
 
-get_columns <- function(iid, p, cvs) {
-	ck = c(iid,p)
-	if(cvs != "") ck = c(ck, unlist(strsplit(cvs,"\\+")))
-	return(ck)
-}
-
 pcs_include <- function(d, y, cv) {
 	if(cv != "") {
 		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,20,1),sep=""),collapse="+"),sep="")),data=d))
@@ -64,11 +58,32 @@ pcs_include <- function(d, y, cv) {
 	return(inpcs)
 }
 
+print("removing factor indicators from covariates")
+covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+
 print("extracting model specific columns from phenotype file")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
-pheno<-pheno[,get_columns(iid = args$iid_col, p = args$pheno_col, cvs = args$covars)]
+pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 pheno<-pheno[complete.cases(pheno),]
 out_cols<-colnames(pheno)
+
+covars_factors <- unlist(strsplit(args$covars,split="\\+"))
+for(cv in covars_factors) {
+	cvv <- unlist(strsplit(cv,split=""))
+	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+		for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
+			pheno[,paste0(cvb,val)] <- 0
+			pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
+			covars_factors <- c(covars_factors,paste0(cvb,val))
+		}
+		covars_factors <- covars_factors[covars_factors != cv]
+	}
+}
+covars_analysis<-paste(covars_factors,collapse="+")
+print(out_cols)
+out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
+print(out_cols)
 
 print("reading inferred ancestry from file")
 ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
@@ -124,21 +139,21 @@ if(args$trans == 'invn') {
 	print("performing invn transformation")
 	if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
 		print(paste("including inferred ancestry as indicator in calculation of residuals",sep=""))
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",args$covars,sep="")),data=out))
+		mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
 	} else {
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~",args$covars,sep="")),data=out))
+		mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
 	}
-	out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(args$covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(args$covars,"\\+")),collapse="_"),sep="_"), cv = "")
-	out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(args$covars,"\\+")),collapse="_"),sep="_"))
+	out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
+	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "")
+	out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
 } else if(args$trans == 'log') {
 	print("performing log transformation")
 	out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = args$covars)
+	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis)
 	out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
 } else {
 	print("no transformation will be applied")
-	pcsin <- pcs_include(d = out, y = args$pheno_col, cv = args$covars)
+	pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis)
 }
 if(length(pcsin) > 0) {
 	print(paste("include PCs ",paste(pcsin,collapse="+")," in association testing",sep=""))

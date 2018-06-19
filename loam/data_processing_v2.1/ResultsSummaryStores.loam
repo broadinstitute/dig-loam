@@ -27,7 +27,7 @@ val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConf
   val id = rs._1
   val model = rs._2
 
-  val modelCovarsString = model.covars.replace("+","_")
+  val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
 
   val prefix = s"${projectConfig.projectId}.${id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
 
@@ -54,7 +54,7 @@ val resultsKnownLociSummaryStores = (( for { c <- projectConfig.Cohorts; k <- pr
   val id = rskl._1
   val known = rskl._2
 
-  val modelCovarsString = known.model.covars.replace("+","_")
+  val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
 
   val prefix = s"${projectConfig.projectId}.${id}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}"
 

@@ -34,7 +34,7 @@ val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models
     case None => s"${projectConfig.projectId}.${cohort.id}"
   }
 
-  val modelCovarsString = model.covars.replace("+","_")
+  val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
   val modelPrefix = s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
 
   assoc -> Assoc(
@@ -65,7 +65,7 @@ val knownLociStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.Kn
     case None => s"${projectConfig.projectId}.${cohort.id}"
   }
 
-  val modelCovarsString = known.model.covars.replace("+","_")
+  val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
   val knownPrefix = s"${prefix}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}.known_loci"
   val knownHiLdStringBase = known.hiLd.split("/").last
 

@@ -49,7 +49,7 @@ def main(args=None):
 	pheno_df = vds.samples_table().to_pandas()
 
 	if args.trans == "invn":
-		pheno_analyzed = args.pheno_col + '_invn_' + args.covars.replace('+','_')
+		pheno_analyzed = args.pheno_col + '_invn_' + "_".join([x.replace("[","").replace("]","") for x in args.covars.split("+")])
 	else:
 		pheno_analyzed = args.pheno_col
 
@@ -73,10 +73,19 @@ def main(args=None):
 		pcs = []
 
 	covars = [x for x in args.covars.split("+")] if args.covars != "" else []
+
+	print "replacing categorical factor covariates with dummy 1/0 covariates"
+	for i in range(len(covars)):
+		if covars[i][0] == "[" and covars[i][-1] == "]":
+			for val in sorted(pheno_df['sa.pheno.' + covars[i][1:-1]].unique())[1:]:
+				covars = covars + [covars[i][1:-1] + str(val)]
+			covars = [x for x in covars if x != covars[i]]
+
 	covars = covars + pcs
 
 	print "calculating test " + args.test + " on phenotype " + pheno_analyzed + " with covariates " + "+".join(covars)
 	covars_analyzed = ['sa.pheno.' + x for x in covars]
+
 	if args.test == 'lm':
 		gwas = vds.linreg('sa.pheno.' + pheno_analyzed, covariates=covars_analyzed, root='va.' + args.test + '.' + pheno_analyzed, use_dosages=False)
 		gwas.export_variants(args.out, expr="#chr = v.contig, pos = v.start, uid = v, id = va.rsid, ref = v.ref, alt = v.alt, n = va.nCalled, male = va.nMaleCalled, female = va.nFemaleCalled, callrate = va.callRate, ac = va.AC, af = va.AF, mac = if (va.AF <= 0.5) (va.AC) else (2 * va.nCalled - va.AC), maf = if (va.AF <= 0.5) (va.AF) else (1 - va.AF), beta = va." + args.test + "." + pheno_analyzed + ".beta, se = va." + args.test + "." + pheno_analyzed + ".se, tstat = va." + args.test + "." + pheno_analyzed + ".tstat, pval = va." + args.test + "." + pheno_analyzed + ".pval", types=False)

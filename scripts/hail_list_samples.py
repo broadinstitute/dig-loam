@@ -12,7 +12,7 @@ def main(args=None):
 	print "extracting model specific columns from phenotype file"
 	cols_keep = [args.iid_col,args.pheno_col]
 	if args.covars != "":
-		cols_keep = cols_keep + args.covars.split("+")
+		cols_keep = cols_keep + [x.replace('[','').replace(']','') for x in args.covars.split("+")]
 	with hadoop_read(args.pheno_in) as f:
 		pheno_df = pd.read_table(f, sep="\t", usecols=cols_keep, dtype=object)
 

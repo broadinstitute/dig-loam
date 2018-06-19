@@ -32,7 +32,7 @@ def main(args=None):
 			text2 = text2 + ", ".join([str(nImiss[x]) + " " + x.replace("_","\_") for x in nImiss.keys()[0:(len(nImiss.keys())-1)]]) + " and " + str(nImiss[nImiss.keys()[len(nImiss.keys())-1]]) + " " + nImiss.keys()[len(nImiss.keys())-1].replace("_","\_")
 		text2 = text2 + " samples " if len(nImiss) != 1 or nImiss[nImiss.keys()[0]] != 1 else text2 + " sample"
 
-		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. There were {1} removed from this data set.".format(text1, text2)
+		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. {1} removed from this data set.".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if args.samples_upset_diagram is not None:

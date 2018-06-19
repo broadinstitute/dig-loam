@@ -62,7 +62,7 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
 
   val metaResultsData = projectConfig.Models.map { model =>
 
-    val modelCovarsString = model.covars.replace("+","_")
+    val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
     val metaResultsBaseString = s"${projectConfig.projectId}.${meta}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
 
     model -> MetaResultsData(
@@ -74,7 +74,7 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
 
   val metaKnownLociResultsData = projectConfig.KnownLoci.map { known =>
 
-    val modelCovarsString = known.model.covars.replace("+","_")
+    val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
     val metaKnownLociResultsBaseString = s"${projectConfig.projectId}.${meta}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}.known_loci"
 
     known -> MetaResultsData(
