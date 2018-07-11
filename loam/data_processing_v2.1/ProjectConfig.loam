@@ -7,7 +7,8 @@ final case class ConfigArray(
   liftOver: Option[String] = None,
   xChr: Boolean,
   yChr: Boolean,
-  mtChr: Boolean)
+  mtChr: Boolean,
+  skipGh: Seq[String])
 
 final case class ConfigCohort(
   id: String,
@@ -148,7 +149,8 @@ val projectConfig = ProjectConfig(
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
         xChr = array.getBool("xChr"),
         yChr = array.getBool("yChr"),
-        mtChr = array.getBool("mtChr"))
+        mtChr = array.getBool("mtChr"),
+        skipGh = array.getStrList("skipGh"))
 
     }
 

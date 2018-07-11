@@ -86,7 +86,7 @@ def QcReport(): Unit = {
         --input ${famStrings.mkString(" ")}
         --type fam
         --out ${qcReportStores.figureData.samplesUpsetPlotPdf}"""
-        .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data).toSeq)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
         .out(qcReportStores.figureData.samplesUpsetPlotPdf)
         .using("R-3.4")
         .named(s"${qcReportStores.figureData.samplesUpsetPlotPdf}".split("/").last)

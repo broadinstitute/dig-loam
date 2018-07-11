@@ -57,5 +57,17 @@ if(unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))] ==
 library(UpSetR)
 # green: #16BE72
 # blue: #1F76B4
-upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size=3, number.angles = -35, point.size = 8, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = c(3, 3, 2, 2, 3, 2))
+if(length(ids) <= 4) { 
+	text_scale <- c(3, 3, 2, 2, 3, 2)
+	point_size <- 8
+	line_size <- 3
+	mb_ratio = c(0.7, 0.3)
+} else {
+	text_scale <- c(3, 3, 2, 2, 2, 2)
+	point_size <- 6
+	line_size <- 2
+	mb_ratio = c(0.5, 0.5)
+}
+
+upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size = line_size, number.angles = -35, point.size = point_size, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = text_scale, mb.ratio = mb_ratio)
 dev.off()

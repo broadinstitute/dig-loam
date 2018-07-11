@@ -262,7 +262,12 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val annotatedChrData = chrSeq.map { chr =>
 
     val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
-    val mergedKgBaseString = s"${chrBaseString}.harmkg"
+
+    val mergedKgBaseString = ! arrayCfg.skipGh.contains(chr) match {
+      case true => s"${chrBaseString}.harmkg"
+      case false => s"$chrBaseString"
+    }
+
     val mergedKgHuRefBaseString = s"${mergedKgBaseString}.huref"
     val mergedKgNonKgBaseString = s"${mergedKgBaseString}.nonkg"
 

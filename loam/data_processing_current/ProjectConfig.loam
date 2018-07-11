@@ -1,12 +1,14 @@
 import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
+import java.nio.file.{Paths, Files}
 
 final case class ProjectConfigException(s: String) extends Exception(s)
 
 final case class ProjectConfig(
   id: String,
-  regionsExcludeGoogle: Option[String],
-  genePositions: String)
+  regExcl: Option[String],
+  genePos: String,
+  ancRefVcf: String)
 
 object ProjectConfig {
 
@@ -26,6 +28,13 @@ object ProjectConfig {
     }
   }
 
+  def checkPath(s: String): String = {
+    Files.exists(Paths.get(s)) match {
+      case false => throw new ProjectConfigException("checkPath: " + s + " does not exist")
+      case true  => s
+    }
+  }
+
   def parse(config: loamstream.conf.DataConfig): ProjectConfig = {
 
     val id = requiredStr(config, "id")
@@ -34,19 +43,23 @@ object ProjectConfig {
       case true  => println("id = " + id)
     }
 
-    val regionsExcludeGoogle = optionalStr(config, "regionsExcludeGoogle")
-    regionsExcludeGoogle match {
-      case Some(s) => println("regionsExcludeGoogle = " + regionsExcludeGoogle)
+    val regExcl = optionalStr(config, "regExcl")
+    regExcl match {
+      case Some(s) => println("regExcl = " + s)
       case None =>
     }
 
-    val genePositions = requiredStr(config, "genePositions")
-    println("genePositions = " + genePositions)
+    val genePos = checkPath(requiredStr(config, "genePos"))
+    println("genePos = " + genePos)
+
+    val ancRefVcf = checkPath(requiredStr(config, "ancRefVcf"))
+    println("ancRefVcf = " + ancRefVcf)
 
 	new ProjectConfig(
-      id,
-      regionsExcludeGoogle,
-      genePositions)
+      id = id,
+      regExcl = regExcl,
+      genePos = genePos,
+      ancRefVcf = ancRefVcf)
 
   }
 
