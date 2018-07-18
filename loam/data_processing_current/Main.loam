@@ -1,4 +1,4 @@
-import ProjectConfig._
+import Cfg._
 //import PipelineConfig._
 //import Directories._
 //import StoreHelpers._
@@ -30,7 +30,13 @@ import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
 println("Loading Project Configuration File ...")
-val projectConfig = ProjectConfig.parse(loadConfig("dataConfig", ""))
+val cfg = Cfg.parse(loadConfig("dataConfig", ""))
+cfg.dir.debugVars()
+cfg.debugVars()
+for ( d <- cfg.data ) {
+  d.debugVars()
+}
+writeCfg(cfg)
 println("... Project Configuration Loaded Successfully!")
 
 //// Array specific QC steps up to ancestry inferrence
