@@ -44,6 +44,9 @@ final case class Cfg(
   genePos: String,
   aimRef: String,
   refSam: Store,
+  refSamId: String,
+  refSamPop: String,
+  refSamGrp: String,
   refVcfs: Map[String, Store],
   refVcfsIDs: Map[String, Store],
   huRefs: Map[String, Store],
@@ -160,6 +163,9 @@ object Cfg{
     val aimRef = checkPath(requiredStr(config = config, field = "aimRef"))
 
     val refSam = store.at(checkPath(requiredStr(config = config, field = "refSam"))).asInput
+    val refSamId = requiredStr(config = config, field = "refSamId", default = Some("ID"))
+    val refSamPop = requiredStr(config = config, field = "refSamPop", default = Some("POP"))
+    val refSamGrp = requiredStr(config = config, field = "refSamGrp", default = Some("GROUP"))
     val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ Seq("X","Y","MT")
     val refVcfs = chrSeq.map { chr =>
       val vcf = store.at(checkPath(requiredStr(config = config, field = "refVcfs").replace("[CHROMOSOME]", s"$chr"))).asInput
@@ -221,6 +227,9 @@ object Cfg{
       genePos = genePos,
       aimRef = aimRef,
       refSam = refSam,
+      refSamId = refSamId,
+      refSamPop = refSamPop,
+      refSamGrp = refSamGrp,
       refVcfs = refVcfs,
       refVcfsIDs = refVcfsIDs,
       huRefs = huRefs,
