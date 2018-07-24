@@ -45,7 +45,7 @@ def FilterFinal(array: String): Unit = {
   
   }
   
-  uger {
+  drm {
   
     cmd"""$binTabix -f -p vcf ${arrayStores(array).cleanData.vcf}"""
       .in(arrayStores(array).cleanData.vcf)
@@ -54,7 +54,7 @@ def FilterFinal(array: String): Unit = {
   
   }
   
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair

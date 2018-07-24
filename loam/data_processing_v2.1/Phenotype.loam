@@ -28,7 +28,7 @@ def PhenotypeDistPlots(configCohort: ConfigCohort, pheno: String, configMeta: Op
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyPhenoDistPlot
       --pheno ${ProjectStores.pheno}

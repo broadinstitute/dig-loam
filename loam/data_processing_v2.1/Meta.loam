@@ -40,7 +40,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaResultsData(configModel).results}"""
       .in(metaStores(configMeta.id).metaResultsData(configModel).results)
@@ -83,7 +83,7 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}"""
       .in(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)

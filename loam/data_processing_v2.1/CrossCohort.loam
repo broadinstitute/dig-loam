@@ -11,7 +11,7 @@ import MetaStores._
 
 def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  uger {
+  drm {
 
     cmd"""join -1 2 -2 1 <(sort -k 2 ${arrayStores(configCohort.array).harmonizedData.refBase}.fam) <(sort -k 1 ${ProjectStores.ancestryInferred}) | awk -v var=${configCohort.ancestry.mkString(",")} '{ split(var,arr,","); for ( a in arr ) { if (arr[a] == $$7 ) print $$2"\t"$$1 } }' > ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}"""
     .in(ProjectStores.ancestryInferred)
@@ -36,7 +36,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   val mergeString = metaStores(configMeta.id).metaCohortData.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
 
-  uger {
+  drm {
 
     cmd"""echo "${mergeString}" > ${metaStores(configMeta.id).metaKinshipData.mergeList}"""
     .out(metaStores(configMeta.id).metaKinshipData.mergeList)
@@ -58,7 +58,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rExcludeCrossArray

@@ -16,7 +16,7 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(phase: Int): Unit = {
 
-  uger {
+  drm {
 
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${analysisReportStores(phase).globalData.header}"""
@@ -79,7 +79,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyGenerateAnalysisReportData
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -112,7 +112,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyGenerateAnalysisReportBibliography
       --names "${projectConfig.analysisReportAcknowledgements.mkString(",")}"
@@ -170,7 +170,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
       --dist-plot ${reportAnalysisPhenoDistPlotStrings.mkString(" ")}
@@ -231,7 +231,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
       --qq-plots ${reportAnalysisModelQqPlotStrings.mkString(" ")}
@@ -288,7 +288,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
   
   }
 
-  uger {
+  drm {
     
     cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
       --top-results ${reportAnalysisModelTop20AnnotAlignedRiskStrings.mkString(" ")}
@@ -372,7 +372,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       
       }
       
-      uger {
+      drm {
         
         cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
           --top-known-loci ${reportAnalysisModelTop50KnownStrings.mkString(" ")}
@@ -418,7 +418,7 @@ def AnalysisReportCompile(phase: Int): Unit = {
 
   val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.path}""")
 
-  uger {
+  drm {
 
     cmd"""cat ${analysisReportStores(phase).globalData.header} ${analysisReportStores(phase).globalData.intro} ${analysisReportStores(phase).globalData.data} ${analysisReportStores(phase).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliography} > ${analysisReportStores(phase).globalData.tex}"""
       .in(reportAnalysisResultsList :+ analysisReportStores(phase).globalData.header :+ analysisReportStores(phase).globalData.intro :+ analysisReportStores(phase).globalData.data :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.bibliography)
@@ -451,7 +451,7 @@ def AnalysisReportCompile(phase: Int): Unit = {
 
   val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.path}""")
 
-  uger {
+  drm {
     
     cmd"""cat ${analysisReportStores(phase).globalData.introInput} ${analysisReportStores(phase).globalData.dataInput} ${analysisReportStores(phase).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliographyInput} > ${analysisReportStores(phase).globalData.input}"""
       .in(reportAnalysisResultsInputList :+ analysisReportStores(phase).globalData.introInput :+ analysisReportStores(phase).globalData.dataInput :+ analysisReportStores(phase).globalData.strategyInput :+ analysisReportStores(phase).globalData.bibliographyInput)

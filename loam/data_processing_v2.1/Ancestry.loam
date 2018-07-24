@@ -31,7 +31,7 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPcair
@@ -51,7 +51,7 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryPca
@@ -78,7 +78,7 @@ def AncestryPca(array: String): Unit = {
 
 def AncestryCluster(array: String): Unit = {
 
-  uger {
+  drm {
 
     cmd"""(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}"""
       .in(arrayStores(array).ancestryPcaData.scores)
@@ -87,7 +87,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  ugerWith(mem=8) {
+  drmWith(mem=8) {
   
     cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)
@@ -96,7 +96,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryCluster
@@ -132,7 +132,7 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterMerge

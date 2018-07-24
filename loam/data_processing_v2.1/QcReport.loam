@@ -18,7 +18,7 @@ def QcReport(): Unit = {
   val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
   val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rVariantsSummaryTable
@@ -37,7 +37,7 @@ def QcReport(): Unit = {
   val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
   val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterTable
@@ -55,7 +55,7 @@ def QcReport(): Unit = {
 
   val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.format, a.filename).mkString(",") } }
 
-  uger {
+  drm {
 
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${qcReportStores.texData.header}"""
@@ -79,7 +79,7 @@ def QcReport(): Unit = {
   
   if (projectConfig.nArrays > 1) {
 
-    uger {
+    drm {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -116,7 +116,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    uger {
+    drm {
   
       cmd"""$binPython $pyGenerateQcReportData
       --narrays ${projectConfig.nArrays}
@@ -137,7 +137,7 @@ def QcReport(): Unit = {
   val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryPcaData.plots.path.toAbsolutePath()}""").mkString(",") } }
   val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyGenerateQcReportAncestry
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
@@ -158,7 +158,7 @@ def QcReport(): Unit = {
   val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
   val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
 
-  uger {
+  drm {
     
     cmd"""$binPython $pyGenerateQcReportIbdSexcheck
       --filtered-bim ${refPrunedBimStrings.mkString(" ")}
@@ -197,7 +197,7 @@ def QcReport(): Unit = {
   val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.path}""").mkString(",") } }
   val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.path}""").mkString(",") } }
 
-  uger {
+  drm {
     
     cmd"""$binRscript --vanilla --verbose
       $rMakeOutlierTable
@@ -218,7 +218,7 @@ def QcReport(): Unit = {
 
   val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
 
-  uger {
+  drm {
     
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -235,7 +235,7 @@ def QcReport(): Unit = {
 
   val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.path.toAbsolutePath()}""").mkString(",") } }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyGenerateQcReportSampleqc
       --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
@@ -257,7 +257,7 @@ def QcReport(): Unit = {
     
   if (projectConfig.nArrays > 1) {
 
-    uger {
+    drm {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -281,7 +281,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    uger {
+    drm {
   
       cmd"""$binPython $pyGenerateQcReportVariantqc
         --bim ${cleanBimStrings.head}
@@ -295,7 +295,7 @@ def QcReport(): Unit = {
   
   }
 
-  uger {
+  drm {
   
     cmd"""$binPython $pyGenerateQcReportBibliography
       --out ${qcReportStores.texData.bibliography}"""

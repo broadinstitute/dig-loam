@@ -14,7 +14,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   val summaryStores = resultsSummaryStores((id, configModel))
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyTop1000
       --results ${results}
@@ -45,7 +45,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rTop20
@@ -111,7 +111,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
 def ResultsKnownLociSummary(configKnownLoci: ConfigKnownLoci, id: String, results: Store, known_data: Store, hiLd: Store): Unit = {
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known

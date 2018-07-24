@@ -38,18 +38,18 @@ val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models
   val modelPrefix = s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
 
   assoc -> Assoc(
-    phenoPrelim = store.at(localOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
-    phenoPrelimGoogle = store.at(googleOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
-    samplesInclude = store.at(localOutDir / s"${modelPrefix}.samples.include"),
-    samplesIncludeGoogle = store.at(googleOutDir / s"${modelPrefix}.samples.include"),
-    phenoLog = store.at(localOutDir / s"${modelPrefix}.pheno.log"),
-    pheno = store.at(localOutDir / s"${modelPrefix}.pheno.tsv"),
-    pcs = store.at(localOutDir / s"${modelPrefix}.pcs.include"),
-    phenoGoogle = store.at(googleOutDir / s"${modelPrefix}.pheno.tsv"),
-    pcsGoogle = store.at(googleOutDir / s"${modelPrefix}.pcs.include"),
-    results = store.at(localOutDir / s"${modelPrefix}.results.tsv.bgz"),
-    tbi = store.at(localOutDir / s"${modelPrefix}.results.tsv.bgz.tbi"),
-    resultsGoogle = store.at(googleOutDir / s"${modelPrefix}.results.tsv.bgz"))
+    phenoPrelim = store(localOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
+    phenoPrelimGoogle = store(googleOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
+    samplesInclude = store(localOutDir / s"${modelPrefix}.samples.include"),
+    samplesIncludeGoogle = store(googleOutDir / s"${modelPrefix}.samples.include"),
+    phenoLog = store(localOutDir / s"${modelPrefix}.pheno.log"),
+    pheno = store(localOutDir / s"${modelPrefix}.pheno.tsv"),
+    pcs = store(localOutDir / s"${modelPrefix}.pcs.include"),
+    phenoGoogle = store(googleOutDir / s"${modelPrefix}.pheno.tsv"),
+    pcsGoogle = store(googleOutDir / s"${modelPrefix}.pcs.include"),
+    results = store(localOutDir / s"${modelPrefix}.results.tsv.bgz"),
+    tbi = store(localOutDir / s"${modelPrefix}.results.tsv.bgz.tbi"),
+    resultsGoogle = store(googleOutDir / s"${modelPrefix}.results.tsv.bgz"))
 
 }.toMap
 
@@ -70,22 +70,22 @@ val knownLociStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.Kn
   val knownHiLdStringBase = known.hiLd.split("/").last
 
   knownLoci -> KnownLoci(
-    data = store.at(path(known.data)).asInput,
-    hiLd = store.at(path(known.hiLd)).asInput,
-    hiLdGoogle = store.at(googleOutDir / s"${knownPrefix}.${knownHiLdStringBase}"),
+    data = store(path(known.data)).asInput,
+    hiLd = store(path(known.hiLd)).asInput,
+    hiLdGoogle = store(googleOutDir / s"${knownPrefix}.${knownHiLdStringBase}"),
     assoc = Assoc(
-      phenoPrelim = store.at(localOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
-      phenoPrelimGoogle = store.at(googleOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
-      samplesInclude = store.at(localOutDir / s"${knownPrefix}.samples.include"),
-      samplesIncludeGoogle = store.at(googleOutDir / s"${knownPrefix}.samples.include"),
-      phenoLog = store.at(localOutDir / s"${knownPrefix}.pheno.log"),
-      pheno = store.at(localOutDir / s"${knownPrefix}.pheno.tsv"),
-      pcs = store.at(localOutDir / s"${knownPrefix}.pcs.include"),
-      phenoGoogle = store.at(googleOutDir / s"${knownPrefix}.pheno.tsv"),
-      pcsGoogle = store.at(googleOutDir / s"${knownPrefix}.pcs.include"),
-      results = store.at(localOutDir / s"${knownPrefix}.results.tsv.bgz"),
-      tbi = store.at(localOutDir / s"${knownPrefix}.results.tsv.bgz.tbi"),
-      resultsGoogle = store.at(googleOutDir / s"${knownPrefix}.results.tsv.bgz"))
+      phenoPrelim = store(localOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
+      phenoPrelimGoogle = store(googleOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
+      samplesInclude = store(localOutDir / s"${knownPrefix}.samples.include"),
+      samplesIncludeGoogle = store(googleOutDir / s"${knownPrefix}.samples.include"),
+      phenoLog = store(localOutDir / s"${knownPrefix}.pheno.log"),
+      pheno = store(localOutDir / s"${knownPrefix}.pheno.tsv"),
+      pcs = store(localOutDir / s"${knownPrefix}.pcs.include"),
+      phenoGoogle = store(googleOutDir / s"${knownPrefix}.pheno.tsv"),
+      pcsGoogle = store(googleOutDir / s"${knownPrefix}.pcs.include"),
+      results = store(localOutDir / s"${knownPrefix}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${knownPrefix}.results.tsv.bgz.tbi"),
+      resultsGoogle = store(googleOutDir / s"${knownPrefix}.results.tsv.bgz"))
     )
 
 }.toMap

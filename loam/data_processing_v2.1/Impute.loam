@@ -8,7 +8,7 @@ import ArrayStores._
 
 def FilterImpute(array: String): Unit = {
 
-  uger {
+  drm {
 
     cmd"""sed '1d' ${arrayStores(array).finalData.variantsExclude} | awk '{print $$4}' > ${arrayStores(array).finalData.variantsExcludeIds}"""
     .in(arrayStores(array).finalData.variantsExclude)

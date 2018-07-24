@@ -23,7 +23,7 @@ def Harmonize(array: String): Unit = {
 
   } yield { 
 
-    uger {
+    drm {
 
 	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory 3000 --threads 1"""
         .in(arrayStores(array).annotatedData.data)
@@ -34,7 +34,7 @@ def Harmonize(array: String): Unit = {
 
     if (! arrayCfg.skipGh.contains(chr)) {
 
-      ugerWith(mem=8, maxRunTime=6) {
+      drmWith(mem=8, maxRunTime=6) {
       
         cmd"""$binGenotypeHarmonizer
         --input ${chrData.base}
@@ -69,7 +69,7 @@ def Harmonize(array: String): Unit = {
 
     }
 
-    uger {
+    drm {
       
       cmd"""$binPython $pyAlignNon1kgVariants
       --kg-ids ${ProjectStores.kgIds(chr)}
@@ -106,7 +106,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  uger {
+  drm {
   
     cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(array).harmonizedData.mergeList}"""
       .out(arrayStores(array).harmonizedData.mergeList)
@@ -148,7 +148,7 @@ def Harmonize(array: String): Unit = {
   val mergedKgVarIdUpdateString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
   val mergedKgVarSnpLogString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
   
-  ugerWith(mem=8) {
+  drmWith(mem=8) {
   
     cmd"""$binPython $pyMergeVariantLists
       --remove-in "$nonKgRemoveString"

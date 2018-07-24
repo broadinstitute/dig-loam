@@ -45,20 +45,20 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
     cohort -> MetaCohortData(
       data = bedBimFam(localOutDir / cohortRefBaseString),
       base = localOutDir / cohortRefBaseString,
-      samples = store.at(localOutDir / s"${cohortBaseString}.samples"),
-      famMerge = store.at(localOutDir / s"${cohortRefBaseString}.fam.merge"),
-      kinshipSamplesExclude = store.at(localOutDir / s"${cohortKinshipBaseString}.samples.exclude"))
+      samples = store(localOutDir / s"${cohortBaseString}.samples"),
+      famMerge = store(localOutDir / s"${cohortRefBaseString}.fam.merge"),
+      kinshipSamplesExclude = store(localOutDir / s"${cohortKinshipBaseString}.samples.exclude"))
 
   }.toMap
 
   val metaKinshipData = MetaKinshipData(
-    mergeList= store.at(localOutDir / s"${baseRefFilteredString}.merge_list.txt"),
+    mergeList= store(localOutDir / s"${baseRefFilteredString}.merge_list.txt"),
     dataFiltered = bedBimFam(localOutDir / baseRefFilteredString),
     baseFiltered = localOutDir / baseRefFilteredString,
     baseKinship = localOutDir / baseKinshipString,
-    log = store.at(localOutDir / s"${baseKinshipString}.log"),
-    kin0 = store.at(localOutDir / s"${baseKinshipString}.kin0"),
-    kin0Related = store.at(localOutDir / s"${baseKinshipString}.kin0.related"))
+    log = store(localOutDir / s"${baseKinshipString}.log"),
+    kin0 = store(localOutDir / s"${baseKinshipString}.kin0"),
+    kin0Related = store(localOutDir / s"${baseKinshipString}.kin0.related"))
 
   val metaResultsData = projectConfig.Models.map { model =>
 
@@ -66,9 +66,9 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
     val metaResultsBaseString = s"${projectConfig.projectId}.${meta}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
 
     model -> MetaResultsData(
-      results = store.at(localOutDir / s"${metaResultsBaseString}.results.tsv.bgz"),
-      resultsGoogle = store.at(googleOutDir / s"${metaResultsBaseString}.results.tsv.bgz"),
-      tbi = store.at(localOutDir / s"${metaResultsBaseString}.results.tsv.bgz.tbi"))
+      results = store(localOutDir / s"${metaResultsBaseString}.results.tsv.bgz"),
+      resultsGoogle = store(googleOutDir / s"${metaResultsBaseString}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${metaResultsBaseString}.results.tsv.bgz.tbi"))
 
   }.toMap
 
@@ -78,9 +78,9 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
     val metaKnownLociResultsBaseString = s"${projectConfig.projectId}.${meta}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}.known_loci"
 
     known -> MetaResultsData(
-      results = store.at(localOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz"),
-      resultsGoogle = store.at(googleOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz"),
-      tbi = store.at(localOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz.tbi"))
+      results = store(localOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz"),
+      resultsGoogle = store(googleOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${metaKnownLociResultsBaseString}.results.tsv.bgz.tbi"))
 
   }.toMap
 

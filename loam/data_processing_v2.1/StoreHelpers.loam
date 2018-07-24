@@ -5,7 +5,7 @@ import loamstream.util.UriEnrichments._
 import loamstream.util.HasPath._
 
 def outputStoreName(name: String)(extension: String): String = s"${name}.${extension}"
-def outputStore(name: String): String => Store = extension => store.at(outputStoreName(name)(extension))
+def outputStore(name: String): String => Store = extension => store(outputStoreName(name)(extension))
 
 def withExtensions(extensions: String*)(makeStore: String => Store): Seq[Store] = {
   extensions.map(ex => makeStore(ex))
@@ -13,9 +13,9 @@ def withExtensions(extensions: String*)(makeStore: String => Store): Seq[Store] 
 
 val (bed, bim, fam) = ("bed", "bim", "fam")
 def bedBimFam(makeStore: String => Store): Seq[Store] = withExtensions(bed, bim, fam)(makeStore)
-def bedBimFam(prefix: String): Seq[Store] = bedBimFam(extension => store.at(s"${prefix}.${extension}"))
+def bedBimFam(prefix: String): Seq[Store] = bedBimFam(extension => store(s"${prefix}.${extension}"))
 def bedBimFam(prefix: Path): Seq[Store] = bedBimFam(prefix.toString)
-def bedBimFam(prefix: URI): Seq[Store] = bedBimFam(extension => store.at(prefix + s".${extension}"))
+def bedBimFam(prefix: URI): Seq[Store] = bedBimFam(extension => store(prefix + s".${extension}"))
 
 def basename(path: Path): String = base(path)
 def basename(uri: URI): String = base(uri)

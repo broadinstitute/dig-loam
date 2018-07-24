@@ -224,29 +224,29 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
   val rawData = RawData(
-    data = Seq(store.at(path(arrayCfg.filename + s".bed")).asInput,store.at(path(arrayCfg.filename + s".bim")).asInput,store.at(path(arrayCfg.filename + s".fam")).asInput),
+    data = Seq(store(path(arrayCfg.filename + s".bed")).asInput,store(path(arrayCfg.filename + s".bim")).asInput,store(path(arrayCfg.filename + s".fam")).asInput),
     base = path(arrayCfg.filename),
     rawBase = localOutDir / rawBaseString,
-    unplaced = store.at(localOutDir / s"${rawBaseString}.unplaced"),
-    unique = store.at(localOutDir / s"${rawBaseString}.unique"),
-    indel = store.at(localOutDir / s"${rawBaseString}.indel"),
-    lmiss = store.at(localOutDir / s"${rawBaseString}.missing.lmiss"),
-    imiss = store.at(localOutDir / s"${rawBaseString}.missing.imiss"),
-    imissRemove = store.at(localOutDir / s"${rawBaseString}.missing.imiss.remove"),
-    freq = store.at(localOutDir / s"${rawBaseString}.freq.frq"),
-    mono = store.at(localOutDir / s"${rawBaseString}.mono"),
-    dupRemove = store.at(localOutDir / s"${rawBaseString}.dup.remove"))
+    unplaced = store(localOutDir / s"${rawBaseString}.unplaced"),
+    unique = store(localOutDir / s"${rawBaseString}.unique"),
+    indel = store(localOutDir / s"${rawBaseString}.indel"),
+    lmiss = store(localOutDir / s"${rawBaseString}.missing.lmiss"),
+    imiss = store(localOutDir / s"${rawBaseString}.missing.imiss"),
+    imissRemove = store(localOutDir / s"${rawBaseString}.missing.imiss.remove"),
+    freq = store(localOutDir / s"${rawBaseString}.freq.frq"),
+    mono = store(localOutDir / s"${rawBaseString}.mono"),
+    dupRemove = store(localOutDir / s"${rawBaseString}.dup.remove"))
 
   val preparedData = PreparedData(
     data = bedBimFam(localOutDir / preparedBaseString),
     base = localOutDir / preparedBaseString,
-    multiallelic = store.at(localOutDir / s"${preparedBaseString}.multiallelic"),
-    chain = arrayCfg.liftOver.map(s => store.at(path(s)).asInput),
-    bed = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.liftover.bed")),
-    lifted = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.lifted")),
-    unlifted = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.unlifted")),
-    liftedUpdate = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.lifted.update")),
-    liftedExtract = arrayCfg.liftOver.map(s => store.at(localOutDir / s"${preparedBaseString}.lifted.extract")))
+    multiallelic = store(localOutDir / s"${preparedBaseString}.multiallelic"),
+    chain = arrayCfg.liftOver.map(s => store(path(s)).asInput),
+    bed = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.liftover.bed")),
+    lifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted")),
+    unlifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.unlifted")),
+    liftedUpdate = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted.update")),
+    liftedExtract = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted.extract")))
 
   val annotatedData = AnnotatedData(
     data = arrayCfg.liftOver match {
@@ -279,153 +279,153 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
       mergedKgHuRefBase = localOutDir / mergedKgHuRefBaseString,
       mergedKgHuRef = bedBimFam(localOutDir / mergedKgHuRefBaseString),
       mergedKgNonKgBase = localOutDir / mergedKgNonKgBaseString,
-      nonKgRemove = store.at(localOutDir / s"${mergedKgNonKgBaseString}.remove"),
-      nonKgIgnore = store.at(localOutDir / s"${mergedKgNonKgBaseString}.ignore"),
-      nonKgMono = store.at(localOutDir / s"${mergedKgNonKgBaseString}.mono"),
-      nonKgNomatch = store.at(localOutDir / s"${mergedKgNonKgBaseString}.nomatch"),
-      nonKgFlip = store.at(localOutDir / s"${mergedKgNonKgBaseString}.flip"),
-      nonKgForceA1 = store.at(localOutDir / s"${mergedKgNonKgBaseString}.force_a1"),
-      mergedKgVarIdUpdate = store.at(localOutDir / s"${mergedKgBaseString}_idUpdates.txt"),
-      mergedKgVarSnpLog = store.at(localOutDir / s"${mergedKgBaseString}_snpLog.log"))
+      nonKgRemove = store(localOutDir / s"${mergedKgNonKgBaseString}.remove"),
+      nonKgIgnore = store(localOutDir / s"${mergedKgNonKgBaseString}.ignore"),
+      nonKgMono = store(localOutDir / s"${mergedKgNonKgBaseString}.mono"),
+      nonKgNomatch = store(localOutDir / s"${mergedKgNonKgBaseString}.nomatch"),
+      nonKgFlip = store(localOutDir / s"${mergedKgNonKgBaseString}.flip"),
+      nonKgForceA1 = store(localOutDir / s"${mergedKgNonKgBaseString}.force_a1"),
+      mergedKgVarIdUpdate = store(localOutDir / s"${mergedKgBaseString}_idUpdates.txt"),
+      mergedKgVarSnpLog = store(localOutDir / s"${mergedKgBaseString}_snpLog.log"))
 
   }.toMap
 
   val harmonizedData = HarmonizedData(
     data = bedBimFam(localOutDir / harmonizedBaseString),
     base = localOutDir / harmonizedBaseString,
-    mergeList = store.at(localOutDir / s"${harmonizedBaseString}.merge.txt"),
-    nonKgRemove = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
-    nonKgIgnore = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
-    nonKgMono = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.mono"),
-    nonKgNomatch = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.nomatch"),
-    nonKgFlip = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.flip"),
-    nonKgForceA1 = store.at(localOutDir / s"${harmonizedBaseString}.nonkg.force_a1"),
-    mergedKgVarIdUpdate = store.at(localOutDir / s"${harmonizedBaseString}_idUpdates.txt"),
-    mergedKgVarSnpLog = store.at(localOutDir / s"${harmonizedBaseString}_snpLog.log"),
-    forceA2 = store.at(localOutDir / s"${refBaseString}.force_a2.txt"),
+    mergeList = store(localOutDir / s"${harmonizedBaseString}.merge.txt"),
+    nonKgRemove = store(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
+    nonKgIgnore = store(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
+    nonKgMono = store(localOutDir / s"${harmonizedBaseString}.nonkg.mono"),
+    nonKgNomatch = store(localOutDir / s"${harmonizedBaseString}.nonkg.nomatch"),
+    nonKgFlip = store(localOutDir / s"${harmonizedBaseString}.nonkg.flip"),
+    nonKgForceA1 = store(localOutDir / s"${harmonizedBaseString}.nonkg.force_a1"),
+    mergedKgVarIdUpdate = store(localOutDir / s"${harmonizedBaseString}_idUpdates.txt"),
+    mergedKgVarSnpLog = store(localOutDir / s"${harmonizedBaseString}_snpLog.log"),
+    forceA2 = store(localOutDir / s"${refBaseString}.force_a2.txt"),
     refData = bedBimFam(localOutDir / refBaseString),
     refBase = localOutDir / refBaseString,
-    vcf = store.at(localOutDir / s"${refBaseString}.vcf.gz"),
-    tbi = store.at(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
+    vcf = store(localOutDir / s"${refBaseString}.vcf.gz"),
+    tbi = store(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
     imputeData = bedBimFam(localOutDir / imputeBaseString),
     imputeBase = localOutDir / imputeBaseString,
-    vcfGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz"),
-    tbiGoogle = store.at(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
-    vdsGoogle = store.at(googleOutDir / s"${refBaseString}.vds"),
-    variantQcGoogle = store.at(googleOutDir / s"${refBaseString}.variantqc.tsv"),
-    prunedInGoogle = store.at(googleOutDir / s"${refBaseString}.prunedin.tsv"))
+    vcfGoogle = store(googleOutDir / s"${refBaseString}.vcf.gz"),
+    tbiGoogle = store(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
+    vdsGoogle = store(googleOutDir / s"${refBaseString}.vds"),
+    variantQcGoogle = store(googleOutDir / s"${refBaseString}.variantqc.tsv"),
+    prunedInGoogle = store(googleOutDir / s"${refBaseString}.prunedin.tsv"))
 
   val prunedData = PrunedData(
     dataGoogle = bedBimFam(googleOutDir / qcBaseString),
     baseGoogle = googleOutDir / qcBaseString,
     data = bedBimFam(localOutDir / qcBaseString),
     base = localOutDir / qcBaseString,
-    vdsGoogle = store.at(googleOutDir / s"${qcBaseString}.vds"))
+    vdsGoogle = store(googleOutDir / s"${qcBaseString}.vds"))
 
   val kinshipData = KinshipData(
     base = localOutDir / kinshipBaseString,
-    log = store.at(localOutDir / s"${kinshipBaseString}.log"),
-    kin = store.at(localOutDir / s"${kinshipBaseString}.kin"),
-    kin0 = store.at(localOutDir / s"${kinshipBaseString}.kin0"),
-    kin0Related = store.at(localOutDir / s"${kinshipBaseString}.kin0.related"),
-    famSizes = store.at(localOutDir / s"${kinshipBaseString}.famsizes.tsv"))
+    log = store(localOutDir / s"${kinshipBaseString}.log"),
+    kin = store(localOutDir / s"${kinshipBaseString}.kin"),
+    kin0 = store(localOutDir / s"${kinshipBaseString}.kin0"),
+    kin0Related = store(localOutDir / s"${kinshipBaseString}.kin0.related"),
+    famSizes = store(localOutDir / s"${kinshipBaseString}.famsizes.tsv"))
 
   val ref1kgData = Ref1kgData(
     data = bedBimFam(localOutDir / ref1kgBaseString),
     base = localOutDir / ref1kgBaseString,
-    gds = store.at(localOutDir / s"${ref1kgBaseString}.gds"),
+    gds = store(localOutDir / s"${ref1kgBaseString}.gds"),
     dataGoogle = bedBimFam(googleOutDir / ref1kgBaseString),
     baseGoogle = googleOutDir / ref1kgBaseString)
 
   val ancestryData = AncestryData(
-    inferred = store.at(localOutDir / s"${ancestryBaseString}.inferred.tsv"))
+    inferred = store(localOutDir / s"${ancestryBaseString}.inferred.tsv"))
 
   val ancestryPcaData = AncestryPcaData(
     base = localOutDir / ancestryPcaBaseString,
-    log = store.at(localOutDir / s"${ancestryPcaBaseString}.log"),
-    scores = store.at(localOutDir / s"${ancestryPcaBaseString}.scores.tsv"),
-    plots = store.at(localOutDir / s"${ancestryPcaBaseString}.plots.pdf"))
+    log = store(localOutDir / s"${ancestryPcaBaseString}.log"),
+    scores = store(localOutDir / s"${ancestryPcaBaseString}.scores.tsv"),
+    plots = store(localOutDir / s"${ancestryPcaBaseString}.plots.pdf"))
   
   val ancestryClusterData = AncestryClusterData(
     base = localOutDir / ancestryClusterBaseString,
-    log = store.at(localOutDir / s"${ancestryClusterBaseString}.log"),
-    fet = store.at(localOutDir / s"${ancestryClusterBaseString}.fet.1"),
-    clu = store.at(localOutDir / s"${ancestryClusterBaseString}.clu.1"),
-    klg = store.at(localOutDir / s"${ancestryClusterBaseString}.klg.1"),
-    plots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.pdf"),
-    centerPlots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.centers.pdf"),
-    no1kgPlots = store.at(localOutDir / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
-    xtab = store.at(localOutDir / s"${ancestryClusterBaseString}.xtab"),
-    groups = store.at(localOutDir / s"${ancestryClusterBaseString}.groups.tsv"))
+    log = store(localOutDir / s"${ancestryClusterBaseString}.log"),
+    fet = store(localOutDir / s"${ancestryClusterBaseString}.fet.1"),
+    clu = store(localOutDir / s"${ancestryClusterBaseString}.clu.1"),
+    klg = store(localOutDir / s"${ancestryClusterBaseString}.klg.1"),
+    plots = store(localOutDir / s"${ancestryClusterBaseString}.plots.pdf"),
+    centerPlots = store(localOutDir / s"${ancestryClusterBaseString}.plots.centers.pdf"),
+    no1kgPlots = store(localOutDir / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
+    xtab = store(localOutDir / s"${ancestryClusterBaseString}.xtab"),
+    groups = store(localOutDir / s"${ancestryClusterBaseString}.groups.tsv"))
 
   val pcaData = PcaData(
-    gds = store.at(localOutDir / s"${pcaBaseString}.gds"),
-    log = store.at(localOutDir / s"${pcaBaseString}.log"),
-    scores = store.at(localOutDir / s"${pcaBaseString}.scores.tsv"))
+    gds = store(localOutDir / s"${pcaBaseString}.gds"),
+    log = store(localOutDir / s"${pcaBaseString}.log"),
+    scores = store(localOutDir / s"${pcaBaseString}.scores.tsv"))
 
   val sexcheckData = SexcheckData(
-    sexcheck = store.at(localOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
-    sexcheckGoogle = store.at(googleOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
-    problems = store.at(localOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = store.at(googleOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"))
+    sexcheck = store(localOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
+    sexcheckGoogle = store(googleOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
+    problems = store(localOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
+    problemsGoogle = store(googleOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"))
 
   val sampleQcData = SampleQcData(
-    stats = store.at(localOutDir / s"${sampleQcBaseString}.stats.tsv"),
-    statsGoogle = store.at(googleOutDir / s"${sampleQcBaseString}.stats.tsv"),
-    statsAdj = store.at(localOutDir / s"${sampleQcBaseString}.stats.adj.tsv"),
-    corrPlots = store.at(localOutDir / s"${sampleQcBaseString}.corr.pdf"),
-    boxPlots = store.at(localOutDir / s"${sampleQcBaseString}.boxplots.pdf"),
-    discreteness = store.at(localOutDir / s"${sampleQcBaseString}.discreteness.txt"),
-    pcaLoadings = store.at(localOutDir / s"${sampleQcBaseString}.pca.loadings.tsv"),
-    pcaPlots = store.at(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
-    pcaScores = store.at(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
-    outliers = store.at(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
-    outliersPlotsPdf = store.at(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"))
+    stats = store(localOutDir / s"${sampleQcBaseString}.stats.tsv"),
+    statsGoogle = store(googleOutDir / s"${sampleQcBaseString}.stats.tsv"),
+    statsAdj = store(localOutDir / s"${sampleQcBaseString}.stats.adj.tsv"),
+    corrPlots = store(localOutDir / s"${sampleQcBaseString}.corr.pdf"),
+    boxPlots = store(localOutDir / s"${sampleQcBaseString}.boxplots.pdf"),
+    discreteness = store(localOutDir / s"${sampleQcBaseString}.discreteness.txt"),
+    pcaLoadings = store(localOutDir / s"${sampleQcBaseString}.pca.loadings.tsv"),
+    pcaPlots = store(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
+    pcaScores = store(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
+    outliers = store(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
+    outliersPlotsPdf = store(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"))
 
   val sampleQcPcaClusterData = SampleQcPcaClusterData(
     base = localOutDir / s"${sampleQcBaseString}.pca.cluster",
-    fet = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.fet.1"),
-    clu = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.clu.1"),
-    klg = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.klg.1"),
-    log = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.log"),
-    outliers = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.outliers.tsv"),
-    plots = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.plots.pdf"),
-    xtab = store.at(localOutDir / s"${sampleQcBaseString}.pca.cluster.xtab"))
+    fet = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.fet.1"),
+    clu = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.clu.1"),
+    klg = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.klg.1"),
+    log = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.log"),
+    outliers = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.outliers.tsv"),
+    plots = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.plots.pdf"),
+    xtab = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.xtab"))
 
   val sampleQcMetricClusterData = projectConfig.sampleQcMetrics.map { metric =>
   
       metric -> SampleQcMetricClusterData(
         base = localOutDir / s"${sampleQcBaseString}.${metric}.cluster",
-        fet = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.fet.1"),
-        clu = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.clu.1"),
-        klg = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.klg.1"),
-        log = store.at(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.log"))
+        fet = store(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.fet.1"),
+        clu = store(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.clu.1"),
+        klg = store(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.klg.1"),
+        log = store(localOutDir / s"${sampleQcBaseString}.${metric}.cluster.log"))
 
   }.toMap
 
   val finalData = FinalData(
-    samplesExclude = store.at(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
-    samplesExcludeGoogle = store.at(googleOutDir / s"${finalBaseString}.samples.exclude.txt"),
-    variantsExclude = store.at(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
-    variantsExcludeIds = store.at(localOutDir / s"${finalBaseString}.variants.exclude.ids.txt"),
-    variantsExcludeGoogle = store.at(googleOutDir / s"${finalBaseString}.variants.exclude.txt"))
+    samplesExclude = store(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
+    samplesExcludeGoogle = store(googleOutDir / s"${finalBaseString}.samples.exclude.txt"),
+    variantsExclude = store(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
+    variantsExcludeIds = store(localOutDir / s"${finalBaseString}.variants.exclude.ids.txt"),
+    variantsExcludeGoogle = store(googleOutDir / s"${finalBaseString}.variants.exclude.txt"))
 
   val variantQcData = VariantQcData(
-    stats = store.at(localOutDir / s"${variantQcBaseString}.stats.tsv"),
-    statsGoogle = store.at(googleOutDir / s"${variantQcBaseString}.stats.tsv"))
+    stats = store(localOutDir / s"${variantQcBaseString}.stats.tsv"),
+    statsGoogle = store(googleOutDir / s"${variantQcBaseString}.stats.tsv"))
 
   val cleanData = CleanData(
     data = bedBimFam(localOutDir / cleanBaseString),
     base = localOutDir / cleanBaseString,
-    gds = store.at(localOutDir / s"${cleanBaseString}.gds"),
+    gds = store(localOutDir / s"${cleanBaseString}.gds"),
     dataGoogle = bedBimFam(googleOutDir / cleanBaseString),
     baseGoogle = googleOutDir / cleanBaseString,
-    vcf = store.at(localOutDir / s"${cleanBaseString}.vcf.bgz"),
-    tbi = store.at(localOutDir / s"${cleanBaseString}.vcf.bgz.tbi"),
-    vcfGoogle = store.at(googleOutDir / s"${cleanBaseString}.vcf.bgz"),
-    vdsGoogle = store.at(googleOutDir / s"${cleanBaseString}.vds"),
-    pcaScores = store.at(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
-    pcaLog = store.at(localOutDir / s"${cleanBaseString}.pca.log"))
+    vcf = store(localOutDir / s"${cleanBaseString}.vcf.bgz"),
+    tbi = store(localOutDir / s"${cleanBaseString}.vcf.bgz.tbi"),
+    vcfGoogle = store(googleOutDir / s"${cleanBaseString}.vcf.bgz"),
+    vdsGoogle = store(googleOutDir / s"${cleanBaseString}.vds"),
+    pcaScores = store(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
+    pcaLog = store(localOutDir / s"${cleanBaseString}.pca.log"))
 
   array -> Array(
     rawData = rawData,

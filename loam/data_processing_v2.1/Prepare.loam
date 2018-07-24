@@ -9,7 +9,7 @@ import ArrayStores._
 
 def Prepare(array: String): Unit = {
 
-  uger {
+  drm {
 
     cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unplaced}"""
       .in(arrayStores(array).rawData.data)
@@ -73,7 +73,7 @@ def Prepare(array: String): Unit = {
 
     case Some(s) =>
 
-      uger {
+      drm {
       
         cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(array).preparedData.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(array).preparedData.bed.get}"""
           .in(arrayStores(array).preparedData.data)
@@ -81,7 +81,7 @@ def Prepare(array: String): Unit = {
       
       }
       
-      ugerWith(mem=8, maxRunTime=2) {
+      drmWith(mem=8, maxRunTime=2) {
       
         cmd"""$binLiftOver ${arrayStores(array).preparedData.bed.get} ${arrayStores(array).preparedData.chain.get} ${arrayStores(array).preparedData.lifted.get} ${arrayStores(array).preparedData.unlifted.get}"""
           .in(arrayStores(array).preparedData.bed.get, arrayStores(array).preparedData.chain.get)
@@ -89,7 +89,7 @@ def Prepare(array: String): Unit = {
       
       }
       
-      uger {
+      drm {
 
         cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(array).preparedData.lifted.get} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(array).preparedData.liftedUpdate.get}"""
           .in(arrayStores(array).preparedData.lifted.get)

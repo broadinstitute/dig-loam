@@ -47,7 +47,7 @@ def SampleQc(array: String): Unit = {
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcIstatsAdj
@@ -86,7 +86,7 @@ def SampleQc(array: String): Unit = {
    *  Requires: Klustakwik, R
    */
   
-  ugerWith(mem=8) {
+  drmWith(mem=8) {
 
     cmd"""(N=$$(head -1 ${arrayStores(array).sampleQcData.pcaScores} | wc | awk '{print $$2-1}') &&
       echo $$N) > ${arrayStores(array).sampleQcPcaClusterData.fet} &&
@@ -100,7 +100,7 @@ def SampleQc(array: String): Unit = {
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rIstatsPcsGmmClusterPlot
@@ -129,7 +129,7 @@ def SampleQc(array: String): Unit = {
   
   } yield { 
 
-    uger {
+    drm {
   
       cmd"""(metricIdx=`head -1 ${arrayStores(array).sampleQcData.statsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${metric} | awk '{print $$1}'` &&
         echo 1 && sed '1d' ${arrayStores(array).sampleQcData.statsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${metricData.fet}"""
@@ -139,7 +139,7 @@ def SampleQc(array: String): Unit = {
   
     }
   
-    ugerWith(mem=8) {
+    drmWith(mem=8) {
   
       cmd"""$binKlustakwik ${metricData.base} 1 -UseFeatures 1 -UseDistributional 0 > ${metricData.log}"""
         .in(metricData.fet)
@@ -162,7 +162,7 @@ def SampleQc(array: String): Unit = {
   
   }
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rIstatsAdjGmmPlotMetrics
@@ -197,7 +197,7 @@ def SampleQc(array: String): Unit = {
    * Requires: Python
    */
   
-  uger {
+  drm {
   
     cmd"""$binPython $pyCompileExclusions
       --ancestry-inferred ${ProjectStores.ancestryInferred}

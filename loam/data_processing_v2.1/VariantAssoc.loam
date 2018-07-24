@@ -55,7 +55,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
   
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -114,7 +114,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
@@ -170,7 +170,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   }
   
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -231,7 +231,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.assoc.results}"""
       .in(known.assoc.results)

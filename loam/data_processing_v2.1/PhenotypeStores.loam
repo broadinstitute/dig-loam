@@ -21,7 +21,7 @@ val phenotypeStores = (( for { c <- projectConfig.Cohorts; p <- projectConfig.Mo
     }
 
     val figureData = FigureData(
-      distPlot = store.at(localOutDir / s"${prefix}.distplot.png"))
+      distPlot = store(localOutDir / s"${prefix}.distplot.png"))
 
     cp -> Phenotype(
       figureData = figureData)
