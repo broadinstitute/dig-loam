@@ -30,7 +30,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       --out ${metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle}"""
         .in(assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq)
         .out(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle)
-        .named(s"${metaStores(configMeta.id).metaResultsData(configModel).results}.google".split("/").last)
+        .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).results}.google".split("/").last)
   
   }
 
@@ -45,7 +45,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
     cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaResultsData(configModel).results}"""
       .in(metaStores(configMeta.id).metaResultsData(configModel).results)
       .out(metaStores(configMeta.id).metaResultsData(configModel).tbi)
-      .named(s"${metaStores(configMeta.id).metaResultsData(configModel).tbi}".split("/").last)
+      .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).tbi}".split("/").last)
 
   }
 
@@ -73,7 +73,7 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
       --out ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle}"""
         .in(knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq)
         .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle)
-        .named(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}.google".split("/").last)
+        .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}.google".split("/").last)
   
   }
 
@@ -88,7 +88,7 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
     cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}"""
       .in(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)
       .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi)
-      .named(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi}".split("/").last)
+      .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi}".split("/").last)
 
   }
 

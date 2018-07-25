@@ -21,7 +21,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${analysisReportStores(phase).globalData.header}"""
       .out(analysisReportStores(phase).globalData.header)
-      .named(s"${analysisReportStores(phase).globalData.header}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.header}".split("/").last)
 
     cmd"""$binPython $pyGenerateAnalysisReportIntro
       --id ${projectConfig.projectId}
@@ -31,7 +31,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       --out-input ${analysisReportStores(phase).globalData.introInput}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
       .out(analysisReportStores(phase).globalData.intro, analysisReportStores(phase).globalData.introInput)
-      .named(s"${analysisReportStores(phase).globalData.intro}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.intro}".split("/").last)
 
   }
 
@@ -89,7 +89,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       --out-input ${analysisReportStores(phase).globalData.dataInput}"""
       .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
       .out(analysisReportStores(phase).globalData.data, analysisReportStores(phase).globalData.dataInput)
-      .named(s"${analysisReportStores(phase).globalData.data}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.data}".split("/").last)
 
     cmd"""$binPython $pyGenerateAnalysisReportStrategy
       --cohorts ${cohortsString.mkString(" ")}
@@ -98,7 +98,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       --out-tex ${analysisReportStores(phase).globalData.strategy}
       --out-input ${analysisReportStores(phase).globalData.strategyInput}"""
       .out(metaStores.flatMap(e => e._2.metaCohortData.map(e => e._2.kinshipSamplesExclude)).toSeq :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.strategyInput)
-      .named(s"${analysisReportStores(phase).globalData.strategy}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.strategy}".split("/").last)
 
   }
 
@@ -120,7 +120,7 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       --out-tex ${analysisReportStores(phase).globalData.bibliography}
       --out-input ${analysisReportStores(phase).globalData.bibliographyInput}"""
       .out(analysisReportStores(phase).globalData.bibliography, analysisReportStores(phase).globalData.bibliographyInput)
-      .named(s"${analysisReportStores(phase).globalData.bibliography}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.bibliography}".split("/").last)
 
   }
 
@@ -185,7 +185,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       --out-input ${analysisReportStores(phase).phenoData(pheno).summaryInput}"""
       .in(assocStores.map(e => e._2.pheno).toSeq ++ assocStores.map(e => e._2.pcs).toSeq ++ phenotypeStores.map(e => e._2.figureData.distPlot).toSeq :+ ProjectStores.ancestryInferred :+ ProjectStores.pheno)
       .out(analysisReportStores(phase).phenoData(pheno).summary, analysisReportStores(phase).phenoData(pheno).summaryInput)
-      .named(s"${analysisReportStores(phase).phenoData(pheno).summary}".split("/").last)
+      .tag(s"${analysisReportStores(phase).phenoData(pheno).summary}".split("/").last)
 
   }
 
@@ -242,7 +242,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       --out-input ${analysisReportStores(phase).phenoData(pheno).calibrationInput}"""
       .in(resultsSummaryStores.map(e => e._2.resultsSummaryData.qqPlotPng).toSeq ++ resultsSummaryStores.map(e => e._2.resultsSummaryData.mhtPlotPng).toSeq)
       .out(analysisReportStores(phase).phenoData(pheno).calibration, analysisReportStores(phase).phenoData(pheno).calibrationInput)
-      .named(s"${analysisReportStores(phase).phenoData(pheno).calibration}".split("/").last)
+      .tag(s"${analysisReportStores(phase).phenoData(pheno).calibration}".split("/").last)
 
   }
 
@@ -299,7 +299,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
       --out-input ${analysisReportStores(phase).phenoData(pheno).topLociInput}"""
       .in(resultsSummaryStores.map(e => e._2.resultsSummaryData.top20AnnotAlignedRisk).toSeq ++ resultsSummaryStores.map(e => e._2.resultsSummaryData.regPlotsPdf).toSeq)
       .out(analysisReportStores(phase).phenoData(pheno).topLoci, analysisReportStores(phase).phenoData(pheno).topLociInput)
-      .named(s"${analysisReportStores(phase).phenoData(pheno).topLoci}".split("/").last)
+      .tag(s"${analysisReportStores(phase).phenoData(pheno).topLoci}".split("/").last)
   
   }
 
@@ -384,7 +384,7 @@ def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
           --out-input ${analysisReportStores(phase).phenoData(pheno).knownLociInput}"""
           .in(resultsKnownLociSummaryStores.map(e => e._2.resultsKnownLociSummaryData.top50).toSeq)
           .out(analysisReportStores(phase).phenoData(pheno).knownLoci, analysisReportStores(phase).phenoData(pheno).knownLociInput)
-          .named(s"${analysisReportStores(phase).phenoData(pheno).knownLoci}".split("/").last)
+          .tag(s"${analysisReportStores(phase).phenoData(pheno).knownLoci}".split("/").last)
       
       }
 
@@ -423,7 +423,7 @@ def AnalysisReportCompile(phase: Int): Unit = {
     cmd"""cat ${analysisReportStores(phase).globalData.header} ${analysisReportStores(phase).globalData.intro} ${analysisReportStores(phase).globalData.data} ${analysisReportStores(phase).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliography} > ${analysisReportStores(phase).globalData.tex}"""
       .in(reportAnalysisResultsList :+ analysisReportStores(phase).globalData.header :+ analysisReportStores(phase).globalData.intro :+ analysisReportStores(phase).globalData.data :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.bibliography)
       .out(analysisReportStores(phase).globalData.tex)
-      .named(s"${analysisReportStores(phase).globalData.tex}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.tex}".split("/").last)
 
   }
 
@@ -456,12 +456,12 @@ def AnalysisReportCompile(phase: Int): Unit = {
     cmd"""cat ${analysisReportStores(phase).globalData.introInput} ${analysisReportStores(phase).globalData.dataInput} ${analysisReportStores(phase).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliographyInput} > ${analysisReportStores(phase).globalData.input}"""
       .in(reportAnalysisResultsInputList :+ analysisReportStores(phase).globalData.introInput :+ analysisReportStores(phase).globalData.dataInput :+ analysisReportStores(phase).globalData.strategyInput :+ analysisReportStores(phase).globalData.bibliographyInput)
       .out(analysisReportStores(phase).globalData.input)
-      .named(s"${analysisReportStores(phase).globalData.input}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.input}".split("/").last)
     
     cmd"""$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(phase).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(phase).globalData.tex}"""
       .in(analysisReportStores(phase).globalData.tex)
       .out(analysisReportStores(phase).globalData.pdf)
-      .named(s"${analysisReportStores(phase).globalData.pdf}".split("/").last)
+      .tag(s"${analysisReportStores(phase).globalData.pdf}".split("/").last)
 
   }
 

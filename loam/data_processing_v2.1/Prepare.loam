@@ -14,37 +14,37 @@ def Prepare(array: String): Unit = {
     cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unplaced}"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.unplaced)
-      .named(s"${arrayStores(array).rawData.unplaced}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.unplaced}".split("/").last)
   
     cmd"""awk '{k=$$1":"$$4":"$$5":"$$6; if(!m[k]) {print $$2; m[k]=1}}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unique}"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.unique)
-      .named(s"${arrayStores(array).rawData.unique}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.unique}".split("/").last)
   
     cmd"""awk '{if($$5$$6 == "ID" || $$5$$6 == "DI") print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.indel}"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.indel)
-      .named(s"${arrayStores(array).rawData.indel}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.indel}".split("/").last)
   
     cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --missing --out ${arrayStores(array).rawData.rawBase}.missing"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.lmiss, arrayStores(array).rawData.imiss)
-      .named(s"${arrayStores(array).rawData.base}.missing".split("/").last)
+      .tag(s"${arrayStores(array).rawData.base}.missing".split("/").last)
 
     cmd"""sed '1d' ${arrayStores(array).rawData.imiss} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(array).rawData.imissRemove}"""
       .in(arrayStores(array).rawData.imiss)
       .out(arrayStores(array).rawData.imissRemove)
-      .named(s"${arrayStores(array).rawData.imissRemove}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.imissRemove}".split("/").last)
   
     cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --freq --out ${arrayStores(array).rawData.rawBase}.freq"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.freq)
-      .named(s"${arrayStores(array).rawData.freq}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.freq}".split("/").last)
   
     cmd"""sed '1d' ${arrayStores(array).rawData.freq} | awk '{if($$5 == 0) print $$2}' > ${arrayStores(array).rawData.mono}"""
       .in(arrayStores(array).rawData.freq)
       .out(arrayStores(array).rawData.mono)
-      .named(s"${arrayStores(array).rawData.mono}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.mono}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose 
       $rFindBestDuplicateVariants
@@ -55,17 +55,17 @@ def Prepare(array: String): Unit = {
       .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.freq :+ arrayStores(array).rawData.lmiss)
       .out(arrayStores(array).rawData.dupRemove)
       .using("R-3.4")
-      .named(s"${arrayStores(array).rawData.dupRemove}".split("/").last)
+      .tag(s"${arrayStores(array).rawData.dupRemove}".split("/").last)
   
     cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --remove ${arrayStores(array).rawData.imissRemove} --exclude ${arrayStores(array).rawData.dupRemove} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(array).preparedData.base}"""
       .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove :+ arrayStores(array).rawData.dupRemove)
       .out(arrayStores(array).preparedData.data)
-      .named(s"${arrayStores(array).preparedData.base}".split("/").last)
+      .tag(s"${arrayStores(array).preparedData.base}".split("/").last)
   
     cmd"""awk '{if(x[$$1":"$$4]) {x_count[$$1":"$$4]++; print $$2; if(x_count[$$1":"$$4] == 1) {print x[$$1":"$$4]}} x[$$1":"$$4] = $$2}' ${arrayStores(array).preparedData.base}.bim > ${arrayStores(array).preparedData.multiallelic}"""
       .in(arrayStores(array).preparedData.data)
       .out(arrayStores(array).preparedData.multiallelic)
-      .named(s"${arrayStores(array).preparedData.multiallelic}".split("/").last)
+      .tag(s"${arrayStores(array).preparedData.multiallelic}".split("/").last)
   
   }
 

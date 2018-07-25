@@ -23,7 +23,7 @@ def Load(array: String): Unit = {
       --vds-out ${arrayStores(array).harmonizedData.vdsGoogle}"""
       .in(arrayStores(array).harmonizedData.vcfGoogle, arrayStores(array).harmonizedData.tbiGoogle)
       .out(arrayStores(array).harmonizedData.vdsGoogle)
-      .named(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad.google".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad.google".split("/").last)
   
   }
 

@@ -22,12 +22,12 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       --out ${summaryStores.resultsSummaryData.top1000}"""
       .in(results)
       .out(summaryStores.resultsSummaryData.top1000)
-      .named(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
     
     cmd"""(sed '1d' ${summaryStores.resultsSummaryData.top1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${ProjectStores.genePositions} --out-delim \\t) | sort -u > ${summaryStores.resultsSummaryData.top1000Genes}"""
       .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
       .out(summaryStores.resultsSummaryData.top1000Genes)
-      .named(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
 
   }
 
@@ -60,7 +60,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       .in(hiLdFiles :+ summaryStores.resultsSummaryData.top1000 :+ summaryStores.resultsSummaryData.top1000Genes)
       .out(summaryStores.resultsSummaryData.top20AnnotAlignedRisk)
       .using("R-3.4")
-      .named(s"${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}".split("/").last)
     
     cmd"""$binPython $pyQqPlot
       --results ${results}
@@ -68,7 +68,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       --out ${summaryStores.resultsSummaryData.qqPlotPng}"""
       .in(results)
       .out(summaryStores.resultsSummaryData.qqPlotPng)
-      .named(s"${summaryStores.resultsSummaryData.qqPlotPng}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.qqPlotPng}".split("/").last)
     
     cmd"""$binPython $pyMhtPlot
       --results ${results}
@@ -78,7 +78,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       --out ${summaryStores.resultsSummaryData.mhtPlotPng}"""
       .in(results)
       .out(summaryStores.resultsSummaryData.mhtPlotPng)
-      .named(s"${summaryStores.resultsSummaryData.mhtPlotPng}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.mhtPlotPng}".split("/").last)
     
     cmd"""$binPython $pyExtractTopRegions
       --results ${results}
@@ -88,7 +88,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       --out ${summaryStores.resultsSummaryData.sigRegions}"""
       .in(results)
       .out(summaryStores.resultsSummaryData.sigRegions)
-      .named(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
 
     cmd"""$shRegPlot 
       $binTabix
@@ -103,7 +103,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       .in(results, summaryStores.resultsSummaryData.sigRegions)
       .out(summaryStores.resultsSummaryData.regPlotsPdf)
       .using("R-3.4")
-      .named(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
+      .tag(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
   
   }
 
@@ -126,7 +126,7 @@ def ResultsKnownLociSummary(configKnownLoci: ConfigKnownLoci, id: String, result
       .in(results, known_data, hiLd)
       .out(resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50)
       .using("R-3.4")
-      .named(s"${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}".split("/").last)
+      .tag(s"${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}".split("/").last)
 
   }
 

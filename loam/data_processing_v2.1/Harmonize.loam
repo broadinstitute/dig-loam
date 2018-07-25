@@ -28,7 +28,7 @@ def Harmonize(array: String): Unit = {
 	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory 3000 --threads 1"""
         .in(arrayStores(array).annotatedData.data)
         .out(chrData.data)
-        .named(s"${chrData.base}".split("/").last)
+        .tag(s"${chrData.base}".split("/").last)
 
     }
 
@@ -52,7 +52,7 @@ def Harmonize(array: String): Unit = {
         --debug"""
           .in(chrData.data :+ ProjectStores.kgVcf(chr))
           .out(chrData.mergedKg :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
-          .named(s"${chrData.mergedKgBase}".split("/").last)
+          .tag(s"${chrData.mergedKgBase}".split("/").last)
       
       }
 
@@ -63,7 +63,7 @@ def Harmonize(array: String): Unit = {
         cmd"""echo -e "chr\tpos\toriginalId\tnewId" > ${chrData.mergedKgVarIdUpdate}; echo -e "chr\tpos\tid\talleles\taction\tmessage" > ${chrData.mergedKgVarSnpLog}"""
           .in(chrData.data)
           .out(chrData.mergedKgVarIdUpdate, chrData.mergedKgVarSnpLog)
-          .named(s"${chrData.mergedKgBase}.skipGh".split("/").last)
+          .tag(s"${chrData.mergedKgBase}.skipGh".split("/").last)
 
       }
 
@@ -83,12 +83,12 @@ def Harmonize(array: String): Unit = {
       --out-force-a1 ${chrData.nonKgForceA1}"""
         .in(chrData.mergedKg :+ ProjectStores.kgIds(chr) :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
         .out(chrData.nonKgRemove, chrData.nonKgIgnore, chrData.nonKgMono,chrData.nonKgNomatch, chrData.nonKgFlip, chrData.nonKgForceA1)
-        .named(s"${chrData.mergedKgNonKgBase}".split("/").last)
+        .tag(s"${chrData.mergedKgNonKgBase}".split("/").last)
       
       cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory 3000 --threads 1"""
         .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
         .out(chrData.mergedKgHuRef)
-        .named(s"${chrData.mergedKgHuRefBase}".split("/").last)
+        .tag(s"${chrData.mergedKgHuRefBase}".split("/").last)
     
     }
   
@@ -110,32 +110,32 @@ def Harmonize(array: String): Unit = {
   
     cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(array).harmonizedData.mergeList}"""
       .out(arrayStores(array).harmonizedData.mergeList)
-      .named(s"${arrayStores(array).harmonizedData.mergeList}".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.mergeList}".split("/").last)
   
     cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(array).harmonizedData.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory 3000 --threads 1"""
       .in(arrayStores(array).annotatedChrData.map(e => e._2).flatMap(e => e.mergedKgHuRef).toSeq :+ arrayStores(array).harmonizedData.mergeList)
       .out(arrayStores(array).harmonizedData.data)
-      .named(s"${arrayStores(array).harmonizedData.base}".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.base}".split("/").last)
   
     cmd"""awk '{print $$2,$$5}' ${arrayStores(array).harmonizedData.base}.bim > ${arrayStores(array).harmonizedData.forceA2}"""
       .in(arrayStores(array).harmonizedData.data)
       .out(arrayStores(array).harmonizedData.forceA2)
-      .named(s"${arrayStores(array).harmonizedData.forceA2}".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.forceA2}".split("/").last)
   
     cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --output-chr MT --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.refData)
-      .named(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
     
     cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory 3000 --threads 1"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.vcf)
-      .named(s"${arrayStores(array).harmonizedData.vcf}".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.vcf}".split("/").last)
     
     cmd"""$binTabix -f -p vcf ${arrayStores(array).harmonizedData.vcf}"""
       .in(arrayStores(array).harmonizedData.vcf)
       .out(arrayStores(array).harmonizedData.tbi)
-      .named(s"${arrayStores(array).harmonizedData.tbi}".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.tbi}".split("/").last)
   
   }
 
@@ -170,7 +170,7 @@ def Harmonize(array: String): Unit = {
       """
       .in(arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgRemove).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgMono).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgNomatch).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgIgnore).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgFlip).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgForceA1).toSeq ++arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.mergedKgVarIdUpdate).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.mergedKgVarSnpLog).toSeq)
       .out(arrayStores(array).harmonizedData.nonKgRemove, arrayStores(array).harmonizedData.nonKgNomatch, arrayStores(array).harmonizedData.nonKgMono, arrayStores(array).harmonizedData.nonKgIgnore, arrayStores(array).harmonizedData.nonKgFlip, arrayStores(array).harmonizedData.nonKgForceA1, arrayStores(array).harmonizedData.mergedKgVarIdUpdate, arrayStores(array).harmonizedData.mergedKgVarSnpLog)
-      .named(s"${arrayStores(array).harmonizedData.base}.pyMergeVariantLists".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.base}.pyMergeVariantLists".split("/").last)
   
   }
 

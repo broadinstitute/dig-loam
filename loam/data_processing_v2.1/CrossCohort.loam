@@ -16,17 +16,17 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
     cmd"""join -1 2 -2 1 <(sort -k 2 ${arrayStores(configCohort.array).harmonizedData.refBase}.fam) <(sort -k 1 ${ProjectStores.ancestryInferred}) | awk -v var=${configCohort.ancestry.mkString(",")} '{ split(var,arr,","); for ( a in arr ) { if (arr[a] == $$7 ) print $$2"\t"$$1 } }' > ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}"""
     .in(ProjectStores.ancestryInferred)
     .out(metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
-    .named(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}".split("/").last)
+    .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}".split("/").last)
 
     cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --keep ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples} --make-bed --out ${metaStores(configMeta.id).metaCohortData(configCohort.id).base}"""
     .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
     .out(metaStores(configMeta.id).metaCohortData(configCohort.id).data)
-    .named(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).base}".split("/").last)
+    .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).base}".split("/").last)
 
     cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${metaStores(configMeta.id).metaCohortData(configCohort.id).base}.fam > ${metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge}"""
     .in(metaStores(configMeta.id).metaCohortData(configCohort.id).data)
     .out(metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge)
-    .named(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge}".split("/").last)
+    .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge}".split("/").last)
 
   }
 
@@ -40,17 +40,17 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
     cmd"""echo "${mergeString}" > ${metaStores(configMeta.id).metaKinshipData.mergeList}"""
     .out(metaStores(configMeta.id).metaKinshipData.mergeList)
-    .named(s"${metaStores(configMeta.id).metaKinshipData.mergeList}".split("/").last)
+    .tag(s"${metaStores(configMeta.id).metaKinshipData.mergeList}".split("/").last)
 
     cmd"""$binPlink --merge-list ${metaStores(configMeta.id).metaKinshipData.mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaStores(configMeta.id).metaKinshipData.baseFiltered}"""
     .in(metaStores(configMeta.id).metaCohortData.map(e => e._2).flatMap(e => e.data).toSeq :+ metaStores(configMeta.id).metaKinshipData.mergeList)
     .out(metaStores(configMeta.id).metaKinshipData.dataFiltered)
-    .named(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}".split("/").last)
+    .tag(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}".split("/").last)
 
     cmd"""$shKing $binKing ${metaStores(configMeta.id).metaKinshipData.baseFiltered}.bed ${metaStores(configMeta.id).metaKinshipData.baseKinship.toString} ${metaStores(configMeta.id).metaKinshipData.log} ${metaStores(configMeta.id).metaKinshipData.kin0} ${metaStores(configMeta.id).metaKinshipData.kin0Related} 4"""
     .in(metaStores(configMeta.id).metaKinshipData.dataFiltered)
     .out(metaStores(configMeta.id).metaKinshipData.log, metaStores(configMeta.id).metaKinshipData.kin0, metaStores(configMeta.id).metaKinshipData.kin0Related)
-    .named(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}.shKing".split("/").last)
+    .tag(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}.shKing".split("/").last)
 
   }
 
@@ -71,7 +71,7 @@ def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit
       .in(metaStores(configMeta.id).metaKinshipData.kin0Related, metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
       .out(metaStores(configMeta.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
       .using("R-3.4")
-      .named(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).kinshipSamplesExclude}".split("/").last)
+      .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).kinshipSamplesExclude}".split("/").last)
   
   }
 

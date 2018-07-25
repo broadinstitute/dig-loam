@@ -1,8 +1,5 @@
-import java.net.URI
-
 import loamstream.model.Store
-import loamstream.util.UriEnrichments._
-import loamstream.util.HasPath._
+import loamstream.util.Uris.Implicits._
 
 def outputStoreName(name: String)(extension: String): String = s"${name}.${extension}"
 def outputStore(name: String): String => Store = extension => store(outputStoreName(name)(extension))
@@ -16,6 +13,3 @@ def bedBimFam(makeStore: String => Store): Seq[Store] = withExtensions(bed, bim,
 def bedBimFam(prefix: String): Seq[Store] = bedBimFam(extension => store(s"${prefix}.${extension}"))
 def bedBimFam(prefix: Path): Seq[Store] = bedBimFam(prefix.toString)
 def bedBimFam(prefix: URI): Seq[Store] = bedBimFam(extension => store(prefix + s".${extension}"))
-
-def basename(path: Path): String = base(path)
-def basename(uri: URI): String = base(uri)

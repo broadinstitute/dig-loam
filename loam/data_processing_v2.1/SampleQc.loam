@@ -29,7 +29,7 @@ def SampleQc(array: String): Unit = {
       --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle}"""
       .in(ProjectStores.phenoGoogle, arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.regionsExcludeGoogle)
       .out(arrayStores(array).sexcheckData.sexcheckGoogle, arrayStores(array).sexcheckData.problemsGoogle)
-      .named(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
+      .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
   
     hail"""$pyHailSampleqc
       --vds-in ${arrayStores(array).prunedData.vdsGoogle}
@@ -37,7 +37,7 @@ def SampleQc(array: String): Unit = {
       --qc-out ${arrayStores(array).sampleQcData.statsGoogle}"""
       .in(arrayStores(array).prunedData.vdsGoogle, ProjectStores.ancestryInferredGoogle)
       .out(arrayStores(array).sampleQcData.statsGoogle)
-      .named(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
 
   }
   
@@ -57,7 +57,7 @@ def SampleQc(array: String): Unit = {
       .in(arrayStores(array).sampleQcData.stats, arrayStores(array).pcaData.scores)
       .out(arrayStores(array).sampleQcData.statsAdj)
       .using("R-3.4")
-      .named(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rIstatsAdjPca
@@ -69,7 +69,7 @@ def SampleQc(array: String): Unit = {
       .in(arrayStores(array).sampleQcData.statsAdj)
       .out(arrayStores(array).sampleQcData.corrPlots, arrayStores(array).sampleQcData.pcaLoadings, arrayStores(array).sampleQcData.pcaPlots, arrayStores(array).sampleQcData.pcaScores)
       .using("R-3.4")
-      .named(s"${arrayStores(array).sampleQcData.statsAdj}.rIstatsAdjPca".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.statsAdj}.rIstatsAdjPca".split("/").last)
 
   }
   
@@ -96,7 +96,7 @@ def SampleQc(array: String): Unit = {
       ${arrayStores(array).sampleQcPcaClusterData.log}"""
       .in(arrayStores(array).sampleQcData.pcaScores)
       .out(arrayStores(array).sampleQcPcaClusterData.fet, arrayStores(array).sampleQcPcaClusterData.clu, arrayStores(array).sampleQcPcaClusterData.klg, arrayStores(array).sampleQcPcaClusterData.log)
-      .named(s"${arrayStores(array).sampleQcPcaClusterData.base}.binKlustakwik".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcPcaClusterData.base}.binKlustakwik".split("/").last)
 
   }
 
@@ -113,7 +113,7 @@ def SampleQc(array: String): Unit = {
       .in(arrayStores(array).sampleQcData.pcaScores, arrayStores(array).sampleQcPcaClusterData.clu)
       .out(arrayStores(array).sampleQcPcaClusterData.outliers, arrayStores(array).sampleQcPcaClusterData.plots, arrayStores(array).sampleQcPcaClusterData.xtab)
       .using("R-3.4")
-      .named(s"${arrayStores(array).sampleQcData.pcaScores}.rIstatsPcsGmmClusterPlot".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.pcaScores}.rIstatsPcsGmmClusterPlot".split("/").last)
   
   }
   
@@ -135,7 +135,7 @@ def SampleQc(array: String): Unit = {
         echo 1 && sed '1d' ${arrayStores(array).sampleQcData.statsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${metricData.fet}"""
         .in(arrayStores(array).sampleQcData.statsAdj)
         .out(metricData.fet)
-        .named(s"${metricData.fet}".split("/").last)
+        .tag(s"${metricData.fet}".split("/").last)
   
     }
   
@@ -144,7 +144,7 @@ def SampleQc(array: String): Unit = {
       cmd"""$binKlustakwik ${metricData.base} 1 -UseFeatures 1 -UseDistributional 0 > ${metricData.log}"""
         .in(metricData.fet)
         .out(metricData.clu, metricData.klg, metricData.log)
-        .named(s"${metricData.base}.binKlustakwik".split("/").last)
+        .tag(s"${metricData.base}.binKlustakwik".split("/").last)
   
     }
   
@@ -176,7 +176,7 @@ def SampleQc(array: String): Unit = {
       .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
       .out(arrayStores(array).sampleQcData.boxPlots, arrayStores(array).sampleQcData.discreteness, arrayStores(array).sampleQcData.outliers)
       .using("R-3.4")
-      .named(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeSampleqcOutlierPlot
@@ -188,7 +188,7 @@ def SampleQc(array: String): Unit = {
       .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
       .out(arrayStores(array).sampleQcData.outliersPlotsPdf)
       .using("R-3.4")
-      .named(s"${arrayStores(array).sampleQcData.outliersPlotsPdf}".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.outliersPlotsPdf}".split("/").last)
 
   }
   
@@ -213,7 +213,7 @@ def SampleQc(array: String): Unit = {
       --out ${arrayStores(array).finalData.samplesExclude}"""
       .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sexcheckData.problems)
       .out(arrayStores(array).finalData.samplesExclude)
-      .named(s"${arrayStores(array).finalData.samplesExclude}".split("/").last)
+      .tag(s"${arrayStores(array).finalData.samplesExclude}".split("/").last)
   
   }
 

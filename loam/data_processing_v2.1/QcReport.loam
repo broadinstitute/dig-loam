@@ -30,7 +30,7 @@ def QcReport(): Unit = {
       .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
       .out(qcReportStores.tablesData.variantsSummary)
       .using("R-3.4")
-      .named(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
+      .tag(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
 
   }
 
@@ -49,7 +49,7 @@ def QcReport(): Unit = {
       .in(arrayStores.map(e => e._2).map(e => e.ancestryClusterData.groups).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferred).toSeq :+ ProjectStores.ancestryInferred)
       .out(qcReportStores.tablesData.clusters, qcReportStores.tablesData.ancestry)
       .using("R-3.4")
-      .named(s"${qcReportStores.tablesData.ancestry}".split("/").last)
+      .tag(s"${qcReportStores.tablesData.ancestry}".split("/").last)
 
   }
 
@@ -60,7 +60,7 @@ def QcReport(): Unit = {
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${qcReportStores.texData.header}"""
       .out(qcReportStores.texData.header)
-      .named(s"${qcReportStores.texData.header}".split("/").last)
+      .tag(s"${qcReportStores.texData.header}".split("/").last)
     
     cmd"""$binPython $pyGenerateQcReportIntro
       --id ${projectConfig.projectId}
@@ -69,7 +69,7 @@ def QcReport(): Unit = {
       --array-data ${dataStrings.mkString(" ")}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data).toSeq)
       .out(qcReportStores.texData.intro)
-      .named(s"${qcReportStores.texData.intro}".split("/").last)
+      .tag(s"${qcReportStores.texData.intro}".split("/").last)
 
   }
 
@@ -89,7 +89,7 @@ def QcReport(): Unit = {
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
         .out(qcReportStores.figureData.samplesUpsetPlotPdf)
         .using("R-3.4")
-        .named(s"${qcReportStores.figureData.samplesUpsetPlotPdf}".split("/").last)
+        .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf}".split("/").last)
       
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -99,7 +99,7 @@ def QcReport(): Unit = {
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
         .out(qcReportStores.figureData.variantsUpsetPlotPdf)
         .using("R-3.4")
-        .named(s"${qcReportStores.figureData.variantsUpsetPlotPdf}".split("/").last)
+        .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf}".split("/").last)
       
       cmd"""$binPython $pyGenerateQcReportData
         --narrays ${projectConfig.nArrays}
@@ -110,7 +110,7 @@ def QcReport(): Unit = {
         --out ${qcReportStores.texData.data}"""
         .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq :+ qcReportStores.figureData.samplesUpsetPlotPdf :+ qcReportStores.tablesData.variantsSummary :+ qcReportStores.figureData.variantsUpsetPlotPdf)
         .out(qcReportStores.texData.data)
-        .named(s"${qcReportStores.texData.data}".split("/").last)
+        .tag(s"${qcReportStores.texData.data}".split("/").last)
 
     }
   
@@ -127,7 +127,7 @@ def QcReport(): Unit = {
       --out ${qcReportStores.texData.data}"""
       .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq :+ qcReportStores.tablesData.variantsSummary)
       .out(qcReportStores.texData.data)
-      .named(s"${qcReportStores.texData.data}".split("/").last)
+      .tag(s"${qcReportStores.texData.data}".split("/").last)
 
     }
 
@@ -149,7 +149,7 @@ def QcReport(): Unit = {
       --out ${qcReportStores.texData.ancestry}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
       .out(qcReportStores.texData.ancestry)
-      .named(s"${qcReportStores.texData.ancestry}".split("/").last)
+      .tag(s"${qcReportStores.texData.ancestry}".split("/").last)
 
   }
 
@@ -168,7 +168,7 @@ def QcReport(): Unit = {
       --out ${qcReportStores.texData.ibdSexcheck}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq)
       .out(qcReportStores.texData.ibdSexcheck)
-      .named(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
+      .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
@@ -179,7 +179,7 @@ def QcReport(): Unit = {
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats)
       .out(qcReportStores.figureData.metricDistUnadjPdf)
       .using("R-3.4")
-      .named(s"${qcReportStores.figureData.metricDistUnadjPdf}".split("/").last)
+      .tag(s"${qcReportStores.figureData.metricDistUnadjPdf}".split("/").last)
     
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
@@ -190,7 +190,7 @@ def QcReport(): Unit = {
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj)
       .out(qcReportStores.figureData.metricDistAdjPdf)
       .using("R-3.4")
-      .named(s"${qcReportStores.figureData.metricDistAdjPdf}".split("/").last)
+      .tag(s"${qcReportStores.figureData.metricDistAdjPdf}".split("/").last)
 
   }
 
@@ -212,7 +212,7 @@ def QcReport(): Unit = {
       .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
       .out(qcReportStores.tablesData.sampleQc)
       .using("R-3.4")
-      .named(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
+      .tag(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
 
   }
 
@@ -229,7 +229,7 @@ def QcReport(): Unit = {
       .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ ProjectStores.ancestryInferred)
       .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
       .using("R-3.4")
-      .named(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
+      .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
 
   }
 
@@ -248,7 +248,7 @@ def QcReport(): Unit = {
       --out ${qcReportStores.texData.sampleQc}"""
       .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.outliersPlotsPdf).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
       .out(qcReportStores.texData.sampleQc)
-      .named(s"${qcReportStores.texData.sampleQc}".split("/").last)
+      .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
 
   }
 
@@ -267,7 +267,7 @@ def QcReport(): Unit = {
         .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq)
         .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
         .using("R-3.4")
-        .named(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
+        .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
   	  
       cmd"""$binPython $pyGenerateQcReportVariantqc
         --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -275,7 +275,7 @@ def QcReport(): Unit = {
         --out ${qcReportStores.texData.variantQc}"""
         .in(arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
         .out(qcReportStores.texData.variantQc)
-        .named(s"${qcReportStores.texData.variantQc}".split("/").last)
+        .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
 
     }
   
@@ -289,7 +289,7 @@ def QcReport(): Unit = {
         --out ${qcReportStores.texData.variantQc}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq)
         .out(qcReportStores.texData.variantQc)
-        .named(s"${qcReportStores.texData.variantQc}".split("/").last)
+        .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
 
     }
   
@@ -300,17 +300,17 @@ def QcReport(): Unit = {
     cmd"""$binPython $pyGenerateQcReportBibliography
       --out ${qcReportStores.texData.bibliography}"""
       .out(qcReportStores.texData.bibliography)
-      .named(s"${qcReportStores.texData.bibliography}".split("/").last)
+      .tag(s"${qcReportStores.texData.bibliography}".split("/").last)
     
     cmd"""cat ${qcReportStores.texData.header} ${qcReportStores.texData.intro} ${qcReportStores.texData.data} ${qcReportStores.texData.ancestry} ${qcReportStores.texData.ibdSexcheck} ${qcReportStores.texData.sampleQc} ${qcReportStores.texData.variantQc} ${qcReportStores.texData.bibliography} > ${qcReportStores.tex}"""
       .in(qcReportStores.texData.header, qcReportStores.texData.intro, qcReportStores.texData.data, qcReportStores.texData.ancestry, qcReportStores.texData.ibdSexcheck, qcReportStores.texData.sampleQc, qcReportStores.texData.variantQc, qcReportStores.texData.bibliography)
       .out(qcReportStores.tex)
-      .named(s"${qcReportStores.tex}".split("/").last)
+      .tag(s"${qcReportStores.tex}".split("/").last)
     
     cmd"""$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}"""
       .in(qcReportStores.tex)
       .out(qcReportStores.pdf)
-      .named(s"${qcReportStores.pdf}".split("/").last)
+      .tag(s"${qcReportStores.pdf}".split("/").last)
 
   }
 

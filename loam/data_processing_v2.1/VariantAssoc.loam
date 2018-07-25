@@ -30,7 +30,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       --out-samples ${assoc.samplesIncludeGoogle}"""
     .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
     .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
-    .named(s"${assoc.phenoPrelim}.google".split("/").last)
+    .tag(s"${assoc.phenoPrelim}.google".split("/").last)
 
   }
     
@@ -78,7 +78,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       .in(generatePhenoIn)
       .out(assoc.pheno, assoc.pcs, assoc.phenoLog)
       .using("R-3.4")
-      .named(s"${assoc.pheno}".split("/").last)
+      .tag(s"${assoc.pheno}".split("/").last)
 
   }
   
@@ -104,7 +104,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       --out ${assoc.resultsGoogle}"""
         .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
         .out(assoc.resultsGoogle)
-        .named(s"${assoc.results}.google".split("/").last)
+        .tag(s"${assoc.results}.google".split("/").last)
   
   }
   
@@ -119,7 +119,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
       .out(assoc.tbi)
-      .named(s"${assoc.tbi}".split("/").last)
+      .tag(s"${assoc.tbi}".split("/").last)
 
   }
 
@@ -145,7 +145,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       --out-samples ${known.assoc.samplesIncludeGoogle}"""
     .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
     .out(known.assoc.phenoPrelimGoogle, known.assoc.samplesIncludeGoogle)
-    .named(s"${known.assoc.phenoPrelim}.google".split("/").last)
+    .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
 
   }
     
@@ -193,7 +193,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       .in(generatePhenoIn)
       .out(known.assoc.pheno, known.assoc.pcs, known.assoc.phenoLog)
       .using("R-3.4")
-      .named(s"${known.assoc.pheno}".split("/").last)
+      .tag(s"${known.assoc.pheno}".split("/").last)
 
   }
   
@@ -221,7 +221,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       --out ${known.assoc.resultsGoogle}"""
         .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
         .out(known.assoc.resultsGoogle)
-        .named(s"${known.assoc.results}.google".split("/").last)
+        .tag(s"${known.assoc.results}.google".split("/").last)
 
   }
   
@@ -236,7 +236,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
     cmd"""$binTabix -f -b 2 -e 2 ${known.assoc.results}"""
       .in(known.assoc.results)
       .out(known.assoc.tbi)
-      .named(s"${known.assoc.tbi}".split("/").last)
+      .tag(s"${known.assoc.tbi}".split("/").last)
 
   }
 
