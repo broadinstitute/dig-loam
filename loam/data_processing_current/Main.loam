@@ -1,5 +1,4 @@
 import Cfg._
-import InitHail._
 //import PipelineConfig._
 //import Directories._
 //import StoreHelpers._
@@ -30,7 +29,6 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-// Process Configurations
 println("Loading Project Configuration File ...")
 val cfg = Cfg.parseCfg(loadConfig("dataConfig", ""))
 cfg.dir.debugVars()

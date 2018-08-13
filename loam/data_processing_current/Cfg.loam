@@ -28,13 +28,24 @@ final case class Dir(
   cloudShare: String,
   cloudHome: String) extends Debug
 
-final case class OneOrMoreMultiStore(
-  local: Either[Store, Seq[Store]],
-  google: Either[Store, Seq[Store]])
+final case class MultiStore(
+  local: Store,
+  google: Store)
+
+sealed trait GenotypeData
+
+final case class Vcf(
+  vcf: MultiStore) extends GenotypeData
+
+final case class Plink(
+  bed: MultiStore,
+  bim: MultiStore,
+  fam: MultiStore) extends GenotypeData
 
 final case class Data(
   id: String,
-  file: OneOrMoreMultiStore,
+  file: GenotypeData,
+  basename: String,
   format: String,
   tech: String,
   desc: String,
@@ -71,7 +82,8 @@ final case class Cfg(
   data: Seq[Data]) extends Debug
   
 final case class Binary(
-  binTest: Path
+  gsutil: Path,
+  gcloud: Path
   //liftOver: Path,
   //genotypeHarmonizer: Path,
   //king: Path,
@@ -83,13 +95,10 @@ final case class Binary(
   //locuszoom: Path,
   //pdflatex: Path,
   //rscript: Path,
-  //gsutil: Path,
-  //gcloud: Path
   ) extends Debug
 
 final case class Python(
-  pyTest: Path
-  //hailLoad: Path,
+  hailLoad: Path
   //hailFilter: Path,
   //hailAncestryPcaMerge1kg: Path,
   //hailPcaMerge1kg: Path,
@@ -314,21 +323,23 @@ object Cfg{
         dat <- config.getObjList("data")
       } yield {
         val format = requiredStr(config = dat, field = "format", regex = "vcf|plink")
+        val basename = Paths.get(requiredStr(config = dat, field = "file")).getFileName().toString()
         val file = {
           format match {
             case "plink" =>
-              OneOrMoreMultiStore(
-                local = Right(Seq(store(checkPath(requiredStr(config = dat, field = "file") + ".bed")).asInput, store(checkPath(requiredStr(config = dat, field = "file") + ".bim")).asInput, store(checkPath(requiredStr(config = dat, field = "file") + ".fam")).asInput)),
-                google = Right(Seq(store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bed").getFileName().toString())), store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bim").getFileName().toString())), store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".fam").getFileName().toString())))))
-            case _ =>
-              OneOrMoreMultiStore(
-                local = Left(store(checkPath(requiredStr(config = dat, field = "file"))).asInput),
-                google = Left(store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file")).getFileName().toString()))))
+              Plink(
+                bed = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file") + ".bed")).asInput, google = store(uri(dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bed").getFileName().toString()))),
+                bim = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file") + ".bim")).asInput, google = store(uri(dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bim").getFileName().toString()))),
+                fam = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file") + ".fam")).asInput, google = store(uri(dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".fam").getFileName().toString()))))
+            case "vcf" =>
+              Vcf(
+                vcf = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file"))).asInput, google = store(uri(dir.data.google + "/" + basename))))
           }
         }
         Data(
           id = requiredStr(config = dat, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           file = file,
+          basename = basename,
           format = format,
           tech = requiredStr(config = dat, field = "tech", regex = "ex_array|gwas_array|custom_array|wes|wgs"),
           desc = requiredStr(config = dat, field = "desc"),
@@ -371,10 +382,11 @@ object Cfg{
   def parseUtils(config: loamstream.conf.DataConfig): Utils = {
 
     val binary = Binary(
-      binTest = path(checkPath(requiredStr(config = config, field = "binTest"))))
-    
+      gsutil = path(checkPath(requiredStr(config = config, field = "gsutil"))),
+      gcloud = path(checkPath(requiredStr(config = config, field = "gcloud"))))
+
     val python = Python(
-      pyTest = path(checkPath(requiredStr(config = config, field = "pyTest"))))
+      hailLoad = path(checkPath(requiredStr(config = config, field = "hailLoad"))))
     
     val bash = Bash(
       shTest = path(checkPath(requiredStr(config = config, field = "shTest"))))

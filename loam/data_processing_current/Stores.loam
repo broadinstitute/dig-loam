@@ -1,0 +1,11 @@
+import Cfg._
+
+final case class Hail(
+  vds: Store)
+
+val hailOut = cfg.data.map { data =>
+
+  data -> Hail(
+    vds = store(uri(cfg.dir.data.google + "/" + data.basename.split("//.").dropRight(1).mkString(".") + ".vds")))
+
+}.toMap

@@ -1,0 +1,52 @@
+/**
+  * Load Step
+  *  Description: Generate the Hail VDS from VCF file
+  *  Requires: Hail
+  */
+import Cfg._
+import Stores._
+
+def Load(d: Data): Unit = {
+
+  d.file.local match {
+
+    case Left(s) =>
+
+      local {
+        cmd"""${utils.binary.gsutil} cp ${d.file.local.left.get} ${d.file.google.left.get}""".in(d.file.local.left.get).out(d.file.google.left.get)
+      }
+
+      google {
+        hail"""${utils.python.hailLoad}
+          --partitions 20
+          --vcf-in ${cfg.id} ${d.file.google.left.get}
+          --vds-out ${hailOut(d).vds}"""
+          .in(d.file.google.left.get)
+          .out(hailOut(d).vds)
+          .tag(s"${d.file.local.left.get}.utils.python.hailLoad".split("/").last)
+      }
+
+    case Right(s) =>
+
+      for(i <- 0 until s.size) {
+
+        local {
+          cmd"""${utils.binary.gsutil} cp ${d.file.local.right.get(i)} ${d.file.google.right.get(i)}""".in(d.file.local.right.get(i)).out(d.file.google.right.get(i))
+        }
+
+      }
+
+      google {
+        hail"""${utils.python.hailLoad}
+          --partitions 20
+          --plink-in ${cfg.id} ${d.file.google.right.get.mkString(" ")}
+          --vds-out ${hailOut(d).vds}"""
+          .in(d.file.google.right.get)
+          .out(hailOut(d).vds)
+          .tag(s"${d.file.local.right.get(0)}.utils.python.hailLoad".split("/").last)
+      }
+
+
+  }
+
+}
