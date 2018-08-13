@@ -73,6 +73,13 @@ final case class HarmonizedData(
   variantQcGoogle: Store,
   prunedInGoogle: Store)
 
+final case class ImputedData(
+  data: Store,
+  base: Path,
+  dataGoogle: Store,
+  baseGoogle: URI,
+  vdsGoogle = Store)
+
 final case class PrunedData(
   dataGoogle: Seq[Store],
   baseGoogle: URI,
@@ -187,6 +194,7 @@ final case class Array(
   annotatedData: AnnotatedData,
   annotatedChrData: Map[String, AnnotatedChrData],
   harmonizedData: HarmonizedData,
+  imputedData: Option[ImputedData],
   prunedData: PrunedData,
   kinshipData: KinshipData,
   ref1kgData: Ref1kgData,
@@ -211,6 +219,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
   val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
   val imputeBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.impute"
+  val imputedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.${arrayCfg.imputedTag}"
   val qcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.qc"
   val kinshipBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.kinship"
   val ref1kgBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref1kg"
@@ -314,6 +323,21 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     vdsGoogle = store(googleOutDir / s"${refBaseString}.vds"),
     variantQcGoogle = store(googleOutDir / s"${refBaseString}.variantqc.tsv"),
     prunedInGoogle = store(googleOutDir / s"${refBaseString}.prunedin.tsv"))
+
+  val imputedData = arrayCfg.isDefined("imputed") match {
+
+    case true =>
+
+      ImputedData(
+        data = store(path(arrayCfg.imputed)).asInput,
+        base = path(arrayCfg.imputed),
+        dataGoogle = store(googleOutDir / arrayCfg.imputed.split("/").last),
+        baseGoogle = googleOutDir / s"${imputedBaseString}",
+        vdsGoogle = store(googleOutDir / s"${imputedBaseString}.vds"))
+
+    case false => None
+
+  }
 
   val prunedData = PrunedData(
     dataGoogle = bedBimFam(googleOutDir / qcBaseString),
@@ -433,6 +457,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     annotatedData = annotatedData,
     annotatedChrData = annotatedChrData,
     harmonizedData = harmonizedData,
+    imputedData = imputedData,
     prunedData = prunedData,
     kinshipData = kinshipData,
     ref1kgData = ref1kgData,

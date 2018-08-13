@@ -16,15 +16,25 @@ trait Debug{
   }
 }
 
+final case class MultiDir(
+  local: String,
+  google: String)
+
 final case class Dir(
-  base: String,
-  data: String,
-  kinship: String,
-  ancestry: String) extends Debug
+  base: MultiDir,
+  data: MultiDir,
+  kinship: MultiDir,
+  ancestry: MultiDir,
+  cloudShare: String,
+  cloudHome: String) extends Debug
+
+final case class OneOrMoreMultiStore(
+  local: Either[Store, Seq[Store]],
+  google: Either[Store, Seq[Store]])
 
 final case class Data(
   id: String,
-  file: Either[Store, Seq[Store]],
+  file: OneOrMoreMultiStore,
   format: String,
   tech: String,
   desc: String,
@@ -59,6 +69,100 @@ final case class Cfg(
   analysisReportAuthors: Seq[String],
   analysisReportAcknowledgements: Seq[String],
   data: Seq[Data]) extends Debug
+  
+final case class Binary(
+  binTest: Path
+  //liftOver: Path,
+  //genotypeHarmonizer: Path,
+  //king: Path,
+  //plink: Path,
+  //tabix: Path,
+  //ghostscript: Path,
+  //klustakwik: Path,
+  //python: Path,
+  //locuszoom: Path,
+  //pdflatex: Path,
+  //rscript: Path,
+  //gsutil: Path,
+  //gcloud: Path
+  ) extends Debug
+
+final case class Python(
+  pyTest: Path
+  //hailLoad: Path,
+  //hailFilter: Path,
+  //hailAncestryPcaMerge1kg: Path,
+  //hailPcaMerge1kg: Path,
+  //hailSampleqc: Path,
+  //hailSexcheck: Path,
+  //hailFilterFinal: Path,
+  //hailListSamples: Path,
+  //hailAssoc: Path,
+  //hailMerge: Path,
+  //hailMetaAnalysis: Path,
+  //alignNon1kgVariants: Path,
+  //qqPlot: Path,
+  //mhtPlot: Path,
+  //extractTopRegions: Path,
+  //compileExclusions: Path,
+  //generateReportHeader: Path,
+  //generateQcReportIntro: Path,
+  //generateQcReportData: Path,
+  //generateQcReportAncestry: Path,
+  //generateQcReportIbdSexcheck: Path,
+  //generateQcReportSampleqc: Path,
+  //generateQcReportVariantqc: Path,
+  //generateQcReportBibliography: Path,
+  //generateAnalysisReportIntro: Path,
+  //generateAnalysisReportData: Path,
+  //generateAnalysisReportStrategy: Path,
+  //generateAnalysisReportPhenoSummary: Path,
+  //generateAnalysisReportPhenoCalibration: Path,
+  //generateAnalysisReportPhenoTopLoci: Path,
+  //generateAnalysisReportPhenoKnownLoci: Path,
+  //generateAnalysisReportBibliography: Path,
+  //mergeVariantLists: Path,
+  //top1000: Path,
+  //addGeneAnnot: Path,
+  //phenoDistPlot: Path
+  ) extends Debug
+
+final case class Bash(
+  shTest: Path
+  //regPlot: Path,
+  //king: Path
+  ) extends Debug
+
+final case class R(
+  rTest: Path
+  //findBestDuplicateVariants: Path,
+  //ancestryClusterMerge: Path,
+  //ancestryClusterTable: Path,
+  //calcKinshipFamSizes: Path,
+  //pcair: Path,
+  //plotAncestryPca: Path,
+  //plotAncestryCluster: Path,
+  //istatsPcsGmmClusterPlot: Path,
+  //istatsAdjGmmPlotMetrics: Path,
+  //calcIstatsAdj: Path,
+  //istatsAdjPca: Path,
+  //excludeCrossArray: Path,
+  //generatePheno: Path,
+  //variantsSummaryTable: Path,
+  //upsetplotBimFam: Path,
+  //makeOutlierTable: Path,
+  //makeMetricDistPlot: Path,
+  //makeSampleqcOutlierPlot: Path,
+  //top20: Path,
+  //top50Known: Path,
+  //metaExclusionsTable: Path
+  ) extends Debug
+  
+final case class Utils(
+  binary: Binary,
+  python: Python,
+  bash: Bash,
+  r: R) extends Debug
 
 object Cfg{
 
@@ -67,12 +171,12 @@ object Cfg{
       case Success(o) =>
         o.matches(regex) match {
           case false => throw new CfgException("requiredStr: field " + field + " value " + o + " does not match regex format " + regex)
-          case true => o
+          case true  => o
         }
       case Failure(NonFatal(e)) => 
         default match {
           case Some(s) => s
-          case None => throw new CfgException("requiredStr: field '" + field + "' not found")
+          case None    => throw new CfgException("requiredStr: field '" + field + "' not found")
         }
       case Failure(_)           => throw new CfgException("requiredStr: field '" + field + "' fatal error")
     }
@@ -80,10 +184,10 @@ object Cfg{
 
   def optionalStr(config: loamstream.conf.DataConfig, field: String, regex: String = ".*"): Option[String] = {
     Try(config.getStr(field)) match {
-      case Success(o) =>
+      case Success(o)           =>
         o.matches(regex) match {
           case false => throw new CfgException("optionalStr: field " + field + " value " + o + " does not match regex format " + regex)
-          case true => Some(o)
+          case true  => Some(o)
         }
       case Failure(NonFatal(e)) => None
       case Failure(_)           => throw new CfgException("optionalStr: field '" + field + "' fatal error")
@@ -96,7 +200,7 @@ object Cfg{
       case Failure(NonFatal(e)) =>
         default match {
           case Some(i) => i
-          case None => throw new CfgException("requiredInt: field '" + field + "' not found")
+          case None    => throw new CfgException("requiredInt: field '" + field + "' not found")
         }
       case Failure(_)           => throw new CfgException("requiredInt: field '" + field + "' fatal error")
     }
@@ -108,7 +212,7 @@ object Cfg{
       case Failure(NonFatal(e)) => 
         default match {
           case Some(s) => s
-          case None => throw new CfgException("requiredStrList: field '" + field + "' not found")
+          case None    => throw new CfgException("requiredStrList: field '" + field + "' not found")
         }
       case Failure(_)           => throw new CfgException("requiredStrList: field '" + field + "' fatal error")
     }
@@ -139,22 +243,37 @@ object Cfg{
     }
   }
 
-  def parse(config: loamstream.conf.DataConfig): Cfg = {
+  def parseCfg(config: loamstream.conf.DataConfig): Cfg = {
 
     val id = requiredStr(config = config, field = "id", regex = "^[a-zA-Z0-9]*$")
+    val cloudShare = requiredStr(config = config, field = "cloudShare")
+    val cloudHome = requiredStr(config = config, field = "cloudHome")
 
     val dir = {
 
-      val base = initDir("results")
-      val data = initDir(base + "/data")
-      val kinship = initDir(base + "/kinship")
-      val ancestry = initDir(base + "/ancestry")
+      val base = MultiDir(
+        local = initDir("results"),
+        google = cloudHome + "/" + id + "/results")
+
+      val data = MultiDir(
+        local = initDir(base.local + "/data"),
+        google = base.google + "/data")
+
+      val kinship = MultiDir(
+        local = initDir(base.local + "/kinship"),
+        google = base.google + "/kinship")
+
+      val ancestry = MultiDir(
+        local = initDir(base.local + "/ancestry"),
+        google = base.google + "/ancestry")
 
       new Dir(
         base = base,
         data = data,
         kinship = kinship,
-        ancestry = ancestry)
+        ancestry = ancestry,
+        cloudShare = cloudShare,
+        cloudHome = cloudHome)
 
     }
 
@@ -162,25 +281,25 @@ object Cfg{
     val genePos = checkPath(requiredStr(config = config, field = "genePos"))
     val aimRef = checkPath(requiredStr(config = config, field = "aimRef"))
 
-    val refSam = store.at(checkPath(requiredStr(config = config, field = "refSam"))).asInput
+    val refSam = store(checkPath(requiredStr(config = config, field = "refSam"))).asInput
     val refSamId = requiredStr(config = config, field = "refSamId", default = Some("ID"))
     val refSamPop = requiredStr(config = config, field = "refSamPop", default = Some("POP"))
     val refSamGrp = requiredStr(config = config, field = "refSamGrp", default = Some("GROUP"))
     val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ Seq("X","Y","MT")
     val refVcfs = chrSeq.map { chr =>
-      val vcf = store.at(checkPath(requiredStr(config = config, field = "refVcfs").replace("[CHROMOSOME]", s"$chr"))).asInput
+      val vcf = store(checkPath(requiredStr(config = config, field = "refVcfs").replace("[CHROMOSOME]", s"$chr"))).asInput
       chr -> vcf
     }.toMap
     val refVcfsIDs = chrSeq.map { chr =>
-      val vcfsIDs = store.at(checkPath(requiredStr(config = config, field = "refVcfsIDs").replace("[CHROMOSOME]", s"$chr"))).asInput
+      val vcfsIDs = store(checkPath(requiredStr(config = config, field = "refVcfsIDs").replace("[CHROMOSOME]", s"$chr"))).asInput
       chr -> vcfsIDs
     }.toMap
     val huRefs = chrSeq.map { chr =>
-      val huRef = store.at(checkPath(requiredStr(config = config, field = "huRefs").replace("[CHROMOSOME]", s"$chr"))).asInput
+      val huRef = store(checkPath(requiredStr(config = config, field = "huRefs").replace("[CHROMOSOME]", s"$chr"))).asInput
       chr -> huRef
     }.toMap
 
-    val pheno = store.at(checkPath(requiredStr(config = config, field = "pheno"))).asInput
+    val pheno = store(checkPath(requiredStr(config = config, field = "pheno"))).asInput
     val phenoStatus = requiredStr(config = config, field = "phenoStatus")
     val phenoId = requiredStr(config = config, field = "phenoId", default = Some("ID"))
     val phenoSex = requiredStr(config = config, field = "phenoSex", default = Some("SEX"))
@@ -198,9 +317,13 @@ object Cfg{
         val file = {
           format match {
             case "plink" =>
-              Right(Seq(store.at(checkPath(requiredStr(config = dat, field = "file") + ".bed")).asInput, store.at(checkPath(requiredStr(config = dat, field = "file") + ".bim")).asInput, store.at(checkPath(requiredStr(config = dat, field = "file") + ".fam")).asInput))
+              OneOrMoreMultiStore(
+                local = Right(Seq(store(checkPath(requiredStr(config = dat, field = "file") + ".bed")).asInput, store(checkPath(requiredStr(config = dat, field = "file") + ".bim")).asInput, store(checkPath(requiredStr(config = dat, field = "file") + ".fam")).asInput)),
+                google = Right(Seq(store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bed").getFileName().toString())), store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bim").getFileName().toString())), store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".fam").getFileName().toString())))))
             case _ =>
-              Left(store.at(checkPath(requiredStr(config = dat, field = "file"))).asInput)
+              OneOrMoreMultiStore(
+                local = Left(store(checkPath(requiredStr(config = dat, field = "file"))).asInput),
+                google = Left(store(uri(dir.base.google + "/" + Paths.get(requiredStr(config = dat, field = "file")).getFileName().toString()))))
           }
         }
         Data(
@@ -220,7 +343,7 @@ object Cfg{
       }
     }
 
-	new Cfg(
+    new Cfg(
       dir = dir,
       id = id,
       regExcl = regExcl,
@@ -244,14 +367,46 @@ object Cfg{
       data = data)
 
   }
+  
+  def parseUtils(config: loamstream.conf.DataConfig): Utils = {
+
+    val binary = Binary(
+      binTest = path(checkPath(requiredStr(config = config, field = "binTest"))))
+    
+    val python = Python(
+      pyTest = path(checkPath(requiredStr(config = config, field = "pyTest"))))
+    
+    val bash = Bash(
+      shTest = path(checkPath(requiredStr(config = config, field = "shTest"))))
+
+    val r = R(
+      rTest = path(checkPath(requiredStr(config = config, field = "rTest"))))
+
+    new Utils(
+      binary = binary,
+      python = python,
+      bash = bash,
+      r = r)
+
+  }
 
 }
 
-def writeCfg(cfg: Cfg): Any = {
-  val f = new File(cfg.dir.base + "/.cfg")
+def writeCfg(cfg: Cfg, utils: Utils): Any = {
+  val f = new File(cfg.dir.base.local + "/cfg.classes")
   val bw = new BufferedWriter(new FileWriter(f))
   val objs = Seq(cfg.dir, cfg) ++ cfg.data
   for ( o <- objs ) {
+    val vars = o.getClass.getDeclaredFields
+    val name = o.getClass.getName.split("\\$")(1)
+    bw.write("Class: " + name + "\n")
+    for ( v <- vars ) {
+      v.setAccessible(true)
+      bw.write("  " + v.getName() + " => " + v.get(o).toString + "\n")
+    }
+    bw.write("\n")
+  }
+  for ( o <- Seq(utils.binary, utils.python, utils.bash, utils.r, utils) ) {
     val vars = o.getClass.getDeclaredFields
     val name = o.getClass.getName.split("\\$")(1)
     bw.write("Class: " + name + "\n")

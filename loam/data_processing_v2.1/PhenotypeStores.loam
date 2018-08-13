@@ -8,8 +8,8 @@ final case class FigureData(
 final case class Phenotype(
   figureData: FigureData)
 
-val phenotypeStores = (( for { c <- projectConfig.Cohorts; p <- projectConfig.Models.map(m => m.pheno).distinct; if c.report } yield { (None, c, p) } ) ++
-  ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); p <- projectConfig.Models.map(m => m.pheno).distinct; if t.report } yield { (Some(t), c, p) } )) .map { cp =>
+val phenotypeStores = (( for { c <- projectConfig.Cohorts; p <- projectConfig.Models.map(m => m.pheno).distinct } yield { (None, c, p) } ) ++
+  ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); p <- projectConfig.Models.map(m => m.pheno).distinct } yield { (Some(t), c, p) } )) .map { cp =>
 
     val meta: Option[ConfigMeta] = cp._1
     val cohort = cp._2

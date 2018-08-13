@@ -28,3 +28,24 @@ def Load(array: String): Unit = {
   }
 
 }
+
+def LoadImputed(array: String): Unit = {
+
+  local {
+  
+    googleCopy(arrayStores(array).data, arrayStores(array).dataGoogle)
+
+  }
+  
+  google {
+  
+    hail"""$pyHailLoad
+      --vcf-in ${projectConfig.projectId} ${arrayStores(array).dataGoogle}
+      --vds-out ${arrayStores(array).vdsGoogle}"""
+      .in(arrayStores(array).dataGoogle)
+      .out(arrayStores(array).vdsGoogle)
+      .tag(s"${arrayStores(array).base}.pyHailLoad.google".split("/").last)
+  
+  }
+
+}

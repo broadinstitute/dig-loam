@@ -22,8 +22,8 @@ final case class KnownLoci(
   hiLdGoogle: Store,
   assoc: Assoc)
 
-val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (None, c, m) } ) ++
-    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); m <- projectConfig.Models; if t.report } yield { (Some(t), c, m) } )).map { assoc => 
+val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models } yield { (None, c, m) } ) ++
+    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); m <- projectConfig.Models } yield { (Some(t), c, m) } )).map { assoc => 
 
   val meta: Option[ConfigMeta] = assoc._1
   val cohort = assoc._2

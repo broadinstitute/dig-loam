@@ -1,4 +1,5 @@
 import Cfg._
+import InitHail._
 //import PipelineConfig._
 //import Directories._
 //import StoreHelpers._
@@ -29,31 +30,41 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
+// Process Configurations
 println("Loading Project Configuration File ...")
-val cfg = Cfg.parse(loadConfig("dataConfig", ""))
+val cfg = Cfg.parseCfg(loadConfig("dataConfig", ""))
 cfg.dir.debugVars()
 cfg.debugVars()
 for ( d <- cfg.data ) {
   d.debugVars()
 }
-writeCfg(cfg)
 println("... Project Configuration Loaded Successfully!")
 
-//// Array specific QC steps up to ancestry inferrence
+val utils = Cfg.parseUtils(loadConfig("pipelineConfig", ""))
+utils.binary.debugVars()
+utils.python.debugVars()
+utils.bash.debugVars()
+utils.r.debugVars()
+utils.debugVars()
+println("... Pipeline Configuration Loaded Successfully!")
+
+writeCfg(cfg, utils)
+
+//// data specific QC steps up to ancestry inferrence
 //for {
-//  array <- projectConfig.Arrays
+//  d <- cfg.data
 //} yield { 
 //
-//  Prepare(array.id)
-//  Harmonize(array.id)
-//  Load(array.id)
-//  FilterForQc(array.id)
-//  Kinship(array.id)
-//  AncestryPca(array.id)
-//  AncestryCluster(array.id)
+//  //Prepare(array.id)
+//  //Harmonize(array.id)
+//  Load(d)
+//  //FilterForQc(array.id)
+//  //Kinship(array.id)
+//  //AncestryPca(array.id)
+//  //AncestryCluster(array.id)
 //
 //}
-//
+
 //// Reconcile inferred ancestry
 //MergeInferredAncestry()
 //
