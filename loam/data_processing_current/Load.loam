@@ -1,52 +1,64 @@
 /**
   * Load Step
-  *  Description: Generate the Hail VDS from VCF file
+  *  Description: Generate the Hail MatrixTable from VCF file
   *  Requires: Hail
   */
 import Cfg._
 import Stores._
 
-def Load(d: Data): Unit = {
+def Map(data: Data): Unit = {
 
-  d.file.local match {
+  
 
-    case Left(s) =>
+}
+
+def Load(data: Data): Unit = {
+
+  data.file match {
+
+    case Vcf(base, vcf) =>
 
       local {
-        cmd"""${utils.binary.gsutil} cp ${d.file.local.left.get} ${d.file.google.left.get}""".in(d.file.local.left.get).out(d.file.google.left.get)
+        cmd"""${utils.binary.gsutil} cp ${vcf.local} ${vcf.google}""".in(vcf.local).out(vcf.google)
       }
 
       google {
         hail"""${utils.python.hailLoad}
           --partitions 20
-          --vcf-in ${cfg.id} ${d.file.google.left.get}
-          --vds-out ${hailOut(d).vds}"""
-          .in(d.file.google.left.get)
-          .out(hailOut(d).vds)
-          .tag(s"${d.file.local.left.get}.utils.python.hailLoad".split("/").last)
+          --vcf-in ${cfg.id} ${vcf.google}
+          --mt ${hailStores(data).mt}
+          --sites-summary ${variantStores(data).sitesSummary.google}
+          --sites-vcf ${variantStores(data).sitesVcf.google}"""
+          .in(vcf.google)
+          .out(hailStores(data).mt, variantStores(data).sitesVcf.google, variantStores(data).sitesSummary.google)
+          .tag(s"${base.local}.utils.python.hailLoad".split("/").last)
       }
 
-    case Right(s) =>
+    case Plink(base, bed, bim, fam) =>
 
-      for(i <- 0 until s.size) {
-
-        local {
-          cmd"""${utils.binary.gsutil} cp ${d.file.local.right.get(i)} ${d.file.google.right.get(i)}""".in(d.file.local.right.get(i)).out(d.file.google.right.get(i))
-        }
-
+      local {
+        cmd"""${utils.binary.gsutil} cp ${bed.local} ${bed.google}""".in(bed.local).out(bed.google)
+        cmd"""${utils.binary.gsutil} cp ${bim.local} ${bim.google}""".in(bim.local).out(bim.google)
+        cmd"""${utils.binary.gsutil} cp ${fam.local} ${fam.google}""".in(fam.local).out(fam.google)
       }
 
       google {
         hail"""${utils.python.hailLoad}
           --partitions 20
-          --plink-in ${cfg.id} ${d.file.google.right.get.mkString(" ")}
-          --vds-out ${hailOut(d).vds}"""
-          .in(d.file.google.right.get)
-          .out(hailOut(d).vds)
-          .tag(s"${d.file.local.right.get(0)}.utils.python.hailLoad".split("/").last)
+          --plink-in ${cfg.id} ${base.google}
+          --mt ${hailStores(data).mt}
+          --sites-summary ${variantStores(data).sitesSummary.google}
+          --sites-vcf ${variantStores(data).sitesVcf.google}"""
+          .in(bed.google, bim.google, fam.google)
+          .out(hailStores(data).mt, variantStores(data).sitesVcf.google, variantStores(data).sitesSummary.google)
+          .tag(s"${base.local}.utils.python.hailLoad".split("/").last)
       }
 
+  }
 
+  local {
+    cmd"""${utils.binary.gsutil} cp ${variantStores(data).sitesSummary.google} ${variantStores(data).sitesSummary.local}""".in(variantStores(data).sitesSummary.google).out(variantStores(data).sitesSummary.local)
+    cmd"""${utils.binary.gsutil} cp ${variantStores(data).sitesVcf.google} ${variantStores(data).sitesVcf.local}""".in(variantStores(data).sitesVcf.google).out(variantStores(data).sitesVcf.local)
   }
 
 }

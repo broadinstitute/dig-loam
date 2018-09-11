@@ -1,0 +1,317 @@
+/**
+  * QC Report Step
+  *  Description: Generate QC Report
+  *  Requires: R-3.4, Python, convert, pdflatex
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+import MetaStores._
+import QcReportStores._
+
+def QcReport(): Unit = {
+
+  val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.freq.path}""").mkString(",") } }
+  val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.indel.path}""").mkString(",") } }
+  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
+  val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rVariantsSummaryTable
+      --freq-in ${freqStrings.mkString(" ")}
+      --indel-in ${indelStrings.mkString(" ")}
+      --multi-in ${multiStrings.mkString(" ")}
+      --dupl-in ${dupRemoveStrings.mkString(" ")}
+      --out ${qcReportStores.tablesData.variantsSummary}"""
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
+      .out(qcReportStores.tablesData.variantsSummary)
+      .using("R-3.4")
+      .tag(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
+
+  }
+
+  val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
+  val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rAncestryClusterTable
+      --cluster-in ${clusterGroupsStrings.mkString(" ")}
+      --ancestry-in ${ancestryInferredStrings.mkString(" ")}
+      --final-in ${ProjectStores.ancestryInferred}
+      --cluster-out ${qcReportStores.tablesData.clusters}
+      --final-out ${qcReportStores.tablesData.ancestry}"""
+      .in(arrayStores.map(e => e._2).map(e => e.ancestryClusterData.groups).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferred).toSeq :+ ProjectStores.ancestryInferred)
+      .out(qcReportStores.tablesData.clusters, qcReportStores.tablesData.ancestry)
+      .using("R-3.4")
+      .tag(s"${qcReportStores.tablesData.ancestry}".split("/").last)
+
+  }
+
+  val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.format, a.filename).mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+	cmd"""$binPython $pyGenerateReportHeader
+      --out ${qcReportStores.texData.header}"""
+      .out(qcReportStores.texData.header)
+      .tag(s"${qcReportStores.texData.header}".split("/").last)
+    
+    cmd"""$binPython $pyGenerateQcReportIntro
+      --id ${projectConfig.projectId}
+      --authors "${projectConfig.qcReportAuthors.mkString(",")}"
+      --out ${qcReportStores.texData.intro} 
+      --array-data ${dataStrings.mkString(" ")}"""
+      .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data).toSeq)
+      .out(qcReportStores.texData.intro)
+      .tag(s"${qcReportStores.texData.intro}".split("/").last)
+
+  }
+
+  val famStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.fam").mkString(",") } }
+  val bimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.bim").mkString(",") } }
+  val imissRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.imissRemove.path}""").mkString(",") } }
+  
+  if (projectConfig.nArrays > 1) {
+
+    drmWith(dockerImage = "library/ubuntu:18.04") {
+  
+      cmd"""$binRscript --vanilla --verbose
+        $rUpsetplotBimFam
+        --input ${famStrings.mkString(" ")}
+        --type fam
+        --out ${qcReportStores.figureData.samplesUpsetPlotPdf}"""
+        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
+        .out(qcReportStores.figureData.samplesUpsetPlotPdf)
+        .using("R-3.4")
+        .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf}".split("/").last)
+      
+      cmd"""$binRscript --vanilla --verbose
+        $rUpsetplotBimFam
+        --input ${bimStrings.mkString(" ")}
+        --type bim
+        --out ${qcReportStores.figureData.variantsUpsetPlotPdf}"""
+        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
+        .out(qcReportStores.figureData.variantsUpsetPlotPdf)
+        .using("R-3.4")
+        .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf}".split("/").last)
+      
+      cmd"""$binPython $pyGenerateQcReportData
+        --narrays ${projectConfig.nArrays}
+        --imiss ${imissRemoveStrings.mkString(" ")}
+        --samples-upset-diagram ${qcReportStores.figureData.samplesUpsetPlotPdf.path.toAbsolutePath()}
+        --variants-summary-table ${qcReportStores.tablesData.variantsSummary.path.toAbsolutePath()} 
+        --variants-upset-diagram ${qcReportStores.figureData.variantsUpsetPlotPdf.path.toAbsolutePath()} 
+        --out ${qcReportStores.texData.data}"""
+        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq :+ qcReportStores.figureData.samplesUpsetPlotPdf :+ qcReportStores.tablesData.variantsSummary :+ qcReportStores.figureData.variantsUpsetPlotPdf)
+        .out(qcReportStores.texData.data)
+        .tag(s"${qcReportStores.texData.data}".split("/").last)
+
+    }
+  
+  } else {
+
+    drmWith(dockerImage = "library/ubuntu:18.04") {
+  
+      cmd"""$binPython $pyGenerateQcReportData
+      --narrays ${projectConfig.nArrays}
+      --imiss ${imissRemoveStrings.mkString(" ")}
+      --fam ${famStrings(0)}
+      --variants-summary-table ${qcReportStores.tablesData.variantsSummary} 
+      --bim ${bimStrings(0)}
+      --out ${qcReportStores.texData.data}"""
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq :+ qcReportStores.tablesData.variantsSummary)
+      .out(qcReportStores.texData.data)
+      .tag(s"${qcReportStores.texData.data}".split("/").last)
+
+    }
+
+  }
+
+  val ref1kgBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).ref1kgData.base}.bim").mkString(",") } }
+  val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryPcaData.plots.path.toAbsolutePath()}""").mkString(",") } }
+  val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyGenerateQcReportAncestry
+      --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
+      --features ${projectConfig.nAncestryInferenceFeatures}
+      --pca-plots ${ancestryPcaPlotsStrings.mkString(" ")}
+      --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
+      --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
+      --final-table ${qcReportStores.tablesData.ancestry.path.toAbsolutePath()}
+      --out ${qcReportStores.texData.ancestry}"""
+      .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
+      .out(qcReportStores.texData.ancestry)
+      .tag(s"${qcReportStores.texData.ancestry}".split("/").last)
+
+  }
+
+  val refPrunedBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).prunedData.base}.bim").mkString(",") } }
+  val kin0RelatedStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.kin0Related.path}""").mkString(",") } }
+  val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
+  val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+    
+    cmd"""$binPython $pyGenerateQcReportIbdSexcheck
+      --filtered-bim ${refPrunedBimStrings.mkString(" ")}
+      --kin0-related ${kin0RelatedStrings.mkString(" ")}
+      --famsizes ${famSizesStrings.mkString(" ")}
+      --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
+      --out ${qcReportStores.texData.ibdSexcheck}"""
+      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq)
+      .out(qcReportStores.texData.ibdSexcheck)
+      .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rMakeMetricDistPlot
+      --sampleqc ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats}
+      --metric ${projectConfig.sampleQcMetrics.head.replace("_res","")}
+      --out ${qcReportStores.figureData.metricDistUnadjPdf}
+      """
+      .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats)
+      .out(qcReportStores.figureData.metricDistUnadjPdf)
+      .using("R-3.4")
+      .tag(s"${qcReportStores.figureData.metricDistUnadjPdf}".split("/").last)
+    
+    cmd"""$binRscript --vanilla --verbose
+      $rMakeMetricDistPlot
+      --sampleqc ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj}
+      --metric ${projectConfig.sampleQcMetrics.head}
+      --out ${qcReportStores.figureData.metricDistAdjPdf}
+      """
+      .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj)
+      .out(qcReportStores.figureData.metricDistAdjPdf)
+      .using("R-3.4")
+      .tag(s"${qcReportStores.figureData.metricDistAdjPdf}".split("/").last)
+
+  }
+
+  val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.path}""").mkString(",") } }
+  val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.path}""").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+    
+    cmd"""$binRscript --vanilla --verbose
+      $rMakeOutlierTable
+      --ancestry-inferred-outliers ${ProjectStores.ancestryOutliers}
+      --kinship-related ${kin0RelatedStrings.mkString(" ")}
+      --kinship-famsizes ${famSizesStrings.mkString(" ")}
+      --imiss ${imissRemoveStrings.mkString(" ")}
+      --sampleqc-outliers ${sampleQcOutliersStrings.mkString(" ")}
+      --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
+      --final-exclusions ${finalSampleExclusionsStrings.mkString(" ")}
+      --out ${qcReportStores.tablesData.sampleQc}"""
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
+      .out(qcReportStores.tablesData.sampleQc)
+      .using("R-3.4")
+      .tag(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
+
+  }
+
+  val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+    
+    cmd"""$binRscript --vanilla --verbose
+      $rUpsetplotBimFam
+      --input ${cleanFamStrings.mkString(" ")}
+      --type fam
+      --ancestry ${ProjectStores.ancestryInferred}
+      --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
+      .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ ProjectStores.ancestryInferred)
+      .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+      .using("R-3.4")
+      .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
+
+  }
+
+  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.path.toAbsolutePath()}""").mkString(",") } }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyGenerateQcReportSampleqc
+      --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
+      --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
+      --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
+      --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
+      --sampleqc-outliers ${sampleQcOutlierPlotsStrings.mkString(" ")}
+      --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
+      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+      --out ${qcReportStores.texData.sampleQc}"""
+      .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.outliersPlotsPdf).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+      .out(qcReportStores.texData.sampleQc)
+      .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
+
+  }
+
+  val finalVariantExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.variantsExclude.path}""").mkString(",") } }
+  val cleanBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.bim").mkString(",") } }
+    
+  if (projectConfig.nArrays > 1) {
+
+    drmWith(dockerImage = "library/ubuntu:18.04") {
+  
+      cmd"""$binRscript --vanilla --verbose
+        $rUpsetplotBimFam
+        --input ${cleanBimStrings.mkString(" ")}
+        --type bim
+        --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
+        .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq)
+        .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .using("R-3.4")
+        .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
+  	  
+      cmd"""$binPython $pyGenerateQcReportVariantqc
+        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
+        --out ${qcReportStores.texData.variantQc}"""
+        .in(arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .out(qcReportStores.texData.variantQc)
+        .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
+
+    }
+  
+  } else {
+
+    drmWith(dockerImage = "library/ubuntu:18.04") {
+  
+      cmd"""$binPython $pyGenerateQcReportVariantqc
+        --bim ${cleanBimStrings.head}
+        --variant-exclusions  ${finalVariantExclusionsStrings.mkString(" ")}
+        --out ${qcReportStores.texData.variantQc}"""
+        .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq)
+        .out(qcReportStores.texData.variantQc)
+        .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
+
+    }
+  
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+  
+    cmd"""$binPython $pyGenerateQcReportBibliography
+      --out ${qcReportStores.texData.bibliography}"""
+      .out(qcReportStores.texData.bibliography)
+      .tag(s"${qcReportStores.texData.bibliography}".split("/").last)
+    
+    cmd"""cat ${qcReportStores.texData.header} ${qcReportStores.texData.intro} ${qcReportStores.texData.data} ${qcReportStores.texData.ancestry} ${qcReportStores.texData.ibdSexcheck} ${qcReportStores.texData.sampleQc} ${qcReportStores.texData.variantQc} ${qcReportStores.texData.bibliography} > ${qcReportStores.tex}"""
+      .in(qcReportStores.texData.header, qcReportStores.texData.intro, qcReportStores.texData.data, qcReportStores.texData.ancestry, qcReportStores.texData.ibdSexcheck, qcReportStores.texData.sampleQc, qcReportStores.texData.variantQc, qcReportStores.texData.bibliography)
+      .out(qcReportStores.tex)
+      .tag(s"${qcReportStores.tex}".split("/").last)
+    
+    cmd"""$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}"""
+      .in(qcReportStores.tex)
+      .out(qcReportStores.pdf)
+      .tag(s"${qcReportStores.pdf}".split("/").last)
+
+  }
+
+}

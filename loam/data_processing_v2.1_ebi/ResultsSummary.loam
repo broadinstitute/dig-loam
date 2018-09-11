@@ -1,0 +1,133 @@
+/**
+  * Results Summary Step
+  *  Description: Generate Results Summary Data
+  *  Requires: Python, R
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ProjectStores._
+import AssocStores._
+import MetaStores._
+import ResultsSummaryStores._
+
+def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit = {
+
+  val summaryStores = resultsSummaryStores((id, configModel))
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyTop1000
+      --results ${results}
+      --p pval 
+      --out ${summaryStores.resultsSummaryData.top1000}"""
+      .in(results)
+      .out(summaryStores.resultsSummaryData.top1000)
+      .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
+    
+    cmd"""(sed '1d' ${summaryStores.resultsSummaryData.top1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${ProjectStores.genePositions} --out-delim \\t) | sort -u > ${summaryStores.resultsSummaryData.top1000Genes}"""
+      .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
+      .out(summaryStores.resultsSummaryData.top1000Genes)
+      .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
+
+  }
+
+  val hiLdFiles = knownLociStores.filter(e => e._1._3.model.pheno == configModel.pheno).map(e => e._2.hiLd).toSeq.distinct
+
+  val hiLdStrings = {
+
+    for {
+      x <- hiLdFiles
+    } yield {
+
+      s"""${x.toString.split("@")(1)}"""
+
+    }
+
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rTop20
+      --results ${summaryStores.resultsSummaryData.top1000}
+      --chr "#chr"
+      --pos pos
+      --genes ${summaryStores.resultsSummaryData.top1000Genes}
+      --known-loci "${hiLdStrings.mkString(",")}"
+      --p pval
+      --test ${configModel.test}
+      --out ${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}"""
+      .in(hiLdFiles :+ summaryStores.resultsSummaryData.top1000 :+ summaryStores.resultsSummaryData.top1000Genes)
+      .out(summaryStores.resultsSummaryData.top20AnnotAlignedRisk)
+      .using("R-3.4")
+      .tag(s"${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}".split("/").last)
+    
+    cmd"""$binPython $pyQqPlot
+      --results ${results}
+      --p pval
+      --out ${summaryStores.resultsSummaryData.qqPlotPng}"""
+      .in(results)
+      .out(summaryStores.resultsSummaryData.qqPlotPng)
+      .tag(s"${summaryStores.resultsSummaryData.qqPlotPng}".split("/").last)
+    
+    cmd"""$binPython $pyMhtPlot
+      --results ${results}
+      --chr "#chr"
+      --pos pos
+      --p pval
+      --out ${summaryStores.resultsSummaryData.mhtPlotPng}"""
+      .in(results)
+      .out(summaryStores.resultsSummaryData.mhtPlotPng)
+      .tag(s"${summaryStores.resultsSummaryData.mhtPlotPng}".split("/").last)
+    
+    cmd"""$binPython $pyExtractTopRegions
+      --results ${results}
+      --chr "#chr"
+      --pos pos
+      --p pval
+      --out ${summaryStores.resultsSummaryData.sigRegions}"""
+      .in(results)
+      .out(summaryStores.resultsSummaryData.sigRegions)
+      .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+
+    cmd"""$shRegPlot 
+      $binTabix
+      $binLocuszoom
+      $binGhostscript
+      ${summaryStores.resultsSummaryData.sigRegions}
+      ${results}
+      EUR
+      hg19
+      1000G_Nov2014
+      ${summaryStores.resultsSummaryData.regPlotsBase}"""
+      .in(results, summaryStores.resultsSummaryData.sigRegions)
+      .out(summaryStores.resultsSummaryData.regPlotsPdf)
+      .using("R-3.4")
+      .tag(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
+  
+  }
+
+}
+
+def ResultsKnownLociSummary(configKnownLoci: ConfigKnownLoci, id: String, results: Store, known_data: Store, hiLd: Store): Unit = {
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rTop50Known
+      --results ${results}
+      --known-loci ${known_data}
+      --known-ld ${hiLd}
+      --known-loci-n "${configKnownLoci.n}"
+      --known-loci-case "${configKnownLoci.nCase}"
+      --known-loci-ctrl "${configKnownLoci.nCtrl}"
+      --test ${configKnownLoci.model.test}
+      --out ${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}"""
+      .in(results, known_data, hiLd)
+      .out(resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50)
+      .using("R-3.4")
+      .tag(s"${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}".split("/").last)
+
+  }
+
+}

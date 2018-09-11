@@ -1,0 +1,300 @@
+/**
+  * Association Step
+  *  Description: Run association tests
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+import MetaStores._
+
+def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMeta: Option[ConfigMeta] = None): Unit = {
+
+  val assoc = assocStores((configMeta, configCohort, configModel))
+
+  val array = configCohort.array
+
+  google {
+
+    hail"""$pyHailListSamples
+      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+      --pheno-in ${ProjectStores.phenoGoogle}
+      --iid-col ${projectConfig.phenoId}
+      --pheno-col ${configModel.pheno}
+      --test ${configModel.test}
+      --covars "${configModel.covars}"
+      --out-pheno-prelim ${assoc.phenoPrelimGoogle}
+      --out-samples ${assoc.samplesIncludeGoogle}"""
+    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
+    .tag(s"${assoc.phenoPrelim}.google".split("/").last)
+
+  }
+    
+  local {
+
+    googleCopy(assoc.phenoPrelimGoogle, assoc.phenoPrelim)
+    googleCopy(assoc.samplesIncludeGoogle, assoc.samplesInclude)
+
+  }
+
+  val excludeCrossArrayString = configMeta match {
+
+    case Some(s) => s"""${metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude.toString.split("@")(1)}"""
+    case None => ""
+
+  }
+
+  val generatePhenoIn = configMeta match {
+
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, assoc.samplesInclude, arrayStores(array).finalData.variantsExclude, metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, assoc.samplesInclude, arrayStores(array).finalData.variantsExclude)
+
+  }
+  
+  drmWith(dockerImage = "library/ubuntu:18.04")With(cores=4, mem=4) {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rGeneratePheno
+      --cpus 4
+      --gds-in ${arrayStores(array).pcaData.gds}
+      --pheno-in ${ProjectStores.pheno}
+      --ancestry-in ${ProjectStores.ancestryInferred}
+      --ancestry-keep ${configCohort.ancestry.mkString(",")}
+      --pheno-col ${configModel.pheno}
+      --iid-col ${projectConfig.phenoId}
+      --samples-include ${assoc.samplesInclude}
+      --samples-exclude "${excludeCrossArrayString}"
+      --variants-exclude ID ${arrayStores(array).finalData.variantsExclude}
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
+      --out-pheno ${assoc.pheno}
+      --out-pcs ${assoc.pcs}
+      > ${assoc.phenoLog}"""
+      .in(generatePhenoIn)
+      .out(assoc.pheno, assoc.pcs, assoc.phenoLog)
+      .using("R-3.4")
+      .tag(s"${assoc.pheno}".split("/").last)
+
+  }
+  
+  local {
+
+    googleCopy(assoc.pheno, assoc.phenoGoogle)
+    googleCopy(assoc.pcs, assoc.pcsGoogle)
+
+  }
+
+  configCohort.imputed match {
+
+    case false =>
+  
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${assoc.phenoGoogle}
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${assoc.pcsGoogle}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .out(assoc.resultsGoogle)
+            .tag(s"${assoc.results}.google".split("/").last)
+      
+      }
+
+    case true =>
+
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${assoc.phenoGoogle}
+          --imputed
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${assoc.pcsGoogle}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .out(assoc.resultsGoogle)
+            .tag(s"${assoc.results}.google".split("/").last)
+      
+      }
+
+  }
+  
+  local {
+
+    googleCopy(assoc.resultsGoogle, assoc.results)
+
+  }
+  
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
+      .in(assoc.results)
+      .out(assoc.tbi)
+      .tag(s"${assoc.tbi}".split("/").last)
+
+  }
+
+}
+
+def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci, configMeta: Option[ConfigMeta] = None): Unit = {
+
+  val known = knownLociStores((configMeta, configCohort, configKnownLoci))
+
+  val array = configCohort.array
+
+  google {
+
+    hail"""$pyHailListSamples
+      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+      --pheno-in ${ProjectStores.phenoGoogle}
+      --iid-col ${projectConfig.phenoId}
+      --pheno-col ${configKnownLoci.model.pheno}
+      --test ${configKnownLoci.model.test}
+      --covars "${configKnownLoci.model.covars}"
+      --out-pheno-prelim ${known.assoc.phenoPrelimGoogle}
+      --out-samples ${known.assoc.samplesIncludeGoogle}"""
+    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .out(known.assoc.phenoPrelimGoogle, known.assoc.samplesIncludeGoogle)
+    .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
+
+  }
+    
+  local {
+
+    googleCopy(known.assoc.phenoPrelimGoogle, known.assoc.phenoPrelim)
+    googleCopy(known.assoc.samplesIncludeGoogle, known.assoc.samplesInclude)
+
+  }
+
+  val excludeCrossArrayString = configMeta match {
+
+    case Some(s) => s"""${metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude.toString.split("@")(1)}"""
+    case None => ""
+
+  }
+
+  val generatePhenoIn = configMeta match {
+
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, known.assoc.samplesInclude, arrayStores(array).finalData.variantsExclude, metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, known.assoc.samplesInclude, arrayStores(array).finalData.variantsExclude)
+
+  }
+  
+  drmWith(dockerImage = "library/ubuntu:18.04")With(cores=4, mem=4) {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rGeneratePheno
+      --cpus 4
+      --gds-in ${arrayStores(array).pcaData.gds}
+      --pheno-in ${ProjectStores.pheno}
+      --ancestry-in ${ProjectStores.ancestryInferred}
+      --ancestry-keep ${configKnownLoci.ancestry.mkString(",")}
+      --pheno-col ${configKnownLoci.model.pheno}
+      --iid-col ${projectConfig.phenoId}
+      --samples-include ${known.assoc.samplesInclude}
+      --samples-exclude "${excludeCrossArrayString}"
+      --variants-exclude ID ${arrayStores(array).finalData.variantsExclude}
+      --test ${configKnownLoci.model.test}
+      --trans "${configKnownLoci.model.trans}"
+      --covars "${configKnownLoci.model.covars}"
+      --out-pheno ${known.assoc.pheno}
+      --out-pcs ${known.assoc.pcs}
+      > ${known.assoc.phenoLog}"""
+      .in(generatePhenoIn)
+      .out(known.assoc.pheno, known.assoc.pcs, known.assoc.phenoLog)
+      .using("R-3.4")
+      .tag(s"${known.assoc.pheno}".split("/").last)
+
+  }
+  
+  local {
+
+    googleCopy(known.assoc.pheno, known.assoc.phenoGoogle)
+    googleCopy(known.assoc.pcs, known.assoc.pcsGoogle)
+    googleCopy(known.hiLd, known.hiLdGoogle)
+
+  }
+
+  configCohort.imputed match {
+
+    case false =>
+  
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${known.assoc.phenoGoogle}
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configKnownLoci.model.pheno}
+          --pcs-include ${known.assoc.pcsGoogle}
+          --extract-ld ${known.hiLdGoogle}
+          --test ${configKnownLoci.model.test}
+          --trans "${configKnownLoci.model.trans}"
+          --covars "${configKnownLoci.model.covars}"
+          --out ${known.assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+            .out(known.assoc.resultsGoogle)
+            .tag(s"${known.assoc.results}.google".split("/").last)
+      
+      }
+
+    case true =>
+
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${known.assoc.phenoGoogle}
+          --imputed
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configKnownLoci.model.pheno}
+          --pcs-include ${known.assoc.pcsGoogle}
+          --extract-ld ${known.hiLdGoogle}
+          --test ${configKnownLoci.model.test}
+          --trans "${configKnownLoci.model.trans}"
+          --covars "${configKnownLoci.model.covars}"
+          --out ${known.assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+            .out(known.assoc.resultsGoogle)
+            .tag(s"${known.assoc.results}.google".split("/").last)
+      
+      }
+
+  }
+  
+  local {
+
+    googleCopy(known.assoc.resultsGoogle, known.assoc.results)
+
+  }
+  
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binTabix -f -b 2 -e 2 ${known.assoc.results}"""
+      .in(known.assoc.results)
+      .out(known.assoc.tbi)
+      .tag(s"${known.assoc.tbi}".split("/").last)
+
+  }
+
+}

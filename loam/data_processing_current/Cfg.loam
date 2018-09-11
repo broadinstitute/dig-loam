@@ -16,15 +16,15 @@ trait Debug{
   }
 }
 
-final case class MultiDir(
+final case class MultiStrPath(
   local: String,
   google: String)
 
 final case class Dir(
-  base: MultiDir,
-  data: MultiDir,
-  kinship: MultiDir,
-  ancestry: MultiDir,
+  base: MultiStrPath,
+  data: MultiStrPath,
+  kinship: MultiStrPath,
+  ancestry: MultiStrPath,
   cloudShare: String,
   cloudHome: String) extends Debug
 
@@ -35,9 +35,11 @@ final case class MultiStore(
 sealed trait GenotypeData
 
 final case class Vcf(
+  base: MultiStrPath,
   vcf: MultiStore) extends GenotypeData
 
 final case class Plink(
+  base: MultiStrPath,
   bed: MultiStore,
   bim: MultiStore,
   fam: MultiStore) extends GenotypeData
@@ -260,19 +262,19 @@ object Cfg{
 
     val dir = {
 
-      val base = MultiDir(
+      val base = MultiStrPath(
         local = initDir("results"),
         google = cloudHome + "/" + id + "/results")
 
-      val data = MultiDir(
+      val data = MultiStrPath(
         local = initDir(base.local + "/data"),
         google = base.google + "/data")
 
-      val kinship = MultiDir(
+      val kinship = MultiStrPath(
         local = initDir(base.local + "/kinship"),
         google = base.google + "/kinship")
 
-      val ancestry = MultiDir(
+      val ancestry = MultiStrPath(
         local = initDir(base.local + "/ancestry"),
         google = base.google + "/ancestry")
 
@@ -328,11 +330,13 @@ object Cfg{
           format match {
             case "plink" =>
               Plink(
+                base = MultiStrPath(local = requiredStr(config = dat, field = "file"), google = dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file")).getFileName().toString()),
                 bed = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file") + ".bed")).asInput, google = store(uri(dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bed").getFileName().toString()))),
                 bim = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file") + ".bim")).asInput, google = store(uri(dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".bim").getFileName().toString()))),
                 fam = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file") + ".fam")).asInput, google = store(uri(dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file") + ".fam").getFileName().toString()))))
             case "vcf" =>
               Vcf(
+                base = MultiStrPath(local = requiredStr(config = dat, field = "file").replaceAll(".vcf.gz$","").replaceAll(".vcf.bgz$","").replaceAll(".gz$","").replaceAll(".bgz$",""), google = dir.data.google + "/" + Paths.get(requiredStr(config = dat, field = "file")).getFileName().toString().replaceAll(".vcf.gz$","").replaceAll(".vcf.bgz$","").replaceAll(".gz$","").replaceAll(".bgz$","")),
                 vcf = MultiStore(local = store(checkPath(requiredStr(config = dat, field = "file"))).asInput, google = store(uri(dir.data.google + "/" + basename))))
           }
         }
@@ -430,3 +434,23 @@ def writeCfg(cfg: Cfg, utils: Utils): Any = {
   }
   bw.close()
 }
+
+// Initialize configuration
+println("Loading Project Configuration File ...")
+val cfg = Cfg.parseCfg(loadConfig("dataConfig", ""))
+cfg.dir.debugVars()
+cfg.debugVars()
+for ( d <- cfg.data ) {
+d.debugVars()
+}
+println("... Project Configuration Loaded Successfully!")
+
+val utils = Cfg.parseUtils(loadConfig("pipelineConfig", ""))
+utils.binary.debugVars()
+utils.python.debugVars()
+utils.bash.debugVars()
+utils.r.debugVars()
+utils.debugVars()
+println("... Pipeline Configuration Loaded Successfully!")
+
+writeCfg(cfg, utils)
