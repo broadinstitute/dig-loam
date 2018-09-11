@@ -1,0 +1,31 @@
+import Cfg._
+
+final case class HailStores(
+  mt: Store)
+
+final case class VariantStores(
+  sitesVcf: MultiStore,
+  sitesSummary: MultiStore)
+
+val hailStores = cfg.data.map { data =>
+
+  val mt = data.file match {
+    case Vcf(base, vcf) => store(uri(base.google + ".mt"))
+    case Plink(base, bed, bim, fam) => store(uri(base.google + ".mt"))
+  }
+
+  data -> HailStores(
+    mt = mt)
+
+}.toMap
+
+val variantStores = cfg.data.map { data =>
+
+  val sitesVcf = MultiStore(local = store(path(cfg.dir.data.local + "/sites.vcf.gz")), google = store(uri(cfg.dir.data.google + "/sites.vcf.gz")))
+  val sitesSummary = MultiStore(local = store(path(cfg.dir.data.local + "/sites.summary.gz")), google = store(uri(cfg.dir.data.google + "/sites.summary.gz")))
+
+  data -> VariantStores(
+    sitesVcf = sitesVcf,
+    sitesSummary = sitesSummary)
+
+}.toMap

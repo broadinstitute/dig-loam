@@ -1,0 +1,74 @@
+/**
+ * Filter Clean Step
+ * filter variants and generate final clean dataset
+ */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+def FilterFinal(array: String): Unit = {
+ 
+  local {
+  
+    googleCopy(arrayStores(array).finalData.samplesExclude, arrayStores(array).finalData.samplesExcludeGoogle)
+  
+  }
+  
+  google {
+  
+    hail"""$pyHailFilterFinal
+      --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
+      --ancestry-in ${ProjectStores.ancestryInferredGoogle}
+      --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle}
+      --pheno-in ${ProjectStores.phenoGoogle}
+      --iid-col ${projectConfig.phenoId}
+      --case-ctrl-col ${projectConfig.phenoStatus}
+      --samples-remove ${arrayStores(array).finalData.samplesExcludeGoogle}
+      --variantqc-out ${arrayStores(array).variantQcData.statsGoogle}
+      --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle}
+      --plink-out ${arrayStores(array).cleanData.baseGoogle}
+      --vcf-out ${arrayStores(array).cleanData.vcfGoogle}
+      --vds-out ${arrayStores(array).cleanData.vdsGoogle}"""
+      .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.ancestryInferredGoogle, arrayStores(array).sexcheckData.sexcheckGoogle, ProjectStores.phenoGoogle, arrayStores(array).finalData.samplesExcludeGoogle)
+      .out(arrayStores(array).cleanData.dataGoogle :+ arrayStores(array).cleanData.vcfGoogle :+ arrayStores(array).variantQcData.statsGoogle :+ arrayStores(array).finalData.variantsExcludeGoogle :+ arrayStores(array).cleanData.vdsGoogle)
+      .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal.google".split("/").last)
+  
+  }
+  
+  local {
+  
+    googleCopy(arrayStores(array).cleanData.dataGoogle, arrayStores(array).cleanData.data)
+    googleCopy(arrayStores(array).cleanData.vcfGoogle, arrayStores(array).cleanData.vcf)
+    googleCopy(arrayStores(array).variantQcData.statsGoogle, arrayStores(array).variantQcData.stats)
+    googleCopy(arrayStores(array).finalData.variantsExcludeGoogle, arrayStores(array).finalData.variantsExclude)
+  
+  }
+  
+  drm {
+  
+    cmd"""$binTabix -f -p vcf ${arrayStores(array).cleanData.vcf}"""
+      .in(arrayStores(array).cleanData.vcf)
+      .out(arrayStores(array).cleanData.tbi)
+      .tag(s"${arrayStores(array).cleanData.tbi}".split("/").last)
+  
+  }
+  
+  drmWith(cores=4, mem=4) {
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rPcair
+      --cpus 4
+      --plink-in ${arrayStores(array).prunedData.base}
+      --gds-out ${arrayStores(array).cleanData.gds}
+      --exclude ${arrayStores(array).finalData.samplesExclude}
+      --scores ${arrayStores(array).cleanData.pcaScores}
+      > ${arrayStores(array).cleanData.pcaLog}"""
+      .in(arrayStores(array).prunedData.data :+ arrayStores(array).finalData.samplesExclude)
+      .out(arrayStores(array).cleanData.gds, arrayStores(array).cleanData.pcaScores, arrayStores(array).cleanData.pcaLog)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).cleanData.pcaScores}".split("/").last)
+  
+  }
+
+}

@@ -1,0 +1,37 @@
+/**
+  * Kinship Step
+  *  Description: Calculate kinship to identify duplicates and any samples exhibiting abnormal (excessive) sharing
+  *  Requires: King, R
+  *  Notes:
+  *     King is preferred to Plink or Hail based IBD calcs due to robust algorithm handling of population stratification. This step should be followed by a visual inspection for duplicates or excessive sharing
+  * King only writes the '.kin0' file if families are found, so a bash script is used to write an empty file in that case
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+
+def Kinship(array: String): Unit = {
+
+  drmWith(dockerImage = "library/ubuntu:18.04")With(cores=4, mem=4) {
+
+    cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} 4"""
+    .in(arrayStores(array).prunedData.data)
+    .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.kin0Related)
+    .tag(s"${arrayStores(array).prunedData.base}.shKing".split("/").last)
+
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rCalcKinshipFamSizes
+      --kin0 ${arrayStores(array).kinshipData.kin0Related}
+      --out ${arrayStores(array).kinshipData.famSizes}"""
+      .in(arrayStores(array).kinshipData.kin0Related)
+      .out(arrayStores(array).kinshipData.famSizes)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).kinshipData.famSizes}".split("/").last)
+
+  }
+
+}

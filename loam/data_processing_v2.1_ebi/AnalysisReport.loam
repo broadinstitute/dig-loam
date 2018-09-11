@@ -1,0 +1,468 @@
+/**
+  * Analysis Report Step
+  *  Description: Generate Analysis Report
+  *  Requires: R-3.4, Python, convert, pdflatex
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+import MetaStores._
+import QcReportStores._
+import AnalysisReportStores._
+import ResultsSummaryStores._
+import PhenotypeStores._
+
+def AnalysisReportGlobal(phase: Int): Unit = {
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+	cmd"""$binPython $pyGenerateReportHeader
+      --out ${analysisReportStores(phase).globalData.header}"""
+      .out(analysisReportStores(phase).globalData.header)
+      .tag(s"${analysisReportStores(phase).globalData.header}".split("/").last)
+
+    cmd"""$binPython $pyGenerateAnalysisReportIntro
+      --id ${projectConfig.projectId}
+      --phase ${phase.toString}
+      --authors "${projectConfig.analysisReportAuthors.mkString(",")}"
+      --out-tex ${analysisReportStores(phase).globalData.intro}
+      --out-input ${analysisReportStores(phase).globalData.introInput}"""
+      .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
+      .out(analysisReportStores(phase).globalData.intro, analysisReportStores(phase).globalData.introInput)
+      .tag(s"${analysisReportStores(phase).globalData.intro}".split("/").last)
+
+  }
+
+  val arraysString = {
+
+    for {
+      array <- projectConfig.Arrays
+    } yield {
+      array.liftOver match {
+        case Some(s) => Seq(array.id, array.filename.split("/").last, array.format, array.liftOver.get.split("/").last, array.xChr.toString, array.yChr.toString, array.mtChr.toString).mkString(",")
+        case None => Seq(array.id, array.filename.split("/").last, array.format, "N/A", array.xChr.toString, array.yChr.toString, array.mtChr.toString).mkString(",")
+      }
+    }
+
+  }
+
+  val cohortsString = {
+
+    for {
+      cohort <- projectConfig.Cohorts
+    } yield {
+      Seq(cohort.id, cohort.array, cohort.ancestry.mkString("+"), cohort.report.toString).mkString(",")
+    }
+
+  }
+
+  val metasString = {
+
+    for {
+      meta <- projectConfig.Metas
+      cohort <- meta.cohorts
+    } yield {
+      Seq(meta.id, cohort, s"""${metaStores(meta.id).metaCohortData(cohort).kinshipSamplesExclude.path}""", meta.report.toString).mkString(",")
+    }
+
+  }
+
+  val mergesString = {
+
+    for {
+      merge <- projectConfig.Merges
+    } yield {
+      Seq(merge.id, merge.cohorts_metas.mkString("+"), merge.report.toString).mkString(",")
+    }
+
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyGenerateAnalysisReportData
+      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+      --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
+      --arrays ${arraysString.mkString(" ")}
+      --out-tex ${analysisReportStores(phase).globalData.data}
+      --out-input ${analysisReportStores(phase).globalData.dataInput}"""
+      .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+      .out(analysisReportStores(phase).globalData.data, analysisReportStores(phase).globalData.dataInput)
+      .tag(s"${analysisReportStores(phase).globalData.data}".split("/").last)
+
+    cmd"""$binPython $pyGenerateAnalysisReportStrategy
+      --cohorts ${cohortsString.mkString(" ")}
+      --metas ${metasString.mkString(" ")}
+      --merges ${mergesString.mkString(" ")}
+      --out-tex ${analysisReportStores(phase).globalData.strategy}
+      --out-input ${analysisReportStores(phase).globalData.strategyInput}"""
+      .out(metaStores.flatMap(e => e._2.metaCohortData.map(e => e._2.kinshipSamplesExclude)).toSeq :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.strategyInput)
+      .tag(s"${analysisReportStores(phase).globalData.strategy}".split("/").last)
+
+  }
+
+  val knownLociCitations = {
+
+    for {
+      known <- projectConfig.KnownLoci
+    } yield {
+      Seq(known.tag, known.citation).mkString("___")
+    }
+
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyGenerateAnalysisReportBibliography
+      --names "${projectConfig.analysisReportAcknowledgements.mkString(",")}"
+      --known-loci-citations "${knownLociCitations.mkString(",,,")}"
+      --out-tex ${analysisReportStores(phase).globalData.bibliography}
+      --out-input ${analysisReportStores(phase).globalData.bibliographyInput}"""
+      .out(analysisReportStores(phase).globalData.bibliography, analysisReportStores(phase).globalData.bibliographyInput)
+      .tag(s"${analysisReportStores(phase).globalData.bibliography}".split("/").last)
+
+  }
+
+}
+
+def AnalysisReportPheno(phase: Int, pheno: String, name: String): Unit = {
+
+  val reportAnalysisPhenoDistPlotStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+    } yield {
+
+      Seq(cohort.id, s"""${phenotypeStores((None, cohort, pheno)).figureData.distPlot.path.toAbsolutePath()}""").mkString(",")
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+    } yield {
+
+      Seq(meta.id, cohort.id, s"""${phenotypeStores((Some(meta), cohort, pheno)).figureData.distPlot.path.toAbsolutePath()}""").mkString(",")
+
+    })
+
+  }
+
+  val reportAnalysisModelPhenoFileStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(cohort.id, cohort.array, cohort.ancestry.mkString("+"), model.trans, model.covars.replace("[","").replace("]",""), s"""${assocStores((None, cohort, model)).pcs.path}""", s"""${assocStores((None, cohort, model)).pheno.path}""").mkString(",")
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(meta.id, cohort.id, cohort.array, cohort.ancestry.mkString("+"), model.trans, model.covars.replace("[","").replace("]",""), s"""${assocStores((Some(meta), cohort, model)).pcs.path}""", s"""${assocStores((Some(meta), cohort, model)).pheno.path}""").mkString(",")
+
+    })
+
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
+      --dist-plot ${reportAnalysisPhenoDistPlotStrings.mkString(" ")}
+      --pheno-master ${ProjectStores.pheno}
+      --id-col ${projectConfig.phenoId}
+      --sex-col ${projectConfig.phenoSrSex}
+      --model-files ${reportAnalysisModelPhenoFileStrings.mkString(" ")}
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --ancestry ${ProjectStores.ancestryInferred}
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).summary}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).summaryInput}"""
+      .in(assocStores.map(e => e._2.pheno).toSeq ++ assocStores.map(e => e._2.pcs).toSeq ++ phenotypeStores.map(e => e._2.figureData.distPlot).toSeq :+ ProjectStores.ancestryInferred :+ ProjectStores.pheno)
+      .out(analysisReportStores(phase).phenoData(pheno).summary, analysisReportStores(phase).phenoData(pheno).summaryInput)
+      .tag(s"${analysisReportStores(phase).phenoData(pheno).summary}".split("/").last)
+
+  }
+
+  val reportAnalysisModelQqPlotStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(cohort.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.qqPlotPng.path.toAbsolutePath()}""").mkString(",")
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(meta.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.qqPlotPng.path.toAbsolutePath()}""").mkString(",")
+
+    })
+
+  }
+
+  val reportAnalysisModelMhtPlotStrings = {
+
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(cohort.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}""").mkString(",")
+
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(meta.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}""").mkString(",")
+
+    })
+
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
+      --qq-plots ${reportAnalysisModelQqPlotStrings.mkString(" ")}
+      --mht-plots ${reportAnalysisModelMhtPlotStrings.mkString(" ")}
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).calibration}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).calibrationInput}"""
+      .in(resultsSummaryStores.map(e => e._2.resultsSummaryData.qqPlotPng).toSeq ++ resultsSummaryStores.map(e => e._2.resultsSummaryData.mhtPlotPng).toSeq)
+      .out(analysisReportStores(phase).phenoData(pheno).calibration, analysisReportStores(phase).phenoData(pheno).calibrationInput)
+      .tag(s"${analysisReportStores(phase).phenoData(pheno).calibration}".split("/").last)
+
+  }
+
+  val reportAnalysisModelTop20AnnotAlignedRiskStrings = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+  
+      Seq(cohort.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.top20AnnotAlignedRisk.path.toAbsolutePath()}""").mkString(",")
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+  
+      Seq(meta.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.top20AnnotAlignedRisk.path.toAbsolutePath()}""").mkString(",")
+  
+    })
+  
+  }
+
+  val reportAnalysisModelRegplotsStrings = {
+  
+    (for {
+      cohort <- projectConfig.Cohorts if cohort.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(cohort.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.sigRegions.path}""", s"""${resultsSummaryStores((cohort.id, model)).resultsSummaryData.regPlotsPdf.path.toAbsolutePath()}""").mkString(",")
+  
+    }) ++
+    (for {
+      meta <- projectConfig.Metas if meta.report
+      model <- projectConfig.Models if model.pheno == pheno
+    } yield {
+
+      Seq(meta.id, model.trans, model.covars.replace("[","").replace("]",""), s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.sigRegions.path}""", s"""${resultsSummaryStores((meta.id, model)).resultsSummaryData.regPlotsPdf.path.toAbsolutePath()}""").mkString(",")
+  
+    })
+  
+  }
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+    
+    cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
+      --top-results ${reportAnalysisModelTop20AnnotAlignedRiskStrings.mkString(" ")}
+      --regionals ${reportAnalysisModelRegplotsStrings.mkString(" ")}
+      --pheno-name ${pheno}
+      --pheno-long-name "${name}"
+      --out-tex ${analysisReportStores(phase).phenoData(pheno).topLoci}
+      --out-input ${analysisReportStores(phase).phenoData(pheno).topLociInput}"""
+      .in(resultsSummaryStores.map(e => e._2.resultsSummaryData.top20AnnotAlignedRisk).toSeq ++ resultsSummaryStores.map(e => e._2.resultsSummaryData.regPlotsPdf).toSeq)
+      .out(analysisReportStores(phase).phenoData(pheno).topLoci, analysisReportStores(phase).phenoData(pheno).topLociInput)
+      .tag(s"${analysisReportStores(phase).phenoData(pheno).topLoci}".split("/").last)
+  
+  }
+
+  projectConfig.KnownLoci.filter(e => e.model.pheno == pheno).length match {
+
+	case 0 => () 
+
+	case _ =>
+
+      val reportAnalysisModelTop50KnownStrings = {
+      
+        (for {
+          cohort <- projectConfig.Cohorts if cohort.report
+          known <- projectConfig.KnownLoci if known.model.pheno == pheno
+        } yield {
+      
+          Seq(cohort.id, known.model.trans, known.model.covars.replace("[","").replace("]",""), s"""${resultsKnownLociSummaryStores((cohort.id, known)).resultsKnownLociSummaryData.top50.path.toAbsolutePath()}""").mkString(",")
+      
+        }) ++
+        (for {
+          meta <- projectConfig.Metas if meta.report
+          known <- projectConfig.KnownLoci if known.model.pheno == pheno
+        } yield {
+      
+          Seq(meta.id, known.model.trans, known.model.covars.replace("[","").replace("]",""), s"""${resultsKnownLociSummaryStores((meta.id, known)).resultsKnownLociSummaryData.top50.path.toAbsolutePath()}""").mkString(",")
+      
+        })
+      
+      }
+  
+      val reportAnalysisModelTop50KnownDesc = {
+      
+        (for {
+          cohort <- projectConfig.Cohorts if cohort.report
+          known <- projectConfig.KnownLoci if known.model.pheno == pheno
+        } yield {
+
+          Seq(cohort.id, known.model.trans, known.model.covars.replace("[","").replace("]",""), known.desc).mkString("___")
+      
+        }) ++
+        (for {
+          meta <- projectConfig.Metas if meta.report
+          known <- projectConfig.KnownLoci if known.model.pheno == pheno
+        } yield {
+      
+          Seq(meta.id, known.model.trans, known.model.covars.replace("[","").replace("]",""), known.desc).mkString("___")
+      
+        })
+      
+      }
+      
+      val reportAnalysisModelTop50KnownTag = {
+      
+        (for {
+          cohort <- projectConfig.Cohorts if cohort.report
+          known <- projectConfig.KnownLoci if known.model.pheno == pheno
+        } yield {
+
+          Seq(cohort.id, known.model.trans, known.model.covars.replace("[","").replace("]",""), known.tag).mkString(",")
+      
+        }) ++
+        (for {
+          meta <- projectConfig.Metas if meta.report
+          known <- projectConfig.KnownLoci if known.model.pheno == pheno
+        } yield {
+      
+          Seq(meta.id, known.model.trans, known.model.covars.replace("[","").replace("]",""), known.tag).mkString(",")
+      
+        })
+      
+      }
+      
+      drmWith(dockerImage = "library/ubuntu:18.04") {
+        
+        cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
+          --top-known-loci ${reportAnalysisModelTop50KnownStrings.mkString(" ")}
+          --pheno-name ${pheno}
+          --pheno-long-name "${name}"
+          --desc "${reportAnalysisModelTop50KnownDesc.mkString(",,,")}"
+          --tag ${reportAnalysisModelTop50KnownTag.mkString(" ")}
+          --out-tex ${analysisReportStores(phase).phenoData(pheno).knownLoci}
+          --out-input ${analysisReportStores(phase).phenoData(pheno).knownLociInput}"""
+          .in(resultsKnownLociSummaryStores.map(e => e._2.resultsKnownLociSummaryData.top50).toSeq)
+          .out(analysisReportStores(phase).phenoData(pheno).knownLoci, analysisReportStores(phase).phenoData(pheno).knownLociInput)
+          .tag(s"${analysisReportStores(phase).phenoData(pheno).knownLoci}".split("/").last)
+      
+      }
+
+  }
+
+}
+
+def AnalysisReportCompile(phase: Int): Unit = {
+
+  val reportAnalysisResultsList = { 
+
+    for {
+      pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
+    } yield {
+
+      projectConfig.KnownLoci.filter(e => e.model.pheno == pheno).length match {
+
+	    case 0 => () 
+
+          Seq(analysisReportStores(phase).phenoData(pheno).summary, analysisReportStores(phase).phenoData(pheno).calibration, analysisReportStores(phase).phenoData(pheno).topLoci)
+        
+	    case _ =>
+
+          Seq(analysisReportStores(phase).phenoData(pheno).summary, analysisReportStores(phase).phenoData(pheno).calibration, analysisReportStores(phase).phenoData(pheno).topLoci, analysisReportStores(phase).phenoData(pheno).knownLoci)
+
+      }
+
+    }
+
+  }.flatten
+
+  val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.path}""")
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+
+    cmd"""cat ${analysisReportStores(phase).globalData.header} ${analysisReportStores(phase).globalData.intro} ${analysisReportStores(phase).globalData.data} ${analysisReportStores(phase).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliography} > ${analysisReportStores(phase).globalData.tex}"""
+      .in(reportAnalysisResultsList :+ analysisReportStores(phase).globalData.header :+ analysisReportStores(phase).globalData.intro :+ analysisReportStores(phase).globalData.data :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.bibliography)
+      .out(analysisReportStores(phase).globalData.tex)
+      .tag(s"${analysisReportStores(phase).globalData.tex}".split("/").last)
+
+  }
+
+  val reportAnalysisResultsInputList = { 
+
+    for {
+      pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
+    } yield {
+
+      projectConfig.KnownLoci.filter(e => e.model.pheno == pheno).length match {
+
+	    case 0 => () 
+
+          Seq(analysisReportStores(phase).phenoData(pheno).summaryInput, analysisReportStores(phase).phenoData(pheno).calibrationInput, analysisReportStores(phase).phenoData(pheno).topLociInput)
+        
+	    case _ =>
+
+          Seq(analysisReportStores(phase).phenoData(pheno).summaryInput, analysisReportStores(phase).phenoData(pheno).calibrationInput, analysisReportStores(phase).phenoData(pheno).topLociInput, analysisReportStores(phase).phenoData(pheno).knownLociInput)
+
+      }
+
+    }
+
+  }.flatten
+
+  val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.path}""")
+
+  drmWith(dockerImage = "library/ubuntu:18.04") {
+    
+    cmd"""cat ${analysisReportStores(phase).globalData.introInput} ${analysisReportStores(phase).globalData.dataInput} ${analysisReportStores(phase).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(phase).globalData.bibliographyInput} > ${analysisReportStores(phase).globalData.input}"""
+      .in(reportAnalysisResultsInputList :+ analysisReportStores(phase).globalData.introInput :+ analysisReportStores(phase).globalData.dataInput :+ analysisReportStores(phase).globalData.strategyInput :+ analysisReportStores(phase).globalData.bibliographyInput)
+      .out(analysisReportStores(phase).globalData.input)
+      .tag(s"${analysisReportStores(phase).globalData.input}".split("/").last)
+    
+    cmd"""$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(phase).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(phase).globalData.tex}"""
+      .in(analysisReportStores(phase).globalData.tex)
+      .out(analysisReportStores(phase).globalData.pdf)
+      .tag(s"${analysisReportStores(phase).globalData.pdf}".split("/").last)
+
+  }
+
+}
