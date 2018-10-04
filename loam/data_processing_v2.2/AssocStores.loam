@@ -1,0 +1,91 @@
+import ProjectConfig._
+import PipelineConfig._
+import StoreHelpers._
+
+final case class Assoc(
+  phenoPrelim: Store,
+  phenoPrelimGoogle: Store,
+  samplesInclude: Store,
+  samplesIncludeGoogle: Store,
+  phenoLog: Store,
+  pheno: Store,
+  pcs: Store,
+  phenoGoogle: Store,
+  pcsGoogle: Store,
+  results: Store,
+  tbi: Store,
+  resultsGoogle: Store)
+
+final case class KnownLoci(
+  data: Store,
+  hiLd: Store,
+  hiLdGoogle: Store,
+  assoc: Assoc)
+
+val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models } yield { (None, c, m) } ) ++
+    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); m <- projectConfig.Models } yield { (Some(t), c, m) } )).map { assoc => 
+
+  val meta: Option[ConfigMeta] = assoc._1
+  val cohort = assoc._2
+  val model = assoc._3
+
+  val prefix = meta match {
+    case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}"
+    case None => s"${projectConfig.projectId}.${cohort.id}"
+  }
+
+  val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
+  val modelPrefix = s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
+
+  assoc -> Assoc(
+    phenoPrelim = store(localOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
+    phenoPrelimGoogle = store(googleOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
+    samplesInclude = store(localOutDir / s"${modelPrefix}.samples.include"),
+    samplesIncludeGoogle = store(googleOutDir / s"${modelPrefix}.samples.include"),
+    phenoLog = store(localOutDir / s"${modelPrefix}.pheno.log"),
+    pheno = store(localOutDir / s"${modelPrefix}.pheno.tsv"),
+    pcs = store(localOutDir / s"${modelPrefix}.pcs.include"),
+    phenoGoogle = store(googleOutDir / s"${modelPrefix}.pheno.tsv"),
+    pcsGoogle = store(googleOutDir / s"${modelPrefix}.pcs.include"),
+    results = store(localOutDir / s"${modelPrefix}.results.tsv.bgz"),
+    tbi = store(localOutDir / s"${modelPrefix}.results.tsv.bgz.tbi"),
+    resultsGoogle = store(googleOutDir / s"${modelPrefix}.results.tsv.bgz"))
+
+}.toMap
+
+val knownLociStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.KnownLoci; if c.report } yield { (None, c, k) } ) ++
+    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); k <- projectConfig.KnownLoci; if t.report } yield { (Some(t), c, k) } )).map { knownLoci => 
+
+  val meta: Option[ConfigMeta] = knownLoci._1
+  val cohort = knownLoci._2
+  val known = knownLoci._3
+
+  val prefix = meta match {
+    case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}"
+    case None => s"${projectConfig.projectId}.${cohort.id}"
+  }
+
+  val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
+  val knownPrefix = s"${prefix}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}.known_loci"
+  val knownHiLdStringBase = known.hiLd.split("/").last
+
+  knownLoci -> KnownLoci(
+    data = store(path(known.data)).asInput,
+    hiLd = store(path(known.hiLd)).asInput,
+    hiLdGoogle = store(googleOutDir / s"${knownPrefix}.${knownHiLdStringBase}"),
+    assoc = Assoc(
+      phenoPrelim = store(localOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
+      phenoPrelimGoogle = store(googleOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
+      samplesInclude = store(localOutDir / s"${knownPrefix}.samples.include"),
+      samplesIncludeGoogle = store(googleOutDir / s"${knownPrefix}.samples.include"),
+      phenoLog = store(localOutDir / s"${knownPrefix}.pheno.log"),
+      pheno = store(localOutDir / s"${knownPrefix}.pheno.tsv"),
+      pcs = store(localOutDir / s"${knownPrefix}.pcs.include"),
+      phenoGoogle = store(googleOutDir / s"${knownPrefix}.pheno.tsv"),
+      pcsGoogle = store(googleOutDir / s"${knownPrefix}.pcs.include"),
+      results = store(localOutDir / s"${knownPrefix}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${knownPrefix}.results.tsv.bgz.tbi"),
+      resultsGoogle = store(googleOutDir / s"${knownPrefix}.results.tsv.bgz"))
+    )
+
+}.toMap

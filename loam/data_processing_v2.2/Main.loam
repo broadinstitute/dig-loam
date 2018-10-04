@@ -1,0 +1,261 @@
+import ProjectConfig._
+import PipelineConfig._
+import Directories._
+import StoreHelpers._
+import ProjectStores._
+import ArrayStores._
+import Prepare._
+import Harmonize._
+import Load._
+import FilterForQc._
+import Kinship._
+import Ancestry._
+import Pca._
+import SampleQc._
+import FilterFinal._
+import VariantAssoc._
+import CrossCohort._
+import Impute._
+import ImputedStores._
+import Meta._
+import ResultsSummary._
+import AssocStores._
+import MetaStores._
+import Phenotype._
+import QcReport._
+import AnalysisReport._
+
+import loamstream.conf.DataConfig
+import loamstream.googlecloud.HailSupport._
+import loamstream.model.Store
+import loamstream.util.CanBeClosed.enclosed
+
+// Array specific QC steps up to ancestry inferrence
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Prepare(array.id)
+  Harmonize(array.id)
+  Load(array.id)
+  FilterForQc(array.id)
+  Kinship(array.id)
+  AncestryPca(array.id)
+  AncestryCluster(array.id)
+
+}
+
+// Reconcile inferred ancestry
+MergeInferredAncestry()
+
+//// Array specific QC steps post ancestry inference
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  Pca(array.id)
+//  SampleQc(array.id)
+//  FilterFinal(array.id)
+//
+//}
+//
+//// Generate imputation ready data files
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  FilterImpute(array.id)
+//
+//}
+//
+//// Load imputed data into Hail
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  LoadImputed(array.id)
+//
+//}
+//
+//// Cohort variant association
+//for {
+//  cohort <- projectConfig.Cohorts
+//  model <- projectConfig.Models
+//} yield { 
+//
+//  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+//
+//}
+
+//// Cohort variant association for known loci
+//for {
+//  cohort <- projectConfig.Cohorts if cohort.report
+//  known <- projectConfig.KnownLoci
+//} yield { 
+//
+//  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
+//
+//}
+//
+//// Meta-analysis cross-cohort qc prep
+//for {
+//  meta <- projectConfig.Metas
+//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+//} yield {
+//
+//  CrossCohortPrep(configMeta = meta, configCohort = cohort)
+//
+//}
+//
+//// Meta-analysis cross-array kinship
+//for {
+//  meta <- projectConfig.Metas
+//} yield {
+//
+//  CrossCohortKinship(meta)
+//
+//}
+//
+//// Meta-analysis calculate cross-cohort kinship sample exclusions
+//for {
+//  meta <- projectConfig.Metas
+//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+//} yield {
+//
+//  CrossCohortExclude(configMeta = meta, configCohort = cohort)
+//
+//}
+//
+//// Meta-analysis specific cohort variant association
+//for {
+//  meta <- projectConfig.Metas
+//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+//  model <- projectConfig.Models
+//} yield { 
+//
+//  VariantAssoc(configCohort = cohort, configModel = model, configMeta = Some(meta))
+//
+//}
+//
+//// Meta-analysis specific cohort variant association for known loci
+//for {
+//  meta <- projectConfig.Metas if meta.report
+//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+//  known <- projectConfig.KnownLoci
+//} yield { 
+//
+//  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
+//
+//}
+//
+//// Meta-analysis
+//for {
+//  meta <- projectConfig.Metas
+//  model <- projectConfig.Models
+//} yield {
+//
+//  MetaAnalysis(configModel = model, configMeta = meta)
+//
+//}
+//
+//// Meta-analysis for known loci
+//for {
+//  meta <- projectConfig.Metas if meta.report
+//  known <- projectConfig.KnownLoci
+//} yield {
+//
+//  MetaAnalysisKnownLoci(configKnownLoci = known, configMeta = meta)
+//
+//}
+//
+//// Cohort Results Summary
+//for {
+//  cohort <- projectConfig.Cohorts if cohort.report
+//  model <- projectConfig.Models
+//} yield { 
+//
+//  ResultsSummary(configModel = model, id = cohort.id, results = assocStores((None, cohort, model)).results)
+//
+//}
+//
+//// Meta Results Summary
+//for {
+//  meta <- projectConfig.Metas if meta.report
+//  model <- projectConfig.Models
+//} yield { 
+//
+//  ResultsSummary(configModel = model, id = meta.id, results = metaStores(meta.id).metaResultsData(model).results)
+//
+//}
+//
+//// Cohort Known Loci Results Summary
+//for {
+//  cohort <- projectConfig.Cohorts if cohort.report
+//  known <- projectConfig.KnownLoci
+//} yield { 
+//
+//  ResultsKnownLociSummary(configKnownLoci = known, id = cohort.id, results = knownLociStores((None, cohort, known)).assoc.results, known_data = knownLociStores((None, cohort, known)).data, hiLd = knownLociStores((None, cohort, known)).hiLd)
+//
+//}
+//
+//// Meta Known Loci Results Summary
+//for {
+//  meta <- projectConfig.Metas if meta.report
+//  known <- projectConfig.KnownLoci
+//} yield { 
+//
+//  ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
+//
+//}
+//
+//// QC Report
+//QcReport()
+//
+//// Generate Phenotype Figures for Cohorts
+//for {
+//  cohort <- projectConfig.Cohorts
+//  phenotype <- projectConfig.Models.map(m => m.pheno).distinct
+//} yield { 
+//
+//  PhenotypeDistPlots(configCohort = cohort, pheno = phenotype)
+//
+//}
+//
+//// Generate Phenotype Figures for Meta Cohorts
+//for {
+//  meta <- projectConfig.Metas
+//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+//  phenotype <- projectConfig.Models.map(m => m.pheno).distinct
+//} yield { 
+//
+//  PhenotypeDistPlots(configCohort = cohort, pheno = phenotype, configMeta = Some(meta))
+//
+//}
+//
+//// Analysis Report Global
+//for {
+//  phase <- projectConfig.Models.map(m => m.phase).distinct.sorted
+//} yield {
+//
+//  AnalysisReportGlobal(phase = phase)
+//
+//}
+//
+//// Analysis Report Pheno
+//for {
+//  phase <- projectConfig.Models.map(m => m.phase).distinct.sorted
+//  pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
+//} yield {
+//
+//  AnalysisReportPheno(phase = phase, pheno = pheno, name = projectConfig.Phenos.filter(e => e.pheno == pheno)(0).name)
+//
+//}
+//
+//// Analysis Report Compile
+//for {
+//  phase <- projectConfig.Models.map(m => m.phase).distinct.sorted
+//} yield {
+//
+//AnalysisReportCompile(phase = phase)
+//
+//}

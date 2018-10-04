@@ -1,0 +1,56 @@
+/**
+  * Load Step
+  *  Description: Generate the Hail matrix table from VCF file
+  *  Requires: Hail v0.2
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+
+def Load(array: String): Unit = {
+
+  local {
+  
+    googleCopy(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.vcfGoogle)
+    googleCopy(arrayStores(array).harmonizedData.tbi, arrayStores(array).harmonizedData.tbiGoogle)
+  
+  }
+  
+  google {
+
+    hail"""$pyHailLoad
+      --reference-genome ${projectConfig.referenceGenome}
+      --partitions ${projectConfig.Arrays(array).partitions}
+      --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle}
+      --mt-out ${arrayStores(array).harmonizedData.mtGoogle}"""
+      .in(arrayStores(array).harmonizedData.vcfGoogle, arrayStores(array).harmonizedData.tbiGoogle)
+      .out(arrayStores(array).harmonizedData.mtGoogle)
+      .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad.google".split("/").last)
+  
+  }
+
+}
+
+def LoadImputed(array: String): Unit = {
+
+  local {
+  
+    googleCopy(arrayStores(array).data, arrayStores(array).dataGoogle)
+
+  }
+  
+  google {
+  
+    hail"""$pyHailLoad
+      --reference-genome ${projectConfig.referenceGenome}
+      --partitions ${projectConfig.Arrays(array).partitions}
+      --info-in ${arrayStores(array).infoGoogle}
+      --vcf-in ${projectConfig.projectId} ${arrayStores(array).dataGoogle}
+      --mt-out ${arrayStores(array).mtGoogle}"""
+      .in(arrayStores(array).dataGoogle, arrayStores(array).infoGoogle)
+      .out(arrayStores(array).mtGoogle)
+      .tag(s"${arrayStores(array).base}.pyHailLoad.google".split("/").last)
+  
+  }
+
+}

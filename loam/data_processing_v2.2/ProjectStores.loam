@@ -1,0 +1,45 @@
+import ProjectConfig._
+import PipelineConfig._
+
+object ProjectStores {
+
+  val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ Seq("X","Y","MT")
+
+  val kgVcf = chrSeq.map { chr =>
+  
+    val vcf = store(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr")).asInput
+  
+    chr -> vcf
+  
+  }.toMap
+  
+  val kgIds = chrSeq.map { chr =>
+  
+    val ids = store(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr")).asInput
+  
+    chr -> ids
+  
+  }.toMap
+  
+  val humanReference = chrSeq.map { chr =>
+  
+    val ref = store(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
+  
+    chr -> ref
+  
+  }.toMap
+  
+  val regionsExclude = store(path(projectConfig.regionsExclude)).asInput
+  val regionsExcludeGoogle = store(uri(projectConfig.regionsExcludeGoogle)).asInput
+  val genePositions = store(path(projectConfig.genePositions)).asInput
+  val kgPurcellVcf = store(path(projectConfig.kgPurcellVcf)).asInput
+  val kgPurcellVcfGoogle = store(uri(projectConfig.kgPurcellVcfGoogle)).asInput
+  val kgSample = store(path(projectConfig.kgSample)).asInput
+  val kgSampleGoogle = store(uri(projectConfig.kgSampleGoogle)).asInput
+  val pheno = store(path(projectConfig.pheno)).asInput
+  val phenoGoogle = store(googleOutDir / s"${projectConfig.pheno}".split("/").last)
+  val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryInferredGoogle = store(googleOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
+
+}
