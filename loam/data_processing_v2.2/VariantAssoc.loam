@@ -18,8 +18,8 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   google {
 
-    hail"""$pyHailListSamples
-      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+    hail"""$pyHailListSamples --
+      --mt-in ${arrayStores(array).cleanData.mtGoogle}
       --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
       --pheno-in ${ProjectStores.phenoGoogle}
       --iid-col ${projectConfig.phenoId}
@@ -28,7 +28,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       --covars "${configModel.covars}"
       --out-pheno-prelim ${assoc.phenoPrelimGoogle}
       --out-samples ${assoc.samplesIncludeGoogle}"""
-    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.mtGoogle :+ ProjectStores.phenoGoogle)
     .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
     .tag(s"${assoc.phenoPrelim}.google".split("/").last)
 
@@ -95,8 +95,8 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
   
       google {
       
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+        hail"""$pyHailAssoc --
+          --mt-in ${arrayStores(array).cleanData.mtGoogle}
           --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
           --pheno-in ${assoc.phenoGoogle}
           --iid-col ${projectConfig.phenoId}
@@ -106,7 +106,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.mtGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
             .out(assoc.resultsGoogle)
             .tag(s"${assoc.results}.google".split("/").last)
       
@@ -116,8 +116,8 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
       google {
       
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
+        hail"""$pyHailAssoc --
+          --mt-in ${arrayStores(array).imputedData.mtGoogle}
           --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
           --pheno-in ${assoc.phenoGoogle}
           --imputed
@@ -128,7 +128,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.mtGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
             .out(assoc.resultsGoogle)
             .tag(s"${assoc.results}.google".split("/").last)
       
@@ -161,8 +161,8 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   google {
 
-    hail"""$pyHailListSamples
-      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+    hail"""$pyHailListSamples --
+      --mt-in ${arrayStores(array).cleanData.mtGoogle}
       --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
       --pheno-in ${ProjectStores.phenoGoogle}
       --iid-col ${projectConfig.phenoId}
@@ -171,7 +171,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       --covars "${configKnownLoci.model.covars}"
       --out-pheno-prelim ${known.assoc.phenoPrelimGoogle}
       --out-samples ${known.assoc.samplesIncludeGoogle}"""
-    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.mtGoogle :+ ProjectStores.phenoGoogle)
     .out(known.assoc.phenoPrelimGoogle, known.assoc.samplesIncludeGoogle)
     .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
 
@@ -239,8 +239,8 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
   
       google {
       
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+        hail"""$pyHailAssoc --
+          --mt-in ${arrayStores(array).cleanData.mtGoogle}
           --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
           --pheno-in ${known.assoc.phenoGoogle}
           --iid-col ${projectConfig.phenoId}
@@ -251,7 +251,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
           --trans "${configKnownLoci.model.trans}"
           --covars "${configKnownLoci.model.covars}"
           --out ${known.assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.mtGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
             .out(known.assoc.resultsGoogle)
             .tag(s"${known.assoc.results}.google".split("/").last)
       
@@ -261,8 +261,8 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
       google {
       
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
+        hail"""$pyHailAssoc --
+          --mt-in ${arrayStores(array).imputedData.mtGoogle}
           --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
           --pheno-in ${known.assoc.phenoGoogle}
           --imputed
@@ -274,7 +274,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
           --trans "${configKnownLoci.model.trans}"
           --covars "${configKnownLoci.model.covars}"
           --out ${known.assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.mtGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
             .out(known.assoc.resultsGoogle)
             .tag(s"${known.assoc.results}.google".split("/").last)
       

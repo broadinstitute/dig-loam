@@ -136,6 +136,7 @@ def QcReport(): Unit = {
   val ref1kgBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).ref1kgData.base}.bim").mkString(",") } }
   val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryPcaData.plots.path.toAbsolutePath()}""").mkString(",") } }
   val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
+  val restoreStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesRestore.path}""").mkString(",") } }
 
   drm {
 
@@ -146,8 +147,9 @@ def QcReport(): Unit = {
       --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
       --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
       --final-table ${qcReportStores.tablesData.ancestry.path.toAbsolutePath()}
+      --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.ancestry}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
+      .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
       .out(qcReportStores.texData.ancestry)
       .tag(s"${qcReportStores.texData.ancestry}".split("/").last)
 
@@ -165,8 +167,9 @@ def QcReport(): Unit = {
       --kin0-related ${kin0RelatedStrings.mkString(" ")}
       --famsizes ${famSizesStrings.mkString(" ")}
       --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
+      --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.ibdSexcheck}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq)
+      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq)
       .out(qcReportStores.texData.ibdSexcheck)
       .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
   
@@ -233,7 +236,7 @@ def QcReport(): Unit = {
 
   }
 
-  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.path.toAbsolutePath()}""").mkString(",") } }
+  val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.metricPlots.path.toAbsolutePath()}""").mkString(",") } }
 
   drm {
 
@@ -242,11 +245,12 @@ def QcReport(): Unit = {
       --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
       --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
       --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
-      --sampleqc-outliers ${sampleQcOutlierPlotsStrings.mkString(" ")}
+      --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
       --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+      --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.sampleQc}"""
-      .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.outliersPlotsPdf).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+      .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
       .out(qcReportStores.texData.sampleQc)
       .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
 

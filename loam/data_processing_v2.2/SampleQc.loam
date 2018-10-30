@@ -10,6 +10,8 @@ import ProjectStores._
 
 def SampleQc(array: String): Unit = {
 
+  val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
+
   local {
 
     googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle)
@@ -19,23 +21,23 @@ def SampleQc(array: String): Unit = {
   
   google {
 
-    hail"""$pyHailSexcheck
-      --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
-      --regions-exclude ${ProjectStores.regionsExcludeGoogle}
+    hail"""$pyHailSexcheck --
+      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
       --pheno-in ${ProjectStores.phenoGoogle}
       --id-col ${projectConfig.phenoId}
       --sex-col ${projectConfig.phenoSrSex}
       --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle}
       --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle}"""
-      .in(ProjectStores.phenoGoogle, arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.regionsExcludeGoogle)
+      .in(ProjectStores.phenoGoogle, arrayStores(array).harmonizedData.mtGoogle)
       .out(arrayStores(array).sexcheckData.sexcheckGoogle, arrayStores(array).sexcheckData.problemsGoogle)
       .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
   
-    hail"""$pyHailSampleqc
-      --vds-in ${arrayStores(array).prunedData.vdsGoogle}
+    hail"""$pyHailSampleqc --
+      --reference-genome ${projectConfig.referenceGenome}
+      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
       --clusters-in ${ProjectStores.ancestryInferredGoogle}
       --qc-out ${arrayStores(array).sampleQcData.statsGoogle}"""
-      .in(arrayStores(array).prunedData.vdsGoogle, ProjectStores.ancestryInferredGoogle)
+      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.ancestryInferredGoogle)
       .out(arrayStores(array).sampleQcData.statsGoogle)
       .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
 
@@ -167,28 +169,37 @@ def SampleQc(array: String): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rIstatsAdjGmmPlotMetrics
       --ind-clu-files "${metricCluFiles.mkString(",")}"
-      --stats ${arrayStores(array).sampleQcData.stats}
-      --stats-adj ${arrayStores(array).sampleQcData.statsAdj}
-      --outliers ${arrayStores(array).sampleQcPcaClusterData.outliers}
-      --boxplots ${arrayStores(array).sampleQcData.boxPlots}
-      --discreteness ${arrayStores(array).sampleQcData.discreteness}
-      --outliers-table ${arrayStores(array).sampleQcData.outliers}"""
-      .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
-      .out(arrayStores(array).sampleQcData.boxPlots, arrayStores(array).sampleQcData.discreteness, arrayStores(array).sampleQcData.outliers)
-      .using("R-3.4")
-      .tag(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)
-  
-    cmd"""$binRscript --vanilla --verbose
-      $rMakeSampleqcOutlierPlot
-      --ind-clu-files "${metricCluFiles.mkString(",")}"
       --stats-unadj ${arrayStores(array).sampleQcData.stats}
       --stats-adj ${arrayStores(array).sampleQcData.statsAdj}
       --metric-pca-outliers ${arrayStores(array).sampleQcPcaClusterData.outliers}
-      --out ${arrayStores(array).sampleQcData.outliersPlotsPdf}"""
+      --boxplots ${arrayStores(array).sampleQcData.boxPlots}
+      --discreteness ${arrayStores(array).sampleQcData.discreteness}
+      --outliers-table ${arrayStores(array).sampleQcData.outliers}
+      --metric-plots ${arrayStores(array).sampleQcData.metricPlots}"""
       .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
-      .out(arrayStores(array).sampleQcData.outliersPlotsPdf)
+      .out(arrayStores(array).sampleQcData.boxPlots, arrayStores(array).sampleQcData.discreteness, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.metricPlots)
       .using("R-3.4")
-      .tag(s"${arrayStores(array).sampleQcData.outliersPlotsPdf}".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)
+
+  }
+
+  /**
+   * Restore Samples Step
+   * Requires: Python
+   */
+  
+  drm {
+  
+    cmd"""$binPython $pyMakeSamplesRestoreTable
+      --ancestry-outliers-keep "${arrayCfg.ancestryOutliersKeep.mkString(",")}"
+      --duplicates-keep "${arrayCfg.duplicatesKeep.mkString(",")}"
+      --famsize-keep "${arrayCfg.famsizeKeep.mkString(",")}"
+      --sampleqc-keep "${arrayCfg.sampleqcKeep.mkString(",")}"
+      --sexcheck-keep "${arrayCfg.sexcheckKeep.mkString(",")}"
+      --out ${arrayStores(array).finalData.samplesRestore}"""
+      .out(arrayStores(array).finalData.samplesRestore)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).finalData.samplesRestore}".split("/").last)
 
   }
   
@@ -205,13 +216,9 @@ def SampleQc(array: String): Unit = {
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
-      --ancestry-keep ${projectConfig.ancestryOutliersKeep.mkString(",")}
-      --duplicates-keep ${projectConfig.duplicatesKeep.mkString(",")}
-      --famsize-keep ${projectConfig.famsizeKeep.mkString(",")}
-      --sampleqc-keep ${projectConfig.sampleqcKeep.mkString(",")}
-      --sexcheck-keep ${projectConfig.sexcheckKeep.mkString(",")}
+      --restore ${arrayStores(array).finalData.samplesRestore}
       --out ${arrayStores(array).finalData.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sexcheckData.problems)
+      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sexcheckData.problems, arrayStores(array).finalData.samplesRestore)
       .out(arrayStores(array).finalData.samplesExclude)
       .tag(s"${arrayStores(array).finalData.samplesExclude}".split("/").last)
   

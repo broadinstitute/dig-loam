@@ -14,21 +14,27 @@ def AncestryPca(array: String): Unit = {
 
   google {
 
-    hail"""$pyHailAncestryPcaMerge1kg
+    hail"""$pyHailAncestryPcaMerge1kg --
       --reference-genome ${projectConfig.referenceGenome}
-      --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
+      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
       --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle}
       --kg-sample ${ProjectStores.kgSampleGoogle}
-      --plink-out ${arrayStores(array).ref1kgData.baseGoogle}"""
-      .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.kgPurcellVcfGoogle, ProjectStores.kgSampleGoogle)
-      .out(arrayStores(array).ref1kgData.dataGoogle)
+      --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle}"""
+      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.kgPurcellVcfGoogle, ProjectStores.kgSampleGoogle)
+      .out(arrayStores(array).ref1kgData.vcfGoogle)
       .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
 
   }
   
   local {
 
-    googleCopy(arrayStores(array).ref1kgData.dataGoogle, arrayStores(array).ref1kgData.data)
+    googleCopy(arrayStores(array).ref1kgData.vcfGoogle, arrayStores(array).ref1kgData.vcf)
+
+  }
+
+  drm {
+
+    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
 
   }
 

@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import collections
 
 def main(args=None):
 
@@ -10,7 +11,7 @@ def main(args=None):
 		print "writing sampleqc section"
 		f.write("\n"); f.write(r"\subsection{Sample Outlier Detection}"); f.write("\n")
 
-		text=r"Each sample was evaluated for inclusion in association tests based on 10 sample-by-variant metrics (Table \ref{table:sampleMetricDefinitions}), calculated using Hail \cite{hail}."
+		text=r"Each sample was evaluated for inclusion in association tests based on 10 sample-by-variant metrics (Table \ref{table:sampleMetricDefinitions}), calculated using Hail \cite{hail}. Note that for the metrics n\_called and call\_rate, only samples below the mean are filtered."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -19,16 +20,16 @@ def main(args=None):
 			r"	\begin{center}",
 			r"	\begin{tabular}{>{\bfseries}r l}",
 			r"		\toprule",
-			r"		nNonRef & nHet + nHomVar\\",
-			r"		nHet & Number of heterozygous variants\\",
-			r"		nCalled & nHomRef + nHet + nHomVar\\",
-			r"		callRate & Fraction of variants with called genotypes\\",
-			r"		rTiTv &  Transition/transversion ratio\\",
+			r"		n\_non\_ref & n\_het + n\_hom\_var\\",
+			r"		n\_het & Number of heterozygous variants\\",
+			r"		n\_called & n\_hom\_ref + n\_het + n\_hom\_var\\",
+			r"		call\_rate & Fraction of variants with called genotypes\\",
+			r"		r\_ti\_tv &  Transition/transversion ratio\\",
 			r"		het & Inbreeding coefficient\\",
-			r"		hetHigh & Inbreeding coefficient for variants with \(MAF >= 0.03\)\\",
-			r"		hetLow & Inbreeding coefficient for variants with \(MAF < 0.03\)\\",
-			r"		nHomVar & Number of homozygous alternate variants\\",
-			r"		rHetHomVar & Het/HomVar ratio across all variants\\",
+			r"		het\_high & Inbreeding coefficient for variants with \(MAF >= 0.03\)\\",
+			r"		het\_low & Inbreeding coefficient for variants with \(MAF < 0.03\)\\",
+			r"		n\_hom\_var & Number of homozygous alternate variants\\",
+			r"		r\_het\_hom\_var & het/hom\_var ratio across all variants\\",
 			r"		\bottomrule",
 			r"	\end{tabular}",
 			r"	\end{center}",
@@ -43,18 +44,18 @@ def main(args=None):
 
 		text=[
 			r"\begin{figure}[H]",
-			r"	\caption{Comparison of nHet distributions before and after adjustment / normalization}",
+			r"	\caption{Comparison of " + args.compare_dist_metric.replace("_res","").replace("_","\_") + r" distributions before and after adjustment / normalization}",
 			r"	\centering",
 			r"	\begin{subfigure}{\textwidth}",
 			r"		\centering",
 			r"		\includegraphics[width=\linewidth,page=1]{" + args.compare_dist_unadj + r"}",
-			r"		\caption{" + args.compare_dist_metric.replace("_res","").replace("_","\_") + r" Original}",
+			r"		\caption{Original}",
 			r"		\label{fig:metric}",
 			r"	\end{subfigure}\newline",
 			r"	\begin{subfigure}{\textwidth}",
 			r"		\centering",
 			r"		\includegraphics[width=\linewidth,page=1]{" + args.compare_dist_adj + r"}",
-			r"		\caption{" + args.compare_dist_metric.replace("_res","").replace("_","\_") + r" Adjusted}",
+			r"		\caption{Adjusted}",
 			r"		\label{fig:metricAdj}",
 			r"	\end{subfigure}",
 			r"	\label{fig:metricCompare}",
@@ -80,18 +81,18 @@ def main(args=None):
 
 		text_insert=""
 		i = 0
-		for x in args.sampleqc_outliers:
+		for x in args.metric_outlier_plots:
 			i = i + 1
 			array = x.split(",")[0]
 			if i == 1:
-				if len(args.sampleqc_outliers) > 1:
+				if len(args.metric_outlier_plots) > 1:
 					text_insert = r"Figures \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 				else:
 					text_insert = r"Figure \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
-			elif i < len(args.sampleqc_outliers):
+			elif i < len(args.metric_outlier_plots):
 				text_insert = text_insert + r", \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 			else:
-				if len(args.sampleqc_outliers) == 2:
+				if len(args.metric_outlier_plots) == 2:
 					text_insert = text_insert + r" and \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
 				else:
 					text_insert = text_insert + r", and \ref{fig:adjSampleMetricDist" + array.replace("_","") + r"}"
@@ -115,7 +116,7 @@ def main(args=None):
 			r"\end{table}"]
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		for x in args.sampleqc_outliers:
+		for x in args.metric_outlier_plots:
 			array = x.split(",")[0]
 			text=[
 				r"\begin{figure}[H]",
@@ -128,7 +129,23 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
-		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 10 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
+		text_dict1 = collections.OrderedDict()
+		for x in args.restore:
+			df = pd.read_table(x.split(",")[1])
+			df = df[df['RestoreFrom'] == "sampleqcKeep"]
+			if df.shape[0] > 0:
+				text_dict1[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
+
+		if len(text_dict1) == 0:
+			text1 = "no"
+		if len(text_dict1) == 1:
+			text1 = text_dict1[text_dict1.keys()[0]]
+		if len(text_dict1) == 2:
+			text1 = " and ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:len(text_dict1.keys())]])
+		elif len(text_dict1) > 2:
+			text1 = ", ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:(len(text_dict1.keys())-1)]]) + " and " + str(text_dict1[text_dict1.keys()[len(text_dict1.keys())-1]]) + " " + text_dict1.keys()[len(text_dict1.keys())-1].replace("_","\_")
+
+		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 10 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis. Upon further inspection, {0} samples were manually reinstated during this step. More information is available upon request".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -192,8 +209,9 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--compare-dist-adj', help='an nHet adjusted plot', required=True)
 	requiredArgs.add_argument('--compare-dist-label', help='an array label', required=True)
 	requiredArgs.add_argument('--compare-dist-metric', help='a metric', required=True)
-	requiredArgs.add_argument('--sampleqc-outliers', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--metric-outlier-plots', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--sampleqc-summary-table', help='a sampleqc summary table', required=True)
 	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining', required=True)
+	requiredArgs.add_argument('--restore', nargs='+', help='a space separated list of array labels and sample restore files, each separated by comma', required=True)
 	args = parser.parse_args()
 	main(args)

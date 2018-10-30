@@ -5,12 +5,8 @@ hl.init()
 def main(args=None):
 
 	print("read vcf file")
-	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome)
+	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions)
 	hl.summarize_variants(mt)
-
-	if args.partitions:
-		print("repartition matrix table")
-		mt = mt.repartition(args.partitions)
 
 	print("split multiallelic variants")
 	mt = hl.split_multi(mt)
@@ -32,7 +28,6 @@ def main(args=None):
 		tbl = tbl.filter(tbl.raw_info_score != "-")
 		mt = mt.annotate_rows(raw_info_score = hl.float64(tbl[mt.locus, mt.alleles].raw_info_score))
 
-	mt.describe()
 	print('Samples: %d  Variants: %d' % (mt.count_cols(), mt.count_rows()))
 
 	print("write matrix table to disk")
@@ -42,7 +37,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--info-in', help='a compressed info file from Minimac3 (MI imputation server)')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
-	parser.add_argument('--partitions', type=int, default=None, help='number of partitions')
+	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)
 	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)

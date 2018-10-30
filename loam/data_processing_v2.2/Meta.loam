@@ -25,7 +25,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   google {
 
-    hail"""$pyHailMetaAnalysis
+    hail"""$pyHailMetaAnalysis --
       --results ${resultsList.mkString(",")}
       --out ${metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle}"""
         .in(assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq)
@@ -68,7 +68,7 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
 
   google {
 
-    hail"""$pyHailMetaAnalysis
+    hail"""$pyHailMetaAnalysis --
       --results ${resultsList.mkString(",")}
       --out ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle}"""
         .in(knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq)

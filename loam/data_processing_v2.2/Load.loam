@@ -18,9 +18,9 @@ def Load(array: String): Unit = {
   
   google {
 
-    hail"""$pyHailLoad
+    hail"""$pyHailLoad --
       --reference-genome ${projectConfig.referenceGenome}
-      --partitions ${projectConfig.Arrays(array).partitions}
+      --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
       --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle}
       --mt-out ${arrayStores(array).harmonizedData.mtGoogle}"""
       .in(arrayStores(array).harmonizedData.vcfGoogle, arrayStores(array).harmonizedData.tbiGoogle)
@@ -31,25 +31,25 @@ def Load(array: String): Unit = {
 
 }
 
-def LoadImputed(array: String): Unit = {
+def LoadImputed(array: String, imp: String): Unit = {
 
   local {
   
-    googleCopy(arrayStores(array).data, arrayStores(array).dataGoogle)
+    googleCopy(arrayStores(array).imputedData(imp).data, arrayStores(array).imputedData(imp).dataGoogle)
 
   }
   
   google {
   
-    hail"""$pyHailLoad
+    hail"""$pyHailLoad --
       --reference-genome ${projectConfig.referenceGenome}
-      --partitions ${projectConfig.Arrays(array).partitions}
-      --info-in ${arrayStores(array).infoGoogle}
-      --vcf-in ${projectConfig.projectId} ${arrayStores(array).dataGoogle}
-      --mt-out ${arrayStores(array).mtGoogle}"""
-      .in(arrayStores(array).dataGoogle, arrayStores(array).infoGoogle)
-      .out(arrayStores(array).mtGoogle)
-      .tag(s"${arrayStores(array).base}.pyHailLoad.google".split("/").last)
+      --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
+      --info-in ${arrayStores(array).imputedData(imp).infoGoogle}
+      --vcf-in ${projectConfig.projectId} ${arrayStores(array).imputedData(imp).dataGoogle}
+      --mt-out ${arrayStores(array).imputedData(imp).mtGoogle}"""
+      .in(arrayStores(array).imputedData(imp).dataGoogle, arrayStores(array).imputedData(imp).infoGoogle)
+      .out(arrayStores(array).imputedData(imp).mtGoogle)
+      .tag(s"${arrayStores(array).imputedData(imp).base}.pyHailLoad.google".split("/").last)
   
   }
 

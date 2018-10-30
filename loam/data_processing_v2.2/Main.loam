@@ -13,17 +13,16 @@ import Ancestry._
 import Pca._
 import SampleQc._
 import FilterFinal._
-import VariantAssoc._
-import CrossCohort._
 import Impute._
-import ImputedStores._
-import Meta._
-import ResultsSummary._
-import AssocStores._
-import MetaStores._
-import Phenotype._
+//import VariantAssoc._
+//import CrossCohort._
+//import Meta._
+//import ResultsSummary._
+//import AssocStores._
+//import MetaStores._
+//import Phenotype._
 import QcReport._
-import AnalysisReport._
+//import AnalysisReport._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -48,35 +47,36 @@ for {
 // Reconcile inferred ancestry
 MergeInferredAncestry()
 
-//// Array specific QC steps post ancestry inference
-//for {
-//  array <- projectConfig.Arrays
-//} yield { 
-//
-//  Pca(array.id)
-//  SampleQc(array.id)
-//  FilterFinal(array.id)
-//
-//}
-//
-//// Generate imputation ready data files
-//for {
-//  array <- projectConfig.Arrays
-//} yield { 
-//
-//  FilterImpute(array.id)
-//
-//}
-//
-//// Load imputed data into Hail
-//for {
-//  array <- projectConfig.Arrays
-//} yield { 
-//
-//  LoadImputed(array.id)
-//
-//}
-//
+// Array specific QC steps post ancestry inference
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Pca(array.id)
+  SampleQc(array.id)
+  FilterFinal(array.id)
+
+}
+
+// Generate imputation ready data files
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  FilterImpute(array.id)
+
+}
+
+// Load imputed data into Hail
+for {
+  array <- projectConfig.Arrays
+  imp <- array.imputed
+} yield { 
+
+  LoadImputed(array = array.id, imp = imp.id)
+
+}
+
 //// Cohort variant association
 //for {
 //  cohort <- projectConfig.Cohorts
@@ -207,10 +207,10 @@ MergeInferredAncestry()
 //  ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
 //
 //}
-//
-//// QC Report
-//QcReport()
-//
+
+// QC Report
+QcReport()
+
 //// Generate Phenotype Figures for Cohorts
 //for {
 //  cohort <- projectConfig.Cohorts
