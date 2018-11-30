@@ -75,6 +75,7 @@ final case class HarmonizedData(
 
 final case class ImputedData(
   data: Store,
+  info: Store,
   base: Path,
   dataGoogle: Store,
   infoGoogle: Store,
@@ -84,6 +85,7 @@ final case class ImputedData(
 final case class PrunedData(
   data: Seq[Store],
   base: Path,
+  bimGoogle: Store,
   vcf: Store,
   tbi: Store)
 
@@ -324,23 +326,25 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     pruneIn = store(localOutDir / s"${refBaseString}.prune.in"),
     regionsExcludePlink = store(localOutDir / s"${refBaseString}.regions_exclude.txt"))
 
-    val imputedData = arrayCfg.imputed.map(e => e.id).map { imp =>
+  val imputedData = arrayCfg.imputed.map(e => e.id).map { imp =>
 
-      val impConfig = arrayCfg.imputed.filter(e => e.id == imp)(0)
+    val impConfig = arrayCfg.imputed.filter(e => e.id == imp)(0)
   
-      imp -> ImputedData(
-        data = store(path(impConfig.data)).asInput,
-        base = path(impConfig.data),
-        dataGoogle = store(googleOutDir / impConfig.data.split("/").last),
-        infoGoogle = store(googleOutDir / impConfig.info.split("/").last),
-        baseGoogle = googleOutDir / impConfig.data.split("/").last,
-        mtGoogle = store(googleOutDir / impConfig.data.split("/").last + s".mt"))
+    imp -> ImputedData(
+      data = store(path(impConfig.data)).asInput,
+      info = store(path(impConfig.info)).asInput,
+      base = path(impConfig.data),
+      dataGoogle = store(googleOutDir / impConfig.data.split("/").last),
+      infoGoogle = store(googleOutDir / impConfig.info.split("/").last),
+      baseGoogle = googleOutDir / impConfig.data.split("/").last,
+      mtGoogle = store(googleOutDir / impConfig.data.split("/").last + s".mt"))
 
-    }.toMap
+  }.toMap
 
   val prunedData = PrunedData(
     data = bedBimFam(localOutDir / qcBaseString),
     base = localOutDir / qcBaseString,
+    bimGoogle = store(googleOutDir / s"${qcBaseString}.bim"),
     vcf = store(localOutDir / s"${qcBaseString}.vcf.gz"),
     tbi = store(localOutDir / s"${qcBaseString}.vcf.gz.tbi"))
 

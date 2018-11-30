@@ -14,12 +14,12 @@ import Pca._
 import SampleQc._
 import FilterFinal._
 import Impute._
-//import VariantAssoc._
+import VariantAssoc._
 //import CrossCohort._
 //import Meta._
 //import ResultsSummary._
-//import AssocStores._
-//import MetaStores._
+import AssocStores._
+import MetaStores._
 //import Phenotype._
 import QcReport._
 //import AnalysisReport._
@@ -58,6 +58,9 @@ for {
 
 }
 
+// QC Report
+QcReport()
+
 // Generate imputation ready data files
 for {
   array <- projectConfig.Arrays
@@ -67,25 +70,25 @@ for {
 
 }
 
-// Load imputed data into Hail
-for {
-  array <- projectConfig.Arrays
-  imp <- array.imputed
-} yield { 
-
-  LoadImputed(array = array.id, imp = imp.id)
-
-}
-
-//// Cohort variant association
+//// Load imputed data into Hail
 //for {
-//  cohort <- projectConfig.Cohorts
-//  model <- projectConfig.Models
+//  array <- projectConfig.Arrays
+//  imp <- array.imputed
 //} yield { 
 //
-//  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+//  LoadImputed(array = array.id, imp = imp.id)
 //
 //}
+
+// Cohort variant association
+for {
+  cohort <- projectConfig.Cohorts
+  model <- projectConfig.Models
+} yield { 
+
+  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+
+}
 
 //// Cohort variant association for known loci
 //for {
@@ -207,9 +210,6 @@ for {
 //  ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
 //
 //}
-
-// QC Report
-QcReport()
 
 //// Generate Phenotype Figures for Cohorts
 //for {

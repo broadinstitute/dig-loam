@@ -1,58 +1,71 @@
-from hail import *
-hc = HailContext()
-import pandas as pd
-import numpy as np
+import hail as hl
 import argparse
+import pandas as pd
+hl.init()
 
 def main(args=None):
 
-	print "reading vds dataset"
-	vds = hc.read(args.vds_in)
+	print("read matrix table")
+	mt = hl.read_matrix_table(args.mt_in)
 
-	print "extracting model specific columns from phenotype file"
+	print("extract model specific columns from phenotype file")
 	cols_keep = [args.iid_col,args.pheno_col]
 	if args.covars != "":
 		cols_keep = cols_keep + [x.replace('[','').replace(']','') for x in args.covars.split("+")]
-	with hadoop_read(args.pheno_in) as f:
+	with hl.hadoop_open(args.pheno_in) as f:
 		pheno_df = pd.read_table(f, sep="\t", usecols=cols_keep, dtype=object)
 
 	pheno_df.dropna(inplace=True)
 
-	print "writing preliminary phenotypes to google cloud file"
-	with hadoop_write(args.out_pheno_prelim) as f:
+	print("write preliminary phenotypes to google cloud file")
+	with hl.hadoop_open(args.out_pheno_prelim, 'w') as f:
 		pheno_df.to_csv(f, header=True, index=False, sep="\t", na_rep="NA")
-	
+
 	if len(pheno_df[args.pheno_col].unique()) == 2:
-		print "adding case/control status annotation"
-		annotate_cc = hc.import_table(args.out_pheno_prelim, no_header=False, types={args.pheno_col: TInt()}).key_by(args.iid_col)
-		if annotate_cc.num_columns == 2:
-			vds = vds.annotate_samples_table(annotate_cc, expr='sa.isCase = table == 1')
-		else:
-			vds = vds.annotate_samples_table(annotate_cc, expr='sa.isCase = table.' + args.pheno_col + ' == 1')
-		vds = vds.annotate_samples_table(annotate_cc, root='sa.pheno')
+		print("add case/control status annotation")
+		tbl = hl.import_table(args.out_pheno_prelim, no_header=False, types={args.pheno_col: hl.tint})
+		tbl = tbl.key_by(args.iid_col)
+		tbl = tbl.annotate(is_case = hl.cond(tbl[args.pheno_col] == 1, True, False))
 	else:
-		print "setting case/control status annotation to false"
-		annotate = hc.import_table(args.out_pheno_prelim, no_header=False).key_by(args.iid_col)
-		vds = vds.annotate_samples_table(annotate, root='sa.pheno')
-		vds = vds.annotate_samples_expr('sa.isCase = 0 == 1')
+		print("set case/control status annotation to false")
+		tbl = hl.import_table(args.out_pheno_prelim, no_header=False)
+		tbl = tbl.key_by(args.iid_col)
+		tbl = tbl.annotate(is_case = False)
+	mt = mt.annotate_cols(pheno = tbl[mt.s])
 
-	print "extracting samples with non-missing phenotype annotations"
-	vds = vds.filter_samples_list(list(pheno_df[args.iid_col].astype(str)),keep=True)
+	print("extract samples with non-missing phenotype annotations")
+	mt = mt.filter_cols(hl.is_defined(mt.pheno[args.pheno_col]), keep=True)
 
-	print "extracting variants from previously filtered and pruned bim file"
-	bim = hc.import_table(args.bim_in, no_header=True, types={'f1': TVariant()}).key_by('f1')
-	vds = vds.filter_variants_table(bim, keep=True)
+	print("extract variants from previously filtered and pruned bim file")
+	tbl = hl.import_table(args.bim_in, no_header=True, types={'f0': hl.tint, 'f1': hl.tstr, 'f2': hl.tfloat, 'f3': hl.tint, 'f4': hl.tstr, 'f5': hl.tstr})
+	tbl = tbl.rename({'f0': 'chr', 'f1': 'rsid', 'f2': 'cm', 'f3': 'pos', 'f4': 'alt', 'f5': 'ref'})
+	tbl = tbl.annotate(locus = hl.parse_locus(hl.str(tbl.chr) + ":" + hl.str(tbl.pos)), alleles =  [tbl.ref, tbl.alt])
+	tbl = tbl.key_by('locus', 'alleles')
+	mt = mt.annotate_rows(in_bim = hl.cond(hl.is_defined(tbl[mt.locus, mt.alleles]), True, False))
+	mt = mt.filter_rows(mt.in_bim, keep=True)
 
 	if args.test != "lmm":
-		vds = vds.ibd_prune(0.1768, tiebreaking_expr="if (sa1.isCase) 1 else 0")
+		print("prune samples to maximal independent set, favoring cases over controls")
+		pc_rel = hl.pc_relate(mt.GT, 0.01, k=10, statistics='kin')
+		pairs = pc_rel.filter(pc_rel['kin'] >= 0.0884)
+		samples = mt.cols()
+		pairs_with_case = pairs.key_by(
+			i=hl.struct(id=pairs.i, is_case=samples[pairs.i].is_case),
+			j=hl.struct(id=pairs.j, is_case=samples[pairs.j].is_case))
+		def tie_breaker(l, r):
+			return hl.cond(l.is_case & ~r.is_case, -1, hl.cond(~l.is_case & r.is_case, 1, 0))
+		related_samples_to_remove = hl.maximal_independent_set(pairs_with_case.i, pairs_with_case.j, False, tie_breaker)
+		mt = mt.filter_cols(hl.is_defined(related_samples_to_remove.key_by(s = related_samples_to_remove.node.id.s)[mt.col_key]), keep=False)
 
-	print "write sample list to file"
-	vds.export_samples(args.out_samples, 's')
+	print("write sample list to file")
+	tbl = mt.cols()
+	tbl = tbl.select()
+	tbl.export(args.out_samples, header=False)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--vds-in', help='a hail vds dataset name', required=True)
+	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--bim-in', help='a filtered and pruned bim file', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a phenotype file', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)

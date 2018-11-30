@@ -1,18 +1,15 @@
 import hail as hl
 import argparse
-hl.init()
+hl.init(log='gs://loamstream/ryank/test_hail_0.2/hail_load_imputed.read_write_only.full.log')
 
 def main(args=None):
 
 	print("read vcf file")
 	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions)
 
-	print("split multiallelic variants")
-	mt = hl.split_multi(mt)
-
 	print("remove variants with single called allele")
 	mt = hl.variant_qc(mt)
-	mt = mt.filter_rows(mt.variant_qc.AN > 1, keep=True)
+	mt = mt.filter_rows(mt.variant_qc.AN > 1 , keep=True)
 
 	print("assign family ID to match sample ID and add POP and GROUP")
 	mt = mt.annotate_cols(famID = mt.s, POP = args.vcf_in[0], GROUP = args.vcf_in[0])
@@ -22,6 +19,7 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	#parser.add_argument('--info-in', help='a compressed info file from Minimac3 (MI imputation server)')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')

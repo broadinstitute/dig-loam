@@ -29,7 +29,7 @@ def main(args=None):
 
 	print("extract pruned set of variants")
 	pruned_tbl = hl.ld_prune(mt.GT, r2 = 0.2, bp_window_size = 1000000, memory_per_core = 1000)
-	pruned_tbl.write("pruned_tbl.ht")
+	pruned_tbl.write("pruned_tbl.ht", overwrite=True)
 	pruned_tbl = hl.read_table('pruned_tbl.ht')
 	pruned_tbl.export(args.variants_prunedin_out)
 	mt = mt.filter_rows(hl.is_defined(pruned_tbl[mt.row_key]))

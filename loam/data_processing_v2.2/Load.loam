@@ -36,14 +36,15 @@ def LoadImputed(array: String, imp: String): Unit = {
   local {
   
     googleCopy(arrayStores(array).imputedData(imp).data, arrayStores(array).imputedData(imp).dataGoogle)
+    googleCopy(arrayStores(array).imputedData(imp).info, arrayStores(array).imputedData(imp).infoGoogle)
 
   }
   
   google {
   
-    hail"""$pyHailLoad --
+    hail"""$pyHailLoadImputed --
       --reference-genome ${projectConfig.referenceGenome}
-      --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
+      --partitions ${projectConfig.Arrays.filter(_.id == array)(0).imputed.filter(_.id == imp)(0).partitions.toString}
       --info-in ${arrayStores(array).imputedData(imp).infoGoogle}
       --vcf-in ${projectConfig.projectId} ${arrayStores(array).imputedData(imp).dataGoogle}
       --mt-out ${arrayStores(array).imputedData(imp).mtGoogle}"""

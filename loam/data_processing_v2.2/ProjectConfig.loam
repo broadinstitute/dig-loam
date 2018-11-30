@@ -26,7 +26,7 @@ final case class ConfigArray(
 final case class ConfigCohort(
   id: String,
   array: String,
-  imputed: Boolean,
+  imputed: Option[String],
   ancestry: Seq[String],
   report: Boolean)
 
@@ -194,7 +194,7 @@ val projectConfig = ProjectConfig(
       ConfigCohort(
         id = cohort.getStr("id"),
         array = cohort.getStr("array"),
-        imputed = cohort.getBool("imputed"),
+        imputed = if (cohort.isDefined("imputed")) { Some(cohort.getStr("imputed")) } else { None },
         ancestry = cohort.getStrList("ancestry"),
         report = cohort.getBool("report"))
 

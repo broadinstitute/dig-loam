@@ -16,6 +16,7 @@ val binRscript              = path(pipelineConfig.getStr("binaries.binRscript"))
 // Scripts
 val pyAlignNon1kgVariants                      = path(pipelineConfig.getStr("scripts.pyAlignNon1kgVariants"))
 val pyHailLoad                                 = path(pipelineConfig.getStr("scripts.pyHailLoad"))
+val pyHailLoadImputed                          = path(pipelineConfig.getStr("scripts.pyHailLoadImputed"))
 val pyHailFilter                               = path(pipelineConfig.getStr("scripts.pyHailFilter"))
 val pyHailAncestryPcaMerge1kg                  = path(pipelineConfig.getStr("scripts.pyHailAncestryPcaMerge1kg"))
 val pyHailPcaMerge1kg                          = path(pipelineConfig.getStr("scripts.pyHailPcaMerge1kg"))

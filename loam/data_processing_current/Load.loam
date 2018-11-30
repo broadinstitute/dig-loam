@@ -23,7 +23,7 @@ def Load(data: Data): Unit = {
       }
 
       google {
-        hail"""${utils.python.hailLoad}
+        hail"""${utils.python.hailLoad} --
           --partitions 20
           --vcf-in ${cfg.id} ${vcf.google}
           --mt ${hailStores(data).mt}
@@ -43,7 +43,7 @@ def Load(data: Data): Unit = {
       }
 
       google {
-        hail"""${utils.python.hailLoad}
+        hail"""${utils.python.hailLoad} --
           --partitions 20
           --plink-in ${cfg.id} ${base.google}
           --mt ${hailStores(data).mt}
