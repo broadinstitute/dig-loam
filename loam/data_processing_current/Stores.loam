@@ -21,8 +21,8 @@ val hailStores = cfg.data.map { data =>
 
 val variantStores = cfg.data.map { data =>
 
-  val sitesVcf = MultiStore(local = store(path(cfg.dir.data.local + "/sites.vcf.gz")), google = store(uri(cfg.dir.data.google + "/sites.vcf.gz")))
-  val sitesSummary = MultiStore(local = store(path(cfg.dir.data.local + "/sites.summary.gz")), google = store(uri(cfg.dir.data.google + "/sites.summary.gz")))
+  val sitesVcf = MultiStore(local = store(path(cfg.dir.data.local + "/sites.vcf.bgz")), google = store(uri(cfg.dir.data.google + "/sites.vcf.bgz")))
+  val sitesSummary = MultiStore(local = store(path(cfg.dir.data.local + "/sites.summary.bgz")), google = store(uri(cfg.dir.data.google + "/sites.summary.bgz")))
 
   data -> VariantStores(
     sitesVcf = sitesVcf,

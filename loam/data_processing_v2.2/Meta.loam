@@ -10,7 +10,7 @@ import MetaStores._
 
 def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
-  val resultsList = {
+  val resultsListStrings = {
 
     for {
       c <- configMeta.cohorts
@@ -23,12 +23,26 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   }
 
+  //assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq
+  val resultsList = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq(0)
+  
+    }
+
+  }
+
   google {
 
     hail"""$pyHailMetaAnalysis --
-      --results ${resultsList.mkString(",")}
+      --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+      --results ${resultsListStrings.mkString(",")}
       --out ${metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle}"""
-        .in(assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq)
+        .in(resultsList)
         .out(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle)
         .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).results}.google".split("/").last)
   
@@ -53,7 +67,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
 def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMeta): Unit = {
 
-  val resultsList = {
+  val resultsListStrings = {
 
     for {
       c <- configMeta.cohorts
@@ -66,12 +80,26 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
 
   }
 
+  //knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq
+  val resultsList = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configKnownLoci).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq(0)
+  
+    }
+
+  }
+
   google {
 
     hail"""$pyHailMetaAnalysis --
-      --results ${resultsList.mkString(",")}
+      --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+      --results ${resultsListStrings.mkString(",")}
       --out ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle}"""
-        .in(knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq)
+        .in(resultsList)
         .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle)
         .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}.google".split("/").last)
   

@@ -43,14 +43,13 @@ for(i in 1:nrow(x)) {
 		x$alt[i]<-ref
 		if("beta" %in% names(x)) { x$beta[i] <- -1 * x$beta[i] }
 		if("or" %in% names(x)) { x$or[i] <- 1 / x$or[i] }
-		if("zstat" %in% names(x)) { x$zstat[i] = -1 * x$zstat[i] }
-		if("tstat" %in% names(x)) { x$tstat[i] = -1 * x$tstat[i] }
+		if("z_stat" %in% names(x)) { x$z_stat[i] = -1 * x$z_stat[i] }
+		if("t_stat" %in% names(x)) { x$t_stat[i] = -1 * x$t_stat[i] }
 		if("dir" %in% names(x)) { x$dir[i] = gsub("b","\\+",gsub("a","-",gsub("-","b",gsub("\\+","a",x$dir[i])))) }
 		if("ac" %in% names(x) & "n" %in% names(x)) { x$ac = x$n * 2 - x$ac }
 		if("af" %in% names(x)) { x$af = 1 - x$af }
 	}
 }
-
 
 x <- x[order(x[,args$p]),]
 x <- x[! duplicated(x$gene),]

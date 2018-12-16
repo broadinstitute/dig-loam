@@ -25,6 +25,7 @@ final case class MetaResultsData(
   tbi: Store)
 
 final case class Meta(
+  commonVariants: Store,
   metaCohortData: Map[String, MetaCohortData],
   metaKinshipData: MetaKinshipData,
   metaResultsData: Map[ConfigModel, MetaResultsData],
@@ -35,6 +36,8 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
   val baseString = s"${projectConfig.projectId}.${meta}"
   val baseRefFilteredString = s"${baseString}.ref.filtered"
   val baseKinshipString = s"${baseString}.kinship"
+
+  val commonVariants = store(localOutDir / s"${baseRefFilteredString}.common_variants.txt")
 
   val metaCohortData = projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == meta)(0).cohorts contains e.id).map(c => c.id).map { cohort =>
 
@@ -85,6 +88,7 @@ val metaStores = projectConfig.Metas.map(m => m.id).map { meta =>
   }.toMap
 
   meta -> Meta(
+    commonVariants = commonVariants,
     metaCohortData = metaCohortData,
     metaKinshipData = metaKinshipData,
     metaResultsData = metaResultsData,

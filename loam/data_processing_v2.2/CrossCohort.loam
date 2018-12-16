@@ -9,6 +9,35 @@ import ArrayStores._
 import ProjectStores._
 import MetaStores._
 
+def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
+
+  val bimStringList = {
+    for {
+      cohort <- configMeta.cohorts
+    } yield {
+      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort)(0).array).harmonizedData.refBase.toString + ".bim"
+    }
+  }.distinct
+
+  val dataList = {
+    for {
+      cohort <- configMeta.cohorts
+    } yield {
+      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort)(0).array).harmonizedData.refData.toSeq
+    }
+  }.flatten.distinct
+
+  drm {
+
+    cmd"""(for f in ${bimStringList.mkString(" ")}; do awk '{print $$1":"$$2":"$$4":"$$5":"$$6}' $$f; done) | sort | uniq -c | awk '{if($$1 == ${bimStringList.size.toString}) print $$2}' | awk -F':' '{print $$2}' > ${metaStores(configMeta.id).commonVariants}"""
+    .in(dataList)
+    .out(metaStores(configMeta.id).commonVariants)
+    .tag(s"${metaStores(configMeta.id).commonVariants}".split("/").last)
+
+  }
+
+}
+
 def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
   drm {
@@ -18,8 +47,8 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
     .out(metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
     .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --keep ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples} --make-bed --out ${metaStores(configMeta.id).metaCohortData(configCohort.id).base}"""
-    .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
+    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaStores(configMeta.id).commonVariants} --keep ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples} --make-bed --out ${metaStores(configMeta.id).metaCohortData(configCohort.id).base}"""
+    .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaStores(configMeta.id).metaCohortData(configCohort.id).samples :+ metaStores(configMeta.id).commonVariants)
     .out(metaStores(configMeta.id).metaCohortData(configCohort.id).data)
     .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).base}".split("/").last)
 
@@ -43,7 +72,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
     .tag(s"${metaStores(configMeta.id).metaKinshipData.mergeList}".split("/").last)
 
     cmd"""$binPlink --merge-list ${metaStores(configMeta.id).metaKinshipData.mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaStores(configMeta.id).metaKinshipData.baseFiltered}"""
-    .in(metaStores(configMeta.id).metaCohortData.map(e => e._2).flatMap(e => e.data).toSeq :+ metaStores(configMeta.id).metaKinshipData.mergeList)
+    .in((metaStores(configMeta.id).metaCohortData.map(e => e._2).flatMap(e => e.data).toSeq ++ metaStores(configMeta.id).metaCohortData.map(e => e._2.famMerge).toSeq) :+ metaStores(configMeta.id).metaKinshipData.mergeList)
     .out(metaStores(configMeta.id).metaKinshipData.dataFiltered)
     .tag(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}".split("/").last)
 

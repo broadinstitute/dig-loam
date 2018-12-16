@@ -33,6 +33,7 @@ final case class ConfigCohort(
 final case class ConfigMeta(
   id: String,
   cohorts: Seq[String],
+  partitions: Int,
   report: Boolean)
 
 final case class ConfigMerge(
@@ -211,6 +212,7 @@ val projectConfig = ProjectConfig(
       ConfigMeta(
         id = meta.getStr("id"),
         cohorts = meta.getStrList("cohorts"),
+        partitions = meta.getInt("partitions"),
         report = meta.getBool("report"))
 
     }

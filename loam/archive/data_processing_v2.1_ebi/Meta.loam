@@ -1,0 +1,95 @@
+/**
+  * Meta Step
+  *  Description: Run meta analysis
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import AssocStores._
+import MetaStores._
+
+def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
+
+  val resultsList = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      val result = assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq(0)
+      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+  
+    }
+
+  }
+
+  google {
+
+    hail"""$pyHailMetaAnalysis
+      --results ${resultsList.mkString(",")}
+      --out ${metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle}"""
+        .in(assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq)
+        .out(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle)
+        .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).results}.google".split("/").last)
+  
+  }
+
+  local {
+
+    googleCopy(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle, metaStores(configMeta.id).metaResultsData(configModel).results)
+
+  }
+  
+  drmWith(imageName = "$imgTools") {
+
+    cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaResultsData(configModel).results}"""
+      .in(metaStores(configMeta.id).metaResultsData(configModel).results)
+      .out(metaStores(configMeta.id).metaResultsData(configModel).tbi)
+      .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).tbi}".split("/").last)
+
+  }
+
+}
+
+def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMeta): Unit = {
+
+  val resultsList = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      val result = knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configKnownLoci).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq(0)
+      c + "___" + configKnownLoci.model.test + "___" + s"${result.toString.split("@")(1)}"
+  
+    }
+
+  }
+
+  google {
+
+    hail"""$pyHailMetaAnalysis
+      --results ${resultsList.mkString(",")}
+      --out ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle}"""
+        .in(knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq)
+        .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle)
+        .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}.google".split("/").last)
+  
+  }
+
+  local {
+
+    googleCopy(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle, metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)
+
+  }
+  
+  drmWith(imageName = "$imgTools") {
+
+    cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}"""
+      .in(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)
+      .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi)
+      .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi}".split("/").last)
+
+  }
+
+}

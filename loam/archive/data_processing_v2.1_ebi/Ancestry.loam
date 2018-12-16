@@ -1,0 +1,149 @@
+/**
+  * Ancestry PCA Step
+  *  Description: Calculate PCs combined with 1KG Phase 3 Purcell 5k data
+  *  Requires: Hail, R, $rPlotAncestryPca
+  *  Notes:
+  *     To perform ancestry inference and clustering with 1KG data, we must combine on common variants with reference data (clustering does not work when only using PCA loadings and projecting)
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+def AncestryPca(array: String): Unit = {
+
+  google {
+
+    hail"""$pyHailAncestryPcaMerge1kg
+      --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
+      --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle}
+      --kg-sample ${ProjectStores.kgSampleGoogle}
+      --plink-out ${arrayStores(array).ref1kgData.baseGoogle}"""
+      .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.kgPurcellVcfGoogle, ProjectStores.kgSampleGoogle)
+      .out(arrayStores(array).ref1kgData.dataGoogle)
+      .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
+
+  }
+  
+  local {
+
+    googleCopy(arrayStores(array).ref1kgData.dataGoogle, arrayStores(array).ref1kgData.data)
+
+  }
+
+  drmWith(imageName = "$imgR34", cores=4, mem=4) {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rPcair
+      --cpus 4
+      --plink-in ${arrayStores(array).ref1kgData.base}
+      --gds-out ${arrayStores(array).ref1kgData.gds}
+      --scores ${arrayStores(array).ancestryPcaData.scores}
+      --id ${projectConfig.projectId}
+      --force-unrel ${projectConfig.kgSampleId} ${ProjectStores.kgSample}
+      --update-pop ${projectConfig.kgSampleId} ${projectConfig.kgSamplePop} ${ProjectStores.kgSample}
+      --update-group ${projectConfig.kgSampleId} ${projectConfig.kgSampleGroup} ${ProjectStores.kgSample}
+      > ${arrayStores(array).ancestryPcaData.log}"""
+      .in(arrayStores(array).ref1kgData.data :+ ProjectStores.kgSample)
+      .out(arrayStores(array).ref1kgData.gds, arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
+
+  }
+
+  drmWith(imageName = "$imgR34") {
+
+    cmd"""$binRscript --vanilla --verbose
+      $rPlotAncestryPca
+      --id ${projectConfig.projectId}
+      --pca-scores ${arrayStores(array).ancestryPcaData.scores}
+      --out ${arrayStores(array).ancestryPcaData.plots}"""
+      .in(arrayStores(array).ancestryPcaData.scores)
+      .out(arrayStores(array).ancestryPcaData.plots)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).ancestryPcaData.plots}".split("/").last)
+
+  }
+
+}
+  
+/**
+  * Ancestry Cluster Step
+  *  Description: Cluster with 1KG samples using Gaussian Mixture Modeling and infer ancestry
+  *  Requires: Hail, R
+  *  Notes:
+  *     *.ancestry.inferred.tsv contains the final inferred ancestry for each sample, including OUTLIERS
+  *     This file is array specific
+  */
+
+def AncestryCluster(array: String): Unit = {
+
+  drmWith(imageName = "$imgTools") {
+
+    cmd"""(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}"""
+      .in(arrayStores(array).ancestryPcaData.scores)
+      .out(arrayStores(array).ancestryClusterData.fet)
+      .tag(s"${arrayStores(array).ancestryClusterData.fet}".split("/").last)
+
+  }
+
+  drmWith(imageName = "$imgTools", mem=8) {
+  
+    cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
+      .in(arrayStores(array).ancestryClusterData.fet)
+      .out(arrayStores(array).ancestryClusterData.clu, arrayStores(array).ancestryClusterData.klg, arrayStores(array).ancestryClusterData.log)
+      .tag(s"${arrayStores(array).ancestryClusterData.base}.binKlustakwik".split("/").last)
+
+  }
+
+  drmWith(imageName = "$imgR34") {
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rPlotAncestryCluster
+      --pca-scores ${arrayStores(array).ancestryPcaData.scores}
+      --cluster ${arrayStores(array).ancestryClusterData.clu}
+      --pheno-file ${ProjectStores.pheno}
+      --id ${projectConfig.projectId}
+      --pheno ${projectConfig.phenoId}
+      --sr-race ${projectConfig.phenoSrRace}
+      --cluster-plots ${arrayStores(array).ancestryClusterData.plots}
+      --xtabs ${arrayStores(array).ancestryClusterData.xtab}
+      --plots-centers ${arrayStores(array).ancestryClusterData.centerPlots}
+      --cluster-groups ${arrayStores(array).ancestryClusterData.groups}
+      --ancestry-inferred ${arrayStores(array).ancestryData.inferred}
+      --cluster-plots-no1kg ${arrayStores(array).ancestryClusterData.no1kgPlots}"""
+      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryClusterData.clu, ProjectStores.pheno)
+      .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
+
+  }
+
+}
+
+/**
+  * Merge Inferred Ancestry
+  *  Description: Merge inferred ancestry from all arrays
+  *  Requires: R
+  *  Notes:
+  */
+
+def MergeInferredAncestry(): Unit = {
+
+  val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
+
+  drmWith(imageName = "$imgR34") {
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rAncestryClusterMerge
+      --ancestry-in $inferredList
+      --out-table ${ProjectStores.ancestryInferred}
+      --out-outliers ${ProjectStores.ancestryOutliers}"""
+      .in(projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred))
+      .out(ProjectStores.ancestryInferred, ProjectStores.ancestryOutliers)
+      .using("R-3.4")
+      .tag(s"${ProjectStores.ancestryInferred}".split("/").last)
+  
+  }
+
+}

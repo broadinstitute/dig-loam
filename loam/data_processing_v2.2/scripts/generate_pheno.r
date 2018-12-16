@@ -41,9 +41,9 @@ INVN <- function(x){
 
 pcs_include <- function(d, y, cv) {
 	if(cv != "") {
-		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,20,1),sep=""),collapse="+"),sep="")),data=d))
+		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,10,1),sep=""),collapse="+"),sep="")),data=d))
 	} else {
-		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,20,1),sep=""),collapse="+"),sep="")),data=d))
+		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,10,1),sep=""),collapse="+"),sep="")),data=d))
 	}
 	print(m)
 	mc <- m$coefficients

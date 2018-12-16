@@ -1,0 +1,32 @@
+/**
+ * PCA Step
+ *  Description: Calculate PCs for all non-outlier samples combined (to be used for adjustment during sample outlier removal)
+ *  Requires: R
+ */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+def Pca(array: String): Unit = {
+
+  drmWith(imageName = "$imgR34", cores=4, mem=4) {
+  
+    cmd"""$binRscript --vanilla --verbose
+      $rPcair
+      --cpus 4
+      --plink-in ${arrayStores(array).prunedData.base}
+      --gds-out ${arrayStores(array).pcaData.gds}
+      --exclude ${ProjectStores.ancestryOutliers}
+      --ancestry ${ProjectStores.ancestryInferred}
+      --id ${projectConfig.projectId}
+      --scores ${arrayStores(array).pcaData.scores}
+      > ${arrayStores(array).pcaData.log}"""
+      .in(arrayStores(array).prunedData.data :+ ProjectStores.ancestryInferred :+ ProjectStores.ancestryOutliers)
+      .out(arrayStores(array).pcaData.gds, arrayStores(array).pcaData.log, arrayStores(array).pcaData.scores)
+      .using("R-3.4")
+      .tag(s"${arrayStores(array).pcaData.scores}".split("/").last)
+
+  }
+
+}

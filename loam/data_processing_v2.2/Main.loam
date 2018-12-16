@@ -15,8 +15,8 @@ import SampleQc._
 import FilterFinal._
 import Impute._
 import VariantAssoc._
-//import CrossCohort._
-//import Meta._
+import CrossCohort._
+import Meta._
 //import ResultsSummary._
 import AssocStores._
 import MetaStores._
@@ -90,87 +90,96 @@ for {
 
 }
 
-//// Cohort variant association for known loci
-//for {
-//  cohort <- projectConfig.Cohorts if cohort.report
-//  known <- projectConfig.KnownLoci
-//} yield { 
-//
-//  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
-//
-//}
-//
-//// Meta-analysis cross-cohort qc prep
-//for {
-//  meta <- projectConfig.Metas
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-//} yield {
-//
-//  CrossCohortPrep(configMeta = meta, configCohort = cohort)
-//
-//}
-//
-//// Meta-analysis cross-array kinship
-//for {
-//  meta <- projectConfig.Metas
-//} yield {
-//
-//  CrossCohortKinship(meta)
-//
-//}
-//
-//// Meta-analysis calculate cross-cohort kinship sample exclusions
-//for {
-//  meta <- projectConfig.Metas
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-//} yield {
-//
-//  CrossCohortExclude(configMeta = meta, configCohort = cohort)
-//
-//}
-//
-//// Meta-analysis specific cohort variant association
-//for {
-//  meta <- projectConfig.Metas
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-//  model <- projectConfig.Models
-//} yield { 
-//
-//  VariantAssoc(configCohort = cohort, configModel = model, configMeta = Some(meta))
-//
-//}
-//
-//// Meta-analysis specific cohort variant association for known loci
-//for {
-//  meta <- projectConfig.Metas if meta.report
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-//  known <- projectConfig.KnownLoci
-//} yield { 
-//
-//  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
-//
-//}
-//
-//// Meta-analysis
-//for {
-//  meta <- projectConfig.Metas
-//  model <- projectConfig.Models
-//} yield {
-//
-//  MetaAnalysis(configModel = model, configMeta = meta)
-//
-//}
-//
-//// Meta-analysis for known loci
-//for {
-//  meta <- projectConfig.Metas if meta.report
-//  known <- projectConfig.KnownLoci
-//} yield {
-//
-//  MetaAnalysisKnownLoci(configKnownLoci = known, configMeta = meta)
-//
-//}
-//
+// Cohort variant association for known loci
+for {
+  cohort <- projectConfig.Cohorts if cohort.report
+  known <- projectConfig.KnownLoci
+} yield { 
+
+  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
+
+}
+
+// Meta-analysis cross-cohort common variants search
+for {
+  meta <- projectConfig.Metas
+} yield {
+
+  CrossCohortCommonVars(configMeta = meta)
+
+}
+
+// Meta-analysis cross-cohort qc prep
+for {
+  meta <- projectConfig.Metas
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+} yield {
+
+  CrossCohortPrep(configMeta = meta, configCohort = cohort)
+
+}
+
+// Meta-analysis cross-array kinship
+for {
+  meta <- projectConfig.Metas
+} yield {
+
+  CrossCohortKinship(meta)
+
+}
+
+// Meta-analysis calculate cross-cohort kinship sample exclusions
+for {
+  meta <- projectConfig.Metas
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+} yield {
+
+  CrossCohortExclude(configMeta = meta, configCohort = cohort)
+
+}
+
+// Meta-analysis specific cohort variant association
+for {
+  meta <- projectConfig.Metas
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+  model <- projectConfig.Models
+} yield { 
+
+  VariantAssoc(configCohort = cohort, configModel = model, configMeta = Some(meta))
+
+}
+
+// Meta-analysis specific cohort variant association for known loci
+for {
+  meta <- projectConfig.Metas if meta.report
+  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+  known <- projectConfig.KnownLoci
+} yield { 
+
+  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
+
+}
+
+// Meta-analysis
+for {
+  meta <- projectConfig.Metas
+  model <- projectConfig.Models
+} yield {
+
+  MetaAnalysis(configModel = model, configMeta = meta)
+
+}
+
+// Meta-analysis for known loci
+for {
+  meta <- projectConfig.Metas if meta.report
+  known <- projectConfig.KnownLoci
+} yield {
+
+  MetaAnalysisKnownLoci(configKnownLoci = known, configMeta = meta)
+
+}
+
 //// Cohort Results Summary
 //for {
 //  cohort <- projectConfig.Cohorts if cohort.report
@@ -210,7 +219,7 @@ for {
 //  ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
 //
 //}
-
+//
 //// Generate Phenotype Figures for Cohorts
 //for {
 //  cohort <- projectConfig.Cohorts
