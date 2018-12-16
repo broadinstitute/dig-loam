@@ -1,5 +1,12 @@
 val pipelineConfig   = loadConfig("pipelineConfig", "")
 
+// Images
+val imgHailv01   = path(pipelineConfig.getStr("images.hailv01"))
+val imgLocuszoom = path(pipelineConfig.getStr("images.locuszoom"))
+val imgPython27  = path(pipelineConfig.getStr("images.python27"))
+val imgR34       = path(pipelineConfig.getStr("images.r34"))
+val imgTools     = path(pipelineConfig.getStr("images.tools"))
+
 // Binaries
 val binLiftOver             = path(pipelineConfig.getStr("binaries.binLiftOver"))
 val binGenotypeHarmonizer   = path(pipelineConfig.getStr("binaries.binGenotypeHarmonizer"))
