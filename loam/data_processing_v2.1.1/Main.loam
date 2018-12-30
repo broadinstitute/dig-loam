@@ -71,11 +71,20 @@ for {
 
 }
 
+
+
+
+
+
+
+
+
 // Cohort variant association
 for {
-  cohort <- projectConfig.Cohorts
-  model <- projectConfig.Models
-} yield { 
+  run <- projectConfig.Runs
+  model <- projectConfig.Models.filter(e => run.models contains e.id)
+  cohort <- projectConfig.Cohorts.filter(e => run.cohorts contains e.id)
+} yield {
 
   VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
 
@@ -83,11 +92,13 @@ for {
 
 // Cohort variant association for known loci
 for {
-  cohort <- projectConfig.Cohorts if cohort.report
-  known <- projectConfig.KnownLoci
+  run <- projectConfig.Runs
+  model <- projectConfig.Models.filter(e => run.models contains e.id)
+  cohort <- projectConfig.Cohorts.filter(e => run.cohorts contains e.id)
+  known <- projectConfig.Knowns.filter(e => run.knowns contains e.id)
 } yield { 
 
-  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
+  KnownLociAssoc(configCohort = cohort, configModel = model, configKnown = known, configMeta = None)
 
 }
 

@@ -124,9 +124,9 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
 }
 
-def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci, configMeta: Option[ConfigMeta] = None): Unit = {
+def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configKnown: ConfigKnown, configMeta: Option[ConfigMeta] = None): Unit = {
 
-  val known = knownLociStores((configMeta, configCohort, configKnownLoci))
+  val known = knownLociStores((configMeta, configCohort, configKnown))
 
   val array = configCohort.array
 
