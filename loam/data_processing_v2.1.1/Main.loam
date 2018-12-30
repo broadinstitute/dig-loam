@@ -71,14 +71,6 @@ for {
 
 }
 
-
-
-
-
-
-
-
-
 // Cohort variant association
 for {
   run <- projectConfig.Runs
@@ -101,6 +93,12 @@ for {
   KnownLociAssoc(configCohort = cohort, configModel = model, configKnown = known, configMeta = None)
 
 }
+
+
+
+
+
+
 
 // Meta-analysis cross-cohort qc prep
 for {
