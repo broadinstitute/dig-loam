@@ -15,42 +15,45 @@ final case class ConfigCohort(
   id: String,
   array: String,
   ancestry: Seq[String],
-  report: Boolean)
+  partitions: Int)
 
 final case class ConfigMeta(
   id: String,
   cohorts: Seq[String],
-  partitions: Int,
-  report: Boolean)
+  partitions: Int)
 
 final case class ConfigMerge(
   id: String,
   cohorts_metas: Seq[String],
-  report: Boolean)
+  partitions: Int)
 
 final case class ConfigPheno(
-  phase: Int,
-  pheno: String,
+  id: String,
   name: String)
 
 final case class ConfigModel(
+  id: String,
   pheno: String,
   trans: String,
   test: String,
-  covars: String,
-  phase: Int)
+  covars: Seq[String])
 
-final case class ConfigKnownLoci(
-  model: ConfigModel,
+final case class ConfigKnown(
+  id: String,
   data: String,
   hiLd: String,
-  ancestry: Seq[String],
   n: String,
   nCase: String,
   nCtrl: String,
   desc: String,
-  tag: String,
   citation: String)
+
+final case class ConfigRun(
+  models: Seq[ConfigModel],
+  cohorts: Seq[ConfigCohort],
+  metas: Seq[ConfigMeta],
+  merges: Seq[ConfigMerge],
+  knowns: Seq[ConfigKnownLoci])
 
 final case class ProjectConfig(
   projectId: String,
@@ -94,7 +97,8 @@ final case class ProjectConfig(
   Merges: Seq[ConfigMerge],
   Phenos: Seq[ConfigPheno],
   Models: Seq[ConfigModel],
-  KnownLoci: Seq[ConfigKnownLoci])
+  Knowns: Seq[ConfigKnown],
+  Runs: Seq[ConfigRun])
 
 val projectConfig = ProjectConfig(
 
@@ -169,7 +173,7 @@ val projectConfig = ProjectConfig(
         id = cohort.getStr("id"),
         array = cohort.getStr("array"),
         ancestry = cohort.getStrList("ancestry"),
-        report = cohort.getBool("report"))
+        partitions = cohort.getInt("partitions"))
 
     }
 
@@ -184,8 +188,7 @@ val projectConfig = ProjectConfig(
       ConfigMeta(
         id = meta.getStr("id"),
         cohorts = meta.getStrList("cohorts"),
-        partitions = meta.getInt("partitions"),
-        report = meta.getBool("report"))
+        partitions = meta.getInt("partitions"))
 
     }
 
@@ -200,7 +203,7 @@ val projectConfig = ProjectConfig(
       ConfigMerge(
         id = merge.getStr("id"),
         cohorts_metas = merge.getStrList("cohorts_metas"),
-        report = merge.getBool("report"))
+        partitions = merge.getInt("partitions"))
 
     }
 
@@ -209,14 +212,12 @@ val projectConfig = ProjectConfig(
   Phenos = {
 
     for {
-      phase <- 0 until dataConfig.getObjList("phases").size
-      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size
+      pheno <- dataConfig.getObjList("phenos")
     } yield {
 
       ConfigPheno(
-        phase = dataConfig.getObjList("phases")(phase).getInt("id"),
-        pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
-        name = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("name"))
+        id = pheno.getStr("id"),
+        name = pheno.getStr("name"))
 
     }
 
@@ -225,46 +226,51 @@ val projectConfig = ProjectConfig(
   Models = {
 
     for {
-      phase <- 0 until dataConfig.getObjList("phases").size
-      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size
-      test <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("tests").size
-      covars <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("covars").size
+      model <- dataConfig.getObjList("models")
     } yield {
 
       ConfigModel(
-        pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
-        trans = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("trans"),
-        test = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("tests")(test),
-        covars = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStrList("covars")(covars),
-        phase = dataConfig.getObjList("phases")(phase).getInt("id"))
+        id = model.getStr("id"),
+        pheno = model.getStr("pheno"),
+        trans = model.getStr("trans"),
+        test = model.getStr("test"),
+        covars = model.getStrList("covars"))
     }
 
   },
 
-  KnownLoci = {
+  Knowns = {
 
     for {
-      phase <- 0 until dataConfig.getObjList("phases").size
-      phenotype <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes").size
-      knownloci <- 0 until dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci").size
+      known <- dataConfig.getObjList("knowns")
     } yield {
 
-      ConfigKnownLoci(
-        model = ConfigModel(
-          pheno = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("id"),
-          trans = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getStr("trans"),
-          test = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("test"),
-          covars = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("covars"),
-          phase = dataConfig.getObjList("phases")(phase).getInt("id")),
-        data = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("data"),
-        hiLd = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("hiLd"),
-        ancestry = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStrList("ancestry"),
-        n = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("n") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("n") } else { "" },
-        nCase = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("nCase") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("nCase") } else { "" },
-        nCtrl = if ( dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).isDefined("nCtrl") ) { dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("nCtrl") } else { "" },
-        desc = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("desc"),
-        tag = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("tag"),
-        citation = dataConfig.getObjList("phases")(phase).getObjList("phenotypes")(phenotype).getObjList("knownLoci")(knownloci).getStr("citation"))
+      ConfigKnown(
+        id = known.getStr("id"),
+        data = known.getStr("data"),
+        hiLd = known.getStr("hiLd"),
+        n = if ( known.isDefined("n") ) { known.getStr("n") } else { "" },
+        nCase = if ( known.isDefined("nCase") ) { known.getStr("nCase") } else { "" },
+        nCtrl = if ( known.isDefined("nCtrl") ) { known.getStr("nCtrl") } else { "" },
+        desc = known.getStr("desc"),
+        citation = known.getStr("citation"))
+
+    }
+
+  }
+
+  Runs = {
+
+    for {
+      run <- dataConfig.getObjList("runs")
+    } yield {
+
+      ConfigRun(
+        models = run.getStrList("models"),
+        cohorts = run.getStrList("cohorts"),
+        metas = run.getStrList("metas"),
+        merges = run.getStrList("merges"),
+        knowns = run.getStrList("knowns"))
 
     }
 

@@ -59,6 +59,9 @@ for {
 
 }
 
+// QC Report
+QcReport()
+
 // Generate imputation ready data files
 for {
   array <- projectConfig.Arrays
@@ -70,7 +73,7 @@ for {
 
 // Cohort variant association
 for {
-  cohort <- projectConfig.Cohorts if cohort.report
+  cohort <- projectConfig.Cohorts
   model <- projectConfig.Models
 } yield { 
 
@@ -198,9 +201,6 @@ for {
   ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
 
 }
-
-// QC Report
-QcReport()
 
 // Generate Phenotype Figures for Cohorts
 for {
