@@ -12,7 +12,7 @@ import ArrayStores._
 
 def Kinship(array: String): Unit = {
 
-  drmWith(imageName = "$imgTools", cores=4, mem=4) {
+  drmWith(imageName = s"$imgTools", cores=4, mem=4) {
 
     cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} 4"""
     .in(arrayStores(array).prunedData.data)
@@ -21,7 +21,7 @@ def Kinship(array: String): Unit = {
 
   }
 
-  drmWith(imageName = "$imgR34") {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcKinshipFamSizes

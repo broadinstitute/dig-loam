@@ -97,7 +97,8 @@ def AnalysisReportGlobal(phase: Int): Unit = {
       --merges ${mergesString.mkString(" ")}
       --out-tex ${analysisReportStores(phase).globalData.strategy}
       --out-input ${analysisReportStores(phase).globalData.strategyInput}"""
-      .out(metaStores.flatMap(e => e._2.metaCohortData.map(e => e._2.kinshipSamplesExclude)).toSeq :+ analysisReportStores(phase).globalData.strategy :+ analysisReportStores(phase).globalData.strategyInput)
+      .in(metaStores.flatMap(e => e._2.metaCohortData.map(e => e._2.kinshipSamplesExclude)).toSeq)
+      .out(analysisReportStores(phase).globalData.strategy, analysisReportStores(phase).globalData.strategyInput)
       .tag(s"${analysisReportStores(phase).globalData.strategy}".split("/").last)
 
   }

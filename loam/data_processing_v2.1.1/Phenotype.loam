@@ -28,7 +28,7 @@ def PhenotypeDistPlots(configCohort: ConfigCohort, pheno: String, configMeta: Op
 
   }
 
-  drmWith(imageName = "$imgPython27") {
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyPhenoDistPlot
       --pheno ${ProjectStores.pheno}

@@ -10,7 +10,7 @@ import MetaStores._
 
 def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
-  val resultsList = {
+  val resultsListStrings = {
 
     for {
       c <- configMeta.cohorts
@@ -23,12 +23,24 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   }
 
+  val resultsList = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq(0)
+  
+    }
+
+  }
+
   google {
 
     hail"""$pyHailMetaAnalysis --
-      --results ${resultsList.mkString(",")}
+      --results ${resultsListStrings.mkString(",")}
       --out ${metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle}"""
-        .in(assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq)
+        .in(resultsList)
         .out(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle)
         .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).results}.google".split("/").last)
   
@@ -40,7 +52,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   }
   
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaResultsData(configModel).results}"""
       .in(metaStores(configMeta.id).metaResultsData(configModel).results)
@@ -53,7 +65,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
 def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMeta): Unit = {
 
-  val resultsList = {
+  val resultsListStrings = {
 
     for {
       c <- configMeta.cohorts
@@ -66,12 +78,24 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
 
   }
 
+  val resultsList = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configKnownLoci).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq(0)
+  
+    }
+
+  }
+
   google {
 
     hail"""$pyHailMetaAnalysis --
-      --results ${resultsList.mkString(",")}
+      --results ${resultsListStrings.mkString(",")}
       --out ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle}"""
-        .in(knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq)
+        .in(resultsList)
         .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle)
         .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}.google".split("/").last)
   
@@ -83,7 +107,7 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
 
   }
   
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}"""
       .in(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)

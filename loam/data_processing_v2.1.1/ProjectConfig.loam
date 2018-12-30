@@ -4,6 +4,7 @@ final case class ConfigArray(
   id: String,
   filename: String,
   format: String,
+  partitions: Int,
   liftOver: Option[String] = None,
   xChr: Boolean,
   yChr: Boolean,
@@ -19,6 +20,7 @@ final case class ConfigCohort(
 final case class ConfigMeta(
   id: String,
   cohorts: Seq[String],
+  partitions: Int,
   report: Boolean)
 
 final case class ConfigMerge(
@@ -146,6 +148,7 @@ val projectConfig = ProjectConfig(
         id = array.getStr("id"),
         filename = array.getStr("filename"),
         format = array.getStr("format"),
+        partitions = array.getInt("partitions"),
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
         xChr = array.getBool("xChr"),
         yChr = array.getBool("yChr"),
@@ -181,6 +184,7 @@ val projectConfig = ProjectConfig(
       ConfigMeta(
         id = meta.getStr("id"),
         cohorts = meta.getStrList("cohorts"),
+        partitions = meta.getInt("partitions"),
         report = meta.getBool("report"))
 
     }

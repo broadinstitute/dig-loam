@@ -37,7 +37,7 @@ def main(args=None):
 		vds = vds.annotate_samples_expr('sa.isCase = 0 == 1')
 
 	print "extracting samples with non-missing phenotype annotations"
-	vds = vds.filter_samples_list(list(pheno_df[args.iid_col].astype(str)),keep=True)
+	vds = vds.filter_samples_list(list(pheno_df[args.iid_col].astype(str)), keep=True)
 
 	print "extracting variants from previously filtered and pruned bim file"
 	bim = hc.import_table(args.bim_in, no_header=True, types={'f1': TVariant()}).key_by('f1')

@@ -6,6 +6,7 @@ val imgLocuszoom = path(pipelineConfig.getStr("images.locuszoom"))
 val imgPython27  = path(pipelineConfig.getStr("images.python27"))
 val imgR34       = path(pipelineConfig.getStr("images.r34"))
 val imgTools     = path(pipelineConfig.getStr("images.tools"))
+val imgTex       = path(pipelineConfig.getStr("images.tex"))
 
 // Binaries
 val binLiftOver             = path(pipelineConfig.getStr("binaries.binLiftOver"))

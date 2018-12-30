@@ -14,7 +14,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   val summaryStores = resultsSummaryStores((id, configModel))
 
-  drmWith(imageName = "$imgPython27") {
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyTop1000
       --results ${results}
@@ -45,7 +45,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   }
 
-  drmWith(imageName = "$imgR34") {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rTop20
@@ -63,7 +63,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   }
 
-  drmWith(imageName = "$imgPython27") {
+  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyQqPlot
       --results ${results}
@@ -95,7 +95,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
   }
 
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$shRegPlot 
       $binTabix
@@ -117,7 +117,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
 
 def ResultsKnownLociSummary(configKnownLoci: ConfigKnownLoci, id: String, results: Store, known_data: Store, hiLd: Store): Unit = {
 
-  drmWith(imageName = "$imgR34") {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known

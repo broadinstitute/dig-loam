@@ -55,7 +55,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
   
-  drmWith(imageName = "$imgR34", cores=4, mem=4) {
+  drmWith(imageName = s"$imgR34", cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -113,7 +113,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
   
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
@@ -169,7 +169,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   }
   
-  drmWith(imageName = "$imgR34", cores=4, mem=4) {
+  drmWith(imageName = s"$imgR34", cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -229,7 +229,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   }
   
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.assoc.results}"""
       .in(known.assoc.results)

@@ -70,7 +70,7 @@ for {
 
 // Cohort variant association
 for {
-  cohort <- projectConfig.Cohorts
+  cohort <- projectConfig.Cohorts if cohort.report
   model <- projectConfig.Models
 } yield { 
 

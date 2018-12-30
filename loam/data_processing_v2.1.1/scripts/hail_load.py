@@ -5,11 +5,8 @@ import argparse
 def main(args=None):
 
 	print "reading vcf file"
-	vds = hc.import_vcf(args.vcf_in[1], force_bgz=True)
+	vds = hc.import_vcf(args.vcf_in[1], force_bgz=True, min_partitions=args.partitions)
 	vds.summarize().report()
-
-	print "repartitioning vds dataset"
-	vds = vds.repartition(200)
 
 	print "splitting multiallelic variants and removing duplicates"
 	vds = vds.split_multi().deduplicate()
@@ -30,6 +27,7 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)
 	requiredArgs.add_argument('--vds-out', help='a hail vds directory name for output', required=True)

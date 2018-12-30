@@ -21,6 +21,9 @@ def main(args=None):
 	annotations = (hc.import_table(args.kg_sample,delimiter=" ").select(['ID','POP','GROUP']).key_by('ID'))
 	kg = kg.annotate_samples_table(annotations, root='sa.pheno')
 
+	print "rename sample IDs to avoid any possible overlap with test data"
+	kg = kg.rename_samples(dict(zip(kg.sample_ids, ["kg_" + x for x in kg.sample_ids])))
+
 	print "joining vds datasets"
 	vds = vds.join(kg)
 	vds.summarize().report()

@@ -49,7 +49,7 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			fam=pd.read_table(args.fam.split("___")[1], low_memory=False, header=None)
+			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
 			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split("___")[0], fam.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 

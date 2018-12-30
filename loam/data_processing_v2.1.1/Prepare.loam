@@ -9,7 +9,7 @@ import ArrayStores._
 
 def Prepare(array: String): Unit = {
 
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unplaced}"""
       .in(arrayStores(array).rawData.data)
@@ -48,7 +48,7 @@ def Prepare(array: String): Unit = {
 
   }
 
-  drmWith(imageName = "$imgR34") {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose 
       $rFindBestDuplicateVariants
@@ -62,7 +62,7 @@ def Prepare(array: String): Unit = {
 
   }
 
-  drmWith(imageName = "$imgTools") {
+  drmWith(imageName = s"$imgTools") {
   
     cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --remove ${arrayStores(array).rawData.imissRemove} --exclude ${arrayStores(array).rawData.dupRemove} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(array).preparedData.base}"""
       .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove :+ arrayStores(array).rawData.dupRemove)
@@ -88,7 +88,7 @@ def Prepare(array: String): Unit = {
       
       }
       
-      drmWith(imageName = "$imgTools", mem=8, maxRunTime=2) {
+      drmWith(imageName = s"$imgTools", mem=8, maxRunTime=2) {
       
         cmd"""$binLiftOver ${arrayStores(array).preparedData.bed.get} ${arrayStores(array).preparedData.chain.get} ${arrayStores(array).preparedData.lifted.get} ${arrayStores(array).preparedData.unlifted.get}"""
           .in(arrayStores(array).preparedData.bed.get, arrayStores(array).preparedData.chain.get)
@@ -96,7 +96,7 @@ def Prepare(array: String): Unit = {
       
       }
       
-      drmWith(imageName = "$imgTools") {
+      drmWith(imageName = s"$imgTools") {
 
         cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(array).preparedData.lifted.get} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(array).preparedData.liftedUpdate.get}"""
           .in(arrayStores(array).preparedData.lifted.get)
