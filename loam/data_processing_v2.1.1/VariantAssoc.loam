@@ -137,9 +137,9 @@ def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configK
       --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
       --pheno-in ${ProjectStores.phenoGoogle}
       --iid-col ${projectConfig.phenoId}
-      --pheno-col ${configKnownLoci.model.pheno}
-      --test ${configKnownLoci.model.test}
-      --covars "${configKnownLoci.model.covars}"
+      --pheno-col ${configModel.pheno}
+      --test ${configModel.test}
+      --covars "${configModel.covars}"
       --out-pheno-prelim ${known.assoc.phenoPrelimGoogle}
       --out-samples ${known.assoc.samplesIncludeGoogle}"""
     .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
@@ -177,15 +177,15 @@ def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configK
       --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.pheno}
       --ancestry-in ${ProjectStores.ancestryInferred}
-      --ancestry-keep ${configKnownLoci.ancestry.mkString(",")}
-      --pheno-col ${configKnownLoci.model.pheno}
+      --ancestry-keep ${configKnown.ancestry.mkString(",")}
+      --pheno-col ${configKnown.model.pheno}
       --iid-col ${projectConfig.phenoId}
       --samples-include ${known.assoc.samplesInclude}
       --samples-exclude "${excludeCrossArrayString}"
       --variants-exclude ID ${arrayStores(array).finalData.variantsExclude}
-      --test ${configKnownLoci.model.test}
-      --trans "${configKnownLoci.model.trans}"
-      --covars "${configKnownLoci.model.covars}"
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
       --out-pheno ${known.assoc.pheno}
       --out-pcs ${known.assoc.pcs}
       > ${known.assoc.phenoLog}"""
@@ -210,12 +210,12 @@ def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configK
       --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
       --pheno-in ${known.assoc.phenoGoogle}
       --iid-col ${projectConfig.phenoId}
-      --pheno-col ${configKnownLoci.model.pheno}
+      --pheno-col ${configKnown.model.pheno}
       --pcs-include ${known.assoc.pcsGoogle}
       --extract-ld ${known.hiLdGoogle}
-      --test ${configKnownLoci.model.test}
-      --trans "${configKnownLoci.model.trans}"
-      --covars "${configKnownLoci.model.covars}"
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
       --out ${known.assoc.resultsGoogle}"""
         .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
         .out(known.assoc.resultsGoogle)

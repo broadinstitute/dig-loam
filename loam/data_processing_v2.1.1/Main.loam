@@ -97,12 +97,10 @@ for {
 
 
 
-
-
-
 // Meta-analysis cross-cohort qc prep
 for {
-  meta <- projectConfig.Metas
+  run <- projectConfig.Runs
+  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 } yield {
 
@@ -112,7 +110,8 @@ for {
 
 // Meta-analysis cross-array kinship
 for {
-  meta <- projectConfig.Metas
+  run <- projectConfig.Runs
+  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
 } yield {
 
   CrossCohortKinship(meta)
@@ -121,13 +120,18 @@ for {
 
 // Meta-analysis calculate cross-cohort kinship sample exclusions
 for {
-  meta <- projectConfig.Metas
+  run <- projectConfig.Runs
+  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 } yield {
 
   CrossCohortExclude(configMeta = meta, configCohort = cohort)
 
 }
+
+
+
+
 
 // Meta-analysis specific cohort variant association
 for {
