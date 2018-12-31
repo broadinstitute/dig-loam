@@ -21,15 +21,31 @@ final case class ResultsSummary(
 final case class ResultsKnownLociSummary(
   resultsKnownLociSummaryData: ResultsKnownLociSummaryData)
 
-val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (c.id, m) } ) ++
-    ( for { t <- projectConfig.Metas; m <- projectConfig.Models; if t.report } yield { (t.id, m) } )).map { rs => 
+val resultsSummaryStores = (
+    (
+      for {
+        r <- projectConfig.Runs
+        m <- projectConfig.Models.filter(e => r.models contains e.id)
+        c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
+      } yield {
+        (m, c)
+      }
+    ) ++
+    (
+      for {
+        r <- projectConfig.Runs
+        m <- projectConfig.Models.filter(e => r.models contains e.id)
+        t <- projectConfig.Metas.filter(e => r.metas contains e.id)
+      } yield {
+        (m, t)
+      }
+    )
+  ).map { rs => 
 
-  val id = rs._1
-  val model = rs._2
+  val model = rs._1
+  val cohort: Either[ConfigCohort, ConfigMeta] = rs._2
 
-  val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
-
-  val prefix = s"${projectConfig.projectId}.${id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
+  val prefix = s"${projectConfig.projectId}.${cohort.get.id}.${model.id}"
 
   val regPlotsBaseString = s"${prefix}.results.regplots"
 
@@ -40,26 +56,46 @@ val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConf
     top20AnnotAlignedRisk = store(localOutDir / s"${prefix}.results.top20.annot.aligned_risk.tsv"),
     qqPlotPng = store(localOutDir / s"${prefix}.results.qq.png"),
     mhtPlotPng = store(localOutDir / s"${prefix}.results.mht.png"),
-    regPlotsBase = localOutDir / regPlotsBaseString,
-    regPlotsPdf = store(localOutDir / s"${regPlotsBaseString}.pdf"))
+    regPlotsBase = localOutDir / s"${prefix}.results.regplots",
+    regPlotsPdf = store(localOutDir / s"${prefix}.results.regplots.pdf"))
 
   rs -> ResultsSummary(
     resultsSummaryData = resultsSummaryData)
 
 }.toMap
 
-val resultsKnownLociSummaryStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.KnownLoci; if c.report } yield { (c.id, k) } ) ++
-    ( for { t <- projectConfig.Metas; k <- projectConfig.KnownLoci; if t.report } yield { (t.id, k) } )).map { rskl => 
+val resultsKnownLociSummaryStores = (
+    (
+      for {
+        r <- projectConfig.Runs
+        m <- projectConfig.Models.filter(e => r.models contains e.id)
+        c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
+        k <- projectConfig.Knowns.filter(e => r.knowns contains e.id)
+      } yield {
+        (m, c, k)
+      }
+    ) ++
+    (
+      for {
+        r <- projectConfig.Runs
+        m <- projectConfig.Models.filter(e => r.models contains e.id)
+        t <- projectConfig.Metas.filter(e => r.metas contains e.id)
+        c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id)
+        k <- projectConfig.Knowns.filter(e => r.knowns contains e.id)
+      } yield {
+        (m, t, k)
+      }
+    )
+  ).map { rskl => 
 
-  val id = rskl._1
-  val known = rskl._2
+  val model = rskl._1
+  val cohort: Either[ConfigCohort, ConfigMeta] = rskl._2
+  val known = rskl._3
 
-  val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
-
-  val prefix = s"${projectConfig.projectId}.${id}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}"
+  val prefix = s"${projectConfig.projectId}.${cohort.get.id}.${model.id},${known.id}"
 
   val resultsKnownLociSummaryData = ResultsKnownLociSummaryData(
-    top50 = store(localOutDir / s"${prefix}.known_loci.top50.tsv"))
+    top50 = store(localOutDir / s"${prefix}.top50.tsv"))
 
   rskl -> ResultsKnownLociSummary(
     resultsKnownLociSummaryData = resultsKnownLociSummaryData)

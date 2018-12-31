@@ -78,7 +78,7 @@ for {
   cohort <- projectConfig.Cohorts.filter(e => run.cohorts contains e.id)
 } yield {
 
-  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+  VariantAssoc(configModel = model, configCohort = cohort, configMeta = None)
 
 }
 
@@ -90,21 +90,19 @@ for {
   known <- projectConfig.Knowns.filter(e => run.knowns contains e.id)
 } yield { 
 
-  KnownLociAssoc(configCohort = cohort, configModel = model, configKnown = known, configMeta = None)
+  KnownLociAssoc(configModel = model, configCohort = cohort, configKnown = known, configMeta = None)
 
 }
-
-
-
 
 // Meta-analysis cross-cohort qc prep
 for {
   run <- projectConfig.Runs
+  model <- projectConfig.Models.filter(e => run.models contains e.id)
   meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 } yield {
 
-  CrossCohortPrep(configMeta = meta, configCohort = cohort)
+  CrossCohortPrep(configModel = model, configCohort = cohort, configMeta = meta)
 
 }
 
@@ -125,35 +123,37 @@ for {
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 } yield {
 
-  CrossCohortExclude(configMeta = meta, configCohort = cohort)
+  CrossCohortExclude(configCohort = cohort, configMeta = meta)
 
 }
 
-
-
-
-
 // Meta-analysis specific cohort variant association
 for {
-  meta <- projectConfig.Metas
+  run <- projectConfig.Runs
+  model <- projectConfig.Models.filter(e => run.models contains e.id)
+  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-  model <- projectConfig.Models
 } yield { 
 
-  VariantAssoc(configCohort = cohort, configModel = model, configMeta = Some(meta))
+  VariantAssoc(configModel = model, configCohort = cohort, configMeta = Some(meta))
 
 }
 
 // Meta-analysis specific cohort variant association for known loci
 for {
-  meta <- projectConfig.Metas if meta.report
+  run <- projectConfig.Runs
+  model <- projectConfig.Models.filter(e => run.models contains e.id)
+  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-  known <- projectConfig.KnownLoci
+  known <- projectConfig.Knowns.filter(e => run.knowns contains e.id)
 } yield { 
 
-  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
+  KnownLociAssoc(configModel = model, configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
 
 }
+
+
+
 
 // Meta-analysis
 for {

@@ -10,9 +10,9 @@ import AssocStores._
 import ProjectStores._
 import MetaStores._
 
-def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMeta: Option[ConfigMeta] = None): Unit = {
+def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMeta: Option[ConfigMeta] = None): Unit = {
 
-  val assoc = assocStores((configMeta, configCohort, configModel))
+  val assoc = assocStores((configModel, configCohort, configMeta))
 
   val array = configCohort.array
 
@@ -124,9 +124,9 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
 }
 
-def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configKnown: ConfigKnown, configMeta: Option[ConfigMeta] = None): Unit = {
+def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configKnown: ConfigKnown, configMeta: Option[ConfigMeta] = None): Unit = {
 
-  val known = knownLociStores((configMeta, configCohort, configModel, configKnown))
+  val known = knownLociStores((configModel, configCohort, configKnown, configMeta))
 
   val array = configCohort.array
 
@@ -199,7 +199,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configK
 
     googleCopy(known.assoc.pheno, known.assoc.phenoGoogle)
     googleCopy(known.assoc.pcs, known.assoc.pcsGoogle)
-    googleCopy(known.hiLd, known.hiLdGoogle)
+    googleCopy(known.known.hiLd, known.known.hiLdGoogle)
 
   }
 
@@ -212,12 +212,12 @@ def KnownLociAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configK
       --iid-col ${projectConfig.phenoId}
       --pheno-col ${configKnown.model.pheno}
       --pcs-include ${known.assoc.pcsGoogle}
-      --extract-ld ${known.hiLdGoogle}
+      --extract-ld ${known.known.hiLdGoogle}
       --test ${configModel.test}
       --trans "${configModel.trans}"
       --covars "${configModel.covars}"
       --out ${known.assoc.resultsGoogle}"""
-        .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+        .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.known.hiLdGoogle)
         .out(known.assoc.resultsGoogle)
         .tag(s"${known.assoc.results}.google".split("/").last)
   

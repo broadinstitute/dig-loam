@@ -39,18 +39,13 @@ final case class MetaKinship(
   baseKinship: Path,
   log: Store,
   kin0: Store,
-  kin0Related: Store)
+  kin0Related: Store,
+  metaCohort: Map[ConfigCohort, MetaCohort])
 
-final case class MetaResults(
+final case class Meta(
   results: Store,
   resultsGoogle: Store,
   tbi: Store)
-
-final case class Meta(
-  metaCohortData: Map[String, MetaCohort],
-  metaKinshipData: MetaKinship,
-  metaModel: ConfigModel,
-  metaResultsData: MetaResults)
 
 final case class KnownMeta(
   known: Known,
@@ -63,7 +58,7 @@ val assocStores = (
         m <- projectConfig.Models.filter(e => r.models contains e.id)
         c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
       } yield {
-        (None, c, m)
+        (m, c, None)
       } 
     ) ++
     (
@@ -73,17 +68,17 @@ val assocStores = (
         t <- projectConfig.Metas.filter(e => r.metas contains e.id)
         c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id)
       } yield {
-        (Some(t), c, m)
+        (m, c, Some(t))
       }
     )
   ).map { assoc => 
 
-    val meta: Option[ConfigMeta] = assoc._1
+    val model = assoc._1
     val cohort = assoc._2
-    val model = assoc._3
+    val meta: Option[ConfigMeta] = assoc._3
     
     val prefix = meta match {
-      case Some(s) => s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.id}"
+      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}"
       case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}"
     }
 
@@ -112,7 +107,7 @@ val knownLociStores = (
         c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
         k <- projectConfig.Knowns.filter(e => r.knowns contains e.id)
       } yield {
-        (None, c, m, k)
+        (m, c, k, None)
       }
     ) ++
     (
@@ -123,18 +118,18 @@ val knownLociStores = (
         c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id)
         k <- projectConfig.Knowns.filter(e => r.knowns contains e.id)
       } yield {
-        (Some(t), c, m, k)
+        (m, c, k, Some(t))
       }
     )
   ).map { knownLoci => 
 
-    val meta: Option[ConfigMeta] = knownLoci._1
+    val model = knownLoci._1
     val cohort = knownLoci._2
-    val model = knownLoci._3
-    val known = knownLoci._4
+    val known = knownLoci._3
+    val meta: Option[ConfigMeta] = knownLoci._4
     
     val prefix = meta match {
-      case Some(s) => s"${projectConfig.projectId}.${meta.id}.${cohort.id}.${model.id}.${known.id}"
+      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}.${known.id}"
       case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}.${known.id}"
     }
 
@@ -162,6 +157,48 @@ val knownLociStores = (
 
   }.toMap
 
+val metaKinshipStores = (
+    (
+      for {
+        r <- projectConfig.Runs
+        t <- projectConfig.Metas.filter(e => r.metas contains e.id)
+      } yield {
+        t
+      }
+    )
+  ).map { meta =>
+
+  val baseString = s"${projectConfig.projectId}.${meta.id}"
+  val baseRefFilteredString = s"${baseString}.ref.filtered"
+  val baseKinshipString = s"${baseString}.kinship"
+
+  val metaCohort = projectConfig.Cohorts.filter(e => meta.cohorts contains e.id).map { cohort =>
+
+    val cohortBaseString = s"${baseString}.${cohort.id}"
+    val cohortRefBaseString = s"${cohortBaseString}.ref"
+    val cohortKinshipBaseString = s"${cohortBaseString}.kinship"
+
+    cohort -> MetaCohort(
+      data = bedBimFam(localOutDir / cohortRefBaseString),
+      base = localOutDir / cohortRefBaseString,
+      samples = store(localOutDir / s"${cohortBaseString}.samples"),
+      famMerge = store(localOutDir / s"${cohortRefBaseString}.fam.merge"),
+      kinshipSamplesExclude = store(localOutDir / s"${cohortKinshipBaseString}.samples.exclude"))
+
+  }.toMap
+
+  meta => MetaKinship(
+    mergeList= store(localOutDir / s"${baseRefFilteredString}.merge_list.txt"),
+    dataFiltered = bedBimFam(localOutDir / baseRefFilteredString),
+    baseFiltered = localOutDir / baseRefFilteredString,
+    baseKinship = localOutDir / baseKinshipString,
+    log = store(localOutDir / s"${baseKinshipString}.log"),
+    kin0 = store(localOutDir / s"${baseKinshipString}.kin0"),
+    kin0Related = store(localOutDir / s"${baseKinshipString}.kin0.related"),
+    metaCohort = metaCohort)
+
+}.toMap
+
 val metaStores = (
     (
       for {
@@ -181,40 +218,11 @@ val metaStores = (
   val baseRefFilteredString = s"${baseString}.ref.filtered"
   val baseKinshipString = s"${baseString}.kinship"
 
-  val metaCohortData = projectConfig.Cohorts.filter(e => meta.cohorts contains e.id).map(c => c.id).map { cohort =>
-
-    val cohortBaseString = s"${baseString}.${cohort}"
-    val cohortRefBaseString = s"${cohortBaseString}.ref"
-    val cohortKinshipBaseString = s"${cohortBaseString}.kinship"
-
-    cohort -> MetaCohortData(
-      data = bedBimFam(localOutDir / cohortRefBaseString),
-      base = localOutDir / cohortRefBaseString,
-      samples = store(localOutDir / s"${cohortBaseString}.samples"),
-      famMerge = store(localOutDir / s"${cohortRefBaseString}.fam.merge"),
-      kinshipSamplesExclude = store(localOutDir / s"${cohortKinshipBaseString}.samples.exclude"))
-
-  }.toMap
-
-  val metaKinshipData = MetaKinshipData(
-    mergeList= store(localOutDir / s"${baseRefFilteredString}.merge_list.txt"),
-    dataFiltered = bedBimFam(localOutDir / baseRefFilteredString),
-    baseFiltered = localOutDir / baseRefFilteredString,
-    baseKinship = localOutDir / baseKinshipString,
-    log = store(localOutDir / s"${baseKinshipString}.log"),
-    kin0 = store(localOutDir / s"${baseKinshipString}.kin0"),
-    kin0Related = store(localOutDir / s"${baseKinshipString}.kin0.related"))
-
-  val metaResultsData = MetaResultsData(
-      results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
-      resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
-      tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi"))
-
   metaIdx -> Meta(
-    metaCohortData = metaCohortData,
-    metaKinshipData = metaKinshipData,
-    metaResultsData = metaResultsData,
-    metaKnownLociResultsData = metaKnownLociResultsData)
+    results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
+    tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi")
+  )
 
 }.toMap
 
