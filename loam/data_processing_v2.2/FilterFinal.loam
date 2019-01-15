@@ -21,15 +21,15 @@ def FilterFinal(array: String): Unit = {
       --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
       --ancestry-in ${ProjectStores.ancestryInferredGoogle}
       --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle}
-      --pheno-in ${ProjectStores.phenoGoogle}
-      --iid-col ${projectConfig.phenoId}
-      --case-ctrl-col ${projectConfig.phenoStatus}
+      --pheno-in ${ProjectStores.phenoFileGoogle}
+      --iid-col ${projectConfig.phenoFileId}
+      --case-ctrl-col ${projectConfig.phenoFileStatus}
       --samples-remove ${arrayStores(array).finalData.samplesExcludeGoogle}
       --variantqc-out ${arrayStores(array).variantQcData.statsGoogle}
       --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle}
       --vcf-out ${arrayStores(array).cleanData.vcfGoogle}
       --mt-out ${arrayStores(array).cleanData.mtGoogle}"""
-      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.ancestryInferredGoogle, arrayStores(array).sexcheckData.sexcheckGoogle, ProjectStores.phenoGoogle, arrayStores(array).finalData.samplesExcludeGoogle)
+      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.ancestryInferredGoogle, arrayStores(array).sexcheckData.sexcheckGoogle, ProjectStores.phenoFileGoogle, arrayStores(array).finalData.samplesExcludeGoogle)
       .out(arrayStores(array).cleanData.vcfGoogle, arrayStores(array).variantQcData.statsGoogle, arrayStores(array).finalData.variantsExcludeGoogle, arrayStores(array).cleanData.mtGoogle)
       .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal.google".split("/").last)
   

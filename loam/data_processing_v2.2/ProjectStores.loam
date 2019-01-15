@@ -36,8 +36,8 @@ object ProjectStores {
   val kgPurcellVcfGoogle = store(uri(projectConfig.kgPurcellVcfGoogle)).asInput
   val kgSample = store(path(projectConfig.kgSample)).asInput
   val kgSampleGoogle = store(uri(projectConfig.kgSampleGoogle)).asInput
-  val pheno = store(path(projectConfig.pheno)).asInput
-  val phenoGoogle = store(googleOutDir / s"${projectConfig.pheno}".split("/").last)
+  val phenoFile = store(path(projectConfig.phenoFile)).asInput
+  val phenoFileGoogle = store(googleOutDir / s"${projectConfig.phenoFile}".split("/").last)
   val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryInferredGoogle = store(googleOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")

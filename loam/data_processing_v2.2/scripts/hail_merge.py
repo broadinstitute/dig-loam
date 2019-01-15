@@ -1,7 +1,6 @@
-from hail import *
-hc = HailContext()
+import hail as hl
 import argparse
-
+hl.init()
 
 def main(args=None):
 
@@ -11,36 +10,41 @@ def main(args=None):
 	
 	cols = {}
 	for i in xrange(len(results)):
-		kt = hc.import_table(results[i][1], no_header=False, missing="NA", impute=True, types={'uid': TString()}).key_by('uid')
-		cols[results[i][0]] = [str(c).replace("#","") for c in kt.columns]
-		kt = kt.rename([results[i][0] + '_' + x.replace("#","") if x != 'uid' else x for x in kt.columns])
-		kt = kt.annotate(results[i][0] + '_cohort = "' + results[i][0] + '"')
+		tbl_temp = hl.import_table(results[i][1], no_header=False, missing="NA", impute=True, min_partitions=args.partitions)
+		cols[results[i][0]] = [str(c).replace("#","") for c in tbl_temp.columns]
+		tbl_temp = tbl_temp.rename({'#chr': 'chr'})
+		tbl_temp = tbl_temp.annotate(locus = hl.parse_locus(hl.str(tbl_temp.chr) + ":" + hl.str(tbl_temp.pos)), alleles =  [tbl_temp.ref, tbl_temp.alt])
+		tbl_temp = tbl_temp.key_by('locus', 'alleles')
+		tbl_temp = tbl_temp.drop(tbl_temp.chr, tbl_temp.pos, tbl_temp.ref, tbl_temp.alt)
+		tbl_temp = tbl_temp.rename(dict(zip(list(tbl_temp.row_value), [results[i][0] + '_' + x for x in list(tbl_temp.row_value)])))
+		tbl_temp = tbl_temp.annotate({results[i][0] + '_cohort': results[i][0]})
 		if i == 0:
-			ktfinal = kt
+			tbl = tbl_temp
 		else:
-			ktfinal = ktfinal.join(kt,how='outer')
+			tbl = tbl.join(tbl_temp,how='outer')
 
-	cols_keep = [results[0][0] + '_' + c if c != 'uid' else c for c in cols[results[0][0]]]
+	cols_keep = [results[0][0] + '_' + c for c in cols[results[0][0]]]
 	it = iter(results[1:])
 	for x in it:
 		cols_shared = [c for c in cols[results[0][0]] if c in cols[x[0]]]
 		cols_notshared = [c for c in cols[x[0]] if c not in cols[results[0][0]]]
-		if len(cols_shared ) > 0:
-			ktfinal = ktfinal.annotate(", ".join([results[0][0] + "_" + c + " = orElse(" + results[0][0] + "_" + c + ", " + x[0] + "_" + c + ")" for c in cols_shared if c != 'uid'] + [results[0][0] + "_cohort = orElse(" + results[0][0] + "_cohort, " + x[0] + "_cohort)"]))
-		if len(cols_notshared ) > 0:
-			ktfinal = ktfinal.annotate(", ".join([results[0][0] + "_" + c + " = " + x[0] + "_" + c for c in cols_notshared]))
-		cols_keep = cols_keep + [results[0][0] + "_" + c for c in cols_shared if results[0][0] + "_" + c not in cols_keep if c != 'uid']
+		for c in cols_shared:
+			tbl = tbl.annotate(tbl[results[0][0] + "_" + c] = hl.cond(~hl.is_missing(tbl[results[0][0] + "_" + c]), tbl[results[0][0] + "_" + c], tbl[x[0] + "_" + c]))
+			tbl = tbl.annotate(tbl[results[0][0] + "_cohort"] = hl.cond(~hl.is_missing(tbl[results[0][0] + "_cohort"]), tbl[results[0][0] + "_cohort"], tbl[x[0] + "_cohort"]))
+		for c in cols_notshared:
+			tbl = tbl.annotate(tbl[results[0][0] + "_" + c] = tbl[x[0] + "_" + c])
+		cols_keep = cols_keep + [results[0][0] + "_" + c for c in cols_shared if results[0][0] + "_" + c not in cols_keep]
 		cols_keep = cols_keep + [results[0][0] + "_" + c for c in cols_notshared]
 
-	ktfinal = ktfinal.select(cols_keep + [results[0][0] + "_cohort"])
-	ktfinal = ktfinal.rename([x.split("_")[-1] for x in ktfinal.columns])
+	tbl = tbl.select(cols_keep + [results[0][0] + "_cohort"])
+	tbl = tbl.rename([x.split("_")[-1] for x in tbl.columns])
 
-	ktout = ktfinal.to_pandas()
-	ktout = ktout.sort_values(['chr','pos'])
-	ktout.rename(columns = {'chr': '#chr'}, inplace=True)
-
-	with hadoop_write(args.out) as f:
-		ktout.to_csv(f, header=True, index=False, sep="\t", na_rep="NA", compression="gzip")
+	tbl = tbl.key_by()
+	tbl = tbl.drop(tbl.locus, tbl.alleles)
+	tbl = tbl.annotate(chr = tbl.locus.contig, pos = tbl.locus.position, ref = tbl.alleles[0], alt = tbl.alleles[1])
+	tbl = tbl.order_by(tbl.chr, tbl.pos, tbl.ref, tbl.alt)
+	tbl = tbl.rename({'chr': '#chr'})
+	tbl.export(args.out)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()

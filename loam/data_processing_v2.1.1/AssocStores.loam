@@ -187,7 +187,7 @@ val metaKinshipStores = (
 
   }.toMap
 
-  meta => MetaKinship(
+  meta -> MetaKinship(
     mergeList= store(localOutDir / s"${baseRefFilteredString}.merge_list.txt"),
     dataFiltered = bedBimFam(localOutDir / baseRefFilteredString),
     baseFiltered = localOutDir / baseRefFilteredString,

@@ -8,7 +8,6 @@ import PipelineConfig._
 import ArrayStores._
 import AssocStores._
 import ProjectStores._
-import MetaStores._
 import QcReportStores._
 
 def QcReport(): Unit = {
@@ -318,7 +317,7 @@ def QcReport(): Unit = {
 
   drmWith(imageName = s"$imgTex") {
     
-    cmd"""$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}"""
+    cmd"""$shPdflatex $binPdflatex ${qcReportStores.tex} $localOutDir"""
       .in(qcReportStores.tex)
       .out(qcReportStores.pdf)
       .tag(s"${qcReportStores.pdf}".split("/").last)

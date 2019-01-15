@@ -124,41 +124,58 @@ if(args$test == "lmm") {
 	print(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""))
 }
 
-print("running pcair")
 geno <- GdsGenotypeReader(filename = args$gds_in)
 genoData <- GenotypeData(geno)
-mypcair <- pcair(genoData = genoData, scan.include = samples_incl, snp.include = variants_incl, kinMat = kinship, divMat = kinship, snp.block.size = 10000)
-print(paste("memory after running pcair: ",mem_used() / (1024^2),sep=""))
-pcs<-data.frame(mypcair$vectors)
-names(pcs)[1:20]<-paste("PC",seq(1,20),sep="")
-pcs[,args$iid_col]<-row.names(pcs)
-out<-merge(pheno,pcs,all.y=T)
+iter <- 0
+samples_remove <- c()
+while(iter < 10)) {
+	iter <- iter + 1
+	cat("\n",paste0("pcair iteration #",iter),"\n")
 
-print("calculating transformations")
-if(args$trans == 'invn') {
-	print("performing invn transformation")
-	if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
-		print(paste("including inferred ancestry as indicator in calculation of residuals",sep=""))
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+	mypcair <- pcair(genoData = genoData, scan.include = samples_incl[! samples_incl %in% samples_remove], snp.include = variants_incl, kinMat = kinship, divMat = kinship, snp.block.size = 10000)
+	cat(paste("   memory after running pcair: ",mem_used() / (1024^2),sep=""),"\n")
+	pcs<-data.frame(mypcair$vectors)
+	names(pcs)[1:20]<-paste("PC",seq(1,20),sep="")
+	pcs[,args$iid_col]<-row.names(pcs)
+	out<-merge(pheno,pcs,all.y=T)
+
+	if(args$trans == 'invn') {
+		cat("   calculating invn transformation\n")
+		if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
+			cat(paste("   including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+		} else {
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+		}
+		out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
+		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "")
+		out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
+	} else if(args$trans == 'log') {
+		cat("   calculating log transformation\n")
+		out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
+		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis)
+		out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
 	} else {
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+		cat("   no transformation will be applied\n")
+		pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis)
 	}
-	out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "")
-	out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
-} else if(args$trans == 'log') {
-	print("performing log transformation")
-	out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis)
-	out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
-} else {
-	print("no transformation will be applied")
-	pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis)
-}
-if(length(pcsin) > 0) {
-	print(paste("include PCs ",paste(pcsin,collapse="+")," in association testing",sep=""))
-} else {
-	print("no PCs to be included in association testing")
+	if(length(pcsin) > 0) {
+		cat(paste("   include PCs ",paste(pcsin,collapse="+")," in association testing",sep=""),"\n")
+	} else {
+		cat("   no PCs to be included in association testing","\n")
+	}
+
+	pc_outliers <- c()
+	for(pc in pcsin) {
+		pc_mean <- mean(out[,pc])
+		pc_sd <- sd(out[,pc])
+		pc_outliers <- out[,args$iid_col][out[,pc] >= pc_mean - 6 * pc_sd & out[,pc] <= pc_mean + 6 * pc_sd]
+	}
+	if(length(pc_outliers) == 0) {
+		break
+	} else {
+		samples_remove <- c(samples_remove, pc_outliers)
+
 }
 
 out_cols <- c(out_cols,paste("PC",seq(1,20,1),sep=""))

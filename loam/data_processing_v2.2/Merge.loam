@@ -1,0 +1,135 @@
+/**
+  * Merge Step
+  *  Description: Merge results
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import AssocStores._
+
+def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
+
+  val merge = mergeStores((configModel, configMerge))
+
+  val resultsListStrings = {
+
+    for {
+      c <- configMerge.cohorts_metas
+    } yield {
+
+      val result  = {
+        if(projectConfig.Cohorts.filter(e => e.id == c).size > 0) {
+          assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq.head
+        } else if(projectConfig.Metas.filter(e => e.id == c).size > 0) {
+          metaStores.filter(e => e._1._2 == c).filter(e => e._1._1 == configModel).map(e => e._2.resultsGoogle).toSeq.head
+        }
+      }
+      c + "___" + s"${result.toString.split("@")(1)}"
+
+    }
+
+  }
+
+  val resultsList = {
+
+    for {
+      c <- configMerge.cohorts_metas
+    } yield {
+
+      if(projectConfig.Cohorts.filter(e => e.id == c).size > 0) {
+        assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq.head
+      } else if(projectConfig.Metas.filter(e => e.id == c).size > 0) {
+        metaStores.filter(e => e._1._2 == c).filter(e => e._1._1 == configModel).map(e => e._2.resultsGoogle).toSeq.head
+      }
+
+    }
+
+  }
+  
+
+  google {
+
+    hail"""$pyHailMetaAnalysis --
+      --partitions ${projectConfig.Merges.filter(e => e.id == configMerge.id).head.partitions.toString}
+      --results ${resultsListStrings.mkString(",")}
+      --out ${merge.resultsGoogle}"""
+        .in(resultsList)
+        .out(merge.resultsGoogle)
+        .tag(s"${merge.results}.google".split("/").last)
+  
+  }
+
+  local {
+
+    googleCopy(merge.resultsGoogle, merge.results)
+
+  }
+  
+  drm {
+
+    cmd"""$binTabix -f -b 2 -e 2 ${merge.results}"""
+      .in(merge.results)
+      .out(merge.tbi)
+      .tag(s"${merge.tbi}".split("/").last)
+
+  }
+
+}
+
+//def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, configKnown: ConfigKnown): Unit = {
+//
+//  val known = knownMetaStores((configModel, configMeta, configKnown))
+//
+//  val resultsListStrings = {
+//
+//    for {
+//      c <- configMeta.cohorts
+//    } yield {
+//
+//      val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq.head
+//      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+//
+//    }
+//
+//  }
+//
+//  val resultsList = {
+//
+//    for {
+//      c <- configMeta.cohorts
+//    } yield {
+//
+//      knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq.head
+//  
+//    }
+//
+//  }
+//
+//  google {
+//
+//    hail"""$pyHailMetaAnalysis --
+//      --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+//      --results ${resultsListStrings.mkString(",")}
+//      --out ${known.meta.resultsGoogle}"""
+//        .in(resultsList)
+//        .out(known.meta.resultsGoogle)
+//        .tag(s"${known.meta.results}.google".split("/").last)
+//  
+//  }
+//
+//  local {
+//
+//    googleCopy(known.meta.resultsGoogle, known.meta.results)
+//
+//  }
+//  
+//  drm {
+//
+//    cmd"""$binTabix -f -b 2 -e 2 ${known.meta.results}"""
+//      .in(known.meta.results)
+//      .out(known.meta.tbi)
+//      .tag(s"${known.meta.tbi}".split("/").last)
+//
+//  }
+//
+//}

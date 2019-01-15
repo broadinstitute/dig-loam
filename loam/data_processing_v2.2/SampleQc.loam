@@ -15,7 +15,7 @@ def SampleQc(array: String): Unit = {
   local {
 
     googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle)
-    googleCopy(ProjectStores.pheno, ProjectStores.phenoGoogle)
+    googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle)
 
   }
   
@@ -23,12 +23,14 @@ def SampleQc(array: String): Unit = {
 
     hail"""$pyHailSexcheck --
       --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
-      --pheno-in ${ProjectStores.phenoGoogle}
-      --id-col ${projectConfig.phenoId}
-      --sex-col ${projectConfig.phenoSrSex}
+      --pheno-in ${ProjectStores.phenoFileGoogle}
+      --id-col ${projectConfig.phenoFileId}
+      --sex-col ${projectConfig.phenoFileSrSex}
+      --male-code ${projectConfig.phenoFileMaleCode}
+      --female-code ${projectConfig.phenoFileFemaleCode}
       --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle}
       --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle}"""
-      .in(ProjectStores.phenoGoogle, arrayStores(array).harmonizedData.mtGoogle)
+      .in(ProjectStores.phenoFileGoogle, arrayStores(array).harmonizedData.mtGoogle)
       .out(arrayStores(array).sexcheckData.sexcheckGoogle, arrayStores(array).sexcheckData.problemsGoogle)
       .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
   

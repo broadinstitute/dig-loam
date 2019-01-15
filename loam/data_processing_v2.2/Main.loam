@@ -17,9 +17,9 @@ import Impute._
 import VariantAssoc._
 import CrossCohort._
 import Meta._
+import Merge._
 //import ResultsSummary._
 import AssocStores._
-import MetaStores._
 //import Phenotype._
 import QcReport._
 //import AnalysisReport._
@@ -28,6 +28,11 @@ import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
+
+//throw new Exception(s"\ncohorts to be run:\n%s\ncohortKnowns to be run:\n%s\nmeta cohorts to be run:\n%s\nmeta cohortKnowns to be run:\n%s\n".format(s"${cohortAssocs.mkString("\n")}",s"${cohortKnownAssocs.mkString("\n")}",s"${cohortMetaAssocs.mkString("\n")}",s"${cohortMetaKnownAssocs.mkString("\n")}"))
+//throw new Exception(s"metas:\n%s\n".format(s"${metas.mkString("\n")}"))
+//throw new Exception(s"model metas:\n%s\n".format(s"${modelMetas.mkString("\n")}"))
+//throw new Exception(s"model meta knowns:\n%s\n".format(s"${modelMetaKnowns.mkString("\n")}"))
 
 // Array specific QC steps up to ancestry inferrence
 for {
@@ -70,39 +75,27 @@ for {
 
 }
 
-//// Load imputed data into Hail
-//for {
-//  array <- projectConfig.Arrays
-//  imp <- array.imputed
-//} yield { 
-//
-//  LoadImputed(array = array.id, imp = imp.id)
-//
-//}
-
 // Cohort variant association
 for {
-  cohort <- projectConfig.Cohorts
-  model <- projectConfig.Models
-} yield { 
+  x <- cohortAssocs
+} yield {
 
-  VariantAssoc(configCohort = cohort, configModel = model, configMeta = None)
+  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None)
 
 }
 
 // Cohort variant association for known loci
 for {
-  cohort <- projectConfig.Cohorts if cohort.report
-  known <- projectConfig.KnownLoci
-} yield { 
+  x <- cohortKnownAssocs
+} yield {
 
-  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = None)
+  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = None)
 
 }
 
 // Meta-analysis cross-cohort common variants search
 for {
-  meta <- projectConfig.Metas
+  meta <- metas
 } yield {
 
   CrossCohortCommonVars(configMeta = meta)
@@ -111,7 +104,7 @@ for {
 
 // Meta-analysis cross-cohort qc prep
 for {
-  meta <- projectConfig.Metas
+  meta <- metas
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 } yield {
 
@@ -121,7 +114,7 @@ for {
 
 // Meta-analysis cross-array kinship
 for {
-  meta <- projectConfig.Metas
+  meta <- metas
 } yield {
 
   CrossCohortKinship(meta)
@@ -130,7 +123,7 @@ for {
 
 // Meta-analysis calculate cross-cohort kinship sample exclusions
 for {
-  meta <- projectConfig.Metas
+  meta <- metas
   cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 } yield {
 
@@ -140,43 +133,46 @@ for {
 
 // Meta-analysis specific cohort variant association
 for {
-  meta <- projectConfig.Metas
-  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-  model <- projectConfig.Models
+  x <- cohortMetaAssocs
 } yield { 
 
-  VariantAssoc(configCohort = cohort, configModel = model, configMeta = Some(meta))
+  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta))
 
 }
 
 // Meta-analysis specific cohort variant association for known loci
 for {
-  meta <- projectConfig.Metas if meta.report
-  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-  known <- projectConfig.KnownLoci
+  x <- cohortMetaKnownAssocs
 } yield { 
 
-  KnownLociAssoc(configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
+  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = Some(x.meta))
 
 }
 
 // Meta-analysis
 for {
-  meta <- projectConfig.Metas
-  model <- projectConfig.Models
+  x <- modelMetas
 } yield {
 
-  MetaAnalysis(configModel = model, configMeta = meta)
+  MetaAnalysis(configModel = x.model, configMeta = x.meta)
 
 }
 
 // Meta-analysis for known loci
 for {
-  meta <- projectConfig.Metas if meta.report
-  known <- projectConfig.KnownLoci
+  x <- modelMetaKnowns
 } yield {
 
-  MetaAnalysisKnownLoci(configKnownLoci = known, configMeta = meta)
+  MetaAnalysisKnownLoci(configModel = x.model, configMeta = x.meta, configKnown = x.known)
+
+}
+
+// Merge results
+for {
+  x <- modelMerges
+} yield {
+
+  MergeAssoc(configModel = x.model, configMerge = x.merge)
 
 }
 

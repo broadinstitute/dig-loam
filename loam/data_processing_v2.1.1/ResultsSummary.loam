@@ -7,7 +7,6 @@ import ProjectConfig._
 import PipelineConfig._
 import ProjectStores._
 import AssocStores._
-import MetaStores._
 import ResultsSummaryStores._
 
 def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit = {

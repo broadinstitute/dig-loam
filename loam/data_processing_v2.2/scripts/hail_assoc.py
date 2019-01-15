@@ -410,7 +410,6 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--imputed', help='a flag indicating if the data is imputed', action='store_true')
 	parser.add_argument('--trans', help='a transformation code')
 	parser.add_argument('--covars', help="a '+' separated list of covariates")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")

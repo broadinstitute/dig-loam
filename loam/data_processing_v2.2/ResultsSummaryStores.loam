@@ -21,8 +21,25 @@ final case class ResultsSummary(
 final case class ResultsKnownLociSummary(
   resultsKnownLociSummaryData: ResultsKnownLociSummaryData)
 
-val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (c.id, m) } ) ++
-    ( for { t <- projectConfig.Metas; m <- projectConfig.Models; if t.report } yield { (t.id, m) } )).map { rs => 
+//val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models; if c.report } yield { (c.id, m) } ) ++
+//    ( for { t <- projectConfig.Metas; m <- projectConfig.Models; if t.report } yield { (t.id, m) } )).map { rs => 
+
+val resultsSummaryStores = (
+    (
+      for {
+		x <- cohortAssocs if projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined).filter(e => e.cohorts contains x.id)
+      } yield {
+        (x.model, x.cohort, None)
+      } 
+    ) ++
+    (
+      for {
+        x <- cohortMetaAssocs if projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined).filter(e => e.metas contains x.id)
+      } yield {
+        (x.model, x.cohort, Some(x.meta))
+      }
+    )
+  ).map { assoc => 
 
   val id = rs._1
   val model = rs._2
