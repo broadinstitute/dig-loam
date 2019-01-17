@@ -57,17 +57,21 @@ final case class KnownMeta(
   known: Known,
   meta: Meta)
 
+final case class KnownMerge(
+  known: Known,
+  merge: Merge)
+
 val assocStores = (
     (
       for {
-		x <- cohortAssocs
+		x <- modelCohorts
       } yield {
         (x.model, x.cohort, None)
       } 
     ) ++
     (
       for {
-        x <- cohortMetaAssocs
+        x <- modelCohortMetas
       } yield {
         (x.model, x.cohort, Some(x.meta))
       }
@@ -103,14 +107,14 @@ val assocStores = (
 val knownLociStores = (
     (
       for {
-        x <- cohortKnownAssocs
+        x <- modelCohortKnowns
       } yield {
         (x.model, x.cohort, x.known, None)
       }
     ) ++
     (
       for {
-        x <- cohortMetaKnownAssocs
+        x <- modelCohortMetaKnowns
       } yield {
         (x.model, x.cohort, x.known, Some(x.meta))
       }
@@ -259,6 +263,36 @@ val mergeStores = (
     results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
     resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
     tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi")
+  )
+
+}.toMap
+
+val knownMergeStores = (
+    (
+      for {
+        x <- modelMergeKnowns
+      } yield {
+        (x.model, x.merge, x.known)
+      }
+    )
+  ).map { modelMergeKnown =>
+
+  val model = modelMergeKnown._1
+  val merge = modelMergeKnown._2
+  val known = modelMergeKnown._3
+
+  val prefix = s"${projectConfig.projectId}.${merge.id}.${model.id}.${known.id}"
+  val knownHiLdStringBase = known.hiLd.split("/").last
+
+  modelMergeKnown -> KnownMerge(
+    known = Known(
+      data = store(path(known.data)).asInput,
+      hiLd = store(path(known.hiLd)).asInput,
+      hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+    merge = Merge(
+      results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"))
   )
 
 }.toMap

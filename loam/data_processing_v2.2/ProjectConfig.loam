@@ -54,6 +54,8 @@ final case class ConfigKnown(
   citation: String)
 
 final case class ConfigSection(
+  id: String,
+  title: String,
   models: Seq[String],
   cohorts: Option[Seq[String]],
   metas: Option[Seq[String]],
@@ -61,6 +63,7 @@ final case class ConfigSection(
   knowns: Option[Seq[String]])
 
 final case class ConfigReport(
+  id: String,
   name: String,
   sections: Seq[ConfigSection])
 
@@ -274,12 +277,15 @@ val projectConfig = ProjectConfig(
     } yield {
 
       ConfigReport(
+        id = report.getStr("id"),
         name = report.getStr("name"),
         sections = for {
           section <- report.getObjList("sections")
         } yield {
 
           ConfigSection(
+            id = section.getStr("id"),
+            title = section.getStr("title"),
             models = section.getStrList("models"),
             cohorts = if ( section.isDefined("cohorts") ) { Some(section.getStrList("cohorts")) } else { None },
             metas = if ( section.isDefined("metas") ) { Some(section.getStrList("metas")) } else { None },
@@ -293,12 +299,12 @@ val projectConfig = ProjectConfig(
 
 )
 
-final case class CohortAssoc(
+final case class ModelCohort(
     model: ConfigModel,
     cohort: ConfigCohort) {
-  def canEqual(a: Any) = a.isInstanceOf[CohortAssoc]
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohort]
   override def equals(that: Any): Boolean = that match {
-    case that: CohortAssoc => that.canEqual(this) && this.hashCode == that.hashCode
+    case that: ModelCohort => that.canEqual(this) && this.hashCode == that.hashCode
     case _ => false
   }
   override def hashCode: Int = {
@@ -310,13 +316,13 @@ final case class CohortAssoc(
   }
 }
 
-final case class CohortKnownAssoc(
+final case class ModelCohortKnown(
     model: ConfigModel,
     cohort: ConfigCohort,
     known: ConfigKnown) {
-  def canEqual(a: Any) = a.isInstanceOf[CohortKnownAssoc]
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortKnown]
   override def equals(that: Any): Boolean = that match {
-    case that: CohortKnownAssoc => that.canEqual(this) && this.hashCode == that.hashCode
+    case that: ModelCohortKnown => that.canEqual(this) && this.hashCode == that.hashCode
     case _ => false
   }
   override def hashCode: Int = {
@@ -329,13 +335,13 @@ final case class CohortKnownAssoc(
   }
 }
 
-final case class CohortMetaAssoc(
+final case class ModelCohortMeta(
     model: ConfigModel,
     cohort: ConfigCohort,
     meta: ConfigMeta) {
-  def canEqual(a: Any) = a.isInstanceOf[CohortMetaAssoc]
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortMeta]
   override def equals(that: Any): Boolean = that match {
-    case that: CohortMetaAssoc => that.canEqual(this) && this.hashCode == that.hashCode
+    case that: ModelCohortMeta => that.canEqual(this) && this.hashCode == that.hashCode
     case _ => false
   }
   override def hashCode: Int = {
@@ -348,14 +354,14 @@ final case class CohortMetaAssoc(
   }
 }
 
-final case class CohortMetaKnownAssoc(
+final case class ModelCohortMetaKnown(
     model: ConfigModel,
     cohort: ConfigCohort,
     meta: ConfigMeta,
     known: ConfigKnown) {
-  def canEqual(a: Any) = a.isInstanceOf[CohortMetaKnownAssoc]
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortMetaKnown]
   override def equals(that: Any): Boolean = that match {
-    case that: CohortMetaKnownAssoc => that.canEqual(this) && this.hashCode == that.hashCode
+    case that: ModelCohortMetaKnown => that.canEqual(this) && this.hashCode == that.hashCode
     case _ => false
   }
   override def hashCode: Int = {
@@ -422,7 +428,56 @@ final case class ModelMetaKnown(
   }
 }
 
-val cohortAssocs: Seq[CohortAssoc] = {
+final case class ModelMergeKnown(
+    model: ConfigModel,
+    merge: ConfigMerge,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelMergeKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelMergeKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + merge.id.hashCode
+      result = prime * result + known.id.hashCode
+      result
+  }
+}
+
+val cohorts: Seq[ConfigCohort] = {
+
+  val x = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
+  } yield {
+   
+    for {
+      c <- section.cohorts.get
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val y = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      g <- section.merges.get
+      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+  x ++ y
+
+}.flatten.distinct
+
+val modelCohorts: Seq[ModelCohort] = {
 
   val x = for {
     section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
@@ -432,7 +487,7 @@ val cohortAssocs: Seq[CohortAssoc] = {
       m <- section.models
       c <- section.cohorts.get
     } yield {
-      CohortAssoc(
+      ModelCohort(
         model = projectConfig.Models.filter(e => e.id == m).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
     }
@@ -448,7 +503,7 @@ val cohortAssocs: Seq[CohortAssoc] = {
       g <- section.merges.get
       c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
     } yield {
-      CohortAssoc(
+      ModelCohort(
         model = projectConfig.Models.filter(e => e.id == m).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
     }
@@ -458,7 +513,7 @@ val cohortAssocs: Seq[CohortAssoc] = {
 
 }.flatten.distinct
 
-val cohortKnownAssocs: Seq[CohortKnownAssoc] = {
+val modelCohortKnowns: Seq[ModelCohortKnown] = {
 
   val x = for {
     section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined && e.knowns.isDefined)
@@ -469,7 +524,7 @@ val cohortKnownAssocs: Seq[CohortKnownAssoc] = {
       c <- section.cohorts.get
       k <- section.knowns.get
     } yield {
-      CohortKnownAssoc(
+      ModelCohortKnown(
         model = projectConfig.Models.filter(e => e.id == m).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
         known = projectConfig.Knowns.filter(e => e.id == k).head)
@@ -487,7 +542,7 @@ val cohortKnownAssocs: Seq[CohortKnownAssoc] = {
       c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
       k <- section.knowns.get
     } yield {
-      CohortKnownAssoc(
+      ModelCohortKnown(
         model = projectConfig.Models.filter(e => e.id == m).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
         known = projectConfig.Knowns.filter(e => e.id == k).head)
@@ -498,7 +553,7 @@ val cohortKnownAssocs: Seq[CohortKnownAssoc] = {
 
 }.flatten.distinct
 
-val cohortMetaAssocs: Seq[CohortMetaAssoc] = {
+val modelCohortMetas: Seq[ModelCohortMeta] = {
 
   val x = for {
     section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
@@ -509,7 +564,7 @@ val cohortMetaAssocs: Seq[CohortMetaAssoc] = {
       t <- section.metas.get
       c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
     } yield {
-      CohortMetaAssoc(
+      ModelCohortMeta(
         model = projectConfig.Models.filter(e => e.id == m).head,
         meta = projectConfig.Metas.filter(e => e.id == t).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
@@ -527,7 +582,7 @@ val cohortMetaAssocs: Seq[CohortMetaAssoc] = {
       t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
       c <- projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == t).head.cohorts contains e.id).map(e => e.id)
     } yield {
-      CohortMetaAssoc(
+      ModelCohortMeta(
         model = projectConfig.Models.filter(e => e.id == m).head,
         meta = projectConfig.Metas.filter(e => e.id == t).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
@@ -538,7 +593,7 @@ val cohortMetaAssocs: Seq[CohortMetaAssoc] = {
 
 }.flatten.distinct
 
-val cohortMetaKnownAssocs: Seq[CohortMetaKnownAssoc] = {
+val modelCohortMetaKnowns: Seq[ModelCohortMetaKnown] = {
 
   val x = for {
     section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined && e.knowns.isDefined)
@@ -550,7 +605,7 @@ val cohortMetaKnownAssocs: Seq[CohortMetaKnownAssoc] = {
       c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
       k <- section.knowns.get
     } yield {
-      CohortMetaKnownAssoc(
+      ModelCohortMetaKnown(
         model = projectConfig.Models.filter(e => e.id == m).head,
         meta = projectConfig.Metas.filter(e => e.id == t).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
@@ -570,7 +625,7 @@ val cohortMetaKnownAssocs: Seq[CohortMetaKnownAssoc] = {
       c <- projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == t).head.cohorts contains e.id).map(e => e.id)
       k <- section.knowns.get
     } yield {
-      CohortMetaKnownAssoc(
+      ModelCohortMetaKnown(
         model = projectConfig.Models.filter(e => e.id == m).head,
         meta = projectConfig.Metas.filter(e => e.id == t).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
@@ -579,6 +634,20 @@ val cohortMetaKnownAssocs: Seq[CohortMetaKnownAssoc] = {
   
   }
   x ++ y
+
+}.flatten.distinct
+
+val models: Seq[ConfigModel] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections)
+  } yield {
+    for {
+      m <- section.models
+    } yield {
+      projectConfig.Models.filter(e => e.id == m).head
+    }
+  }
 
 }.flatten.distinct
 
@@ -617,6 +686,20 @@ val merges: Seq[ConfigMerge] = {
       m <- section.merges.get
     } yield {
       projectConfig.Merges.filter(e => e.id == m).head
+    }
+  }
+
+}.flatten.distinct
+
+val knowns: Seq[ConfigKnown] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.knowns.isDefined)
+  } yield {
+    for {
+      k <- section.knowns.get
+    } yield {
+      projectConfig.Knowns.filter(e => e.id == k).head
     }
   }
 
@@ -669,7 +752,7 @@ val modelMerges: Seq[ModelMerge] = {
     }
   }
 
-}
+}.flatten.distinct
 
 val modelMetaKnowns: Seq[ModelMetaKnown] = {
 
@@ -707,3 +790,93 @@ val modelMetaKnowns: Seq[ModelMetaKnown] = {
 
 }.flatten.distinct
 
+val modelMergeKnowns: Seq[ModelMergeKnown] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined && e.knowns.isDefined)
+  } yield {
+    for {
+      m <- section.models
+      t <- section.merges.get
+      k <- section.knowns.get
+    } yield {
+      ModelMergeKnown(
+        model = projectConfig.Models.filter(e => e.id == m).head,
+        merge = projectConfig.Merges.filter(e => e.id == t).head,
+        known = projectConfig.Knowns.filter(e => e.id == k).head)
+    }
+  }
+
+}.flatten.distinct
+
+val modelCohortsReport: Seq[ModelCohort] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
+  } yield {
+    for {
+      m <- section.models
+      c <- section.cohorts.get
+    } yield {
+      ModelCohort(
+        model = projectConfig.Models.filter(e => e.id == m).head,
+        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
+    }
+  }
+
+}.flatten.distinct
+
+val modelCohortKnownsReport: Seq[ModelCohortKnown] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined && e.knowns.isDefined)
+  } yield {
+    for {
+      m <- section.models
+      c <- section.cohorts.get
+      k <- section.knowns.get
+    } yield {
+      ModelCohortKnown(
+        model = projectConfig.Models.filter(e => e.id == m).head,
+        cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
+        known = projectConfig.Knowns.filter(e => e.id == k).head)
+    }
+  }
+
+}.flatten.distinct
+
+val modelMetasReport: Seq[ModelMeta] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
+  } yield {
+    for {
+      m <- section.models
+      t <- section.metas.get
+    } yield {
+      ModelMeta(
+        model = projectConfig.Models.filter(e => e.id == m).head,
+        meta = projectConfig.Metas.filter(e => e.id == t).head)
+    }
+  }
+
+}.flatten.distinct
+
+val modelMetaKnownsReport: Seq[ModelMetaKnown] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined && e.knowns.isDefined)
+  } yield {
+    for {
+      m <- section.models
+      t <- section.metas.get
+      k <- section.knowns.get
+    } yield {
+      ModelMetaKnown(
+        model = projectConfig.Models.filter(e => e.id == m).head,
+        meta = projectConfig.Metas.filter(e => e.id == t).head,
+        known = projectConfig.Knowns.filter(e => e.id == k).head)
+    }
+  }
+
+}.flatten.distinct

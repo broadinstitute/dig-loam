@@ -138,7 +138,7 @@ def main(args=None):
 
 	tbl = tbl.key_by()
 	tbl = tbl.drop(tbl.locus, tbl.alleles)
-	tbl = tbl.order_by(tbl.chr, tbl.pos, tbl.ref, tbl.alt)
+	tbl = tbl.order_by(hl.int(tbl.chr), hl.int(tbl.pos), tbl.ref, tbl.alt)
 	tbl = tbl.rename({'chr': '#chr', 'odds_ratio': 'or'})
 	tbl.export(args.out)
 

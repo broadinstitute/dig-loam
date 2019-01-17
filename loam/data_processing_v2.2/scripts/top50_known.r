@@ -143,6 +143,8 @@ for(i in 1:nrow(known)) {
 	}
 }
 known <- known[! is.na(known$id),]
+known$ref_known <- toupper(known$ref_known)
+known$alt_known <- toupper(known$alt_known)
 
 x<-merge(x,known,all=F)
 
@@ -225,5 +227,8 @@ for(i in 1:nrow(x)) {
 
 # replace _ with \_ to make compatible with pgfplotstabletypeset
 x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
+
+# replace any columns with all missing values
+x <- Filter(function(a) !(all(is.na(a))), x)
 
 write.table(x, args$out, row.names=F, col.names=T, quote=F, append=F, sep="\t")

@@ -44,6 +44,7 @@ def main(args=None):
 
 	desc = collections.OrderedDict()
 	for s in args.desc.split(",,,"):
+		print s
 		ss = s.split("___")
 		if len(ss) > 4:
 			ss[1] = " ".join([ss[0],ss[1]])
@@ -58,6 +59,7 @@ def main(args=None):
 			id = ss[2]
 		if not ss[0] in desc:
 			desc[ss[0]] = collections.OrderedDict()
+		print ss
 		desc[ss[0]][id] = ss[3]
 
 	result_cols = ['chr','pos','id','alt','ref','n','case','ctrl','af','afavg','afmin','afmax','beta','se','or','pval','dir','cohort','gene','r2','id_known','n_known','case_known','ctrl_known','beta_known','se_known','or_known','pval_known']

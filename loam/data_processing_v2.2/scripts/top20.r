@@ -76,4 +76,8 @@ x$gene[x$gene %in% known_genes]<-paste("\\large{\\textbf{",x$gene[x$gene %in% kn
 x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
 
 cat(paste(paste(gsub("X.","",names(x)),collapse="\t"),"\n",sep=""), file=paste(args$out,sep=""))
-write.table(x, args$out, row.names=F, col.names=F, quote=F, append=T, sep="\t")
+
+# remove any columns with all missing values
+x <- Filter(function(a) !(all(is.na(a))), x)
+
+write.table(x, args$out, row.names=F, col.names=F, quote=F, append=T, sep="\t", na="nan")

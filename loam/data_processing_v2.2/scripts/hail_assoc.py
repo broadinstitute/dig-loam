@@ -394,7 +394,7 @@ def main(args=None):
 
 	mt_results = mt_results.key_by()
 	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
-	mt_results = mt_results.order_by(mt_results.chr, mt_results.pos, mt_results.ref, mt_results.alt)
+	mt_results = mt_results.order_by(hl.int(mt_results.chr), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
 	mt_results = mt_results.rename({'chr': '#chr'})
 	mt_results.export(args.out)
 
