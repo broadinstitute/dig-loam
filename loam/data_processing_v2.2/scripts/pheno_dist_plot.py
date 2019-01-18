@@ -25,8 +25,7 @@ def dist_boxplot(v, **kwargs):
 def main(args=None):
 
 	print "reading phenotypes from file"
-	df = pd.read_table(args.pheno, sep="\t")
-	df['ID'] = df['ID'].astype(str)
+	df = pd.read_table(args.pheno, sep="\t", dtype = {'ID': np.str})
 	pops = ['AFR','AMR','EAS','EUR','SAS']
 	if args.strat:
 		anc = pd.read_table(args.ancestry, sep="\t")
@@ -37,10 +36,9 @@ def main(args=None):
 		df['POP'] = "ALL"
 
 	print "extracting samples in clean fam file"
-	samples_df = pd.read_table(args.fam, header=None)
+	samples_df = pd.read_table(args.fam, header=None, sep=" ")
 	samples = samples_df[1].astype(str).tolist()
 	df = df[df['ID'].isin(samples)]
-
 	print "excluding samples in samples exclude file"
 	if args.samples_exclude != "":
 		with open(args.samples_exclude) as f:

@@ -394,7 +394,7 @@ def main(args=None):
 
 	mt_results = mt_results.key_by()
 	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
-	mt_results = mt_results.order_by(mt_results.chr, mt_results.pos, mt_results.ref, mt_results.alt)
+	mt_results = mt_results.order_by(hl.int(mt_results.chr), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
 	mt_results = mt_results.rename({'chr': '#chr'})
 	mt_results.export(args.out)
 
@@ -410,7 +410,6 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--imputed', help='a flag indicating if the data is imputed', action='store_true')
 	parser.add_argument('--trans', help='a transformation code')
 	parser.add_argument('--covars', help="a '+' separated list of covariates")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")

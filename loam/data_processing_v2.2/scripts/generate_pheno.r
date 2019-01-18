@@ -58,10 +58,10 @@ pcs_include <- function(d, y, cv) {
 	return(inpcs)
 }
 
-print("removing factor indicators from covariates")
+cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
-print("extracting model specific columns from phenotype file")
+cat("extracting model specific columns from phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 pheno<-pheno[complete.cases(pheno),]
@@ -81,11 +81,9 @@ for(cv in covars_factors) {
 	}
 }
 covars_analysis<-paste(covars_factors,collapse="+")
-print(out_cols)
 out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
-print(out_cols)
 
-print("reading inferred ancestry from file")
+cat("reading inferred ancestry from file\n")
 ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 names(ancestry)[1]<-args$iid_col
 names(ancestry)[2]<-"ANCESTRY_INFERRED"
@@ -93,17 +91,17 @@ pheno<-merge(pheno,ancestry,all.x=T)
 print(names(pheno))
 if(! is.null(args$ancestry_keep)) {
 	anc_keep = unlist(strsplit(args$ancestry_keep,","))
-	print(paste("keeping populations group/s",paste(anc_keep,collapse="+"),"for analysis",sep=" "))
+	cat(paste("keeping populations group/s",paste(anc_keep,collapse="+"),"for analysis",sep=" "),"\n")
 	pheno <- pheno[pheno$ANCESTRY_INFERRED %in% anc_keep,]
 }
 
-print("reading sample and variant IDs from gds file")
+cat("reading sample and variant IDs from gds file\n")
 geno <- GdsGenotypeReader(filename = args$gds_in)
 iids <- getScanID(geno)
 vids <- getSnpID(geno)
 close(geno)
 
-print("generating sample and variant ID inclusion lists")
+cat("generating sample and variant ID inclusion lists\n")
 samples_incl<-scan(file=args$samples_include,what="character")
 variants_excl<-scan(file=args$variants_exclude,what="character")
 samples_incl<-iids[iids %in% samples_incl & iids %in% pheno[,args$iid_col]]
@@ -117,50 +115,80 @@ variants_incl<-vids[! vids %in% variants_excl]
 
 kinship<-NULL
 if(args$test == "lmm") {
-	print(paste("memory before running king: ",mem_used() / (1024^2),sep=""))
-	print("running King robust to get kinship matrix")
+	cat(paste("memory before running king: ",mem_used() / (1024^2),sep=""),"\n")
+	cat("running King robust to get kinship matrix\n")
 	kinship <- calc_kinship(gds = args$gds_in, sam = samples_incl, vin = variants_incl, t = 4)
-	print(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""))
+	cat(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""),"\n")
 }
 
-print("running pcair")
 geno <- GdsGenotypeReader(filename = args$gds_in)
 genoData <- GenotypeData(geno)
-mypcair <- pcair(genoData = genoData, scan.include = samples_incl, snp.include = variants_incl, kinMat = kinship, divMat = kinship, snp.block.size = 10000)
-print(paste("memory after running pcair: ",mem_used() / (1024^2),sep=""))
-pcs<-data.frame(mypcair$vectors)
-names(pcs)[1:20]<-paste("PC",seq(1,20),sep="")
-pcs[,args$iid_col]<-row.names(pcs)
-out<-merge(pheno,pcs,all.y=T)
+iter <- 1
+samples_remove <- c()
+while(iter < 11) {
+	cat("\n",paste0("pcair iteration #",iter),"\n")
 
-print("calculating transformations")
-if(args$trans == 'invn') {
-	print("performing invn transformation")
-	if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
-		print(paste("including inferred ancestry as indicator in calculation of residuals",sep=""))
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+	mypcair <- pcair(genoData = genoData, scan.include = samples_incl[! samples_incl %in% samples_remove], snp.include = variants_incl, kinMat = kinship, divMat = kinship, snp.block.size = 10000)
+	cat(paste("memory after running pcair: ",mem_used() / (1024^2),sep=""),"\n")
+	pcs<-data.frame(mypcair$vectors)
+	names(pcs)[1:20]<-paste("PC",seq(1,20),sep="")
+	pcs[,args$iid_col]<-row.names(pcs)
+	out<-merge(pheno,pcs,all.y=T)
+
+	if(args$trans == 'invn') {
+		cat("calculating invn transformation\n")
+		if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
+			cat(paste("including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+		} else {
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+		}
+		out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
+		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "")
+		out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
+	} else if(args$trans == 'log') {
+		cat("calculating log transformation\n")
+		out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
+		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis)
+		out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
 	} else {
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+		cat("no transformation will be applied\n")
+		pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis)
 	}
-	out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "")
-	out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
-} else if(args$trans == 'log') {
-	print("performing log transformation")
-	out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis)
-	out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
-} else {
-	print("no transformation will be applied")
-	pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis)
+
+	write.table(out,"test.df",row.names=F,col.names=T,quote=F,sep="\t",append=F)
+	pc_outliers <- c()
+	for(pc in pcsin) {
+		pc_mean <- mean(out[,pc])
+		pc_sd <- sd(out[,pc])
+		lo <- pc_mean - 6 * pc_sd
+		hi <- pc_mean + 6 * pc_sd
+		pc_outliers <- c(pc_outliers,out[,args$iid_col][out[,pc] < lo | out[,pc] > hi])
+	}
+	if(length(pc_outliers) == 0) {
+		break
+	} else {
+		samples_remove <- c(samples_remove, pc_outliers)
+	}
+	iter <- iter + 1
 }
+if(length(samples_remove) > 0) {
+	cat("the following",length(samples_remove),"PC outliers were removed after",iter,"rounds of outlier removal\n")
+	for(o in samples_remove) {
+		cat(o,"\n")
+	}
+} else {
+	cat("no PC outliers were found\n")
+}
+
 if(length(pcsin) > 0) {
-	print(paste("include PCs ",paste(pcsin,collapse="+")," in association testing",sep=""))
+	cat(paste("   include PCs ",paste(pcsin,collapse="+")," in association testing",sep=""),"\n")
 } else {
-	print("no PCs to be included in association testing")
+	cat("   no PCs to be included in association testing","\n")
 }
+write.table(pcsin,args$out_pcs,row.names=F,col.names=F,quote=F,sep="\t",append=F)
 
 out_cols <- c(out_cols,paste("PC",seq(1,20,1),sep=""))
-print("writing phenotype file")
+
+cat("writing phenotype file","\n")
 write.table(out[,out_cols],args$out_pheno,row.names=F,col.names=T,quote=F,sep="\t",append=F, na="NA")
-write.table(pcsin,args$out_pcs,row.names=F,col.names=F,quote=F,sep="\t",append=F)

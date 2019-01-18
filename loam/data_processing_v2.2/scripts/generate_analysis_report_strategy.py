@@ -75,10 +75,9 @@ def main(args=None):
 						kinshipRemoved = kin.read().splitlines()
 					if i == 1:
 						meta_tbl.extend([
-							r"			" + m.replace("_","\_") + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + " & " + metas[m][c]['report'] + lineEnd])
-					else:
-						meta_tbl.extend([
-							r"			" + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + " & " + lineEnd])
+							r"			" + m.replace("_","\_") + " & & & " + metas[m][c]['report'] + lineEnd])
+					meta_tbl.extend([
+						r"			" + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + " & " + lineEnd])
 			meta_tbl.extend([
 							r"		\bottomrule",
 							r"	\end{tabular}",

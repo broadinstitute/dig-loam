@@ -13,9 +13,9 @@ def main(args=None):
 
 		## title page
 		f.write("\n"); f.write(r"\title{AMP-DCC Data Analysis Report \\")
-		f.write("\n"); f.write(args.id + r" \\")
-		f.write("\n"); f.write("Phase " + args.phase + "}"); f.write("\n")
-		f.write("\n"); f.write(r"\date{}"); f.write("\n")
+		f.write("\n"); f.write(args.id.replace("_","\_") + r" \\")
+		f.write("\n"); f.write(args.name.replace("_","\_") + "}"); f.write("\n")
+		f.write("\n"); f.write(r"\date{\today}"); f.write("\n")
 		f.write("\n"); f.write(r"\maketitle"); f.write("\n")
 
 		if len(args.authors.split(",")) == 1:
@@ -53,7 +53,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--id', help='a project ID', required=True)
-	requiredArgs.add_argument('--phase', help='an analysis phase', required=True)
+	requiredArgs.add_argument('--name', help='an analysis name', required=True)
 	requiredArgs.add_argument('--authors', help='a comma separated list of authors', required=True)
 	requiredArgs.add_argument('--out-tex', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--out-input', help='an output file name with extension .input', required=True)

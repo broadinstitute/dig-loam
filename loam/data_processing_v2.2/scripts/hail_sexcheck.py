@@ -24,8 +24,8 @@ def main(args=None):
 	mt = mt.annotate_cols(impute_sex = tbl[mt.s])
 
 	print("annotate samples with sexcheck status")
-	mt = mt.annotate_cols(pheno_female = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'female') | (mt.pheno[args.sex_col] == 'Female') | (mt.pheno[args.sex_col] == 'f') | (mt.pheno[args.sex_col] == 'F') | (mt.pheno[args.sex_col] == '2'), False))
-	mt = mt.annotate_cols(pheno_male = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'male') | (mt.pheno[args.sex_col] == 'Male') | (mt.pheno[args.sex_col] == 'm') | (mt.pheno[args.sex_col] == 'M') | (mt.pheno[args.sex_col] == '1'), False))
+	mt = mt.annotate_cols(pheno_female = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'female') | (mt.pheno[args.sex_col] == 'Female') | (mt.pheno[args.sex_col] == 'f') | (mt.pheno[args.sex_col] == 'F') | (mt.pheno[args.sex_col] == args.female_code), False))
+	mt = mt.annotate_cols(pheno_male = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'male') | (mt.pheno[args.sex_col] == 'Male') | (mt.pheno[args.sex_col] == 'm') | (mt.pheno[args.sex_col] == 'M') | (mt.pheno[args.sex_col] == args.male_code), False))
 	mt = mt.annotate_cols(sexcheck = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]) & ~ hl.is_missing(mt.impute_sex.is_female), hl.cond((mt.pheno_female & mt.impute_sex.is_female) | (mt.pheno_male & ~ mt.impute_sex.is_female), "OK", "PROBLEM"), "OK"))
     
 	print("replace is_female annotation with self report if imputed sex failed")
@@ -48,6 +48,8 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--pheno-in', help='a tab delimited phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the phenotype file', required=True)
 	requiredArgs.add_argument('--sex-col', help='a column name for sex in the phenotype file', required=True)
+	requiredArgs.add_argument('--male-code', help='a code for male', required=True)
+	requiredArgs.add_argument('--female-code', help='a code for female', required=True)
 	requiredArgs.add_argument('--sexcheck-out', help='an output filename for sexcheck results', required=True)
 	requiredArgs.add_argument('--sexcheck-problems-out', help='an output filename for sexcheck results that were problems', required=True)
 	args = parser.parse_args()

@@ -68,8 +68,8 @@ def main(args=None):
 			row = []
 			row.extend([str(model_files[cohort][model]['pcs'])])
 			row.extend([df_temp.shape[0]])
-			row.extend([df_temp[df_temp[args.sex_col].isin([1,"M","m","Male","male"])].shape[0]])
-			row.extend([df_temp[df_temp[args.sex_col].isin([2,"F","f","Female","female"])].shape[0]])
+			row.extend([df_temp[df_temp[args.sex_col].astype(str) == args.male_code].shape[0]])
+			row.extend([df_temp[df_temp[args.sex_col].astype(str) == args.female_code].shape[0]])
 			if dichotomous:
 				row.extend([df_temp[df_temp[args.pheno_name] == 1].shape[0]])
 				row.extend([df_temp[df_temp[args.pheno_name] == 0].shape[0]])
@@ -97,10 +97,12 @@ def main(args=None):
 
 	dist_plots = collections.OrderedDict()
 	for s in args.dist_plot:
+		if not s.split(",")[0] in dist_plots:
+			dist_plots[s.split(",")[0]]  = collections.OrderedDict()
 		if len(s.split(",")) > 2:
-			dist_plots[" ".join([s.split(",")[0],s.split(",")[1]])] = s.split(",")[2]
+			dist_plots[s.split(",")[0]][s.split(",")[1]] = s.split(",")[2]
 		else:
-			dist_plots[s.split(",")[0]] = s.split(",")[1]
+			dist_plots[s.split(",")[0]][s.split(",")[0]] = s.split(",")[1]
 
 	## open latex file for writing
 	with open(args.out_tex,'w') as f:
@@ -114,24 +116,26 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Distributions}".encode('utf-8')); f.write("\n")
 
-		n = 0
-		text = [
-				r"\begin{figure}[H]",
-				r"   \centering"]
+		text = []
 		for c in dist_plots:
-			n = n + 1
-			delim = r"\\" if n % 2 == 0 else r"%"
+			n = 0
 			text.extend([
-				r"   \begin{subfigure}{.5\textwidth}",
-				r"      \centering",
-				r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[c] + r"}",
-				r"      \caption{" + c.replace("_","\_") + r"}",
-				r"      \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + r"-Distribution}",
-				r"   \end{subfigure}" + delim])
-		text.extend([
-				r"   \caption{Distribution of " + args.pheno_name.replace("_","\_") + r"}",
-				r"   \label{fig:" + args.pheno_name.replace("_","-") + r"-Distributions}",
-				r"\end{figure}"])
+				r"\begin{figure}[H]",
+				r"   \centering"])
+			for d in dist_plots[c]:
+				n = n + 1
+				delim = r"\\" if n % 2 == 0 else r"%"
+				text.extend([
+					r"   \begin{subfigure}{.5\textwidth}",
+					r"      \centering",
+					r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[c][d] + r"}",
+					r"      \caption{" + d.replace("_","\_") + r"}",
+					r"      \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + d.replace("_","-") + r"-Distribution}",
+					r"   \end{subfigure}" + delim])
+			text.extend([
+					r"   \caption{Distribution of " + args.pheno_name.replace("_","\_") + r" in " + c.replace("_","\_") + r" by cohort}",
+					r"   \label{fig:" + args.pheno_name.replace("_","-") + r"-Distributions}",
+					r"\end{figure}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Table}".encode('utf-8')); f.write("\n")
@@ -155,6 +159,8 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--pheno-master', help='a master phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in phenotype master file', required=True)
 	requiredArgs.add_argument('--sex-col', help='a column name for sample sex in phenotype master file', required=True)
+	requiredArgs.add_argument('--male-code', help='a column name for sample sex male code in phenotype master file', required=True)
+	requiredArgs.add_argument('--female-code', help='a column name for sample sex female code in phenotype master file', required=True)
 	requiredArgs.add_argument('--model-files', nargs='+', help='a list of cohort labels, model names, and phenotype files, each separated by comma', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a column name for phenotype', required=True)
 	requiredArgs.add_argument('--pheno-long-name', help='a full name for phenotype (used in section titles)', required=True)

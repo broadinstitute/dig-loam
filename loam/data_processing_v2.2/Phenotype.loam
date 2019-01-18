@@ -7,32 +7,32 @@ import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
-import MetaStores._
+import AssocStores._
 import PhenotypeStores._
 
-def PhenotypeDistPlots(configCohort: ConfigCohort, pheno: String, configMeta: Option[ConfigMeta] = None): Unit = {
+def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, configMeta: Option[ConfigMeta] = None): Unit = {
 
-  val phenoStores = phenotypeStores((configMeta, configCohort, pheno))
+  val phenoStores = phenotypeStores((configPheno, configCohort, configMeta))
 
   val excludeCrossArrayString = configMeta match {
 
-    case Some(s) => s"""${metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude.toString.split("@")(1)}"""
+    case Some(s) => s"""${metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude.toString.split("@")(1)}"""
     case None => ""
 
   }
 
   val phenoDistPlotIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.pheno :+ metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
-    case None => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.pheno)
+    case Some(s) => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile :+ metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile)
 
   }
 
   drm {
 
     cmd"""$binPython $pyPhenoDistPlot
-      --pheno ${ProjectStores.pheno}
-      --pheno-name ${pheno}
+      --pheno ${ProjectStores.phenoFile}
+      --pheno-name ${configPheno.id}
       --fam ${arrayStores(configCohort.array).cleanData.base}.fam
       --samples-exclude "${excludeCrossArrayString}"
       --out ${phenoStores.figureData.distPlot}"""

@@ -7,7 +7,7 @@ import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
-import MetaStores._
+import AssocStores._
 
 def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
@@ -15,7 +15,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     for {
       cohort <- configMeta.cohorts
     } yield {
-      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort)(0).array).harmonizedData.refBase.toString + ".bim"
+      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).harmonizedData.refBase.toString + ".bim"
     }
   }.distinct
 
@@ -23,16 +23,16 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     for {
       cohort <- configMeta.cohorts
     } yield {
-      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort)(0).array).harmonizedData.refData.toSeq
+      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).harmonizedData.refData.toSeq
     }
   }.flatten.distinct
 
   drm {
 
-    cmd"""(for f in ${bimStringList.mkString(" ")}; do awk '{print $$1":"$$2":"$$4":"$$5":"$$6}' $$f; done) | sort | uniq -c | awk '{if($$1 == ${bimStringList.size.toString}) print $$2}' | awk -F':' '{print $$2}' > ${metaStores(configMeta.id).commonVariants}"""
+    cmd"""(for f in ${bimStringList.mkString(" ")}; do awk '{print $$1":"$$2":"$$4":"$$5":"$$6}' $$f; done) | sort | uniq -c | awk '{if($$1 == ${bimStringList.size.toString}) print $$2}' | awk -F':' '{print $$2}' > ${metaKinshipStores(configMeta).commonVariants}"""
     .in(dataList)
-    .out(metaStores(configMeta.id).commonVariants)
-    .tag(s"${metaStores(configMeta.id).commonVariants}".split("/").last)
+    .out(metaKinshipStores(configMeta).commonVariants)
+    .tag(s"${metaKinshipStores(configMeta).commonVariants}".split("/").last)
 
   }
 
@@ -42,20 +42,20 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   drm {
 
-    cmd"""join -1 2 -2 1 <(sort -k 2 ${arrayStores(configCohort.array).harmonizedData.refBase}.fam) <(sort -k 1 ${ProjectStores.ancestryInferred}) | awk -v var=${configCohort.ancestry.mkString(",")} '{ split(var,arr,","); for ( a in arr ) { if (arr[a] == $$7 ) print $$2"\t"$$1 } }' > ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}"""
+    cmd"""join -1 2 -2 1 <(sort -k 2 ${arrayStores(configCohort.array).harmonizedData.refBase}.fam) <(sort -k 1 ${ProjectStores.ancestryInferred}) | awk -v var=${configCohort.ancestry.mkString(",")} '{ split(var,arr,","); for ( a in arr ) { if (arr[a] == $$7 ) print $$2"\t"$$1 } }' > ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
     .in(ProjectStores.ancestryInferred)
-    .out(metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
-    .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}".split("/").last)
+    .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
+    .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaStores(configMeta.id).commonVariants} --keep ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples} --make-bed --out ${metaStores(configMeta.id).metaCohortData(configCohort.id).base}"""
-    .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaStores(configMeta.id).metaCohortData(configCohort.id).samples :+ metaStores(configMeta.id).commonVariants)
-    .out(metaStores(configMeta.id).metaCohortData(configCohort.id).data)
-    .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).base}".split("/").last)
+    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base}"""
+    .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
+    .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
+    .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
 
-    cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${metaStores(configMeta.id).metaCohortData(configCohort.id).base}.fam > ${metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge}"""
-    .in(metaStores(configMeta.id).metaCohortData(configCohort.id).data)
-    .out(metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge)
-    .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).famMerge}".split("/").last)
+    cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${metaKinshipStores(configMeta).metaCohort(configCohort).base}.fam > ${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}"""
+    .in(metaKinshipStores(configMeta).metaCohort(configCohort).data)
+    .out(metaKinshipStores(configMeta).metaCohort(configCohort).famMerge)
+    .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}".split("/").last)
 
   }
 
@@ -63,23 +63,23 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
 def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
-  val mergeString = metaStores(configMeta.id).metaCohortData.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
+  val mergeString = metaKinshipStores(configMeta).metaCohort.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
 
   drm {
 
-    cmd"""echo "${mergeString}" > ${metaStores(configMeta.id).metaKinshipData.mergeList}"""
-    .out(metaStores(configMeta.id).metaKinshipData.mergeList)
-    .tag(s"${metaStores(configMeta.id).metaKinshipData.mergeList}".split("/").last)
+    cmd"""echo "${mergeString}" > ${metaKinshipStores(configMeta).mergeList}"""
+    .out(metaKinshipStores(configMeta).mergeList)
+    .tag(s"${metaKinshipStores(configMeta).mergeList}".split("/").last)
 
-    cmd"""$binPlink --merge-list ${metaStores(configMeta.id).metaKinshipData.mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaStores(configMeta.id).metaKinshipData.baseFiltered}"""
-    .in((metaStores(configMeta.id).metaCohortData.map(e => e._2).flatMap(e => e.data).toSeq ++ metaStores(configMeta.id).metaCohortData.map(e => e._2.famMerge).toSeq) :+ metaStores(configMeta.id).metaKinshipData.mergeList)
-    .out(metaStores(configMeta.id).metaKinshipData.dataFiltered)
-    .tag(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}".split("/").last)
+    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered}"""
+    .in((metaKinshipStores(configMeta).metaCohort.map(e => e._2).flatMap(e => e.data).toSeq ++ metaKinshipStores(configMeta).metaCohort.map(e => e._2.famMerge).toSeq) :+ metaKinshipStores(configMeta).mergeList)
+    .out(metaKinshipStores(configMeta).dataFiltered)
+    .tag(s"${metaKinshipStores(configMeta).baseFiltered}".split("/").last)
 
-    cmd"""$shKing $binKing ${metaStores(configMeta.id).metaKinshipData.baseFiltered}.bed ${metaStores(configMeta.id).metaKinshipData.baseKinship.toString} ${metaStores(configMeta.id).metaKinshipData.log} ${metaStores(configMeta.id).metaKinshipData.kin0} ${metaStores(configMeta.id).metaKinshipData.kin0Related} 4"""
-    .in(metaStores(configMeta.id).metaKinshipData.dataFiltered)
-    .out(metaStores(configMeta.id).metaKinshipData.log, metaStores(configMeta.id).metaKinshipData.kin0, metaStores(configMeta.id).metaKinshipData.kin0Related)
-    .tag(s"${metaStores(configMeta.id).metaKinshipData.baseFiltered}.shKing".split("/").last)
+    cmd"""$shKing $binKing ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} 4"""
+    .in(metaKinshipStores(configMeta).dataFiltered)
+    .out(metaKinshipStores(configMeta).log, metaKinshipStores(configMeta).kin0, metaKinshipStores(configMeta).kin0Related)
+    .tag(s"${metaKinshipStores(configMeta).baseFiltered}.shKing".split("/").last)
 
   }
 
@@ -91,16 +91,16 @@ def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit
   
     cmd"""$binRscript --vanilla --verbose
       $rExcludeCrossArray
-      --kinship ${metaStores(configMeta.id).metaKinshipData.kin0Related}
-      --samples ${metaStores(configMeta.id).metaCohortData(configCohort.id).samples}
+      --kinship ${metaKinshipStores(configMeta).kin0Related}
+      --samples ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}
       --meta-cohorts ${configMeta.cohorts.mkString(",")}
       --cohort ${configCohort.id}
-      --out ${metaStores(configMeta.id).metaCohortData(configCohort.id).kinshipSamplesExclude}
+      --out ${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}
       """
-      .in(metaStores(configMeta.id).metaKinshipData.kin0Related, metaStores(configMeta.id).metaCohortData(configCohort.id).samples)
-      .out(metaStores(configMeta.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
+      .in(metaKinshipStores(configMeta).kin0Related, metaKinshipStores(configMeta).metaCohort(configCohort).samples)
+      .out(metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude)
       .using("R-3.4")
-      .tag(s"${metaStores(configMeta.id).metaCohortData(configCohort.id).kinshipSamplesExclude}".split("/").last)
+      .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}".split("/").last)
   
   }
 
