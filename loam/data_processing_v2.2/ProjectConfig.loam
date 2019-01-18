@@ -809,6 +809,34 @@ val modelMergeKnowns: Seq[ModelMergeKnown] = {
 
 }.flatten.distinct
 
+val cohortsReport: Seq[ConfigCohort] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
+  } yield {
+    for {
+      c <- section.cohorts.get
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  }
+
+}.flatten.distinct
+
+val metasReport: Seq[ConfigMeta] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
+  } yield {
+    for {
+      t <- section.metas.get
+    } yield {
+      projectConfig.Metas.filter(e => e.id == t).head
+    }
+  }
+
+}.flatten.distinct
+
 val modelCohortsReport: Seq[ModelCohort] = {
 
   for {

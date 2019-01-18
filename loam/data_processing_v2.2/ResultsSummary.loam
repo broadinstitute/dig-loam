@@ -40,7 +40,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   }
   
   val hiLdFiles = knownLociStores.filter(e => e._1._1 == configModel).map(e => e._2.known.hiLd).toSeq.distinct
-  
+
   val hiLdStrings = {
   
     for {
@@ -51,7 +51,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   
     }
   
-  }
+  }.distinct
   
   drm {
   

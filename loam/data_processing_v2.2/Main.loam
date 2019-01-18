@@ -57,10 +57,10 @@ import loamstream.util.CanBeClosed.enclosed
 //  FilterFinal(array.id)
 //
 //}
-//
-//// QC Report
-//QcReport()
-//
+
+// QC Report
+QcReport()
+
 //// Generate imputation ready data files
 //for {
 //  array <- projectConfig.Arrays

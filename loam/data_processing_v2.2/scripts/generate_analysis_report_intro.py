@@ -13,9 +13,9 @@ def main(args=None):
 
 		## title page
 		f.write("\n"); f.write(r"\title{AMP-DCC Data Analysis Report \\")
-		f.write("\n"); f.write(args.id + r" \\")
-		f.write("\n"); f.write(args.name + "}"); f.write("\n")
-		f.write("\n"); f.write(r"\date{}"); f.write("\n")
+		f.write("\n"); f.write(args.id.replace("_","\_") + r" \\")
+		f.write("\n"); f.write(args.name.replace("_","\_") + "}"); f.write("\n")
+		f.write("\n"); f.write(r"\date{\today}"); f.write("\n")
 		f.write("\n"); f.write(r"\maketitle"); f.write("\n")
 
 		if len(args.authors.split(",")) == 1:

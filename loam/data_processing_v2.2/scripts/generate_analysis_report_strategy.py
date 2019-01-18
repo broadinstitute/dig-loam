@@ -52,6 +52,7 @@ def main(args=None):
 				if not ms[1] in metas[ms[0]]:
 					metas[ms[0]][ms[1]] = collections.OrderedDict()
 				metas[ms[0]][ms[1]]['kin'] = ms[2]
+				metas[ms[0]][ms[1]]['report'] = ms[3]
 
 			meta_tbl=[
 							r"\begin{table}[H]",
@@ -74,10 +75,9 @@ def main(args=None):
 						kinshipRemoved = kin.read().splitlines()
 					if i == 1:
 						meta_tbl.extend([
-							r"			" + m.replace("_","\_") + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + lineEnd])
-					else:
-						meta_tbl.extend([
-							r"			" + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + " & " + lineEnd])
+							r"			" + m.replace("_","\_") + " & & & " + metas[m][c]['report'] + lineEnd])
+					meta_tbl.extend([
+						r"			" + " & " + c.replace("_","\_") + " & " + str(len(kinshipRemoved)) + " & " + lineEnd])
 			meta_tbl.extend([
 							r"		\bottomrule",
 							r"	\end{tabular}",

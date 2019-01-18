@@ -72,12 +72,13 @@ known_genes <- unique(known_genes)
 x$id[x$id %in% known_vars]<-paste("\\large{\\textbf{",x$id[x$id %in% known_vars],"}}",sep="")
 x$gene[x$gene %in% known_genes]<-paste("\\large{\\textbf{",x$gene[x$gene %in% known_genes],"}}",sep="")
 
-# replace _ with \_ to make compatible with pgfplotstabletypeset
-x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
-
-cat(paste(paste(gsub("X.","",names(x)),collapse="\t"),"\n",sep=""), file=paste(args$out,sep=""))
+## replace _ with \_ to make compatible with pgfplotstabletypeset
+# depracated due to unknown changes
+#x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
 
 # remove any columns with all missing values
 x <- Filter(function(a) !(all(is.na(a))), x)
+
+cat(paste(paste(gsub("X.","",names(x)),collapse="\t"),"\n",sep=""), file=paste(args$out,sep=""))
 
 write.table(x, args$out, row.names=F, col.names=F, quote=F, append=T, sep="\t", na="nan")

@@ -225,10 +225,11 @@ for(i in 1:nrow(x)) {
 	}
 }
 
-# replace _ with \_ to make compatible with pgfplotstabletypeset
-x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
+## replace _ with \_ to make compatible with pgfplotstabletypeset
+# deprecated due to unknown changes
+#x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
 
 # replace any columns with all missing values
 x <- Filter(function(a) !(all(is.na(a))), x)
 
-write.table(x, args$out, row.names=F, col.names=T, quote=F, append=F, sep="\t")
+write.table(x, args$out, row.names=F, col.names=T, quote=F, append=F, sep="\t", na="nan")
