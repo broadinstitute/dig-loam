@@ -299,6 +299,23 @@ val projectConfig = ProjectConfig(
 
 )
 
+final case class ArrayPheno(
+    array: ConfigArray,
+    pheno: ConfigPheno) {
+  def canEqual(a: Any) = a.isInstanceOf[ArrayPheno]
+  override def equals(that: Any): Boolean = that match {
+    case that: ArrayPheno => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + array.id.hashCode
+      result = prime * result + pheno.id.hashCode
+      result
+  }
+}
+
 final case class ModelCohort(
     model: ConfigModel,
     cohort: ConfigCohort) {
@@ -650,6 +667,16 @@ val models: Seq[ConfigModel] = {
   }
 
 }.flatten.distinct
+
+val phenos: Seq[ConfigPheno] = {
+
+  for {
+    m <- models
+  } yield {
+    projectConfig.Phenos.filter(e => e.id == m.pheno).head
+  }
+
+}.distinct
 
 val metas: Seq[ConfigMeta] = {
 

@@ -3,9 +3,25 @@ import numpy as np
 import pandas as pd
 import re
 
+def list2text(l):
+	text = ""
+	i = 0
+	for x in l:
+		i = i + 1
+		if i > 1:
+			if i != len(l):
+				text = text + ", " + x
+			else:
+				text = text + ", and " + x
+		else:
+			text = x
+	return text
+
 def main(args=None):
 
 	print args
+
+	df = pd.DataFrame([x.split(",") for x in args.arrays], columns = ["id","filename","format","liftover"])
 
 	## open latex file for writing
 	with open(args.out_tex,'w') as f:
@@ -13,6 +29,17 @@ def main(args=None):
 		print "writing data section"
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Data}"); f.write("\n")
+		f.write(r"\label{Data}"); f.write("\n")
+
+		text=r"In order to run the data we received through our analysis pipeline in an efficient manner, the genotype arrays were each given a short code name; {0}. In Table \ref{{table:Data-Table-Array-Information}}, we list the corresponding filename of the data set we received, the format of the file set (\textit{{note: 'bfile' refers to binary Plink format \cite{{plink}}}}), and a liftOver \cite{{liftover}} chain file if it was required to remap the variants to GRCh37 / hg19 coordinates".format(list2text(df['id']).replace("_","\_"))
+		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
+		text=r"See Figures \ref{fig:Data-Figure-Samples-Upset-Diagram} and \ref{fig:Data-Figure-Variants-Upset-Diagram} for intersection counts of samples and variants available for analysis. The counts for each genotype array have been broken down by inferred ancestry as well."
+		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
+		if len(df['format'].unique().tolist()) == 1:
+			text2=r"Each array was received in the format of "
+
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Data}".encode('utf-8')); f.write("\n")
 

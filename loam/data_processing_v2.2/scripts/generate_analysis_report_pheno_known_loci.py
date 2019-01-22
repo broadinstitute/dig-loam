@@ -97,6 +97,7 @@ def main(args=None):
 		
 			print "writing top associations section"
 			f.write("\n"); f.write(r"\subsection{Previously identified risk loci}"); f.write("\n")
+			f.write(r"\label{" + args.pheno_name.replace("_","-") + r"-Previously-identified-risk-loci}"); f.write("\n")
 	
 			f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{"  + args.pheno_name.replace("_","-") + r"-Known-Loci}".encode('utf-8')); f.write("\n")
 

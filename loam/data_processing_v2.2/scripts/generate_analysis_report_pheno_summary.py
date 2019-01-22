@@ -45,7 +45,7 @@ def main(args=None):
 	sample_table = [
 			r"\begin{table}[H]",
 			r"	\footnotesize",
-			r"	\caption{" + args.pheno_long_name.replace("_","\_") + " summarized by cohort and adjustments}",
+			r"	\caption{Samples with " + args.pheno_long_name.replace("_","\_") + " data summarized by cohort, transformation, and run-time adjustments}",
 			r"	\begin{center}",
 			r"	\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
 			r"	\begin{tabular}{rrrrr" + 'c'*(len(cols)-5) + "}",
@@ -109,8 +109,11 @@ def main(args=None):
 
 		print "writing data section"
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
-		f.write("\n"); f.write(r"\section{" + args.pheno_long_name + r"}"); f.write("\n")
+		f.write("\n"); f.write(r"\section{" + args.pheno_long_name + " (" + args.pheno_name + r")}"); f.write("\n")
+		f.write(r"\label{" + args.pheno_name.replace("_","-") + r"}"); f.write("\n")
+
 		f.write("\n"); f.write(r"\subsection{Summary}"); f.write("\n")
+		f.write(r"\label{" + args.pheno_name.replace("_","-") + r"-Summary}"); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary}".encode('utf-8')); f.write("\n")
 
@@ -125,6 +128,10 @@ def main(args=None):
 			for d in dist_plots[c]:
 				n = n + 1
 				delim = r"\\" if n % 2 == 0 else r"%"
+				if c == "":
+					figcap = r"Distribution of " + args.pheno_name.replace("_","\_") + r" in cohort-level analyses"
+				else:
+					figcap = r"Distribution of " + args.pheno_name.replace("_","\_") + r" in " + c.replace("_","\_") + r" by cohort"
 				text.extend([
 					r"   \begin{subfigure}{.5\textwidth}",
 					r"      \centering",
@@ -133,8 +140,8 @@ def main(args=None):
 					r"      \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + d.replace("_","-") + r"-Distribution}",
 					r"   \end{subfigure}" + delim])
 			text.extend([
-					r"   \caption{Distribution of " + args.pheno_name.replace("_","\_") + r" in " + c.replace("_","\_") + r" by cohort}",
-					r"   \label{fig:" + args.pheno_name.replace("_","-") + r"-Distributions}",
+					r"   \caption{" + figcap + r"}",
+					r"   \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + r"-Distributions}",
 					r"\end{figure}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 

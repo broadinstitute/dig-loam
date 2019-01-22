@@ -15,7 +15,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\title{AMP-DCC Data Analysis Report \\")
 		f.write("\n"); f.write(args.id.replace("_","\_") + r" \\")
 		f.write("\n"); f.write(args.name.replace("_","\_") + "}"); f.write("\n")
-		f.write("\n"); f.write(r"\date{\today}"); f.write("\n")
+		f.write("\n"); f.write(r"\date{\mmddyyyydate\today\ (\currenttime)}"); f.write("\n")
 		f.write("\n"); f.write(r"\maketitle"); f.write("\n")
 
 		if len(args.authors.split(",")) == 1:
@@ -39,6 +39,7 @@ def main(args=None):
 		print "writing introduction"
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Introduction}"); f.write("\n")
+		f.write(r"\label{Introduction}"); f.write("\n")
 
 		text = r"\ExecuteMetaData[\currfilebase.input]{Introduction}"
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")

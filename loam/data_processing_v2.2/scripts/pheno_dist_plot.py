@@ -26,14 +26,17 @@ def main(args=None):
 
 	print "reading phenotypes from file"
 	df = pd.read_table(args.pheno, sep="\t", dtype = {'ID': np.str})
-	pops = ['AFR','AMR','EAS','EUR','SAS']
-	if args.strat:
-		anc = pd.read_table(args.ancestry, sep="\t")
-		anc.rename(columns = {'IID': 'ID', 'FINAL': 'POP'}, inplace = True)
-		anc['ID'] = anc['ID'].astype(str)
-		df = df.merge(anc)
+
+	anc = pd.read_table(args.ancestry, header=None, sep="\t", names=["ID","POP"])
+	anc['ID'] = anc['ID'].astype(str)
+	df = df.merge(anc)
+
+	if args.pop:
+		pops = args.pop.split(",")
 	else:
-		df['POP'] = "ALL"
+		pops = df['POP'].unique()
+
+	df = df[df['POP'].isin(pops)]
 
 	print "extracting samples in clean fam file"
 	samples_df = pd.read_table(args.fam, header=None, sep=" ")
@@ -46,11 +49,8 @@ def main(args=None):
 		df = df[~df['ID'].isin(exclude)]
 
 	df.dropna(subset = [args.pheno_name], inplace=True)
-
 	if args.strat:
 		df['POP'] = df['POP'].astype('category')
-		if len(df['POP'].unique()) < len(pops):
-			df['POP'] = df['POP'].cat.add_categories([p for p in pops if p not in df['POP'].unique()])
 		df['POP'] = df['POP'].cat.reorder_categories(pops, ordered=True)
 
 	if len(df[args.pheno_name].unique()) > 2:
@@ -91,7 +91,7 @@ def main(args=None):
 			df.replace({args.pheno_name: {vals[1]: 'Case', vals[0]: 'Control'}}, inplace=True)
 			print "generating count plot"
 			fig, ax = plt.subplots()
-			ax = sns.countplot(x="POP", hue=args.pheno_name, data=df, order=sort(df['POP'].unique()), hue_order=['Case','Control'])
+			ax = sns.countplot(x="POP", hue=args.pheno_name, data=df, order=np.sort(df['POP'].unique()), hue_order=['Case','Control'])
 			for p in ax.patches:
 				height = p.get_height() if not np.isnan(p.get_height()) else 0
 				ax.text(p.get_x() + p.get_width()/2., height, '%d' % int(height), ha="center", va="bottom")
@@ -122,6 +122,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--strat', action='store_true', help='make a plot stratified by ancestry')
 	parser.add_argument('--ancestry', help='an ancestry file name')
+	parser.add_argument('--pop', help='a comma separated list of populations to limit the plot to')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--pheno', help='a phenotype file name', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a phenotype name', required=True)

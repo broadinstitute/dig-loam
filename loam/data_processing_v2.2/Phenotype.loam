@@ -23,22 +23,51 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
 
   val phenoDistPlotIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile :+ metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile)
+    case Some(s) => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile :+ arrayStores(configCohort.array).ancestryData.inferred :+ metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile :+ arrayStores(configCohort.array).ancestryData.inferred)
 
   }
 
-  drm {
+  configCohort.ancestry.size match {
 
-    cmd"""$binPython $pyPhenoDistPlot
-      --pheno ${ProjectStores.phenoFile}
-      --pheno-name ${configPheno.id}
-      --fam ${arrayStores(configCohort.array).cleanData.base}.fam
-      --samples-exclude "${excludeCrossArrayString}"
-      --out ${phenoStores.figureData.distPlot}"""
-      .in(phenoDistPlotIn.flatten)
-      .out(phenoStores.figureData.distPlot)
-      .tag(s"${phenoStores.figureData.distPlot}".split("/").last)
+    case x if x > 1 =>
+
+      drm {
+      
+        cmd"""$binPython $pyPhenoDistPlot
+          --pheno ${ProjectStores.phenoFile}
+          --pheno-name ${configPheno.id}
+          --fam ${arrayStores(configCohort.array).cleanData.base}.fam
+          --samples-exclude "${excludeCrossArrayString}"
+          --strat
+          --ancestry ${arrayStores(configCohort.array).ancestryData.inferred}
+          --pop "${configCohort.ancestry.mkString(",")}"
+          --out ${phenoStores.figureData.distPlot}"""
+          .in(phenoDistPlotIn.flatten)
+          .out(phenoStores.figureData.distPlot)
+          .tag(s"${phenoStores.figureData.distPlot}".split("/").last)
+      
+      }
+
+    case y if y == 1 =>
+
+      drm {
+      
+        cmd"""$binPython $pyPhenoDistPlot
+          --pheno ${ProjectStores.phenoFile}
+          --pheno-name ${configPheno.id}
+          --fam ${arrayStores(configCohort.array).cleanData.base}.fam
+          --samples-exclude "${excludeCrossArrayString}"
+          --ancestry ${arrayStores(configCohort.array).ancestryData.inferred}
+          --pop "${configCohort.ancestry.mkString(",")}"
+          --out ${phenoStores.figureData.distPlot}"""
+          .in(phenoDistPlotIn.flatten)
+          .out(phenoStores.figureData.distPlot)
+          .tag(s"${phenoStores.figureData.distPlot}".split("/").last)
+      
+      }
+
+    case _ => ()
 
   }
 

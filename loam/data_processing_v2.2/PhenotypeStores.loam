@@ -11,7 +11,7 @@ final case class Phenotype(
 val phenotypeStores = (
   (
     for {
-      x <- modelCohortsReport
+      x <- modelCohorts
       p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
     } yield {
       (p, x.cohort, None)

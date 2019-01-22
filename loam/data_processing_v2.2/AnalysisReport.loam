@@ -50,7 +50,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   val cohortsString = {
   
     for {
-      cohort <- cohorts
+      cohort <- projectConfig.Cohorts
     } yield {
       Seq(cohort.id, cohort.array, cohort.ancestry.mkString("+"), if ( cohortsReport contains cohort ) { "YES" } else { "NO" }).mkString(",")
     }
@@ -73,7 +73,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
     for {
       merge <- merges
     } yield {
-      Seq(merge.id, merge.cohorts_metas.mkString("+"), if ( merges contains merge ) { "YES" } else { "NO" }).mkString(",")
+      Seq(merge.id, merge.cohorts_metas.mkString(">"), if ( merges contains merge ) { "YES" } else { "NO" }).mkString(",")
     }
   
   }
@@ -91,9 +91,9 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
       .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
 
     cmd"""$binPython $pyGenerateAnalysisReportStrategy
-      --cohorts ${cohortsString.mkString(" ")}
-      --metas ${metasString.mkString(" ")}
-      --merges ${mergesString.mkString(" ")}
+      --cohorts "${cohortsString.mkString("___")}"
+      --metas "${metasString.mkString("___")}"
+      --merges "${mergesString.mkString("___")}"
       --out-tex ${analysisReportStores(configReport).globalData.strategy}
       --out-input ${analysisReportStores(configReport).globalData.strategyInput}"""
       .in(metaKinshipStores.flatMap(e => e._2.metaCohort.map(e => e._2.kinshipSamplesExclude)).toSeq)
@@ -163,7 +163,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
       --female-code ${projectConfig.phenoFileFemaleCode}
       --model-files ${modelFileStrings.mkString(" ")}
       --pheno-name ${configPheno.id}
-      --pheno-long-name "${configPheno.id}"
+      --pheno-long-name "${configPheno.name}"
       --ancestry ${ProjectStores.ancestryInferred}
       --out-tex ${analysisReportStores(configReport).sectionData(configSection).summary}
       --out-input ${analysisReportStores(configReport).sectionData(configSection).summaryInput}"""
