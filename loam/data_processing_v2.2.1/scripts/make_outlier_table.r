@@ -111,7 +111,7 @@ ncols = ncols + 1
 cat(paste(header,"\n",sep=""),file=args$out)
 
 for(m in unique(unlist(metrics))) {
-	l = gsub("_res$","",m)
+	l = gsub("_","\\\\_", gsub("_res$","",m))
 	for(a in arrays) {
 		l = paste(l,paste("\t",length(ids[[a]][[m]]),sep=""),sep="")
 	}

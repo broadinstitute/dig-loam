@@ -49,7 +49,7 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
+			fam=pd.read_table(args.fam.split("___")[1], low_memory=False, header=None)
 			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split("___")[0], fam.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
@@ -138,7 +138,7 @@ def main(args=None):
 		text = r"To facilitate downstream operations on genotype data, such as merging and meta-analysis, each dataset gets harmonized with modern reference data. The harmonization process is performed in two steps. First, using Genotype Harmonizer \cite{genotypeHarmonizer}, the variants are strand-aligned with the 1000 Genomes Phase 3 Version 5 \cite{1KG} variants. While some variants (A/C or G/T variants) may be removed due to strand ambiguity, if enough information exists, Genotype Harmonizer uses linkage disequilibrium (LD) patterns with nearby variants to accurately determine strand. This step will remove variants that it is unable to reconcile and maintains variants that are unique to the input data. The second step manually reconciles non-1000 Genomes variants with the human reference assembly GRCh37 \cite{humref}. This step will flag variants for removal that do not match an allele to the reference and variants that have only a single allele in the data file (0 for the other). Note that some monomorphic variants may be maintained in this process if there are two alleles in the data file and one of them matches a reference allele."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text=r"After harmonization, the data is loaded into a Hail \cite{hail} variant dataset (VDS) for downstream use."
+		text=r"After harmonization, the data is loaded into a Hail \cite{hail} matrix table for downstream use."
 
 		if args.variants_upset_diagram is not None:
 

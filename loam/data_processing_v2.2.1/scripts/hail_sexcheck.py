@@ -1,52 +1,50 @@
-from hail import *
-hc = HailContext()
+import hail as hl
 import argparse
+hl.init()
 
 def main(args=None):
 
-	print "reading vds dataset"
-	vds = hc.read(args.vds_in)
-	vds.summarize().report()
+	print("reading matrix table")
+	mt = hl.read_matrix_table(args.mt_in)
+	hl.summarize_variants(mt)
 
-	print "adding self reported sex annotations"
-	sex_annotations = (hc.import_table(args.pheno_in,delimiter="\t",no_header=False,types={args.sex_col: TString()}).key_by(args.id_col))
-	vds = vds.annotate_samples_table(sex_annotations, expr='sa.pheno.SEX = table.' + args.sex_col)
+	print("add pheno annotations")
+	tbl = hl.import_table(args.pheno_in, delimiter="\t", no_header=False, types={args.sex_col: hl.tstr})
+	tbl = tbl.key_by(args.id_col)
+	mt = mt.annotate_cols(pheno = tbl[mt.s])
 
-	print "calculating variant qc stats"
-	vds = vds.variant_qc()
+	print("filter variants for QC")
+	mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
+	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]))
+	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
+	mt = mt.filter_rows(~ hl.is_complex(mt.alleles[0], mt.alleles[1]))
+    
+	print("impute sex")
+	tbl = hl.impute_sex(mt.GT)
+	mt = mt.annotate_cols(impute_sex = tbl[mt.s])
 
-	print "filtering variants"
-	vds = vds.filter_variants_expr('v.altAllele.isSNP && ! v.altAllele.isComplex && ["A","C","G","T"].toSet.contains(v.altAllele.ref) && ["A","C","G","T"].toSet.contains(v.altAllele.alt) && va.qc.AF >= 0.01 && va.qc.callRate >= 0.98', keep=True)
-	vds.summarize().report()
-
-	print "excluding regions with high LD"
-	exclude_regions_list = hc.import_table(args.regions_exclude, no_header=True, key='f0', types={'f0': TInterval()})
-	vds = vds.filter_variants_table(exclude_regions_list, keep=False)
-	vds.summarize().report()
-
-	print "imputing sex"
-	vds = vds.impute_sex()
-
-	print "annotating samples with sexcheck status"
-	vds = vds.annotate_samples_expr('sa.sexcheck = if(((sa.pheno.SEX == "female" || sa.pheno.SEX == "Female" || sa.pheno.SEX == "f" || sa.pheno.SEX == "F" || sa.pheno.SEX == "' + args.female_code + '") && ! isMissing(sa.imputesex.isFemale) && sa.imputesex.isFemale) || ((sa.pheno.SEX == "male" || sa.pheno.SEX == "Male" || sa.pheno.SEX == "m" || sa.pheno.SEX == "M" || sa.pheno.SEX == "' + args.male_code + '") && ! isMissing(sa.imputesex.isFemale) && ! sa.imputesex.isFemale) || isMissing(sa.imputesex.isFemale)) "OK" else "PROBLEM"')
-
-	print "replace isFemale annotation with self report if imputed sex failed"
-	vds = vds.annotate_samples_expr('sa.imputesex.isFemale = if((sa.pheno.SEX == "female" || sa.pheno.SEX == "Female" || sa.pheno.SEX == "f" || sa.pheno.SEX == "F" || sa.pheno.SEX == "' + args.female_code + '") &&  isMissing(sa.imputesex.isFemale)) true else if((sa.pheno.SEX == "male" || sa.pheno.SEX == "Male" || sa.pheno.SEX == "m" || sa.pheno.SEX == "M" || sa.pheno.SEX == "' + args.male_code + '") &&  isMissing(sa.imputesex.isFemale)) false else sa.imputesex.isFemale')
-
-	print "write sexcheck results to file"
-	vds.export_samples(args.sexcheck_out, expr="IID = s, SEX = sa.pheno.SEX, sa.imputesex.*, sexCheck = sa.sexcheck")
-
-	print "reducing to samples with sexcheck problems"
-	vds = vds.filter_samples_expr('sa.sexcheck == "PROBLEM"',keep=True)
-
-	print "write sexcheck problems to file"
-	vds.export_samples(args.sexcheck_problems_out, expr="IID = s, SEX = sa.pheno.SEX, sa.imputesex.*, sexCheck = sa.sexcheck")
+	print("annotate samples with sexcheck status")
+	mt = mt.annotate_cols(pheno_female = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'female') | (mt.pheno[args.sex_col] == 'Female') | (mt.pheno[args.sex_col] == 'f') | (mt.pheno[args.sex_col] == 'F') | (mt.pheno[args.sex_col] == args.female_code), False))
+	mt = mt.annotate_cols(pheno_male = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'male') | (mt.pheno[args.sex_col] == 'Male') | (mt.pheno[args.sex_col] == 'm') | (mt.pheno[args.sex_col] == 'M') | (mt.pheno[args.sex_col] == args.male_code), False))
+	mt = mt.annotate_cols(sexcheck = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]) & ~ hl.is_missing(mt.impute_sex.is_female), hl.cond((mt.pheno_female & mt.impute_sex.is_female) | (mt.pheno_male & ~ mt.impute_sex.is_female), "OK", "PROBLEM"), "OK"))
+    
+	print("replace is_female annotation with self report if imputed sex failed")
+	mt = mt.annotate_cols(is_female = hl.cond(mt.pheno_female & hl.is_missing(mt.impute_sex.is_female), True, hl.cond(mt.pheno_male & hl.is_missing(mt.impute_sex.is_female), False, mt.impute_sex.is_female)))
+    
+	print("write sexcheck results to file")
+	tbl = mt.cols()
+	tbl = tbl.rename({'s': 'IID'})
+	tbl_out = tbl.select(pheno_sex = tbl.pheno[args.sex_col], sexcheck = tbl.sexcheck, is_female = tbl.is_female, f_stat = tbl.impute_sex.f_stat, n_called = tbl.impute_sex.n_called, expected_homs = tbl.impute_sex.expected_homs, observed_homs = tbl.impute_sex.observed_homs)
+	tbl_out.export(args.sexcheck_out)
+    
+	print("write sexcheck problems to file")
+	tbl_out = tbl_out.filter(tbl_out.sexcheck == "PROBLEM", keep=True)
+	tbl_out.flatten().export(args.sexcheck_problems_out)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--vds-in', help='a hail vds dataset', required=True)
-	requiredArgs.add_argument('--regions-exclude', help='a list of regions to exclude from qc', required=True)
+	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a tab delimited phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the phenotype file', required=True)
 	requiredArgs.add_argument('--sex-col', help='a column name for sex in the phenotype file', required=True)

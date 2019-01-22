@@ -16,23 +16,23 @@ final case class GlobalData(
   input: Store,
   pdf: Store)
 
-final case class PhenoData(
+final case class SectionData(
   summary: Store,
   summaryInput: Store,
   calibration: Store,
   calibrationInput: Store,
   topLoci: Store,
   topLociInput: Store,
-  knownLoci: Store,
-  knownLociInput: Store)
+  knownLoci: Option[Store],
+  knownLociInput: Option[Store])
 
 final case class AnalysisReport(
   globalData: GlobalData,
-  phenoData: Map[String, PhenoData])
+  sectionData: Map[ConfigSection, SectionData])
 
-val analysisReportStores = projectConfig.Models.map(m => m.phase).distinct.sorted.map { phase =>
+val analysisReportStores = projectConfig.Reports.map { report =>
 
-  val baseString = s"${projectConfig.projectId}.analysisreport.phase${phase.toString}"
+  val baseString = s"${projectConfig.analysisReportName}_${projectConfig.projectId}.${report.id}"
 
   val globalData = GlobalData(
     header = store(localOutDir / s"${baseString}.header.tex"),
@@ -48,22 +48,22 @@ val analysisReportStores = projectConfig.Models.map(m => m.phase).distinct.sorte
     input = store(localOutDir / s"${baseString}.input"),
     pdf = store(localOutDir / s"${baseString}.pdf"))
 
-  val phenoData = projectConfig.Models.map(m => m.pheno).distinct.map { pheno =>
+  val sectionData = report.sections.map { section =>
 
-    pheno -> PhenoData(
-      summary = store(localOutDir / s"${baseString}.${pheno}.summary.tex"),
-      summaryInput = store(localOutDir / s"${baseString}.${pheno}.summary.input"),
-      calibration = store(localOutDir / s"${baseString}.${pheno}.calibration.tex"),
-      calibrationInput = store(localOutDir / s"${baseString}.${pheno}.calibration.input"),
-      topLoci = store(localOutDir / s"${baseString}.${pheno}.toploci.tex"),
-      topLociInput = store(localOutDir / s"${baseString}.${pheno}.toploci.input"),
-      knownLoci = store(localOutDir / s"${baseString}.${pheno}.knownloci.tex"),
-      knownLociInput = store(localOutDir / s"${baseString}.${pheno}.knownloci.input"))
+    section -> SectionData(
+      summary = store(localOutDir / s"${baseString}.${section.id}.summary.tex"),
+      summaryInput = store(localOutDir / s"${baseString}.${section.id}.summary.input"),
+      calibration = store(localOutDir / s"${baseString}.${section.id}.calibration.tex"),
+      calibrationInput = store(localOutDir / s"${baseString}.${section.id}.calibration.input"),
+      topLoci = store(localOutDir / s"${baseString}.${section.id}.toploci.tex"),
+      topLociInput = store(localOutDir / s"${baseString}.${section.id}.toploci.input"),
+      knownLoci = if ( section.knowns.isDefined ) { Some(store(localOutDir / s"${baseString}.${section.id}.knownloci.tex")) } else { None },
+      knownLociInput = if ( section.knowns.isDefined ) { Some(store(localOutDir / s"${baseString}.${section.id}.knownloci.input")) } else { None })
 
   }.toMap
 
-  phase -> AnalysisReport(
+  report -> AnalysisReport(
     globalData = globalData,
-    phenoData = phenoData)
+    sectionData = sectionData)
 
 }.toMap

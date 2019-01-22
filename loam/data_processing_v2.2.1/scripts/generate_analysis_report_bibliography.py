@@ -23,7 +23,13 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\begin{thebibliography}{}"); f.write("\n")
 
+		f.write("\n"); f.write(r"\bibitem{plink} Plink1.9, \url{https://www.cog-genomics.org/plink2}."); f.write("\n")
+
+		f.write("\n"); f.write(r"\bibitem{liftover} Kent WJ, Sugnet CW, Furey TS, Roskin KM, Pringle TH, Zahler AM, Haussler D. The human genome browser at UCSC. Genome Res. 2002 Jun;12(6):996-1006. LiftOver \url{http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/liftOver}."); f.write("\n")
+
 		f.write("\n"); f.write(r"\bibitem{pcair} Conomos MP. GENetic EStimation and Inference in Structured samples (GENESIS): Statistical methods for analyzing genetic data from samples with population structure and/or relatedness, \url{https://www.rdocumentation.org/packages/GENESIS/versions/2.2.2}."); f.write("\n")
+
+		f.write("\n"); f.write(r"\bibitem{king} \url{http://people.virginia.edu/~wc9c/KING/}."); f.write("\n")
 
 		f.write("\n"); f.write(r"\bibitem{1KG} 1000 Genomes Phase 3 v5, \url{https://mathgen.stats.ox.ac.uk/impute/1000GP_Phase3.html}."); f.write("\n")
 

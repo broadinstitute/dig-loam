@@ -18,7 +18,7 @@ def QcReport(): Unit = {
   val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
   val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rVariantsSummaryTable
@@ -29,6 +29,7 @@ def QcReport(): Unit = {
       --out ${qcReportStores.tablesData.variantsSummary}"""
       .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
       .out(qcReportStores.tablesData.variantsSummary)
+      .using("R-3.4")
       .tag(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
 
   }
@@ -36,7 +37,7 @@ def QcReport(): Unit = {
   val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
   val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterTable
@@ -47,13 +48,14 @@ def QcReport(): Unit = {
       --final-out ${qcReportStores.tablesData.ancestry}"""
       .in(arrayStores.map(e => e._2).map(e => e.ancestryClusterData.groups).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferred).toSeq :+ ProjectStores.ancestryInferred)
       .out(qcReportStores.tablesData.clusters, qcReportStores.tablesData.ancestry)
+      .using("R-3.4")
       .tag(s"${qcReportStores.tablesData.ancestry}".split("/").last)
 
   }
 
   val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.format, a.filename).mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27") {
+  drm {
 
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${qcReportStores.texData.header}"""
@@ -77,7 +79,7 @@ def QcReport(): Unit = {
   
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"$imgR34") {
+    drm {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -86,6 +88,7 @@ def QcReport(): Unit = {
         --out ${qcReportStores.figureData.samplesUpsetPlotPdf}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
         .out(qcReportStores.figureData.samplesUpsetPlotPdf)
+        .using("R-3.4")
         .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf}".split("/").last)
       
       cmd"""$binRscript --vanilla --verbose
@@ -95,11 +98,8 @@ def QcReport(): Unit = {
         --out ${qcReportStores.figureData.variantsUpsetPlotPdf}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
         .out(qcReportStores.figureData.variantsUpsetPlotPdf)
+        .using("R-3.4")
         .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf}".split("/").last)
-
-    }
-
-    drmWith(imageName = s"$imgPython27") {
       
       cmd"""$binPython $pyGenerateQcReportData
         --narrays ${projectConfig.nArrays}
@@ -116,7 +116,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    drmWith(imageName = s"$imgPython27") {
+    drm {
   
       cmd"""$binPython $pyGenerateQcReportData
       --narrays ${projectConfig.nArrays}
@@ -136,8 +136,9 @@ def QcReport(): Unit = {
   val ref1kgBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).ref1kgData.base}.bim").mkString(",") } }
   val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryPcaData.plots.path.toAbsolutePath()}""").mkString(",") } }
   val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
+  val restoreStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesRestore.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27") {
+  drm {
 
     cmd"""$binPython $pyGenerateQcReportAncestry
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
@@ -146,8 +147,9 @@ def QcReport(): Unit = {
       --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
       --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
       --final-table ${qcReportStores.tablesData.ancestry.path.toAbsolutePath()}
+      --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.ancestry}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
+      .in(arrayStores.map(e => e._2).flatMap(e => e.ref1kgData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
       .out(qcReportStores.texData.ancestry)
       .tag(s"${qcReportStores.texData.ancestry}".split("/").last)
 
@@ -158,21 +160,18 @@ def QcReport(): Unit = {
   val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
   val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27") {
+  drm {
     
     cmd"""$binPython $pyGenerateQcReportIbdSexcheck
       --filtered-bim ${refPrunedBimStrings.mkString(" ")}
       --kin0-related ${kin0RelatedStrings.mkString(" ")}
       --famsizes ${famSizesStrings.mkString(" ")}
       --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
+      --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.ibdSexcheck}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq)
+      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq)
       .out(qcReportStores.texData.ibdSexcheck)
       .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
-
-  }
-
-  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
@@ -182,6 +181,7 @@ def QcReport(): Unit = {
       """
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats)
       .out(qcReportStores.figureData.metricDistUnadjPdf)
+      .using("R-3.4")
       .tag(s"${qcReportStores.figureData.metricDistUnadjPdf}".split("/").last)
     
     cmd"""$binRscript --vanilla --verbose
@@ -192,6 +192,7 @@ def QcReport(): Unit = {
       """
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj)
       .out(qcReportStores.figureData.metricDistAdjPdf)
+      .using("R-3.4")
       .tag(s"${qcReportStores.figureData.metricDistAdjPdf}".split("/").last)
 
   }
@@ -199,7 +200,7 @@ def QcReport(): Unit = {
   val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.path}""").mkString(",") } }
   val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
     
     cmd"""$binRscript --vanilla --verbose
       $rMakeOutlierTable
@@ -213,13 +214,14 @@ def QcReport(): Unit = {
       --out ${qcReportStores.tablesData.sampleQc}"""
       .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
       .out(qcReportStores.tablesData.sampleQc)
+      .using("R-3.4")
       .tag(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
 
   }
 
   val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
     
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -229,24 +231,26 @@ def QcReport(): Unit = {
       --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ ProjectStores.ancestryInferred)
       .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+      .using("R-3.4")
       .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
 
   }
 
-  val sampleQcOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliersPlotsPdf.path.toAbsolutePath()}""").mkString(",") } }
+  val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.metricPlots.path.toAbsolutePath()}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27") {
+  drm {
 
     cmd"""$binPython $pyGenerateQcReportSampleqc
       --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
       --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
       --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
       --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
-      --sampleqc-outliers ${sampleQcOutlierPlotsStrings.mkString(" ")}
+      --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
       --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+      --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.sampleQc}"""
-      .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.outliersPlotsPdf).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+      .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
       .out(qcReportStores.texData.sampleQc)
       .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
 
@@ -257,7 +261,7 @@ def QcReport(): Unit = {
     
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"$imgR34") {
+    drm {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -266,11 +270,8 @@ def QcReport(): Unit = {
         --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq)
         .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .using("R-3.4")
         .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
-
-    }
-
-    drmWith(imageName = s"$imgPython27") {
   	  
       cmd"""$binPython $pyGenerateQcReportVariantqc
         --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -284,7 +285,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    drmWith(imageName = s"$imgPython27") {
+    drm {
   
       cmd"""$binPython $pyGenerateQcReportVariantqc
         --bim ${cleanBimStrings.head}
@@ -298,27 +299,19 @@ def QcReport(): Unit = {
   
   }
 
-  drmWith(imageName = s"$imgPython27") {
+  drm {
   
     cmd"""$binPython $pyGenerateQcReportBibliography
       --out ${qcReportStores.texData.bibliography}"""
       .out(qcReportStores.texData.bibliography)
       .tag(s"${qcReportStores.texData.bibliography}".split("/").last)
-
-  }
-
-  drmWith(imageName = s"$imgTools") {
     
     cmd"""cat ${qcReportStores.texData.header} ${qcReportStores.texData.intro} ${qcReportStores.texData.data} ${qcReportStores.texData.ancestry} ${qcReportStores.texData.ibdSexcheck} ${qcReportStores.texData.sampleQc} ${qcReportStores.texData.variantQc} ${qcReportStores.texData.bibliography} > ${qcReportStores.tex}"""
       .in(qcReportStores.texData.header, qcReportStores.texData.intro, qcReportStores.texData.data, qcReportStores.texData.ancestry, qcReportStores.texData.ibdSexcheck, qcReportStores.texData.sampleQc, qcReportStores.texData.variantQc, qcReportStores.texData.bibliography)
       .out(qcReportStores.tex)
       .tag(s"${qcReportStores.tex}".split("/").last)
-
-  }
-
-  drmWith(imageName = s"$imgTex") {
     
-    cmd"""$shPdflatex $binPdflatex ${qcReportStores.tex} $localOutDir"""
+    cmd"""$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}"""
       .in(qcReportStores.tex)
       .out(qcReportStores.pdf)
       .tag(s"${qcReportStores.pdf}".split("/").last)

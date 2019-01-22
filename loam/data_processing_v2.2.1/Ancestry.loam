@@ -12,51 +12,33 @@ import ProjectStores._
 
 def AncestryPca(array: String): Unit = {
 
-  hailCloud match {
+  google {
 
-    case true =>
+    hail"""$pyHailAncestryPcaMerge1kg --
+      --reference-genome ${projectConfig.referenceGenome}
+      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
+      --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle}
+      --kg-sample ${ProjectStores.kgSampleGoogle}
+      --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle}"""
+      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.kgPurcellVcfGoogle, ProjectStores.kgSampleGoogle)
+      .out(arrayStores(array).ref1kgData.vcfGoogle)
+      .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
 
+  }
+  
+  local {
 
-      google {
-      
-        hail"""$pyHailAncestryPcaMerge1kg --
-          --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
-          --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle}
-          --kg-sample ${ProjectStores.kgSampleGoogle}
-          --plink-out ${arrayStores(array).ref1kgData.baseGoogle}
-          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle}"""
-          .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.kgPurcellVcfGoogle, ProjectStores.kgSampleGoogle)
-          .out(arrayStores(array).ref1kgData.dataGoogle :+ arrayStores(array).ref1kgData.kgSamplesGoogle)
-          .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
-      
-      }
-      
-      local {
-      
-        googleCopy(arrayStores(array).ref1kgData.dataGoogle, arrayStores(array).ref1kgData.data)
-        googleCopy(arrayStores(array).ref1kgData.kgSamplesGoogle, arrayStores(array).ref1kgData.kgSamples)
-      
-      }
-
-    case false =>
-
-      drmWith(imageName = s"$imgHailv01", cores=4, mem=2) {
-
-        cmd"""$binHail $pyHailAncestryPcaMerge1kg
-          --vds-in ${arrayStores(array).harmonizedData.vds}
-          --kg-vcf-in ${ProjectStores.kgPurcellVcf}
-          --kg-sample ${ProjectStores.kgSample}
-          --plink-out ${arrayStores(array).ref1kgData.base}
-          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}"""
-          .in(arrayStores(array).harmonizedData.vds, ProjectStores.kgPurcellVcf, ProjectStores.kgSample)
-          .out(arrayStores(array).ref1kgData.data :+ arrayStores(array).ref1kgData.kgSamples)
-          .tag(s"${arrayStores(array).ref1kgData.base}".split("/").last)
-
-      }
+    googleCopy(arrayStores(array).ref1kgData.vcfGoogle, arrayStores(array).ref1kgData.vcf)
 
   }
 
-  drmWith(imageName = s"$imgR34", cores=4, mem=2) {
+  drm {
+
+    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
+
+  }
+
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPcair
@@ -65,17 +47,18 @@ def AncestryPca(array: String): Unit = {
       --gds-out ${arrayStores(array).ref1kgData.gds}
       --scores ${arrayStores(array).ancestryPcaData.scores}
       --id ${projectConfig.projectId}
-      --force-unrel ID ${arrayStores(array).ref1kgData.kgSamples}
-      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples}
-      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples}
+      --force-unrel ${projectConfig.kgSampleId} ${ProjectStores.kgSample}
+      --update-pop ${projectConfig.kgSampleId} ${projectConfig.kgSamplePop} ${ProjectStores.kgSample}
+      --update-group ${projectConfig.kgSampleId} ${projectConfig.kgSampleGroup} ${ProjectStores.kgSample}
       > ${arrayStores(array).ancestryPcaData.log}"""
-      .in(arrayStores(array).ref1kgData.data :+ ProjectStores.kgSample :+ arrayStores(array).ref1kgData.kgSamples)
+      .in(arrayStores(array).ref1kgData.data :+ ProjectStores.kgSample)
       .out(arrayStores(array).ref1kgData.gds, arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores)
+      .using("R-3.4")
       .tag(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryPca
@@ -84,6 +67,7 @@ def AncestryPca(array: String): Unit = {
       --out ${arrayStores(array).ancestryPcaData.plots}"""
       .in(arrayStores(array).ancestryPcaData.scores)
       .out(arrayStores(array).ancestryPcaData.plots)
+      .using("R-3.4")
       .tag(s"${arrayStores(array).ancestryPcaData.plots}".split("/").last)
 
   }
@@ -110,7 +94,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", mem=8) {
+  drmWith(mem=8) {
   
     cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)
@@ -119,24 +103,25 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryCluster
       --pca-scores ${arrayStores(array).ancestryPcaData.scores}
       --cluster ${arrayStores(array).ancestryClusterData.clu}
-      --pheno-file ${ProjectStores.pheno}
+      --pheno-file ${ProjectStores.phenoFile}
       --id ${projectConfig.projectId}
-      --pheno ${projectConfig.phenoId}
-      --sr-race ${projectConfig.phenoSrRace}
+      --pheno ${projectConfig.phenoFileId}
+      --sr-race ${projectConfig.phenoFileSrRace}
       --cluster-plots ${arrayStores(array).ancestryClusterData.plots}
       --xtabs ${arrayStores(array).ancestryClusterData.xtab}
       --plots-centers ${arrayStores(array).ancestryClusterData.centerPlots}
       --cluster-groups ${arrayStores(array).ancestryClusterData.groups}
       --ancestry-inferred ${arrayStores(array).ancestryData.inferred}
       --cluster-plots-no1kg ${arrayStores(array).ancestryClusterData.no1kgPlots}"""
-      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryClusterData.clu, ProjectStores.pheno)
+      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryClusterData.clu, ProjectStores.phenoFile)
       .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
+      .using("R-3.4")
       .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
 
   }
@@ -154,7 +139,7 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
 
-  drmWith(imageName = s"$imgR34") {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterMerge
@@ -163,6 +148,7 @@ def MergeInferredAncestry(): Unit = {
       --out-outliers ${ProjectStores.ancestryOutliers}"""
       .in(projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred))
       .out(ProjectStores.ancestryInferred, ProjectStores.ancestryOutliers)
+      .using("R-3.4")
       .tag(s"${ProjectStores.ancestryInferred}".split("/").last)
   
   }

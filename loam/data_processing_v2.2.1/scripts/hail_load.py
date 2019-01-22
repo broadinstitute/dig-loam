@@ -1,35 +1,31 @@
-from hail import *
-hc = HailContext()
+import hail as hl
 import argparse
+hl.init()
 
 def main(args=None):
 
-	print "reading vcf file"
-	vds = hc.import_vcf(args.vcf_in[1], force_bgz=True, min_partitions=args.partitions)
-	vds.summarize().report()
+	print("read vcf file")
+	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions)
 
-	print "splitting multiallelic variants and removing duplicates"
-	vds = vds.split_multi().deduplicate()
+	print("split multiallelic variants")
+	mt = hl.split_multi(mt)
 
-	print "remove monomorphic variants"
-	vds = vds.filter_variants_expr('v.nAlleles > 1', keep=True)
-	vds.summarize().report()
+	print("remove variants with single called allele")
+	mt = hl.variant_qc(mt)
+	mt = mt.filter_rows(mt.variant_qc.AN > 1, keep=True)
 
-	print "assigning family ID to match sample ID"
-	vds = vds.annotate_samples_expr("sa.famID = s")
+	print("assign family ID to match sample ID and add POP and GROUP")
+	mt = mt.annotate_cols(famID = mt.s, POP = args.vcf_in[0], GROUP = args.vcf_in[0])
 
-	print "adding sample annotations"
-	vds = vds.annotate_samples_expr('sa.pheno.POP = "' + args.vcf_in[0] + '", sa.pheno.GROUP = "' + args.vcf_in[0] + '"')
-
-	print "writing vds to disk"
-	vds.write(args.vds_out, overwrite=True)
-	vds.summarize().report()
+	print("write matrix table to disk")
+	mt.write(args.mt_out, overwrite=True)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)
-	requiredArgs.add_argument('--vds-out', help='a hail vds directory name for output', required=True)
+	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)
 	args = parser.parse_args()
 	main(args)

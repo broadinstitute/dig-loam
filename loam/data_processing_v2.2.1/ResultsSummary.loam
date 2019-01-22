@@ -7,15 +7,23 @@ import ProjectConfig._
 import PipelineConfig._
 import ProjectStores._
 import AssocStores._
-import MetaStores._
 import ResultsSummaryStores._
 
-def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit = {
+def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort], configMeta: Option[ConfigMeta], configMerge: Option[ConfigMerge]): Unit = {
 
-  val summaryStores = resultsSummaryStores((id, configModel))
+  val summaryStores = resultsSummaryStores((configModel, configCohort, configMeta, configMerge))
 
-  drmWith(imageName = s"$imgPython27") {
+  val results = configCohort match {
+    case Some(s) => assocStores((configModel, configCohort.get, None)).results
+    case None =>
+      configMeta match {
+        case Some(s) => metaStores((configModel, configMeta.get)).results
+        case None => mergeStores((configModel, configMerge.get)).results
+      }
+  }
 
+  drm {
+  
     cmd"""$binPython $pyTop1000
       --results ${results}
       --p pval 
@@ -23,30 +31,30 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       .in(results)
       .out(summaryStores.resultsSummaryData.top1000)
       .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
-
+    
     cmd"""(sed '1d' ${summaryStores.resultsSummaryData.top1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${ProjectStores.genePositions} --out-delim \\t) | sort -u > ${summaryStores.resultsSummaryData.top1000Genes}"""
       .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
       .out(summaryStores.resultsSummaryData.top1000Genes)
       .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
-
+  
   }
-
-  val hiLdFiles = knownLociStores.filter(e => e._1._3.model.pheno == configModel.pheno).map(e => e._2.hiLd).toSeq.distinct
+  
+  val hiLdFiles = knownLociStores.filter(e => e._1._1 == configModel).map(e => e._2.known.hiLd).toSeq.distinct
 
   val hiLdStrings = {
-
+  
     for {
       x <- hiLdFiles
     } yield {
-
+  
       s"""${x.toString.split("@")(1)}"""
-
+  
     }
-
-  }
-
-  drmWith(imageName = s"$imgR34") {
-
+  
+  }.distinct
+  
+  drm {
+  
     cmd"""$binRscript --vanilla --verbose
       $rTop20
       --results ${summaryStores.resultsSummaryData.top1000}
@@ -59,11 +67,8 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       --out ${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}"""
       .in(hiLdFiles :+ summaryStores.resultsSummaryData.top1000 :+ summaryStores.resultsSummaryData.top1000Genes)
       .out(summaryStores.resultsSummaryData.top20AnnotAlignedRisk)
+      .using("R-3.4")
       .tag(s"${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}".split("/").last)
-
-  }
-
-  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyQqPlot
       --results ${results}
@@ -92,11 +97,7 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       .in(results)
       .out(summaryStores.resultsSummaryData.sigRegions)
       .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
-
-  }
-
-  drmWith(imageName = s"$imgTools") {
-
+  
     cmd"""$shRegPlot 
       $binTabix
       $binLocuszoom
@@ -109,30 +110,61 @@ def ResultsSummary(configModel: ConfigModel, id: String, results: Store): Unit =
       ${summaryStores.resultsSummaryData.regPlotsBase}"""
       .in(results, summaryStores.resultsSummaryData.sigRegions)
       .out(summaryStores.resultsSummaryData.regPlotsPdf)
+      .using("R-3.4")
       .tag(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
   
   }
 
 }
 
-def ResultsKnownLociSummary(configKnownLoci: ConfigKnownLoci, id: String, results: Store, known_data: Store, hiLd: Store): Unit = {
+def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort], configMeta: Option[ConfigMeta], configMerge: Option[ConfigMerge], configKnown: ConfigKnown): Unit = {
 
-  drmWith(imageName = s"$imgR34") {
+  val summaryKnownLociStores = resultsKnownLociSummaryStores((configModel, configCohort, configMeta, configMerge, configKnown))
 
+  val results = configCohort match {
+    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).assoc.results
+    case None =>
+      configMeta match {
+        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).meta.results
+        case None => knownMergeStores((configModel, configMerge.get, configKnown)).merge.results
+      }
+  }
+
+  val known_data = configCohort match {
+    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).known.data
+    case None =>
+      configMeta match {
+        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).known.data
+        case None => knownMergeStores((configModel, configMerge.get, configKnown)).known.data
+      }
+  }
+
+  val hiLd = configCohort match {
+    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).known.hiLd
+    case None =>
+      configMeta match {
+        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).known.hiLd
+        case None => knownMergeStores((configModel, configMerge.get, configKnown)).known.hiLd
+      }
+  }
+
+  drm {
+  
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known
       --results ${results}
       --known-loci ${known_data}
       --known-ld ${hiLd}
-      --known-loci-n "${configKnownLoci.n}"
-      --known-loci-case "${configKnownLoci.nCase}"
-      --known-loci-ctrl "${configKnownLoci.nCtrl}"
-      --test ${configKnownLoci.model.test}
-      --out ${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}"""
+      --known-loci-n "${configKnown.n}"
+      --known-loci-case "${configKnown.nCase}"
+      --known-loci-ctrl "${configKnown.nCtrl}"
+      --test ${configModel.test}
+      --out ${summaryKnownLociStores.resultsKnownLociSummaryData.top50}"""
       .in(results, known_data, hiLd)
-      .out(resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50)
-      .tag(s"${resultsKnownLociSummaryStores(id, configKnownLoci).resultsKnownLociSummaryData.top50}".split("/").last)
-
+      .out(summaryKnownLociStores.resultsKnownLociSummaryData.top50)
+      .using("R-3.4")
+      .tag(s"${summaryKnownLociStores.resultsKnownLociSummaryData.top50}".split("/").last)
+  
   }
 
 }

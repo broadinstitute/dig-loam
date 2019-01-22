@@ -25,7 +25,6 @@ names(cl)[1]<-"CLUSTER"
 dat<-cbind(dat,cl)
 pheno<-read.table(args$pheno_file, header=T, as.is=T, stringsAsFactors=F, sep="\t")
 pheno<-pheno[,c(args$pheno,args$sr_race)]
-pheno[,args$sr_race]<-paste0("sr_",pheno[,args$sr_race])
 names(pheno)[1]<-"IID"
 dat<-merge(dat,pheno,all.x=T)
 

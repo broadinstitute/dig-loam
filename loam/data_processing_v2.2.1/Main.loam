@@ -13,102 +13,103 @@ import Ancestry._
 import Pca._
 import SampleQc._
 import FilterFinal._
-//import VariantAssoc._
-//import CrossCohort._
 import Impute._
-//import Meta._
-//import ResultsSummary._
-//import AssocStores._
-//import MetaStores._
-//import Phenotype._
+import VariantAssoc._
+import CrossCohort._
+import Meta._
+import Merge._
+import ResultsSummary._
+import AssocStores._
+import Phenotype._
 import QcReport._
-//import AnalysisReport._
+import AnalysisReport._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-// Array specific QC steps up to ancestry inferrence
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  Prepare(array.id)
-  Harmonize(array.id)
-  Load(array.id)
-  FilterForQc(array.id)
-  Kinship(array.id)
-  AncestryPca(array.id)
-  AncestryCluster(array.id)
-
-}
-
-// Reconcile inferred ancestry
-MergeInferredAncestry()
-
-// Array specific QC steps post ancestry inference
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  Pca(array.id)
-  SampleQc(array.id)
-  FilterFinal(array.id)
-
-}
+//// Array specific QC steps up to ancestry inferrence
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  Prepare(array.id)
+//  Harmonize(array.id)
+//  Load(array.id)
+//  FilterForQc(array.id)
+//  Kinship(array.id)
+//  AncestryPca(array.id)
+//  AncestryCluster(array.id)
+//
+//}
+//
+//// Reconcile inferred ancestry
+//MergeInferredAncestry()
+//
+//// Array specific QC steps post ancestry inference
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  Pca(array.id)
+//  SampleQc(array.id)
+//  FilterFinal(array.id)
+//
+//}
 
 // QC Report
 QcReport()
 
-// Generate imputation ready data files
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  FilterImpute(array.id)
-
-}
-
+//// Generate imputation ready data files
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  FilterImpute(array.id)
+//
+//}
+//
 //// Cohort variant association
 //for {
-//  run <- projectConfig.Runs
-//  model <- projectConfig.Models.filter(e => run.models contains e.id)
-//  cohort <- projectConfig.Cohorts.filter(e => run.cohorts contains e.id)
+//  x <- modelCohorts
 //} yield {
 //
-//  VariantAssoc(configModel = model, configCohort = cohort, configMeta = None)
+//  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None)
 //
 //}
 //
 //// Cohort variant association for known loci
 //for {
-//  run <- projectConfig.Runs
-//  model <- projectConfig.Models.filter(e => run.models contains e.id)
-//  cohort <- projectConfig.Cohorts.filter(e => run.cohorts contains e.id)
-//  known <- projectConfig.Knowns.filter(e => run.knowns contains e.id)
-//} yield { 
+//  x <- modelCohortKnowns
+//} yield {
 //
-//  KnownLociAssoc(configModel = model, configCohort = cohort, configKnown = known, configMeta = None)
+//  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = None)
+//
+//}
+//
+//// Meta-analysis cross-cohort common variants search
+//for {
+//  meta <- metas
+//} yield {
+//
+//  CrossCohortCommonVars(configMeta = meta)
 //
 //}
 //
 //// Meta-analysis cross-cohort qc prep
 //for {
-//  run <- projectConfig.Runs
-//  model <- projectConfig.Models.filter(e => run.models contains e.id)
-//  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
+//  meta <- metas
 //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 //} yield {
 //
-//  CrossCohortPrep(configModel = model, configCohort = cohort, configMeta = meta)
+//  CrossCohortPrep(configMeta = meta, configCohort = cohort)
 //
 //}
 //
 //// Meta-analysis cross-array kinship
 //for {
-//  run <- projectConfig.Runs
-//  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
+//  meta <- metas
 //} yield {
 //
 //  CrossCohortKinship(meta)
@@ -117,148 +118,167 @@ for {
 //
 //// Meta-analysis calculate cross-cohort kinship sample exclusions
 //for {
-//  run <- projectConfig.Runs
-//  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
+//  meta <- metas
 //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
 //} yield {
 //
-//  CrossCohortExclude(configCohort = cohort, configMeta = meta)
+//  CrossCohortExclude(configMeta = meta, configCohort = cohort)
 //
 //}
 //
 //// Meta-analysis specific cohort variant association
 //for {
-//  run <- projectConfig.Runs
-//  model <- projectConfig.Models.filter(e => run.models contains e.id)
-//  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+//  x <- modelCohortMetas
 //} yield { 
 //
-//  VariantAssoc(configModel = model, configCohort = cohort, configMeta = Some(meta))
+//  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta))
 //
 //}
 //
 //// Meta-analysis specific cohort variant association for known loci
 //for {
-//  run <- projectConfig.Runs
-//  model <- projectConfig.Models.filter(e => run.models contains e.id)
-//  meta <- projectConfig.Metas.filter(e => run.metas contains e.id)
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-//  known <- projectConfig.Knowns.filter(e => run.knowns contains e.id)
+//  x <- modelCohortMetaKnowns
 //} yield { 
 //
-//  KnownLociAssoc(configModel = model, configCohort = cohort, configKnownLoci = known, configMeta = Some(meta))
+//  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = Some(x.meta))
 //
 //}
 //
-//
-//
-//
 //// Meta-analysis
 //for {
-//  meta <- projectConfig.Metas
-//  model <- projectConfig.Models
+//  x <- modelMetas
 //} yield {
 //
-//  MetaAnalysis(configModel = model, configMeta = meta)
+//  MetaAnalysis(configModel = x.model, configMeta = x.meta)
 //
 //}
 //
 //// Meta-analysis for known loci
 //for {
-//  meta <- projectConfig.Metas if meta.report
-//  known <- projectConfig.KnownLoci
+//  x <- modelMetaKnowns
 //} yield {
 //
-//  MetaAnalysisKnownLoci(configKnownLoci = known, configMeta = meta)
+//  MetaAnalysisKnownLoci(configModel = x.model, configMeta = x.meta, configKnown = x.known)
+//
+//}
+//
+//// Merge results
+//for {
+//  x <- modelMerges
+//} yield {
+//
+//  MergeAssoc(configModel = x.model, configMerge = x.merge)
+//
+//}
+//
+//// Merge known assoc results
+//for {
+//  x <- modelMergeKnowns
+//} yield {
+//
+//  MergeKnownAssoc(configModel = x.model, configMerge = x.merge, configKnown = x.known)
 //
 //}
 //
 //// Cohort Results Summary
 //for {
-//  cohort <- projectConfig.Cohorts if cohort.report
-//  model <- projectConfig.Models
-//} yield { 
+//  x <- modelCohortsReport
+//} yield {
 //
-//  ResultsSummary(configModel = model, id = cohort.id, results = assocStores((None, cohort, model)).results)
+//  ResultsSummary(configModel = x.model, configCohort = Some(x.cohort), configMeta = None, configMerge = None)
 //
 //}
 //
 //// Meta Results Summary
 //for {
-//  meta <- projectConfig.Metas if meta.report
-//  model <- projectConfig.Models
+//  x <- modelMetasReport
 //} yield { 
 //
-//  ResultsSummary(configModel = model, id = meta.id, results = metaStores(meta.id).metaResultsData(model).results)
+//  ResultsSummary(configModel = x.model, configCohort = None, configMeta = Some(x.meta), configMerge = None)
+//
+//}
+//
+//// Merge Results Summary
+//for {
+//  x <- modelMerges
+//} yield { 
+//
+//  ResultsSummary(configModel = x.model, configCohort = None, configMeta = None, configMerge = Some(x.merge))
 //
 //}
 //
 //// Cohort Known Loci Results Summary
 //for {
-//  cohort <- projectConfig.Cohorts if cohort.report
-//  known <- projectConfig.KnownLoci
+//  x <- modelCohortKnownsReport
 //} yield { 
 //
-//  ResultsKnownLociSummary(configKnownLoci = known, id = cohort.id, results = knownLociStores((None, cohort, known)).assoc.results, known_data = knownLociStores((None, cohort, known)).data, hiLd = knownLociStores((None, cohort, known)).hiLd)
+//  ResultsKnownLociSummary(configModel = x.model, configCohort = Some(x.cohort), configMeta = None, configMerge = None, configKnown = x.known)
 //
 //}
 //
 //// Meta Known Loci Results Summary
 //for {
-//  meta <- projectConfig.Metas if meta.report
-//  known <- projectConfig.KnownLoci
+//  x <- modelMetaKnownsReport
 //} yield { 
 //
-//  ResultsKnownLociSummary(configKnownLoci = known, id = meta.id, results = metaStores(meta.id).metaKnownLociResultsData(known).results, known_data = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).data, hiLd = knownLociStores((None, projectConfig.Cohorts.filter(e => e.id == meta.cohorts(0))(0), known)).hiLd)
+//  ResultsKnownLociSummary(configModel = x.model, configCohort = None, configMeta = Some(x.meta), configMerge = None, configKnown = x.known)
+//
+//}
+//
+//// Merge Known Loci Results Summary
+//for {
+//  x <- modelMergeKnowns
+//} yield { 
+//
+//  ResultsKnownLociSummary(configModel = x.model, configCohort = None, configMeta = None, configMerge = Some(x.merge), configKnown = x.known)
 //
 //}
 //
 //// Generate Phenotype Figures for Cohorts
 //for {
-//  cohort <- projectConfig.Cohorts
-//  phenotype <- projectConfig.Models.map(m => m.pheno).distinct
+//  x <- modelCohorts
+//  p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
 //} yield { 
 //
-//  PhenotypeDistPlots(configCohort = cohort, pheno = phenotype)
+//  PhenotypeDistPlots(configPheno = p, configCohort = x.cohort, configMeta = None)
 //
 //}
 //
 //// Generate Phenotype Figures for Meta Cohorts
 //for {
-//  meta <- projectConfig.Metas
-//  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-//  phenotype <- projectConfig.Models.map(m => m.pheno).distinct
+//  x <- modelCohortMetas
+//  p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
 //} yield { 
 //
-//  PhenotypeDistPlots(configCohort = cohort, pheno = phenotype, configMeta = Some(meta))
+//  PhenotypeDistPlots(configPheno = p, configCohort = x.cohort, configMeta = Some(x.meta))
 //
 //}
-//
-//// Analysis Report Global
-//for {
-//  phase <- projectConfig.Models.map(m => m.phase).distinct.sorted
-//} yield {
-//
-//  AnalysisReportGlobal(phase = phase)
-//
-//}
-//
-//// Analysis Report Pheno
-//for {
-//  phase <- projectConfig.Models.map(m => m.phase).distinct.sorted
-//  pheno <- projectConfig.Models.filter(e => e.phase == phase).map(m => m.pheno).distinct
-//} yield {
-//
-//  AnalysisReportPheno(phase = phase, pheno = pheno, name = projectConfig.Phenos.filter(e => e.pheno == pheno)(0).name)
-//
-//}
-//
-//// Analysis Report Compile
-//for {
-//  phase <- projectConfig.Models.map(m => m.phase).distinct.sorted
-//} yield {
-//
-//AnalysisReportCompile(phase = phase)
-//
-//}
+
+// Analysis Report Global
+for {
+  report <- projectConfig.Reports
+} yield {
+
+  AnalysisReportGlobal(configReport = report)
+
+}
+
+// Analysis Report Phenotypes
+for {
+  report <- projectConfig.Reports
+  section <- report.sections
+  pheno <- projectConfig.Models.filter(e => section.models contains e.id).map(e => projectConfig.Phenos.filter(f => f.id == e.pheno)).flatten.distinct
+} yield {
+
+  AnalysisReportPheno(configReport = report, configSection = section, configPheno = pheno)
+
+}
+
+// Analysis Report Compile
+for {
+  report <- projectConfig.Reports
+} yield {
+
+AnalysisReportCompile(configReport = report)
+
+}

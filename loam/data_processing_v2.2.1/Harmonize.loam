@@ -23,7 +23,7 @@ def Harmonize(array: String): Unit = {
 
   } yield { 
 
-    drmWith(imageName = s"$imgTools") {
+    drm {
 
 	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory 3000 --threads 1"""
         .in(arrayStores(array).annotatedData.data)
@@ -34,7 +34,7 @@ def Harmonize(array: String): Unit = {
 
     if (! arrayCfg.skipGh.contains(chr)) {
 
-      drmWith(imageName = s"$imgTools", mem=8, maxRunTime=6) {
+      drmWith(mem=8, maxRunTime=12) {
       
         cmd"""$binGenotypeHarmonizer
         --input ${chrData.base}
@@ -69,7 +69,7 @@ def Harmonize(array: String): Unit = {
 
     }
 
-    drmWith(imageName = s"$imgPython27") {
+    drm {
       
       cmd"""$binPython $pyAlignNon1kgVariants
       --kg-ids ${ProjectStores.kgIds(chr)}
@@ -84,10 +84,6 @@ def Harmonize(array: String): Unit = {
         .in(chrData.mergedKg :+ ProjectStores.kgIds(chr) :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
         .out(chrData.nonKgRemove, chrData.nonKgIgnore, chrData.nonKgMono,chrData.nonKgNomatch, chrData.nonKgFlip, chrData.nonKgForceA1)
         .tag(s"${chrData.mergedKgNonKgBase}".split("/").last)
-
-    }
-
-    drmWith(imageName = s"$imgTools") {
       
       cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory 3000 --threads 1"""
         .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
@@ -110,7 +106,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools") {
+  drm {
   
     cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(array).harmonizedData.mergeList}"""
       .out(arrayStores(array).harmonizedData.mergeList)
@@ -152,7 +148,7 @@ def Harmonize(array: String): Unit = {
   val mergedKgVarIdUpdateString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
   val mergedKgVarSnpLogString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
   
-  drmWith(imageName = s"$imgPython27", mem=8) {
+  drmWith(mem=8) {
   
     cmd"""$binPython $pyMergeVariantLists
       --remove-in "$nonKgRemoveString"

@@ -1,58 +1,57 @@
-from hail import *
-hc = HailContext()
+import hail as hl
 import argparse
+hl.init()
 
 def main(args=None):
 
-	print "reading vds dataset"
-	vds = hc.read(args.vds_in)
-	vds.summarize().report()
+	print("read matrix table")
+	mt = hl.read_matrix_table(args.mt_in)
+	hl.summarize_variants(mt)
 
-	print "reading 1KG vcf file"
-	kg = hc.import_vcf(args.kg_vcf_in, force_bgz=True)
-	kg.summarize().report()
+	print("read kg vcf file")
+	kg = hl.import_vcf(args.kg_vcf_in, force_bgz=True, reference_genome=args.reference_genome)
+	hl.summarize_variants(kg)
 
-	print "splitting multiallelic variants and removing duplicates from 1KG data"
-	kg = kg.split_multi().deduplicate()
-	kg.summarize().report()
+	print("split multiallelic variants in kg data")
+	kg = hl.split_multi(kg)
 
-	print "adding 1KG sample annotations"
-	kg = kg.annotate_samples_expr('sa.famID = s')
-	annotations = (hc.import_table(args.kg_sample,delimiter=" ").select(['ID','POP','GROUP']).key_by('ID'))
-	kg = kg.annotate_samples_table(annotations, root='sa.pheno')
+	print("add 1KG sample annotations")
+	kg = kg.annotate_cols(famID = kg.s)
+	tbl = hl.import_table(args.kg_sample, delimiter=" ", impute=True)
+	tbl = tbl.select(tbl.ID, tbl.POP, tbl.GROUP)
+	tbl = tbl.key_by(tbl.ID)
+	kg = kg.annotate_cols(POP = tbl[kg.s].POP, GROUP = tbl[kg.s].GROUP)
 
-	print "rename sample IDs to avoid any possible overlap with test data"
-	kg_rename = [x for x in kg.sample_ids if x in vds.sample_ids]
-	kg = kg.rename_samples(dict(zip(kg_rename, ["kg_" + x for x in kg_rename])))
+	mt = mt.select_entries(mt.GT)
+	kg = kg.select_entries(kg.GT)
 
-	print "joining vds datasets"
-	vds = vds.join(kg)
-	vds.summarize().report()
+	print("drop extraneous rows from both matrix tables")
+	row_fields_keep = ['locus', 'alleles', 'rsid', 'qual', 'filters', 'a_index', 'was_split', 'old_locus', 'old_alleles']
+	mt_remove = [x for x in list(mt.rows().row) if x not in row_fields_keep]
+	kg_remove = [x for x in list(kg.rows().row) if x not in row_fields_keep]
+	for f in mt_remove:
+		mt = mt.drop(f)
+	for f in kg_remove:
+		kg = kg.drop(f)
 
-	#print "calculate PCA"
-	#vds = vds.pca('sa.pca.scores','va.pca.loadings','global.pca.evals',k=10,as_array=False)
-    #
-	#print "write sample scores to file"
-	#vds.export_samples(args.sample_scores_out, expr="IID = s, POP = sa.pheno.POP, GROUP = sa.pheno.GROUP, PC1 = sa.pca.scores.PC1, PC2 = sa.pca.scores.PC2, PC3 = sa.pca.scores.PC3, PC4 = sa.pca.scores.PC4, PC5 = sa.pca.scores.PC5, PC6 = sa.pca.scores.PC6, PC7 = sa.pca.scores.PC7, PC8 = sa.pca.scores.PC8, PC9 = sa.pca.scores.PC9, PC10 = sa.pca.scores.PC10")
-    #
-	#print "write variant loadings to file"
-	#vds.export_variants(args.variant_loadings_out, expr="ID = v, PC1 = va.pca.loadings.PC1, PC2 = va.pca.loadings.PC2, PC3 = va.pca.loadings.PC3, PC4 = va.pca.loadings.PC4, PC5 = va.pca.loadings.PC5, PC6 = va.pca.loadings.PC6, PC7 = va.pca.loadings.PC7, PC8 = va.pca.loadings.PC8, PC9 = va.pca.loadings.PC9, PC10 = va.pca.loadings.PC10")
-
-	print "writing Plink files for PC-AiR"
-	vds.export_plink(args.plink_out, fam_expr = 'famID = s, id = s')
-
-	print "writing ref sample table to file"
-	kg.export_samples(args.kg_samples_out, expr = 'ID = s, POP = sa.pheno.POP, GROUP = sa.pheno.GROUP')
+	print('study data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
+	print('kg data: %d samples and %d variants' % (kg.count_cols(), kg.count_rows()))
+    
+	print("join matrix tables on columns with inner join on rows")
+	mt = mt.union_cols(kg)
+	hl.summarize_variants(mt)
+	print('merged data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
+    
+	print("write merged vcf file")
+	hl.export_vcf(mt, args.vcf_out)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--vds-in', help='a hail vds dataset', required=True)
+	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--kg-vcf-in', help='a vcf file consisting of ~5k 1000 Genomes variants (selected by Purcell for ancestry)', required=True)
 	requiredArgs.add_argument('--kg-sample', help='a 1KG sample file (header: ID POP GROUP SEX)', required=False)
-	#requiredArgs.add_argument('--sample-scores-out', help='an output filename for sample PC scores', required=True)
-	#requiredArgs.add_argument('--variant-loadings-out', help='an output filename for variant loadings', required=True)
-	requiredArgs.add_argument('--plink-out', help='an output Plink fileset name to be read by PC-AiR', required=True)
-	requiredArgs.add_argument('--kg-samples-out', help='an output filename for kg samples that were merged', required=True)
+	requiredArgs.add_argument('--vcf-out', help='an output vcf filename', required=True)
 	args = parser.parse_args()
 	main(args)

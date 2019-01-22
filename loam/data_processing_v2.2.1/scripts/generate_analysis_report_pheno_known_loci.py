@@ -44,6 +44,7 @@ def main(args=None):
 
 	desc = collections.OrderedDict()
 	for s in args.desc.split(",,,"):
+		print s
 		ss = s.split("___")
 		if len(ss) > 4:
 			ss[1] = " ".join([ss[0],ss[1]])
@@ -58,10 +59,11 @@ def main(args=None):
 			id = ss[2]
 		if not ss[0] in desc:
 			desc[ss[0]] = collections.OrderedDict()
+		print ss
 		desc[ss[0]][id] = ss[3]
 
 	result_cols = ['chr','pos','id','alt','ref','n','case','ctrl','af','afavg','afmin','afmax','beta','se','or','pval','dir','cohort','gene','r2','id_known','n_known','case_known','ctrl_known','beta_known','se_known','or_known','pval_known']
-	report_cols = ['CHR','POS','ID','EA','OA','N','CASE','CTRL','FREQ','FREQ\textsubscript{AVG}','FREQ\textsubscript{MIN}','FREQ\textsubscript{MAX}','EFFECT','STDERR','OR','P','DIR','COHORT',r"GENE\textsubscript{CLOSEST}",r"R\textsuperscript{2}",r"ID\textsubscript{KNOWN}",r"N\textsubscript{KNOWN}",r"CASE\textsubscript{KNOWN}",r"CTRL\textsubscript{KNOWN}",r"EFFECT\textsubscript{KNOWN}",r"STDERR\textsubscript{KNOWN}",r"OR\textsubscript{KNOWN}",r"P\textsubscript{KNOWN}"]
+	report_cols = ['CHR','POS','ID','EA','OA','N','CASE','CTRL','FREQ',r"FREQ\textsubscript{AVG}",r"FREQ\textsubscript{MIN}",r"FREQ\textsubscript{MAX}",'EFFECT','STDERR','OR','P','DIR','COHORT',r"GENE\textsubscript{CLOSEST}",r"R\textsuperscript{2}",r"ID\textsubscript{KNOWN}",r"N\textsubscript{KNOWN}",r"CASE\textsubscript{KNOWN}",r"CTRL\textsubscript{KNOWN}",r"EFFECT\textsubscript{KNOWN}",r"STDERR\textsubscript{KNOWN}",r"OR\textsubscript{KNOWN}",r"P\textsubscript{KNOWN}"]
 	cols = dict(zip(result_cols,report_cols))
 	types = {
 		'chr': 'string type', 
@@ -95,6 +97,7 @@ def main(args=None):
 		
 			print "writing top associations section"
 			f.write("\n"); f.write(r"\subsection{Previously identified risk loci}"); f.write("\n")
+			f.write(r"\label{" + args.pheno_name.replace("_","-") + r"-Previously-identified-risk-loci}"); f.write("\n")
 	
 			f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{"  + args.pheno_name.replace("_","-") + r"-Known-Loci}".encode('utf-8')); f.write("\n")
 

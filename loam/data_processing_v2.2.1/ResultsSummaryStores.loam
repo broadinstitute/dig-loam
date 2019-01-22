@@ -24,40 +24,57 @@ final case class ResultsKnownLociSummary(
 val resultsSummaryStores = (
     (
       for {
-        r <- projectConfig.Runs
-        m <- projectConfig.Models.filter(e => r.models contains e.id)
-        c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
+		x <- modelCohortsReport
       } yield {
-        (m, c)
+        (x.model, Some(x.cohort), None, None)
+      } 
+    ) ++
+    (
+      for {
+        x <- modelMetasReport
+      } yield {
+        (x.model, None, Some(x.meta), None)
       }
     ) ++
     (
       for {
-        r <- projectConfig.Runs
-        m <- projectConfig.Models.filter(e => r.models contains e.id)
-        t <- projectConfig.Metas.filter(e => r.metas contains e.id)
+        x <- modelMerges
       } yield {
-        (m, t)
+        (x.model, None, None, Some(x.merge))
       }
     )
   ).map { rs => 
 
   val model = rs._1
-  val cohort: Either[ConfigCohort, ConfigMeta] = rs._2
+  val cohort: Option[ConfigCohort] = rs._2
+  val meta: Option[ConfigMeta] = rs._3
+  val merge: Option[ConfigMerge] = rs._4
 
-  val prefix = s"${projectConfig.projectId}.${cohort.get.id}.${model.id}"
+  val prefix = s"${projectConfig.projectId}"
+  val baseName = cohort match {
+    case Some(s) => s"${prefix}.${s.id}.${model.id}"
+    case None => 
+      meta match {
+        case Some(s) => s"${prefix}.${s.id}.${model.id}"
+        case None => 
+          merge match {
+            case Some(s) => s"${prefix}.${s.id}.${model.id}"
+            case None => s"${prefix}.${model.id}"
+          }
+      }
+  }
 
-  val regPlotsBaseString = s"${prefix}.results.regplots"
+  val regPlotsBaseString = s"${baseName}.results.regplots"
 
   val resultsSummaryData = ResultsSummaryData(
-    sigRegions = store(localOutDir / s"${prefix}.results.sigregions.tsv"),
-    top1000 = store(localOutDir / s"${prefix}.results.top1000.tsv"),
-    top1000Genes = store(localOutDir / s"${prefix}.results.top1000.genes.tsv"),
-    top20AnnotAlignedRisk = store(localOutDir / s"${prefix}.results.top20.annot.aligned_risk.tsv"),
-    qqPlotPng = store(localOutDir / s"${prefix}.results.qq.png"),
-    mhtPlotPng = store(localOutDir / s"${prefix}.results.mht.png"),
-    regPlotsBase = localOutDir / s"${prefix}.results.regplots",
-    regPlotsPdf = store(localOutDir / s"${prefix}.results.regplots.pdf"))
+    sigRegions = store(localOutDir / s"${baseName}.results.sigregions.tsv"),
+    top1000 = store(localOutDir / s"${baseName}.results.top1000.tsv"),
+    top1000Genes = store(localOutDir / s"${baseName}.results.top1000.genes.tsv"),
+    top20AnnotAlignedRisk = store(localOutDir / s"${baseName}.results.top20.annot.aligned_risk.tsv"),
+    qqPlotPng = store(localOutDir / s"${baseName}.results.qq.png"),
+    mhtPlotPng = store(localOutDir / s"${baseName}.results.mht.png"),
+    regPlotsBase = localOutDir / regPlotsBaseString,
+    regPlotsPdf = store(localOutDir / s"${regPlotsBaseString}.pdf"))
 
   rs -> ResultsSummary(
     resultsSummaryData = resultsSummaryData)
@@ -67,37 +84,51 @@ val resultsSummaryStores = (
 val resultsKnownLociSummaryStores = (
     (
       for {
-        r <- projectConfig.Runs
-        m <- projectConfig.Models.filter(e => r.models contains e.id)
-        c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
-        k <- projectConfig.Knowns.filter(e => r.knowns contains e.id)
+		x <- modelCohortKnownsReport
       } yield {
-        (m, c, k)
+        (x.model, Some(x.cohort), None, None, x.known)
+      } 
+    ) ++
+    (
+      for {
+        x <- modelMetaKnownsReport
+      } yield {
+        (x.model, None, Some(x.meta), None, x.known)
       }
     ) ++
     (
       for {
-        r <- projectConfig.Runs
-        m <- projectConfig.Models.filter(e => r.models contains e.id)
-        t <- projectConfig.Metas.filter(e => r.metas contains e.id)
-        c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id)
-        k <- projectConfig.Knowns.filter(e => r.knowns contains e.id)
+        x <- modelMergeKnowns
       } yield {
-        (m, t, k)
+        (x.model, None, None, Some(x.merge), x.known)
       }
     )
-  ).map { rskl => 
+  ).map { rs => 
 
-  val model = rskl._1
-  val cohort: Either[ConfigCohort, ConfigMeta] = rskl._2
-  val known = rskl._3
+  val model = rs._1
+  val cohort: Option[ConfigCohort] = rs._2
+  val meta: Option[ConfigMeta] = rs._3
+  val merge: Option[ConfigMerge] = rs._4
+  val known: ConfigKnown = rs._5
 
-  val prefix = s"${projectConfig.projectId}.${cohort.get.id}.${model.id},${known.id}"
+  val prefix = s"${projectConfig.projectId}"
+  val baseName = cohort match {
+    case Some(s) => s"${prefix}.${s.id}.${model.id}.${known.id}"
+    case None => 
+      meta match {
+        case Some(s) => s"${prefix}.${s.id}.${model.id}.${known.id}"
+        case None => 
+          merge match {
+            case Some(s) => s"${prefix}.${s.id}.${model.id}.${known.id}"
+            case None => s"${prefix}.${model.id}.${known.id}"
+          }
+      }
+  }
 
   val resultsKnownLociSummaryData = ResultsKnownLociSummaryData(
-    top50 = store(localOutDir / s"${prefix}.top50.tsv"))
+    top50 = store(localOutDir / s"${baseName}.results.top50.tsv"))
 
-  rskl -> ResultsKnownLociSummary(
+  rs -> ResultsKnownLociSummary(
     resultsKnownLociSummaryData = resultsKnownLociSummaryData)
 
 }.toMap

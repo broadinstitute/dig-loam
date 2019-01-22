@@ -47,14 +47,6 @@ rownames(kinship)<-king$sample.id
 colnames(kinship)<-king$sample.id
 snpgdsClose(genofile)
 
-print("setting negative kinship coefficient values to 0 in order to force unrelatedness in case of too few snps")
-kinship[kinship < 0.0]<-0.0
-
-print("exclude kinship matrix if all non-diag values are 0")
-if(all(kinship[upper.tri(kinship) | lower.tri(kinship)] == 0)) {
-	kinship <- NULL
-}
-
 print(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""))
 
 print("load genotype data from GDS file")
@@ -62,22 +54,15 @@ geno <- GdsGenotypeReader(filename = args$gds_out)
 genoData <- GenotypeData(geno)
 iids <- getScanID(genoData)
 
-unrel_iids <- NULL
-if(! is.null(args$force_unrel) & ! is.null(kinship)) {
+unrel_iids<-NULL
+if(! is.null(args$force_unrel)) {
 	print("reading list of unrelated samples from file")
 	unrel_df<-read.table(file=args$force_unrel[2],header=TRUE,as.is=T,stringsAsFactors=FALSE)
 	unrel_iids<-unrel_df[,grep(args$force_unrel[1],names(unrel_df))]
 }
 
 print("running pcair")
-mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, snp.block.size = 10000), silent=TRUE)
-if(inherits(mypcair, "try-error")) {
-	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, snp.block.size = 10000), silent=TRUE)
-	if(inherits(mypcair, "try-error")) {
-		print("unable to run pcair with or without kinship adjustment")
-		quit(status=1)
-	}
-}
+mypcair <- pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, snp.block.size = 10000)
 
 print(paste("memory after running pcair: ",mem_used() / (1024^2),sep=""))
 

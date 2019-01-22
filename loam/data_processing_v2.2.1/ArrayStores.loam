@@ -69,20 +69,16 @@ final case class HarmonizedData(
   imputeBase: Path,
   vcfGoogle: Store,
   tbiGoogle: Store,
-  vds: Store,
-  vdsGoogle: Store,
-  variantQc: Store,
-  variantQcGoogle: Store,
-  prunedIn: Store,
-  prunedInGoogle: Store)
+  mtGoogle: Store,
+  pruneIn: Store,
+  regionsExcludePlink: Store)
 
 final case class PrunedData(
-  dataGoogle: Seq[Store],
-  baseGoogle: URI,
   data: Seq[Store],
   base: Path,
-  vds: Store,
-  vdsGoogle: Store)
+  bimGoogle: Store,
+  vcf: Store,
+  tbi: Store)
 
 final case class KinshipData(
   base: Path,
@@ -93,12 +89,11 @@ final case class KinshipData(
   famSizes: Store)
 
 final case class Ref1kgData(
+  vcf: Store,
   data: Seq[Store],
   base: Path,
   gds: Store,
-  kgSamples: Store,
-  kgSamplesGoogle: Store,
-  dataGoogle: Seq[Store],
+  vcfGoogle: Store,
   baseGoogle: URI)
 
 final case class AncestryData(
@@ -144,7 +139,7 @@ final case class SampleQcData(
   pcaPlots: Store,
   pcaScores: Store,
   outliers: Store,
-  outliersPlotsPdf: Store)
+  metricPlots: Store)
 
 final case class SampleQcPcaClusterData(
   base: Path,
@@ -166,6 +161,7 @@ final case class SampleQcMetricClusterData(
 final case class FinalData(
   samplesExclude: Store,
   samplesExcludeGoogle: Store,
+  samplesRestore: Store,
   variantsExclude: Store,
   variantsExcludeIds: Store,
   variantsExcludeGoogle: Store)
@@ -178,13 +174,11 @@ final case class CleanData(
   data: Seq[Store],
   base: Path,
   gds: Store,
-  dataGoogle: Seq[Store],
   baseGoogle: URI,
   vcf: Store,
   tbi: Store,
   vcfGoogle: Store,
-  vds: Store,
-  vdsGoogle: Store,
+  mtGoogle: Store,
   pcaScores: Store,
   pcaLog: Store)
 
@@ -318,20 +312,16 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     imputeBase = localOutDir / imputeBaseString,
     vcfGoogle = store(googleOutDir / s"${refBaseString}.vcf.gz"),
     tbiGoogle = store(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
-    vds = store(localOutDir / s"${refBaseString}.vds"),
-    vdsGoogle = store(googleOutDir / s"${refBaseString}.vds"),
-    variantQc = store(localOutDir / s"${refBaseString}.variantqc.tsv"),
-    variantQcGoogle = store(googleOutDir / s"${refBaseString}.variantqc.tsv"),
-    prunedIn = store(localOutDir / s"${refBaseString}.prunedin.tsv"),
-    prunedInGoogle = store(googleOutDir / s"${refBaseString}.prunedin.tsv"))
+    mtGoogle = store(googleOutDir / s"${refBaseString}.mt"),
+    pruneIn = store(localOutDir / s"${refBaseString}.prune.in"),
+    regionsExcludePlink = store(localOutDir / s"${refBaseString}.regions_exclude.txt"))
 
   val prunedData = PrunedData(
-    dataGoogle = bedBimFam(googleOutDir / qcBaseString),
-    baseGoogle = googleOutDir / qcBaseString,
     data = bedBimFam(localOutDir / qcBaseString),
     base = localOutDir / qcBaseString,
-    vds = store(localOutDir / s"${qcBaseString}.vds"),
-    vdsGoogle = store(googleOutDir / s"${qcBaseString}.vds"))
+    bimGoogle = store(googleOutDir / s"${qcBaseString}.bim"),
+    vcf = store(localOutDir / s"${qcBaseString}.vcf.gz"),
+    tbi = store(localOutDir / s"${qcBaseString}.vcf.gz.tbi"))
 
   val kinshipData = KinshipData(
     base = localOutDir / kinshipBaseString,
@@ -342,12 +332,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     famSizes = store(localOutDir / s"${kinshipBaseString}.famsizes.tsv"))
 
   val ref1kgData = Ref1kgData(
+    vcf = store(localOutDir / s"${ref1kgBaseString}.vcf.bgz"),
     data = bedBimFam(localOutDir / ref1kgBaseString),
     base = localOutDir / ref1kgBaseString,
     gds = store(localOutDir / s"${ref1kgBaseString}.gds"),
-    kgSamples = store(localOutDir / s"${ref1kgBaseString}.kgsamples.tsv"),
-    kgSamplesGoogle = store(googleOutDir / s"${ref1kgBaseString}.kgsamples.tsv"),
-    dataGoogle = bedBimFam(googleOutDir / ref1kgBaseString),
+    vcfGoogle = store(googleOutDir / s"${ref1kgBaseString}.vcf.bgz"),
     baseGoogle = googleOutDir / ref1kgBaseString)
 
   val ancestryData = AncestryData(
@@ -393,7 +382,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     pcaPlots = store(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
     pcaScores = store(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
     outliers = store(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
-    outliersPlotsPdf = store(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"))
+    metricPlots = store(localOutDir / s"${sampleQcBaseString}.metricplots.pdf"))
 
   val sampleQcPcaClusterData = SampleQcPcaClusterData(
     base = localOutDir / s"${sampleQcBaseString}.pca.cluster",
@@ -419,6 +408,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val finalData = FinalData(
     samplesExclude = store(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
     samplesExcludeGoogle = store(googleOutDir / s"${finalBaseString}.samples.exclude.txt"),
+	samplesRestore = store(localOutDir / s"${finalBaseString}.samples.restore.tbl"),
     variantsExclude = store(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
     variantsExcludeIds = store(localOutDir / s"${finalBaseString}.variants.exclude.ids.txt"),
     variantsExcludeGoogle = store(googleOutDir / s"${finalBaseString}.variants.exclude.txt"))
@@ -431,13 +421,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     data = bedBimFam(localOutDir / cleanBaseString),
     base = localOutDir / cleanBaseString,
     gds = store(localOutDir / s"${cleanBaseString}.gds"),
-    dataGoogle = bedBimFam(googleOutDir / cleanBaseString),
     baseGoogle = googleOutDir / cleanBaseString,
     vcf = store(localOutDir / s"${cleanBaseString}.vcf.bgz"),
     tbi = store(localOutDir / s"${cleanBaseString}.vcf.bgz.tbi"),
     vcfGoogle = store(googleOutDir / s"${cleanBaseString}.vcf.bgz"),
-    vds = store(localOutDir / s"${cleanBaseString}.vds"),
-    vdsGoogle = store(googleOutDir / s"${cleanBaseString}.vds"),
+    mtGoogle = store(googleOutDir / s"${cleanBaseString}.mt"),
     pcaScores = store(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
     pcaLog = store(localOutDir / s"${cleanBaseString}.pca.log"))
 

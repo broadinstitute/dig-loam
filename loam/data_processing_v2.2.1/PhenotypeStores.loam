@@ -9,40 +9,37 @@ final case class Phenotype(
   figureData: FigureData)
 
 val phenotypeStores = (
-    (
-      for {
-        r <- projectConfig.Runs
-        m <- projectConfig.Models.filter(e => r.models contains e.id)
-        c <- projectConfig.Cohorts.filter(e => r.cohorts contains e.id)
-      } yield {
-        (m, c, None)
-      }
-    ) ++
-    (
-      for {
-        r <- projectConfig.Runs
-        m <- projectConfig.Models.filter(e => r.models contains e.id)
-        t <- projectConfig.Metas.filter(e => r.metas contains e.id)
-        c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id)
-      } yield {
-        (m, c, Some(t))
-      }
-    )
-  ).map { cp =>
-
-    val model = cp._1
-    val cohort = cp._2
-    val meta: Option[ConfigMeta] = cp._3
-
-    val prefix = meta match {
-      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.pheno}"
-      case None => s"${projectConfig.projectId}.${cohort.id}.${model.pheno}"
+  (
+    for {
+      x <- modelCohorts
+      p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
+    } yield {
+      (p, x.cohort, None)
     }
+  ).distinct ++
+  (
+    for {
+      x <- modelCohortMetas
+      p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
+    } yield {
+      (p, x.cohort, Some(x.meta))
+    }
+  ).distinct
+).map { cp =>
 
-    val figureData = FigureData(
-      distPlot = store(localOutDir / s"${prefix}.distplot.png"))
+  val pheno = cp._1
+  val cohort = cp._2
+  val meta: Option[ConfigMeta] = cp._3
 
-    cp -> Phenotype(
-      figureData = figureData)
+  val prefix = meta match {
+    case Some(s) => s"${projectConfig.projectId}.${s.id}.${cohort.id}.${pheno.id}"
+    case None => s"${projectConfig.projectId}.${cohort.id}.${pheno.id}"
+  }
 
-  }.toMap
+  val figureData = FigureData(
+    distPlot = store(localOutDir / s"${prefix}.distplot.png"))
+
+  cp -> Phenotype(
+    figureData = figureData)
+
+}.toMap

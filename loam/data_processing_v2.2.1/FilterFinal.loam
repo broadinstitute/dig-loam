@@ -8,73 +8,42 @@ import ArrayStores._
 import ProjectStores._
 
 def FilterFinal(array: String): Unit = {
-
-  hailCloud match {
-
-    case true =>
  
-      local {
-      
-        googleCopy(arrayStores(array).finalData.samplesExclude, arrayStores(array).finalData.samplesExcludeGoogle)
-      
-      }
-      
-      google {
-      
-        hail"""$pyHailFilterFinal --
-          --vds-in ${arrayStores(array).harmonizedData.vdsGoogle}
-          --ancestry-in ${ProjectStores.ancestryInferredGoogle}
-          --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle}
-          --pheno-in ${ProjectStores.phenoGoogle}
-          --iid-col ${projectConfig.phenoId}
-          --case-ctrl-col ${projectConfig.phenoStatus}
-          --samples-remove ${arrayStores(array).finalData.samplesExcludeGoogle}
-          --variantqc-out ${arrayStores(array).variantQcData.statsGoogle}
-          --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle}
-          --plink-out ${arrayStores(array).cleanData.baseGoogle}
-          --vcf-out ${arrayStores(array).cleanData.vcfGoogle}
-          --vds-out ${arrayStores(array).cleanData.vdsGoogle}"""
-          .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.ancestryInferredGoogle, arrayStores(array).sexcheckData.sexcheckGoogle, ProjectStores.phenoGoogle, arrayStores(array).finalData.samplesExcludeGoogle)
-          .out(arrayStores(array).cleanData.dataGoogle :+ arrayStores(array).cleanData.vcfGoogle :+ arrayStores(array).variantQcData.statsGoogle :+ arrayStores(array).finalData.variantsExcludeGoogle :+ arrayStores(array).cleanData.vdsGoogle)
-          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal.google".split("/").last)
-      
-      }
-      
-      local {
-      
-        googleCopy(arrayStores(array).cleanData.dataGoogle, arrayStores(array).cleanData.data)
-        googleCopy(arrayStores(array).cleanData.vcfGoogle, arrayStores(array).cleanData.vcf)
-        googleCopy(arrayStores(array).variantQcData.statsGoogle, arrayStores(array).variantQcData.stats)
-        googleCopy(arrayStores(array).finalData.variantsExcludeGoogle, arrayStores(array).finalData.variantsExclude)
-      
-      }
-
-    case false =>
-
-      drmWith(imageName = s"$imgHailv01", cores=4, mem=2) {
-
-        cmd"""$binHail $pyHailFilterFinal
-          --vds-in ${arrayStores(array).harmonizedData.vds}
-          --ancestry-in ${ProjectStores.ancestryInferred}
-          --sexcheck-in ${arrayStores(array).sexcheckData.sexcheck}
-          --pheno-in ${ProjectStores.pheno}
-          --iid-col ${projectConfig.phenoId}
-          --case-ctrl-col ${projectConfig.phenoStatus}
-          --samples-remove ${arrayStores(array).finalData.samplesExclude}
-          --variantqc-out ${arrayStores(array).variantQcData.stats}
-          --variants-exclude-out ${arrayStores(array).finalData.variantsExclude}
-          --plink-out ${arrayStores(array).cleanData.base}
-          --vcf-out ${arrayStores(array).cleanData.vcf}
-          --vds-out ${arrayStores(array).cleanData.vds}"""
-          .in(arrayStores(array).harmonizedData.vds, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, ProjectStores.pheno, arrayStores(array).finalData.samplesExclude)
-          .out(arrayStores(array).cleanData.data :+ arrayStores(array).cleanData.vcf :+ arrayStores(array).variantQcData.stats :+ arrayStores(array).finalData.variantsExclude :+ arrayStores(array).cleanData.vds)
-          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal".split("/").last)
-
-      }
-
+  local {
+  
+    googleCopy(arrayStores(array).finalData.samplesExclude, arrayStores(array).finalData.samplesExcludeGoogle)
+  
   }
   
-  drmWith(imageName = s"$imgTools") {
+  google {
+  
+    hail"""$pyHailFilterFinal --
+      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
+      --ancestry-in ${ProjectStores.ancestryInferredGoogle}
+      --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle}
+      --pheno-in ${ProjectStores.phenoFileGoogle}
+      --iid-col ${projectConfig.phenoFileId}
+      --case-ctrl-col ${projectConfig.phenoFileStatus}
+      --samples-remove ${arrayStores(array).finalData.samplesExcludeGoogle}
+      --variantqc-out ${arrayStores(array).variantQcData.statsGoogle}
+      --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle}
+      --vcf-out ${arrayStores(array).cleanData.vcfGoogle}
+      --mt-out ${arrayStores(array).cleanData.mtGoogle}"""
+      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.ancestryInferredGoogle, arrayStores(array).sexcheckData.sexcheckGoogle, ProjectStores.phenoFileGoogle, arrayStores(array).finalData.samplesExcludeGoogle)
+      .out(arrayStores(array).cleanData.vcfGoogle, arrayStores(array).variantQcData.statsGoogle, arrayStores(array).finalData.variantsExcludeGoogle, arrayStores(array).cleanData.mtGoogle)
+      .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal.google".split("/").last)
+  
+  }
+  
+  local {
+
+    googleCopy(arrayStores(array).cleanData.vcfGoogle, arrayStores(array).cleanData.vcf)
+    googleCopy(arrayStores(array).variantQcData.statsGoogle, arrayStores(array).variantQcData.stats)
+    googleCopy(arrayStores(array).finalData.variantsExcludeGoogle, arrayStores(array).finalData.variantsExclude)
+  
+  }
+  
+  drm {
   
     cmd"""$binTabix -f -p vcf ${arrayStores(array).cleanData.vcf}"""
       .in(arrayStores(array).cleanData.vcf)
@@ -82,8 +51,17 @@ def FilterFinal(array: String): Unit = {
       .tag(s"${arrayStores(array).cleanData.tbi}".split("/").last)
   
   }
+
+  drm {
+
+    cmd"""$binPlink --vcf ${arrayStores(array).cleanData.vcf} --output-chr MT --keep-allele-order --make-bed --out ${arrayStores(array).cleanData.base} --memory 3000 --threads 1"""
+      .in(arrayStores(array).cleanData.vcf)
+      .out(arrayStores(array).cleanData.data)
+      .tag(s"${arrayStores(array).cleanData.base}".split("/").last)
+
+  }
   
-  drmWith(imageName = s"$imgR34", cores=4, mem=2) {
+  drmWith(cores=4, mem=4) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair
@@ -95,6 +73,7 @@ def FilterFinal(array: String): Unit = {
       > ${arrayStores(array).cleanData.pcaLog}"""
       .in(arrayStores(array).prunedData.data :+ arrayStores(array).finalData.samplesExclude)
       .out(arrayStores(array).cleanData.gds, arrayStores(array).cleanData.pcaScores, arrayStores(array).cleanData.pcaLog)
+      .using("R-3.4")
       .tag(s"${arrayStores(array).cleanData.pcaScores}".split("/").last)
   
   }
