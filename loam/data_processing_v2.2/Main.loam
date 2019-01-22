@@ -253,32 +253,32 @@ QcReport()
 //  PhenotypeDistPlots(configPheno = p, configCohort = x.cohort, configMeta = Some(x.meta))
 //
 //}
-//
-//// Analysis Report Global
-//for {
-//  report <- projectConfig.Reports
-//} yield {
-//
-//  AnalysisReportGlobal(configReport = report)
-//
-//}
-//
-//// Analysis Report Phenotypes
-//for {
-//  report <- projectConfig.Reports
-//  section <- report.sections
-//  pheno <- projectConfig.Models.filter(e => section.models contains e.id).map(e => projectConfig.Phenos.filter(f => f.id == e.pheno)).flatten.distinct
-//} yield {
-//
-//  AnalysisReportPheno(configReport = report, configSection = section, configPheno = pheno)
-//
-//}
-//
-//// Analysis Report Compile
-//for {
-//  report <- projectConfig.Reports
-//} yield {
-//
-//AnalysisReportCompile(configReport = report)
-//
-//}
+
+// Analysis Report Global
+for {
+  report <- projectConfig.Reports
+} yield {
+
+  AnalysisReportGlobal(configReport = report)
+
+}
+
+// Analysis Report Phenotypes
+for {
+  report <- projectConfig.Reports
+  section <- report.sections
+  pheno <- projectConfig.Models.filter(e => section.models contains e.id).map(e => projectConfig.Phenos.filter(f => f.id == e.pheno)).flatten.distinct
+} yield {
+
+  AnalysisReportPheno(configReport = report, configSection = section, configPheno = pheno)
+
+}
+
+// Analysis Report Compile
+for {
+  report <- projectConfig.Reports
+} yield {
+
+AnalysisReportCompile(configReport = report)
+
+}
