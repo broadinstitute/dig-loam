@@ -8,6 +8,7 @@ import PipelineConfig._
 import ArrayStores._
 import AssocStores._
 import ProjectStores._
+import Hail._
 
 def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMeta: Option[ConfigMeta] = None): Unit = {
 
@@ -16,36 +17,61 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   val array = configCohort.array
   val Seq(_, prunedBim, _) = arrayStores(array).prunedData.data
 
-  local {
 
-    googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle)
 
-  }
 
-  google {
 
-    hail"""$pyHailListSamples --
-      --mt-in ${arrayStores(array).cleanData.mtGoogle}
-      --bim-in ${arrayStores(array).prunedData.bimGoogle}
-      --pheno-in ${ProjectStores.phenoFileGoogle}
-      --iid-col ${projectConfig.phenoFileId}
-      --pheno-col ${configModel.pheno}
-      --test ${configModel.test}
-      --covars "${configModel.covars}"
-      --out-pheno-prelim ${assoc.phenoPrelimGoogle}
-      --out-samples ${assoc.samplesIncludeGoogle}"""
-    .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle)
-    .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
-    .tag(s"${assoc.phenoPrelim}.google".split("/").last)
+  Hail(
+    script = pyHailListSamples,
+    cloud = hailCloud,
+    tag = s"${assoc.phenoPrelim}.google".split("/").last,
+    python = binPython,
+    inputs = ,
+    outputs = ,
+    args = ,
+    transferPre = ,
+    transferPost = 
+  )
 
-  }
-    
-  local {
+  //inputs: Option[Seq[Store]],
+  //outputs: Option[Seq[Store]],
+  //args: Option[Seq[(String, Either[String, Store])]],
+  //transferPre: Option[Seq[(Store, Store)]],
+  //transferPost: Option[Seq[(Store, Store)]]
 
-    googleCopy(assoc.phenoPrelimGoogle, assoc.phenoPrelim)
-    googleCopy(assoc.samplesIncludeGoogle, assoc.samplesInclude)
 
-  }
+
+
+  //local {
+  //
+  //  googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle)
+  //
+  //}
+  //
+  //google {
+  //
+  //  hail"""$pyHailListSamples --
+  //    --mt-in ${arrayStores(array).cleanData.mtGoogle}
+  //    --bim-in ${arrayStores(array).prunedData.bimGoogle}
+  //    --pheno-in ${ProjectStores.phenoFileGoogle}
+  //    --iid-col ${projectConfig.phenoFileId}
+  //    --pheno-col ${configModel.pheno}
+  //    --test ${configModel.test}
+  //    --covars "${configModel.covars}"
+  //    --out-pheno-prelim ${assoc.phenoPrelimGoogle}
+  //    --out-samples ${assoc.samplesIncludeGoogle}"""
+  //  .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle)
+  //  .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
+  //  .tag(s"${assoc.phenoPrelim}.google".split("/").last)
+  //
+  //}
+  //  
+  //local {
+  //
+  //  googleCopy(assoc.phenoPrelimGoogle, assoc.phenoPrelim)
+  //  googleCopy(assoc.samplesIncludeGoogle, assoc.samplesInclude)
+  //
+  //}
 
   val excludeCrossArrayString = configMeta match {
 

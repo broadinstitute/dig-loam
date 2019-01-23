@@ -1,0 +1,130 @@
+/**
+  * Hail
+  *  Description: Run Hail jobs locally or on Google Cloud
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import AssocStores._
+import ProjectStores._
+
+def Hail(
+  script: Path,
+  cloud: Boolean,
+  tag: String,
+  python: Option[Path],
+  inputs: Option[Seq[Store]],
+  outputs: Option[Seq[Store]],
+  args: Option[Seq[(String, Either[String, Store])]],
+  transferPre: Option[Seq[(Store, Store)]],
+  transferPost: Option[Seq[(Store, Store)]]
+): Unit = {
+
+  val argsString: Option[String] = args match {
+
+    case Some(x) =>
+
+      Some(
+
+        for {
+          (a, b) <- x
+        } yield {
+
+          b match {
+
+            case Right(x) => "$a ${b.render}"
+
+            case Left(x) => "$a $b"
+
+          }
+
+        }.mkString(" ")
+
+      )
+
+    case None => None
+
+  }
+
+  cloud match {
+
+    case true =>
+
+      transferPre match {
+
+        case Some(x) =>
+
+          for {
+            (a, b) <- x
+          } yield {
+
+            local { googleCopy(a, b) }
+
+          }
+
+        case None => ()
+
+      }
+
+      val commandString: String = argsString match {
+
+        case Some(x) => "$script -- $x"
+
+        case None => "$script"
+
+      }
+
+      google {
+
+       hail"""$commandString"""
+        .in(inputs)
+        .out(outputs)
+        .tag(tag)
+      
+      }
+
+      transferPost match {
+
+        case Some(x) =>
+
+          for {
+            (a, b) <- x
+          } yield {
+
+            local { googleCopy(a, b) }
+
+          }
+
+        case None => ()
+
+      }
+
+    case false =>
+
+      val commandString: String = python match {
+
+        case Some(x) => 
+
+          argsString match {
+        
+            case Some(y) => "$x $script -- $y"
+        
+            case None => "$x $script"
+        
+          }
+
+      }
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$commandString"""
+         .in(inputs)
+         .out(outputs)
+         .tag(tag)
+      
+      }
+
+  }
+      
+}
