@@ -17,17 +17,17 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   val array = configCohort.array
   val Seq(_, prunedBim, _) = arrayStores(array).prunedData.data
 
+  val inputs = Seq(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, arrayStores(array).prunedData.bim, arrayStores(array).cleanData.mt, ProjectStores.phenoFile).filter { case None => false; case s => true }
 
-
-
+  val outputs = Seq(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle, assoc.phenoPrelim, assoc.samplesInclude).filter { case None => false; case s => true }
 
   Hail(
     script = pyHailListSamples,
     cloud = hailCloud,
     tag = s"${assoc.phenoPrelim}.google".split("/").last,
     python = binPython,
-    inputs = ,
-    outputs = ,
+    inputs = inputs,
+    outputs = outputs,
     args = ,
     transferPre = ,
     transferPost = 
