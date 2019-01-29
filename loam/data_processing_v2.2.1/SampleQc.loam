@@ -12,46 +12,82 @@ def SampleQc(array: String): Unit = {
 
   val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
 
-  local {
+  hailCloud match {
 
-    googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle)
-    googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle)
+    case true =>
+
+      local {
+      
+        googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle.get)
+        googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle.get)
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailSexcheck --
+          --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --pheno-in ${ProjectStores.phenoFileGoogle.get}
+          --id-col ${projectConfig.phenoFileId}
+          --sex-col ${projectConfig.phenoFileSrSex}
+          --male-code ${projectConfig.phenoFileMaleCode}
+          --female-code ${projectConfig.phenoFileFemaleCode}
+          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}"""
+          .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).harmonizedData.mtGoogle.get)
+          .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get)
+          .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
+      
+        hail"""$pyHailSampleqc --
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
+          --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}"""
+          .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
+          .out(arrayStores(array).sampleQcData.statsGoogle.get)
+          .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
+      
+      }
+      
+      local {
+
+        googleCopy(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.sexcheck)
+        googleCopy(arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.problems)
+        googleCopy(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.stats)
+      
+      }
+
+    case false =>
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailSexcheck
+          --mt-in ${arrayStores(array).harmonizedData.mt.get}
+          --pheno-in ${ProjectStores.phenoFile}
+          --id-col ${projectConfig.phenoFileId}
+          --sex-col ${projectConfig.phenoFileSrSex}
+          --male-code ${projectConfig.phenoFileMaleCode}
+          --female-code ${projectConfig.phenoFileFemaleCode}
+          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}"""
+          .in(ProjectStores.phenoFile, arrayStores(array).harmonizedData.mt.get)
+          .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems)
+          .tag(s"${arrayStores(array).sexcheckData.sexcheck}".split("/").last)
+
+      cmd"""$binPython $pyHailSampleqc
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).harmonizedData.mt.get}
+          --clusters-in ${ProjectStores.ancestryInferred}
+          --qc-out ${arrayStores(array).sampleQcData.stats}"""
+          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred)
+          .out(arrayStores(array).sampleQcData.stats)
+          .tag(s"${arrayStores(array).sampleQcData.stats}".split("/").last)
+
+      }
 
   }
   
-  google {
-
-    hail"""$pyHailSexcheck --
-      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
-      --pheno-in ${ProjectStores.phenoFileGoogle}
-      --id-col ${projectConfig.phenoFileId}
-      --sex-col ${projectConfig.phenoFileSrSex}
-      --male-code ${projectConfig.phenoFileMaleCode}
-      --female-code ${projectConfig.phenoFileFemaleCode}
-      --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle}
-      --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle}"""
-      .in(ProjectStores.phenoFileGoogle, arrayStores(array).harmonizedData.mtGoogle)
-      .out(arrayStores(array).sexcheckData.sexcheckGoogle, arrayStores(array).sexcheckData.problemsGoogle)
-      .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
-  
-    hail"""$pyHailSampleqc --
-      --reference-genome ${projectConfig.referenceGenome}
-      --mt-in ${arrayStores(array).harmonizedData.mtGoogle}
-      --clusters-in ${ProjectStores.ancestryInferredGoogle}
-      --qc-out ${arrayStores(array).sampleQcData.statsGoogle}"""
-      .in(arrayStores(array).harmonizedData.mtGoogle, ProjectStores.ancestryInferredGoogle)
-      .out(arrayStores(array).sampleQcData.statsGoogle)
-      .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
-
-  }
-  
-  local {
-
-    googleCopy(arrayStores(array).sampleQcData.statsGoogle, arrayStores(array).sampleQcData.stats)
-
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcIstatsAdj
@@ -60,7 +96,6 @@ def SampleQc(array: String): Unit = {
       --out ${arrayStores(array).sampleQcData.statsAdj}"""
       .in(arrayStores(array).sampleQcData.stats, arrayStores(array).pcaData.scores)
       .out(arrayStores(array).sampleQcData.statsAdj)
-      .using("R-3.4")
       .tag(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
@@ -72,15 +107,7 @@ def SampleQc(array: String): Unit = {
       --pca-scores ${arrayStores(array).sampleQcData.pcaScores}"""
       .in(arrayStores(array).sampleQcData.statsAdj)
       .out(arrayStores(array).sampleQcData.corrPlots, arrayStores(array).sampleQcData.pcaLoadings, arrayStores(array).sampleQcData.pcaPlots, arrayStores(array).sampleQcData.pcaScores)
-      .using("R-3.4")
       .tag(s"${arrayStores(array).sampleQcData.statsAdj}.rIstatsAdjPca".split("/").last)
-
-  }
-  
-  local {
-
-    googleCopy(arrayStores(array).sexcheckData.sexcheckGoogle, arrayStores(array).sexcheckData.sexcheck)
-    googleCopy(arrayStores(array).sexcheckData.problemsGoogle, arrayStores(array).sexcheckData.problems)
 
   }
   
@@ -90,7 +117,7 @@ def SampleQc(array: String): Unit = {
    *  Requires: Klustakwik, R
    */
   
-  drmWith(mem=8) {
+  drmWith(imageName = s"$imgTools", mem=8) {
 
     cmd"""(N=$$(head -1 ${arrayStores(array).sampleQcData.pcaScores} | wc | awk '{print $$2-1}') &&
       echo $$N) > ${arrayStores(array).sampleQcPcaClusterData.fet} &&
@@ -104,7 +131,7 @@ def SampleQc(array: String): Unit = {
 
   }
 
-  drm {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rIstatsPcsGmmClusterPlot
@@ -116,7 +143,6 @@ def SampleQc(array: String): Unit = {
       --id ${projectConfig.projectId}"""
       .in(arrayStores(array).sampleQcData.pcaScores, arrayStores(array).sampleQcPcaClusterData.clu)
       .out(arrayStores(array).sampleQcPcaClusterData.outliers, arrayStores(array).sampleQcPcaClusterData.plots, arrayStores(array).sampleQcPcaClusterData.xtab)
-      .using("R-3.4")
       .tag(s"${arrayStores(array).sampleQcData.pcaScores}.rIstatsPcsGmmClusterPlot".split("/").last)
   
   }
@@ -133,7 +159,7 @@ def SampleQc(array: String): Unit = {
   
   } yield { 
 
-    drm {
+    drmWith(imageName = s"$imgTools") {
   
       cmd"""(metricIdx=`head -1 ${arrayStores(array).sampleQcData.statsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${metric} | awk '{print $$1}'` &&
         echo 1 && sed '1d' ${arrayStores(array).sampleQcData.statsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${metricData.fet}"""
@@ -143,7 +169,7 @@ def SampleQc(array: String): Unit = {
   
     }
   
-    drmWith(mem=8) {
+    drmWith(imageName = s"imgTools", mem=8) {
   
       cmd"""$binKlustakwik ${metricData.base} 1 -UseFeatures 1 -UseDistributional 0 > ${metricData.log}"""
         .in(metricData.fet)
@@ -166,7 +192,7 @@ def SampleQc(array: String): Unit = {
   
   }
 
-  drm {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rIstatsAdjGmmPlotMetrics
@@ -180,7 +206,6 @@ def SampleQc(array: String): Unit = {
       --metric-plots ${arrayStores(array).sampleQcData.metricPlots}"""
       .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
       .out(arrayStores(array).sampleQcData.boxPlots, arrayStores(array).sampleQcData.discreteness, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.metricPlots)
-      .using("R-3.4")
       .tag(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)
 
   }
@@ -190,7 +215,7 @@ def SampleQc(array: String): Unit = {
    * Requires: Python
    */
   
-  drm {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyMakeSamplesRestoreTable
       --ancestry-outliers-keep "${arrayCfg.ancestryOutliersKeep.mkString(",")}"
@@ -200,7 +225,6 @@ def SampleQc(array: String): Unit = {
       --sexcheck-keep "${arrayCfg.sexcheckKeep.mkString(",")}"
       --out ${arrayStores(array).finalData.samplesRestore}"""
       .out(arrayStores(array).finalData.samplesRestore)
-      .using("R-3.4")
       .tag(s"${arrayStores(array).finalData.samplesRestore}".split("/").last)
 
   }
@@ -210,7 +234,7 @@ def SampleQc(array: String): Unit = {
    * Requires: Python
    */
   
-  drm {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyCompileExclusions
       --ancestry-inferred ${ProjectStores.ancestryInferred}

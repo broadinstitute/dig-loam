@@ -4,22 +4,22 @@ import StoreHelpers._
 
 final case class Assoc(
   phenoPrelim: Store,
-  phenoPrelimGoogle: Store,
+  phenoPrelimGoogle: Option[Store],
   samplesInclude: Store,
-  samplesIncludeGoogle: Store,
+  samplesIncludeGoogle: Option[Store],
   phenoLog: Store,
   pheno: Store,
+  phenoGoogle: Option[Store],
   pcs: Store,
-  phenoGoogle: Store,
-  pcsGoogle: Store,
+  pcsGoogle: Option[Store],
   results: Store,
-  tbi: Store,
-  resultsGoogle: Store)
+  resultsGoogle: Option[Store],
+  tbi: Store)
 
 final case class Known(
   data: Store,
   hiLd: Store,
-  hiLdGoogle: Store)
+  hiLdGoogle: Option[Store])
 
 final case class KnownAssoc(
   known: Known,
@@ -45,12 +45,12 @@ final case class MetaKinship(
 
 final case class Meta(
   results: Store,
-  resultsGoogle: Store,
+  resultsGoogle: Option[Store],
   tbi: Store)
 
 final case class Merge(
   results: Store,
-  resultsGoogle: Store,
+  resultsGoogle: Option[Store],
   tbi: Store)
 
 final case class KnownMeta(
@@ -89,17 +89,17 @@ val assocStores = (
 
     assoc -> Assoc(
       phenoPrelim = store(localOutDir / s"${prefix}.prelim_pheno.tsv"),
-      phenoPrelimGoogle = store(googleOutDir / s"${prefix}.prelim_pheno.tsv"),
+      phenoPrelimGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.prelim_pheno.tsv")); case false => None },
       samplesInclude = store(localOutDir / s"${prefix}.samples.include"),
-      samplesIncludeGoogle = store(googleOutDir / s"${prefix}.samples.include"),
+      samplesIncludeGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.samples.include")); case false => None },
       phenoLog = store(localOutDir / s"${prefix}.pheno.log"),
       pheno = store(localOutDir / s"${prefix}.pheno.tsv"),
+      phenoGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.pheno.tsv")); case false => None },
       pcs = store(localOutDir / s"${prefix}.pcs.include"),
-      phenoGoogle = store(googleOutDir / s"${prefix}.pheno.tsv"),
-      pcsGoogle = store(googleOutDir / s"${prefix}.pcs.include"),
+      pcsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.pcs.include")); case false => None },
       results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
-      tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"),
-      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz")
+      resultsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.results.tsv.bgz")); case false => None },
+      tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi")
     )
 
   }.toMap
@@ -137,20 +137,20 @@ val knownLociStores = (
       known = Known(
         data = store(path(known.data)).asInput,
         hiLd = store(path(known.hiLd)).asInput,
-        hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+        hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")); case false => None }),
       assoc = Assoc(
         phenoPrelim = store(localOutDir / s"${prefix}.prelim_pheno.tsv"),
-        phenoPrelimGoogle = store(googleOutDir / s"${prefix}.prelim_pheno.tsv"),
+        phenoPrelimGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.prelim_pheno.tsv")); case false => None },
         samplesInclude = store(localOutDir / s"${prefix}.samples.include"),
-        samplesIncludeGoogle = store(googleOutDir / s"${prefix}.samples.include"),
+        samplesIncludeGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.samples.include")); case false => None },
         phenoLog = store(localOutDir / s"${prefix}.pheno.log"),
         pheno = store(localOutDir / s"${prefix}.pheno.tsv"),
+        phenoGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.pheno.tsv")); case false => None },
         pcs = store(localOutDir / s"${prefix}.pcs.include"),
-        phenoGoogle = store(googleOutDir / s"${prefix}.pheno.tsv"),
-        pcsGoogle = store(googleOutDir / s"${prefix}.pcs.include"),
+        pcsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.pcs.include")); case false => None },
         results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
-        tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"),
-        resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"))
+        resultsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.results.tsv.bgz")); case false => None },
+        tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"))
       )
 
   }.toMap
@@ -208,7 +208,7 @@ val metaStores = (
 
   modelMeta -> Meta(
     results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
-    resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${baseString}.results.tsv.bgz")); case false => None },
     tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi")
   )
 
@@ -235,10 +235,10 @@ val knownMetaStores = (
     known = Known(
       data = store(path(known.data)).asInput,
       hiLd = store(path(known.hiLd)).asInput,
-      hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+      hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")); case false => None }),
     meta = Meta(
       results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.results.tsv.bgz")); case false => None },
       tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"))
   )
 
@@ -261,7 +261,7 @@ val mergeStores = (
 
   modelMerge -> Merge(
     results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
-    resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${baseString}.results.tsv.bgz")); case false => None },
     tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi")
   )
 
@@ -288,10 +288,10 @@ val knownMergeStores = (
     known = Known(
       data = store(path(known.data)).asInput,
       hiLd = store(path(known.hiLd)).asInput,
-      hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+      hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")); case false => None }),
     merge = Merge(
       results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${prefix}.results.tsv.bgz")); case false => None },
       tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"))
   )
 

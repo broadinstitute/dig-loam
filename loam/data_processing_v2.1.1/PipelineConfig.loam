@@ -4,7 +4,7 @@ val pipelineConfig   = loadConfig("pipelineConfig", "")
 val hailCloud = pipelineConfig.getBool("hailCloud")
 
 // Images
-val imgHailv01   = path(pipelineConfig.getStr("images.hailv01"))
+val imgHail   = path(pipelineConfig.getStr("images.hailv02"))
 val imgLocuszoom = path(pipelineConfig.getStr("images.locuszoom"))
 val imgPython27  = path(pipelineConfig.getStr("images.python27"))
 val imgR34       = path(pipelineConfig.getStr("images.r34"))

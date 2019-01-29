@@ -8,7 +8,7 @@ import ArrayStores._
 
 def FilterImpute(array: String): Unit = {
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""sed '1d' ${arrayStores(array).finalData.variantsExclude} | awk '{print $$3}' > ${arrayStores(array).finalData.variantsExcludeIds}"""
     .in(arrayStores(array).finalData.variantsExclude)

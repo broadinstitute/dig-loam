@@ -17,61 +17,62 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   val array = configCohort.array
   val Seq(_, prunedBim, _) = arrayStores(array).prunedData.data
 
-  val inputs = Seq(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, arrayStores(array).prunedData.bim, arrayStores(array).cleanData.mt, ProjectStores.phenoFile).filter { case None => false; case s => true }
+  hailCloud match {
 
-  val outputs = Seq(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle, assoc.phenoPrelim, assoc.samplesInclude).filter { case None => false; case s => true }
+    case true =>
 
-  Hail(
-    script = pyHailListSamples,
-    cloud = hailCloud,
-    tag = s"${assoc.phenoPrelim}.google".split("/").last,
-    python = binPython,
-    inputs = inputs,
-    outputs = outputs,
-    args = ,
-    transferPre = ,
-    transferPost = 
-  )
+      local {
+      
+        googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle.get)
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailListSamples --
+          --mt-in ${arrayStores(array).cleanData.mtGoogle.get}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+          --pheno-in ${ProjectStores.phenoFileGoogle.get}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --test ${configModel.test}
+          --covars "${configModel.covars}"
+          --out-pheno-prelim ${assoc.phenoPrelimGoogle.get}
+          --out-samples ${assoc.samplesIncludeGoogle.get}"""
+        .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get)
+        .out(assoc.phenoPrelimGoogle.get, assoc.samplesIncludeGoogle.get)
+        .tag(s"${assoc.phenoPrelim}.google".split("/").last)
+      
+      }
+        
+      local {
+      
+        googleCopy(assoc.phenoPrelimGoogle.get, assoc.phenoPrelim)
+        googleCopy(assoc.samplesIncludeGoogle.get, assoc.samplesInclude)
+      
+      }
 
-  //inputs: Option[Seq[Store]],
-  //outputs: Option[Seq[Store]],
-  //args: Option[Seq[(String, Either[String, Store])]],
-  //transferPre: Option[Seq[(Store, Store)]],
-  //transferPost: Option[Seq[(Store, Store)]]
+    case false =>
 
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
 
+        cmd"""$binPython $pyHailListSamples
+          --mt-in ${arrayStores(array).cleanData.mt}
+          --bim-in ${arrayStores(array).prunedData.base}.bim
+          --pheno-in ${ProjectStores.phenoFileGoogle}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --test ${configModel.test}
+          --covars "${configModel.covars}"
+          --out-pheno-prelim ${assoc.phenoPrelimGoogle}
+          --out-samples ${assoc.samplesIncludeGoogle}"""
+        .in((arrayStores(array).prunedData.data ++ arrayStores(array).cleanData.mt) :+ ProjectStores.phenoFile)
+        .out(assoc.phenoPrelim, assoc.samplesInclude)
+        .tag(s"${assoc.phenoPrelim}".split("/").last)
 
+      }
 
-  //local {
-  //
-  //  googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle)
-  //
-  //}
-  //
-  //google {
-  //
-  //  hail"""$pyHailListSamples --
-  //    --mt-in ${arrayStores(array).cleanData.mtGoogle}
-  //    --bim-in ${arrayStores(array).prunedData.bimGoogle}
-  //    --pheno-in ${ProjectStores.phenoFileGoogle}
-  //    --iid-col ${projectConfig.phenoFileId}
-  //    --pheno-col ${configModel.pheno}
-  //    --test ${configModel.test}
-  //    --covars "${configModel.covars}"
-  //    --out-pheno-prelim ${assoc.phenoPrelimGoogle}
-  //    --out-samples ${assoc.samplesIncludeGoogle}"""
-  //  .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle)
-  //  .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
-  //  .tag(s"${assoc.phenoPrelim}.google".split("/").last)
-  //
-  //}
-  //  
-  //local {
-  //
-  //  googleCopy(assoc.phenoPrelimGoogle, assoc.phenoPrelim)
-  //  googleCopy(assoc.samplesIncludeGoogle, assoc.samplesInclude)
-  //
-  //}
+  }
 
   val excludeCrossArrayString = configMeta match {
 
@@ -87,7 +88,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(cores=4, mem=4) {
+  drmWith(imageName = s"imgR34", cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -109,44 +110,70 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       > ${assoc.phenoLog}"""
       .in(generatePhenoIn)
       .out(assoc.pheno, assoc.pcs, assoc.phenoLog)
-      .using("R-3.4")
       .tag(s"${assoc.pheno}".split("/").last)
 
   }
+
+  hailCloud match {
+
+    case true =>
   
-  local {
-
-    googleCopy(assoc.pheno, assoc.phenoGoogle)
-    googleCopy(assoc.pcs, assoc.pcsGoogle)
-
-  }
-
-  google {
-  
+      local {
+      
+        googleCopy(assoc.pheno, assoc.phenoGoogle.get)
+        googleCopy(assoc.pcs, assoc.pcsGoogle.get)
+      
+      }
+      
+      google {
+      
         hail"""$pyHailAssoc --
-          --mt-in ${arrayStores(array).cleanData.mtGoogle}
-          --bim-in ${arrayStores(array).prunedData.bimGoogle}
-          --pheno-in ${assoc.phenoGoogle}
+          --mt-in ${arrayStores(array).cleanData.mtGoogle.get}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+          --pheno-in ${assoc.phenoGoogle.get}
           --iid-col ${projectConfig.phenoFileId}
           --pheno-col ${configModel.pheno}
-          --pcs-include ${assoc.pcsGoogle}
+          --pcs-include ${assoc.pcsGoogle.get}
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
-          --out ${assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, assoc.phenoGoogle, assoc.pcsGoogle)
-            .out(assoc.resultsGoogle)
+          --out ${assoc.resultsGoogle.get}"""
+            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
+            .out(assoc.resultsGoogle.get)
             .tag(s"${assoc.results}.google".split("/").last)
-  
+      
+      }
+      
+      local {
+      
+        googleCopy(assoc.resultsGoogle.get, assoc.results)
+      
+      }
+
+    case false =>
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailAssoc
+          --mt-in ${arrayStores(array).cleanData.mt}
+          --bim-in ${arrayStores(array).prunedData.base}.bim
+          --pheno-in ${assoc.pheno}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${assoc.pcs}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.results}"""
+            .in((arrayStores(array).prunedData.data ++ arrayStores(array).cleanData.mt) :+ ProjectStores.phenoFile :+ assoc.pheno :+ assoc.pcs)
+            .out(assoc.results)
+            .tag(s"${assoc.results}".split("/").last)
+
+      }
+
   }
   
-  local {
-
-    googleCopy(assoc.resultsGoogle, assoc.results)
-
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
@@ -163,28 +190,54 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   val array = configCohort.array
 
-  google {
-  
-    hail"""$pyHailListSamples --
-      --mt-in ${arrayStores(array).cleanData.mtGoogle}
-      --bim-in ${arrayStores(array).prunedData.bimGoogle}
-      --pheno-in ${ProjectStores.phenoFileGoogle}
-      --iid-col ${projectConfig.phenoFileId}
-      --pheno-col ${configModel.pheno}
-      --test ${configModel.test}
-      --covars "${configModel.covars}"
-      --out-pheno-prelim ${known.assoc.phenoPrelimGoogle}
-      --out-samples ${known.assoc.samplesIncludeGoogle}"""
-    .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle)
-    .out(known.assoc.phenoPrelimGoogle, known.assoc.samplesIncludeGoogle)
-    .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
-  
-  }
-    
-  local {
+  hailCloud match {
 
-    googleCopy(known.assoc.phenoPrelimGoogle, known.assoc.phenoPrelim)
-    googleCopy(known.assoc.samplesIncludeGoogle, known.assoc.samplesInclude)
+    case true =>
+
+      google {
+      
+        hail"""$pyHailListSamples --
+          --mt-in ${arrayStores(array).cleanData.mtGoogle.get}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+          --pheno-in ${ProjectStores.phenoFileGoogle.get}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --test ${configModel.test}
+          --covars "${configModel.covars}"
+          --out-pheno-prelim ${known.assoc.phenoPrelimGoogle.get}
+          --out-samples ${known.assoc.samplesIncludeGoogle.get}"""
+        .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get)
+        .out(known.assoc.phenoPrelimGoogle.get, known.assoc.samplesIncludeGoogle.get)
+        .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
+      
+      }
+        
+      local {
+      
+        googleCopy(known.assoc.phenoPrelimGoogle.get, known.assoc.phenoPrelim)
+        googleCopy(known.assoc.samplesIncludeGoogle.get, known.assoc.samplesInclude)
+      
+      }
+
+    case false =>
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailListSamples
+          --mt-in ${arrayStores(array).cleanData.mt}
+          --bim-in ${arrayStores(array).prunedData.base}.bim
+          --pheno-in ${ProjectStores.phenoFile}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --test ${configModel.test}
+          --covars "${configModel.covars}"
+          --out-pheno-prelim ${known.assoc.phenoPrelim}
+          --out-samples ${known.assoc.samplesInclude}"""
+        .in((arrayStores(array).prunedData.data ++ arrayStores(array).cleanData.mt) :+ ProjectStores.phenoFile)
+        .out(known.assoc.phenoPrelim, known.assoc.samplesInclude)
+        .tag(s"${known.assoc.phenoPrelim}".split("/").last)
+
+      }
 
   }
 
@@ -202,7 +255,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(cores=4, mem=4) {
+  drmWith(imageName = s"imgR34", cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -224,46 +277,73 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       > ${known.assoc.phenoLog}"""
       .in(generatePhenoIn)
       .out(known.assoc.pheno, known.assoc.pcs, known.assoc.phenoLog)
-      .using("R-3.4")
       .tag(s"${known.assoc.pheno}".split("/").last)
 
   }
+
+  hailCloud match {
+
+    case true =>
   
-  local {
-  
-    googleCopy(known.assoc.pheno, known.assoc.phenoGoogle)
-    googleCopy(known.assoc.pcs, known.assoc.pcsGoogle)
-    googleCopy(known.known.hiLd, known.known.hiLdGoogle)
-  
+      local {
+      
+        googleCopy(known.assoc.pheno, known.assoc.phenoGoogle.get)
+        googleCopy(known.assoc.pcs, known.assoc.pcsGoogle.get)
+        googleCopy(known.known.hiLd, known.known.hiLdGoogle.get)
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailAssoc --
+          --mt-in ${arrayStores(array).cleanData.mtGoogle.get}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+          --pheno-in ${known.assoc.phenoGoogle.get}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${known.assoc.pcsGoogle.get}
+          --extract-ld ${known.known.hiLdGoogle.get}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${known.assoc.resultsGoogle.get}"""
+            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, known.assoc.phenoGoogle.get, known.assoc.pcsGoogle.get, known.known.hiLdGoogle.get)
+            .out(known.assoc.resultsGoogle.get)
+            .tag(s"${known.assoc.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(known.assoc.resultsGoogle.get, known.assoc.results)
+      
+      }
+
+    case false =>
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailAssoc
+          --mt-in ${arrayStores(array).cleanData.mt}
+          --bim-in ${arrayStores(array).prunedData.base}.bim
+          --pheno-in ${known.assoc.pheno}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${known.assoc.pcs}
+          --extract-ld ${known.known.hiLd}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${known.assoc.results}"""
+            .in((arrayStores(array).prunedData.data ++ arrayStores(array).cleanData.mt) :+ ProjectStores.phenoFile :+ known.assoc.pheno :+ known.assoc.pcs :+ known.known.hiLd)
+            .out(known.assoc.results)
+            .tag(s"${known.assoc.results}".split("/").last)
+
+      }
+
   }
   
-  google {
-  
-    hail"""$pyHailAssoc --
-      --mt-in ${arrayStores(array).cleanData.mtGoogle}
-      --bim-in ${arrayStores(array).prunedData.bimGoogle}
-      --pheno-in ${known.assoc.phenoGoogle}
-      --iid-col ${projectConfig.phenoFileId}
-      --pheno-col ${configModel.pheno}
-      --pcs-include ${known.assoc.pcsGoogle}
-      --extract-ld ${known.known.hiLdGoogle}
-      --test ${configModel.test}
-      --trans "${configModel.trans}"
-      --covars "${configModel.covars}"
-      --out ${known.assoc.resultsGoogle}"""
-        .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, known.assoc.phenoGoogle, known.assoc.pcsGoogle, known.known.hiLdGoogle)
-        .out(known.assoc.resultsGoogle)
-        .tag(s"${known.assoc.results}.google".split("/").last)
-  
-  }
-  
-  local {
-  
-    googleCopy(known.assoc.resultsGoogle, known.assoc.results)
-  
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.assoc.results}"""
       .in(known.assoc.results)

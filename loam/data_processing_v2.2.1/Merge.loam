@@ -11,49 +11,93 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
 
   val merge = mergeStores((configModel, configMerge))
 
-  val resultsListStrings = {
+  hailCloud match {
 
-    for {
-      c <- configMerge.cohorts_metas
-    } yield {
+    case true =>
 
-      val result = (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.resultsGoogle).toSeq).head
-      c + "___" + s"${result.toString.split("@")(1)}"
+      val resultsListStrings = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          val result = (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq).head
+          c + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq).head
+      
+        }
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailMerge --
+          --results ${resultsListStrings.mkString(",")}
+          --out ${merge.resultsGoogle.get}"""
+            .in(resultsList)
+            .out(merge.resultsGoogle.get)
+            .tag(s"${merge.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(merge.resultsGoogle.get, merge.results)
+      
+      }
 
-    }
+    case false =>
+
+      val resultsListStrings = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          val result = (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.results).toSeq).head
+          c + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.results).toSeq).head
+      
+        }
+      
+      }
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailMerge
+          --results ${resultsListStrings.mkString(",")}
+          --out ${merge.results}"""
+            .in(resultsList)
+            .out(merge.results)
+            .tag(s"${merge.results}".split("/").last)
+
+      }
 
   }
-
-  val resultsList = {
   
-    for {
-      c <- configMerge.cohorts_metas
-    } yield {
-  
-      (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.resultsGoogle).toSeq).head
-
-    }
-  
-  }
-
-  google {
-  
-    hail"""$pyHailMerge --
-      --results ${resultsListStrings.mkString(",")}
-      --out ${merge.resultsGoogle}"""
-        .in(resultsList)
-        .out(merge.resultsGoogle)
-        .tag(s"${merge.results}.google".split("/").last)
-  
-  }
-  
-  local {
-  
-    googleCopy(merge.resultsGoogle, merge.results)
-  
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgTools") {
   
     cmd"""$binTabix -f -b 2 -e 2 ${merge.results}"""
       .in(merge.results)
@@ -68,49 +112,93 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
 
   val known = knownMergeStores((configModel, configMerge, configKnown))
 
-  val resultsListStrings = {
+  hailCloud match {
 
-    for {
-      c <- configMerge.cohorts_metas
-    } yield {
+    case true =>
 
-      val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.meta.resultsGoogle).toSeq).head
-      c + "___" + s"${result.toString.split("@")(1)}"
+      val resultsListStrings = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle.get).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._2.meta.resultsGoogle.isDefined).map(e => e._2.meta.resultsGoogle.get).toSeq).head
+          c + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle.get).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._2.meta.resultsGoogle.isDefined).map(e => e._2.meta.resultsGoogle.get).toSeq).head
+      
+        }
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailMerge --
+          --results ${resultsListStrings.mkString(",")}
+          --out ${known.merge.resultsGoogle.get}"""
+            .in(resultsList)
+            .out(known.merge.resultsGoogle.get)
+            .tag(s"${known.merge.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(known.merge.resultsGoogle.get, known.merge.results)
+      
+      }
 
-    }
+    case false =>
+
+      val resultsListStrings = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.meta.results).toSeq).head
+          c + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMerge.cohorts_metas
+        } yield {
+      
+          (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.meta.results).toSeq).head
+      
+        }
+      
+      }
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailMerge
+          --results ${resultsListStrings.mkString(",")}
+          --out ${known.merge.results}"""
+            .in(resultsList)
+            .out(known.merge.results)
+            .tag(s"${known.merge.results}".split("/").last)
+
+      }
 
   }
-
-  val resultsList = {
   
-    for {
-      c <- configMerge.cohorts_metas
-    } yield {
-  
-      (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.meta.resultsGoogle).toSeq).head
-  
-    }
-  
-  }
-
-  google {
-  
-    hail"""$pyHailMerge --
-      --results ${resultsListStrings.mkString(",")}
-      --out ${known.merge.resultsGoogle}"""
-        .in(resultsList)
-        .out(known.merge.resultsGoogle)
-        .tag(s"${known.merge.results}.google".split("/").last)
-  
-  }
-  
-  local {
-  
-    googleCopy(known.merge.resultsGoogle, known.merge.results)
-  
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgTools") {
   
     cmd"""$binTabix -f -b 2 -e 2 ${known.merge.results}"""
       .in(known.merge.results)

@@ -22,7 +22,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       }
   }
 
-  drm {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyTop1000
       --results ${results}
@@ -31,6 +31,10 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .in(results)
       .out(summaryStores.resultsSummaryData.top1000)
       .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTools") {
     
     cmd"""(sed '1d' ${summaryStores.resultsSummaryData.top1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${ProjectStores.genePositions} --out-delim \\t) | sort -u > ${summaryStores.resultsSummaryData.top1000Genes}"""
       .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
@@ -53,7 +57,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   
   }.distinct
   
-  drm {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rTop20
@@ -67,8 +71,11 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       --out ${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}"""
       .in(hiLdFiles :+ summaryStores.resultsSummaryData.top1000 :+ summaryStores.resultsSummaryData.top1000Genes)
       .out(summaryStores.resultsSummaryData.top20AnnotAlignedRisk)
-      .using("R-3.4")
       .tag(s"${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyQqPlot
       --results ${results}
@@ -97,6 +104,10 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .in(results)
       .out(summaryStores.resultsSummaryData.sigRegions)
       .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgLocuszoom") {
   
     cmd"""$shRegPlot 
       $binTabix
@@ -110,7 +121,6 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       ${summaryStores.resultsSummaryData.regPlotsBase}"""
       .in(results, summaryStores.resultsSummaryData.sigRegions)
       .out(summaryStores.resultsSummaryData.regPlotsPdf)
-      .using("R-3.4")
       .tag(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
   
   }
@@ -148,7 +158,7 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
       }
   }
 
-  drm {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known
@@ -162,7 +172,6 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
       --out ${summaryKnownLociStores.resultsKnownLociSummaryData.top50}"""
       .in(results, known_data, hiLd)
       .out(summaryKnownLociStores.resultsKnownLociSummaryData.top50)
-      .using("R-3.4")
       .tag(s"${summaryKnownLociStores.resultsKnownLociSummaryData.top50}".split("/").last)
   
   }

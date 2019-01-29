@@ -3,6 +3,18 @@
   *  Description: Run Hail jobs locally or on Google Cloud
   *  Requires: Hail
   */
+//  Hail(
+//    script = pyHailListSamples,
+//    cloud = hailCloud,
+//    tag = s"${assoc.phenoPrelim}".split("/").last,
+//    python = binPython,
+//    inputs = Seq(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, arrayStores(array).prunedData.bim, arrayStores(array).cleanData.mt, ProjectStores.phenoFile).filter { case None => false; case s => true },
+//    outputs = Seq(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle, assoc.phenoPrelim, assoc.samplesInclude).filter { case None => false; case s => true },
+//    args = match hailCloud ,
+//    transferPre = ,
+//    transferPost = 
+//  )
+
 import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
@@ -14,8 +26,8 @@ def Hail(
   cloud: Boolean,
   tag: String,
   python: Option[Path],
-  inputs: Option[Seq[Store]],
-  outputs: Option[Seq[Store]],
+  inputs: Option[(Seq[Store], Seq[Store])],
+  outputs: Option[(Seq[Store], Seq[Store])],
   args: Option[Seq[(String, Either[String, Store])]],
   transferPre: Option[Seq[(Store, Store)]],
   transferPost: Option[Seq[(Store, Store)]]

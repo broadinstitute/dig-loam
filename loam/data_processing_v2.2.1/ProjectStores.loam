@@ -30,16 +30,16 @@ object ProjectStores {
   }.toMap
   
   val regionsExclude = store(path(projectConfig.regionsExclude)).asInput
-  val regionsExcludeGoogle = store(uri(projectConfig.regionsExcludeGoogle)).asInput
+  val regionsExcludeGoogle = hailCloud match { case true => Some(store(uri(projectConfig.regionsExcludeGoogle)).asInput); case false => None }
   val genePositions = store(path(projectConfig.genePositions)).asInput
   val kgPurcellVcf = store(path(projectConfig.kgPurcellVcf)).asInput
-  val kgPurcellVcfGoogle = store(uri(projectConfig.kgPurcellVcfGoogle)).asInput
+  val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgPurcellVcfGoogle)).asInput); case false => None }
   val kgSample = store(path(projectConfig.kgSample)).asInput
-  val kgSampleGoogle = store(uri(projectConfig.kgSampleGoogle)).asInput
+  val kgSampleGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgSampleGoogle)).asInput); case false => None }
   val phenoFile = store(path(projectConfig.phenoFile)).asInput
-  val phenoFileGoogle = store(googleOutDir / s"${projectConfig.phenoFile}".split("/").last)
+  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${projectConfig.phenoFile}".split("/").last)); case false => None }
   val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
-  val ancestryInferredGoogle = store(googleOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
   val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
 
 }

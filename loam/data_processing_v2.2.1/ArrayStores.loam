@@ -69,6 +69,7 @@ final case class HarmonizedData(
   imputeBase: Path,
   vcfGoogle: Option[Store],
   tbiGoogle: Option[Store],
+  mt: Option[Store],
   mtGoogle: Option[Store],
   pruneIn: Store,
   regionsExcludePlink: Store)
@@ -178,6 +179,7 @@ final case class CleanData(
   vcf: Store,
   tbi: Store,
   vcfGoogle: Option[Store],
+  mt: Option[Store],
   mtGoogle: Option[Store],
   pcaScores: Store,
   pcaLog: Store)
@@ -310,16 +312,17 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     tbi = store(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
     imputeData = bedBimFam(localOutDir / imputeBaseString),
     imputeBase = localOutDir / imputeBaseString,
-    vcfGoogle = hailCloud match { case true => store(googleOutDir / s"${refBaseString}.vcf.gz"); case false => None },
-    tbiGoogle = hailCloud match { case true => store(googleOutDir / s"${refBaseString}.vcf.gz.tbi"); case false => None },
-    mtGoogle = hailCloud match { case true => store(googleOutDir / s"${refBaseString}.mt"); case false => None },
+    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${refBaseString}.vcf.gz")); case false => None },
+    tbiGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${refBaseString}.vcf.gz.tbi")); case false => None },
+    mt = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt")); case true => None },
+    mtGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${refBaseString}.mt")); case false => None },
     pruneIn = store(localOutDir / s"${refBaseString}.prune.in"),
     regionsExcludePlink = store(localOutDir / s"${refBaseString}.regions_exclude.txt"))
 
   val prunedData = PrunedData(
     data = bedBimFam(localOutDir / qcBaseString),
     base = localOutDir / qcBaseString,
-    bimGoogle = hailCloud match { case true => store(googleOutDir / s"${qcBaseString}.bim"); case false => None },
+    bimGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${qcBaseString}.bim")); case false => None },
     vcf = store(localOutDir / s"${qcBaseString}.vcf.gz"),
     tbi = store(localOutDir / s"${qcBaseString}.vcf.gz.tbi"))
 
@@ -336,8 +339,8 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     data = bedBimFam(localOutDir / ref1kgBaseString),
     base = localOutDir / ref1kgBaseString,
     gds = store(localOutDir / s"${ref1kgBaseString}.gds"),
-    vcfGoogle = hailCloud match { case true => store(googleOutDir / s"${ref1kgBaseString}.vcf.bgz"); case false => None },
-    baseGoogle = hailCloud match { case true => googleOutDir / ref1kgBaseString; case false => None })
+    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${ref1kgBaseString}.vcf.bgz")); case false => None },
+    baseGoogle = hailCloud match { case true => Some(googleOutDir / ref1kgBaseString); case false => None })
 
   val ancestryData = AncestryData(
     inferred = store(localOutDir / s"${ancestryBaseString}.inferred.tsv"))
@@ -367,13 +370,13 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
   val sexcheckData = SexcheckData(
     sexcheck = store(localOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
-    sexcheckGoogle = hailCloud match { case true => store(googleOutDir / s"${sampleQcBaseString}.sexcheck.tsv"); case false => None },
+    sexcheckGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None },
     problems = store(localOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = hailCloud match { case true => store(googleOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"); case false => None })
+    problemsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None })
 
   val sampleQcData = SampleQcData(
     stats = store(localOutDir / s"${sampleQcBaseString}.stats.tsv"),
-    statsGoogle = hailCloud match { case true => store(googleOutDir / s"${sampleQcBaseString}.stats.tsv"); case false => None },
+    statsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${sampleQcBaseString}.stats.tsv")); case false => None },
     statsAdj = store(localOutDir / s"${sampleQcBaseString}.stats.adj.tsv"),
     corrPlots = store(localOutDir / s"${sampleQcBaseString}.corr.pdf"),
     boxPlots = store(localOutDir / s"${sampleQcBaseString}.boxplots.pdf"),
@@ -407,25 +410,26 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
   val finalData = FinalData(
     samplesExclude = store(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
-    samplesExcludeGoogle = hailCloud match { case true => store(googleOutDir / s"${finalBaseString}.samples.exclude.txt"); case false => None },
+    samplesExcludeGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${finalBaseString}.samples.exclude.txt")); case false => None },
 	samplesRestore = store(localOutDir / s"${finalBaseString}.samples.restore.tbl"),
     variantsExclude = store(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
     variantsExcludeIds = store(localOutDir / s"${finalBaseString}.variants.exclude.ids.txt"),
-    variantsExcludeGoogle = hailCloud match { case true => store(googleOutDir / s"${finalBaseString}.variants.exclude.txt"); case false => None })
+    variantsExcludeGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${finalBaseString}.variants.exclude.txt")); case false => None })
 
   val variantQcData = VariantQcData(
     stats = store(localOutDir / s"${variantQcBaseString}.stats.tsv"),
-    statsGoogle = hailCloud match { case true => store(googleOutDir / s"${variantQcBaseString}.stats.tsv"); case false => None })
+    statsGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${variantQcBaseString}.stats.tsv")); case false => None })
 
   val cleanData = CleanData(
     data = bedBimFam(localOutDir / cleanBaseString),
     base = localOutDir / cleanBaseString,
     gds = store(localOutDir / s"${cleanBaseString}.gds"),
-    baseGoogle = hailCloud match { case true => googleOutDir / cleanBaseString; case false => None },
+    baseGoogle = hailCloud match { case true => Some(googleOutDir / cleanBaseString); case false => None },
     vcf = store(localOutDir / s"${cleanBaseString}.vcf.bgz"),
     tbi = store(localOutDir / s"${cleanBaseString}.vcf.bgz.tbi"),
-    vcfGoogle = hailCloud match { case true => store(googleOutDir / s"${cleanBaseString}.vcf.bgz"); case false => None },
-    mtGoogle = hailCloud match { case true => store(googleOutDir / s"${cleanBaseString}.mt"); case false => None },
+    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${cleanBaseString}.vcf.bgz")); case false => None },
+    mt = hailCloud match { case false => Some(store(localOutDir / s"${cleanBaseString}.mt")); case true => None },
+    mtGoogle = hailCloud match { case true => Some(store(googleOutDir / s"${cleanBaseString}.mt")); case false => None },
     pcaScores = store(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
     pcaLog = store(localOutDir / s"${cleanBaseString}.pca.log"))
 

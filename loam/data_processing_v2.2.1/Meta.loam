@@ -11,50 +11,95 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   val meta = metaStores((configModel, configMeta))
 
-  val resultsListStrings = {
+  hailCloud match {
 
-    for {
-      c <- configMeta.cohorts
-    } yield {
+    case true =>
 
-      val result = assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq.head
-      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      val resultsListStrings = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          val result = assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq.head
+          c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq.head
+      
+        }
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailMetaAnalysis --
+          --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
+          --results ${resultsListStrings.mkString(",")}
+          --out ${meta.resultsGoogle.get}"""
+            .in(resultsList)
+            .out(meta.resultsGoogle.get)
+            .tag(s"${meta.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(meta.resultsGoogle.get, meta.results)
+      
+      }
 
-    }
+    case false =>
+
+      val resultsListStrings = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          val result = assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq.head
+          c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq.head
+      
+        }
+      
+      }
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailMetaAnalysis
+          --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
+          --results ${resultsListStrings.mkString(",")}
+          --out ${meta.results}"""
+            .in(resultsList)
+            .out(meta.results)
+            .tag(s"${meta.results}".split("/").last)
+
+      }
 
   }
-
-  val resultsList = {
-
-    for {
-      c <- configMeta.cohorts
-    } yield {
-
-      assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq.head
   
-    }
-
-  }
-
-  google {
-
-    hail"""$pyHailMetaAnalysis --
-      --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
-      --results ${resultsListStrings.mkString(",")}
-      --out ${meta.resultsGoogle}"""
-        .in(resultsList)
-        .out(meta.resultsGoogle)
-        .tag(s"${meta.results}.google".split("/").last)
-  
-  }
-
-  local {
-
-    googleCopy(meta.resultsGoogle, meta.results)
-
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${meta.results}"""
       .in(meta.results)
@@ -69,50 +114,95 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
 
   val known = knownMetaStores((configModel, configMeta, configKnown))
 
-  val resultsListStrings = {
+  hailCloud match {
 
-    for {
-      c <- configMeta.cohorts
-    } yield {
+    case true =>
 
-      val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq.head
-      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      val resultsListStrings = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.assoc.resultsGoogle.isDefined).map(e => e._2.assoc.resultsGoogle.get).toSeq.head
+          c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.assoc.resultsGoogle.isDefined).map(e => e._2.assoc.resultsGoogle.get).toSeq.head
+      
+        }
+      
+      }
+      
+      google {
+      
+        hail"""$pyHailMetaAnalysis --
+          --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+          --results ${resultsListStrings.mkString(",")}
+          --out ${known.meta.resultsGoogle.get}"""
+            .in(resultsList)
+            .out(known.meta.resultsGoogle.get)
+            .tag(s"${known.meta.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(known.meta.resultsGoogle.get, known.meta.results)
+      
+      }
 
-    }
+    case false =>
+
+      val resultsListStrings = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq.head
+          c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      
+        }
+      
+      }
+      
+      val resultsList = {
+      
+        for {
+          c <- configMeta.cohorts
+        } yield {
+      
+          knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq.head
+      
+        }
+      
+      }
+
+      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+
+        cmd"""$binPython $pyHailMetaAnalysis
+          --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+          --results ${resultsListStrings.mkString(",")}
+          --out ${known.meta.results}"""
+            .in(resultsList)
+            .out(known.meta.results)
+            .tag(s"${known.meta.results}".split("/").last)
+
+      }
 
   }
-
-  val resultsList = {
-
-    for {
-      c <- configMeta.cohorts
-    } yield {
-
-      knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq.head
   
-    }
-
-  }
-
-  google {
-
-    hail"""$pyHailMetaAnalysis --
-      --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
-      --results ${resultsListStrings.mkString(",")}
-      --out ${known.meta.resultsGoogle}"""
-        .in(resultsList)
-        .out(known.meta.resultsGoogle)
-        .tag(s"${known.meta.results}.google".split("/").last)
-  
-  }
-
-  local {
-
-    googleCopy(known.meta.resultsGoogle, known.meta.results)
-
-  }
-  
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.meta.results}"""
       .in(known.meta.results)
