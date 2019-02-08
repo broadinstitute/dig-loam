@@ -32,11 +32,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .out(summaryStores.resultsSummaryData.top1000)
       .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
 
-  }
-
-  drmWith(imageName = s"$imgTools") {
-    
-    cmd"""(sed '1d' ${summaryStores.resultsSummaryData.top1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${ProjectStores.genePositions} --out-delim \\t) | sort -u > ${summaryStores.resultsSummaryData.top1000Genes}"""
+    cmd"""$shTop1000Genes ${summaryStores.resultsSummaryData.top1000} $binPython $pyAddGeneAnnot ${ProjectStores.genePositions} ${summaryStores.resultsSummaryData.top1000Genes}"""
       .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
       .out(summaryStores.resultsSummaryData.top1000Genes)
       .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
@@ -94,16 +90,44 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .in(results)
       .out(summaryStores.resultsSummaryData.mhtPlotPng)
       .tag(s"${summaryStores.resultsSummaryData.mhtPlotPng}".split("/").last)
-    
-    cmd"""$binPython $pyExtractTopRegions
-      --results ${results}
-      --chr "#chr"
-      --pos pos
-      --p pval
-      --out ${summaryStores.resultsSummaryData.sigRegions}"""
-      .in(results)
-      .out(summaryStores.resultsSummaryData.sigRegions)
-      .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+
+  }
+
+
+  projectConfig.maxSigRegions match {
+
+    case Some(s) =>
+
+      drmWith(imageName = s"$imgPython27") {
+        
+        cmd"""$binPython $pyExtractTopRegions
+          --results ${results}
+          --chr "#chr"
+          --pos pos
+          --p pval
+          --max-regions ${s}
+          --out ${summaryStores.resultsSummaryData.sigRegions}"""
+          .in(results)
+          .out(summaryStores.resultsSummaryData.sigRegions)
+          .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+      
+      }
+
+    case None =>
+
+      drmWith(imageName = s"$imgPython27") {
+        
+        cmd"""$binPython $pyExtractTopRegions
+          --results ${results}
+          --chr "#chr"
+          --pos pos
+          --p pval
+          --out ${summaryStores.resultsSummaryData.sigRegions}"""
+          .in(results)
+          .out(summaryStores.resultsSummaryData.sigRegions)
+          .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+      
+      }
 
   }
 

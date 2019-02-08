@@ -29,7 +29,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
   drmWith(imageName = s"$imgTools") {
 
-    cmd"""(for f in ${bimStringList.mkString(" ")}; do awk '{print $$1":"$$2":"$$4":"$$5":"$$6}' $$f; done) | sort | uniq -c | awk '{if($$1 == ${bimStringList.size.toString}) print $$2}' | awk -F':' '{print $$2}' > ${metaKinshipStores(configMeta).commonVariants}"""
+    cmd"""$shCrossCohortCommonVariants ${bimStringList.mkString(",")} ${metaKinshipStores(configMeta).commonVariants}"""
     .in(dataList)
     .out(metaKinshipStores(configMeta).commonVariants)
     .tag(s"${metaKinshipStores(configMeta).commonVariants}".split("/").last)
@@ -42,8 +42,8 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   drmWith(imageName = s"$imgTools") {
 
-    cmd"""join -1 2 -2 1 <(sort -k 2 ${arrayStores(configCohort.array).harmonizedData.refBase}.fam) <(sort -k 1 ${ProjectStores.ancestryInferred}) | awk -v var=${configCohort.ancestry.mkString(",")} '{ split(var,arr,","); for ( a in arr ) { if (arr[a] == $$7 ) print $$2"\t"$$1 } }' > ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(ProjectStores.ancestryInferred)
+    cmd"""$shMetaCohortSamples ${arrayStores(configCohort.array).harmonizedData.refBase}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
+    .in(arrayStores(configCohort.array).harmonizedData.refData :+ ProjectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 

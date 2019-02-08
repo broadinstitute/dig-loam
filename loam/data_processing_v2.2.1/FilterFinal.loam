@@ -32,9 +32,10 @@ def FilterFinal(array: String): Unit = {
           --variantqc-out ${arrayStores(array).variantQcData.statsGoogle.get}
           --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle.get}
           --vcf-out ${arrayStores(array).cleanData.vcfGoogle.get}
-          --mt-out ${arrayStores(array).cleanData.mtGoogle.get}"""
+          --mt-out ${arrayStores(array).cleanData.mtGoogle.get}
+          --log ${arrayStores(array).cleanData.hailLogGoogle.get}"""
           .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, ProjectStores.phenoFileGoogle.get, arrayStores(array).finalData.samplesExcludeGoogle.get)
-          .out(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).cleanData.mtGoogle.get)
+          .out(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).cleanData.mtGoogle.get, arrayStores(array).cleanData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).cleanData.vcf}.google".split("/").last)
       
       }
@@ -44,12 +45,13 @@ def FilterFinal(array: String): Unit = {
         googleCopy(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).cleanData.vcf)
         googleCopy(arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).variantQcData.stats)
         googleCopy(arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).finalData.variantsExclude)
+        googleCopy(arrayStores(array).cleanData.hailLogGoogle.get, arrayStores(array).cleanData.hailLog)
       
       }
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
 
         cmd"""$binPython $pyHailFilterFinal
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
@@ -62,9 +64,10 @@ def FilterFinal(array: String): Unit = {
           --variantqc-out ${arrayStores(array).variantQcData.stats}
           --variants-exclude-out ${arrayStores(array).finalData.variantsExclude}
           --vcf-out ${arrayStores(array).cleanData.vcf}
-          --mt-out ${arrayStores(array).cleanData.mt}"""
+          --mt-out ${arrayStores(array).cleanData.mt.get}
+          --log ${arrayStores(array).cleanData.hailLog}"""
           .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, ProjectStores.phenoFile, arrayStores(array).finalData.samplesExclude)
-          .out(arrayStores(array).cleanData.vcf, arrayStores(array).variantQcData.stats, arrayStores(array).finalData.variantsExclude, arrayStores(array).cleanData.mt.get)
+          .out(arrayStores(array).cleanData.vcf, arrayStores(array).variantQcData.stats, arrayStores(array).finalData.variantsExclude, arrayStores(array).cleanData.mt.get, arrayStores(array).cleanData.hailLog)
           .tag(s"${arrayStores(array).cleanData.vcf}".split("/").last)
 
       }
@@ -85,11 +88,11 @@ def FilterFinal(array: String): Unit = {
 
   }
   
-  drmWith(imageName = s"$imgR34", cores=4, mem=4) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.nCoresPca, mem = projectConfig.nMemPca) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair
-      --cpus 4
+      --cpus ${projectConfig.nCoresPca}
       --plink-in ${arrayStores(array).prunedData.base}
       --gds-out ${arrayStores(array).cleanData.gds}
       --exclude ${arrayStores(array).finalData.samplesExclude}

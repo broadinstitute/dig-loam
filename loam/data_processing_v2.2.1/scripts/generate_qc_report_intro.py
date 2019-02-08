@@ -28,7 +28,7 @@ def main(args=None):
 				else:
 					authors = authors + ", " + author
 
-		f.write("\n"); f.write("Prepared by " + authors + " on behalf of the AMP-DCC Analysis Team"); f.write("\n")
+		f.write("\n"); f.write("Prepared by " + authors.replace("_","\_") + " on behalf of the AMP-DCC Analysis Team"); f.write("\n")
 		f.write("\n"); f.write(r"\bigskip"); f.write("\n")
 		f.write("\n"); f.write(r"Contact: AMP-DCC Analysis Team (\href{mailto:amp-dcc-dat@broadinstitute.org}{amp-dcc-dat@broadinstitute.org})"); f.write("\n")
 

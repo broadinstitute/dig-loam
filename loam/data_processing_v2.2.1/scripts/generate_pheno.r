@@ -39,13 +39,12 @@ INVN <- function(x){
 	return(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x))))
 }
 
-pcs_include <- function(d, y, cv) {
+pcs_include <- function(d, y, cv, n) {
 	if(cv != "") {
-		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,10,1),sep=""),collapse="+"),sep="")),data=d))
+		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d))
 	} else {
-		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,10,1),sep=""),collapse="+"),sep="")),data=d))
+		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d))
 	}
-	print(m)
 	mc <- m$coefficients
 	s <- rownames(mc[mc[,"Pr(>|t|)"] <= 0.05,])
 	spcs <- s[grep("^PC",s)]
@@ -88,7 +87,6 @@ ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\
 names(ancestry)[1]<-args$iid_col
 names(ancestry)[2]<-"ANCESTRY_INFERRED"
 pheno<-merge(pheno,ancestry,all.x=T)
-print(names(pheno))
 if(! is.null(args$ancestry_keep)) {
 	anc_keep = unlist(strsplit(args$ancestry_keep,","))
 	cat(paste("keeping populations group/s",paste(anc_keep,collapse="+"),"for analysis",sep=" "),"\n")
@@ -128,10 +126,22 @@ samples_remove <- c()
 while(iter < 11) {
 	cat("\n",paste0("pcair iteration #",iter),"\n")
 
-	mypcair <- pcair(genoData = genoData, scan.include = samples_incl[! samples_incl %in% samples_remove], snp.include = variants_incl, kinMat = kinship, divMat = kinship, snp.block.size = 10000)
+	if(length(samples_incl[! samples_incl %in% samples_remove]) < 20) {
+		n_pcs <- length(samples_incl[! samples_incl %in% samples_remove])
+	} else {
+		n_pcs <- 20
+	}
+	mypcair <- try(pcair(genoData = genoData, v = n_pcs, scan.include = samples_incl[! samples_incl %in% samples_remove], snp.include = variants_incl, kinMat = kinship, divMat = kinship, unrel.set = NULL, snp.block.size = 10000), silent=TRUE)
+	if(inherits(mypcair, "try-error")) {
+		mypcair <- try(pcair(genoData = genoData, v = n_pcs, scan.include = samples_incl[! samples_incl %in% samples_remove], snp.include = variants_incl, kinMat = NULL, divMat = NULL, unrel.set = NULL, snp.block.size = 10000), silent=TRUE)
+		if(inherits(mypcair, "try-error")) {
+			print("unable to run pcair with or without kinship adjustment")
+			quit(status=1)
+		}
+	}
 	cat(paste("memory after running pcair: ",mem_used() / (1024^2),sep=""),"\n")
 	pcs<-data.frame(mypcair$vectors)
-	names(pcs)[1:20]<-paste("PC",seq(1,20),sep="")
+	names(pcs)[1:n_pcs]<-paste("PC",seq(1,n_pcs),sep="")
 	pcs[,args$iid_col]<-row.names(pcs)
 	out<-merge(pheno,pcs,all.y=T)
 
@@ -144,16 +154,16 @@ while(iter < 11) {
 			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
 		}
 		out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
-		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "")
+		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "", n = n_pcs)
 		out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
 	} else if(args$trans == 'log') {
 		cat("calculating log transformation\n")
 		out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
-		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis)
+		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis, n = n_pcs)
 		out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
 	} else {
 		cat("no transformation will be applied\n")
-		pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis)
+		pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 	}
 
 	write.table(out,"test.df",row.names=F,col.names=T,quote=F,sep="\t",append=F)
@@ -188,7 +198,7 @@ if(length(pcsin) > 0) {
 }
 write.table(pcsin,args$out_pcs,row.names=F,col.names=F,quote=F,sep="\t",append=F)
 
-out_cols <- c(out_cols,paste("PC",seq(1,20,1),sep=""))
+out_cols <- c(out_cols,paste("PC",seq(1,n_pcs,1),sep=""))
 
 cat("writing phenotype file","\n")
 write.table(out[,out_cols],args$out_pheno,row.names=F,col.names=T,quote=F,sep="\t",append=F, na="NA")

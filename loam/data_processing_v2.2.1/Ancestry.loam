@@ -23,9 +23,11 @@ def AncestryPca(array: String): Unit = {
           --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle.get}
           --kg-sample ${ProjectStores.kgSampleGoogle.get}
-          --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle.get}"""
+          --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle.get}
+          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}
+          --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
           .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
-          .out(arrayStores(array).ref1kgData.vcfGoogle.get)
+          .out(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
       
       }
@@ -33,47 +35,51 @@ def AncestryPca(array: String): Unit = {
       local {
       
         googleCopy(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.vcf)
+        googleCopy(arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.kgSamples)
+        googleCopy(arrayStores(array).ref1kgData.hailLogGoogle.get, arrayStores(array).ref1kgData.hailLog)
       
       }
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
 
         cmd"""$binPython $pyHailAncestryPcaMerge1kg
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcf}
           --kg-sample ${ProjectStores.kgSample}
-          --vcf-out ${arrayStores(array).ref1kgData.vcf}"""
+          --vcf-out ${arrayStores(array).ref1kgData.vcf}
+          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
+          --log ${arrayStores(array).ref1kgData.hailLog}"""
           .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.kgPurcellVcf, ProjectStores.kgSample)
-          .out(arrayStores(array).ref1kgData.vcf)
+          .out(arrayStores(array).ref1kgData.vcf, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
           .tag(s"${arrayStores(array).ref1kgData.base}".split("/").last)
 
       }
 
   }
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
 
   }
 
-  drmWith(cores=4, mem=4) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.nCoresPca, mem = projectConfig.nMemPca) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPcair
-      --cpus 4
+      --cpus ${projectConfig.nCoresPca}
       --plink-in ${arrayStores(array).ref1kgData.base}
       --gds-out ${arrayStores(array).ref1kgData.gds}
       --scores ${arrayStores(array).ancestryPcaData.scores}
       --id ${projectConfig.projectId}
-      --force-unrel ${projectConfig.kgSampleId} ${ProjectStores.kgSample}
-      --update-pop ${projectConfig.kgSampleId} ${projectConfig.kgSamplePop} ${ProjectStores.kgSample}
-      --update-group ${projectConfig.kgSampleId} ${projectConfig.kgSampleGroup} ${ProjectStores.kgSample}
+      --force-unrel ID ${arrayStores(array).ref1kgData.kgSamples}
+      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples}
+      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples}
       > ${arrayStores(array).ancestryPcaData.log}"""
-      .in(arrayStores(array).ref1kgData.data :+ ProjectStores.kgSample)
+      .in(arrayStores(array).ref1kgData.data :+  arrayStores(array).ref1kgData.kgSamples)
       .out(arrayStores(array).ref1kgData.gds, arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores)
       .tag(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
 
@@ -107,14 +113,14 @@ def AncestryCluster(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools") {
 
-    cmd"""(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}"""
+    cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
       .in(arrayStores(array).ancestryPcaData.scores)
       .out(arrayStores(array).ancestryClusterData.fet)
       .tag(s"${arrayStores(array).ancestryClusterData.fet}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", mem=8) {
+  drmWith(imageName = s"$imgTools", mem = projectConfig.nMemKlustakwik) {
   
     cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)

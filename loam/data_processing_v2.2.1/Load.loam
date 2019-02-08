@@ -26,24 +26,26 @@ def Load(array: String): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle.get}
-          --mt-out ${arrayStores(array).harmonizedData.mtGoogle.get}"""
+          --mt-out ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --log ${arrayStores(array).harmonizedData.hailLogGoogle.get}"""
           .in(arrayStores(array).harmonizedData.vcfGoogle.get, arrayStores(array).harmonizedData.tbiGoogle.get)
-          .out(arrayStores(array).harmonizedData.mtGoogle.get)
+          .out(arrayStores(array).harmonizedData.mtGoogle.get, arrayStores(array).harmonizedData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).harmonizedData.mt.get}.google".split("/").last)
       
       }
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
 
         cmd"""$binPython $pyHailLoad
           --reference-genome ${projectConfig.referenceGenome}
           --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcf}
-          --mt-out ${arrayStores(array).harmonizedData.mt.get}"""
+          --mt-out ${arrayStores(array).harmonizedData.mt.get}
+          --log ${arrayStores(array).harmonizedData.hailLog}"""
           .in(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.tbi)
-          .out(arrayStores(array).harmonizedData.mt.get)
+          .out(arrayStores(array).harmonizedData.mt.get, arrayStores(array).harmonizedData.hailLog)
           .tag(s"${arrayStores(array).harmonizedData.mt.get}".split("/").last)
 
       }

@@ -13,6 +13,12 @@ args<-parser$parse_args()
 print(args)
 
 x<-read.table(args$sampleqc_stats_adj,header=T,as.is=T,stringsAsFactors=F)
+
+# set samples whose values are high on unidirectional metrics to the mean of the metric across all samples
+for(m in c("call_rate_res","n_called_res")) {
+	x[,m][x[,m] > mean(x[,m])] <- mean(x[,m][x[,m] > mean(x[,m])])
+}
+
 row.names(x)<-x$IID
 trans = preProcess(x[,2:ncol(x)], method=c("BoxCox", "medianImpute", "center", "scale"),thresh=1.0)
 trans.data = predict(trans, x[,2:ncol(x)])

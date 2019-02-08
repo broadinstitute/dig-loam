@@ -1,8 +1,9 @@
 import hail as hl
 import argparse
-hl.init()
 
 def main(args=None):
+
+	hl.init(log = args.log)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -77,12 +78,12 @@ def main(args=None):
 
 	print("write variant qc results to file")
 	mt = mt.annotate_rows(id = mt.locus.contig + ':' + hl.str(mt.locus.position) + ':' + hl.str(mt.alleles[0]) + ':' + hl.str(mt.alleles[1]))
-	mt.rows().flatten().export(args.variantqc_out)
+	mt.rows().flatten().export(args.variantqc_out, types_file=None)
 
 	print("write variant exclusions to file")
 	tbl = mt.rows().flatten()
 	tbl = tbl.filter(tbl.failed == 1, keep=True)
-	tbl.export(args.variants_exclude_out)
+	tbl.export(args.variants_exclude_out, types_file=None)
 
 	print("filter failed variants out of mt")
 	mt = mt.filter_rows(mt.failed == 1, keep=False)
@@ -96,6 +97,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)
 	requiredArgs.add_argument('--ancestry-in', help='an inferred ancestry file', required=True)
 	requiredArgs.add_argument('--sexcheck-in', help='an imputed sexcheck output file from Hail', required=True)

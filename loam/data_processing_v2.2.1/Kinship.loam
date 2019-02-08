@@ -12,9 +12,9 @@ import ArrayStores._
 
 def Kinship(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores=4, mem=4) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.nCoresKing, mem = projectConfig.nMemKing) {
 
-    cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} 4"""
+    cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.nCoresKing}"""
     .in(arrayStores(array).prunedData.data)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.kin0Related)
     .tag(s"${arrayStores(array).prunedData.base}.shKing".split("/").last)

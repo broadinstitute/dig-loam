@@ -45,9 +45,10 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
         hail"""$pyHailMetaAnalysis --
           --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
           --results ${resultsListStrings.mkString(",")}
-          --out ${meta.resultsGoogle.get}"""
+          --out ${meta.resultsGoogle.get}
+          --log ${meta.hailLogGoogle.get}"""
             .in(resultsList)
-            .out(meta.resultsGoogle.get)
+            .out(meta.resultsGoogle.get, meta.hailLogGoogle.get)
             .tag(s"${meta.results}.google".split("/").last)
       
       }
@@ -55,6 +56,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       local {
       
         googleCopy(meta.resultsGoogle.get, meta.results)
+        googleCopy(meta.hailLogGoogle.get, meta.hailLog)
       
       }
 
@@ -85,14 +87,15 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       
       }
 
-      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
 
         cmd"""$binPython $pyHailMetaAnalysis
           --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
           --results ${resultsListStrings.mkString(",")}
-          --out ${meta.results}"""
+          --out ${meta.results}
+          --log ${meta.hailLog}"""
             .in(resultsList)
-            .out(meta.results)
+            .out(meta.results, meta.hailLog)
             .tag(s"${meta.results}".split("/").last)
 
       }
@@ -148,9 +151,10 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
         hail"""$pyHailMetaAnalysis --
           --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.meta.resultsGoogle.get}"""
+          --out ${known.meta.resultsGoogle.get}
+          --log ${known.meta.hailLogGoogle.get}"""
             .in(resultsList)
-            .out(known.meta.resultsGoogle.get)
+            .out(known.meta.resultsGoogle.get, known.meta.hailLogGoogle.get)
             .tag(s"${known.meta.results}.google".split("/").last)
       
       }
@@ -158,6 +162,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       local {
       
         googleCopy(known.meta.resultsGoogle.get, known.meta.results)
+        googleCopy(known.meta.hailLogGoogle.get, known.meta.hailLog)
       
       }
 
@@ -188,14 +193,15 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       
       }
 
-      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
 
         cmd"""$binPython $pyHailMetaAnalysis
           --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.meta.results}"""
+          --out ${known.meta.results}
+          --log ${known.meta.hailLog}"""
             .in(resultsList)
-            .out(known.meta.results)
+            .out(known.meta.results, known.meta.hailLog)
             .tag(s"${known.meta.results}".split("/").last)
 
       }

@@ -99,7 +99,7 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 				ticks.append(df.loc[df[chr] == chrs[i],gpos].iloc[0])
 			df.loc[df[chr] == chrs[i],'chr_hex'] = chr_hex[i]
 		x_labels = [a.replace('MT','\nMT') if a == 'MT' else a for a in chrs]
-	
+
 	if df.shape[0] >= 1000000:
 		sig = 5.4e-8
 	else:

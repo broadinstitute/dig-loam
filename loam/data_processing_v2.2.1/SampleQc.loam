@@ -33,18 +33,20 @@ def SampleQc(array: String): Unit = {
           --male-code ${projectConfig.phenoFileMaleCode}
           --female-code ${projectConfig.phenoFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
-          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}"""
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}
+          --log ${arrayStores(array).sexcheckData.hailLogGoogle.get}"""
           .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).harmonizedData.mtGoogle.get)
-          .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get)
+          .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
       
         hail"""$pyHailSampleqc --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
           --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
-          --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}"""
+          --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}
+          --log ${arrayStores(array).sampleQcData.hailLogGoogle.get}"""
           .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
-          .out(arrayStores(array).sampleQcData.statsGoogle.get)
+          .out(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
       
       }
@@ -53,13 +55,15 @@ def SampleQc(array: String): Unit = {
 
         googleCopy(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.sexcheck)
         googleCopy(arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.problems)
+        googleCopy(arrayStores(array).sexcheckData.hailLogGoogle.get, arrayStores(array).sexcheckData.hailLog)
         googleCopy(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.stats)
+        googleCopy(arrayStores(array).sampleQcData.hailLogGoogle.get, arrayStores(array).sampleQcData.hailLog)
       
       }
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores=4, mem=2) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
 
         cmd"""$binPython $pyHailSexcheck
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
@@ -69,18 +73,20 @@ def SampleQc(array: String): Unit = {
           --male-code ${projectConfig.phenoFileMaleCode}
           --female-code ${projectConfig.phenoFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
-          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}"""
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
+          --log ${arrayStores(array).sexcheckData.hailLog}"""
           .in(ProjectStores.phenoFile, arrayStores(array).harmonizedData.mt.get)
-          .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems)
+          .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).sexcheckData.hailLog)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}".split("/").last)
 
       cmd"""$binPython $pyHailSampleqc
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
           --clusters-in ${ProjectStores.ancestryInferred}
-          --qc-out ${arrayStores(array).sampleQcData.stats}"""
+          --qc-out ${arrayStores(array).sampleQcData.stats}
+          --log ${arrayStores(array).sampleQcData.hailLog}"""
           .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred)
-          .out(arrayStores(array).sampleQcData.stats)
+          .out(arrayStores(array).sampleQcData.stats, arrayStores(array).sampleQcData.hailLog)
           .tag(s"${arrayStores(array).sampleQcData.stats}".split("/").last)
 
       }
@@ -117,17 +123,12 @@ def SampleQc(array: String): Unit = {
    *  Requires: Klustakwik, R
    */
   
-  drmWith(imageName = s"$imgTools", mem=8) {
+  drmWith(imageName = s"$imgTools", mem = projectConfig.nMemKlustakwik) {
 
-    cmd"""(N=$$(head -1 ${arrayStores(array).sampleQcData.pcaScores} | wc | awk '{print $$2-1}') &&
-      echo $$N) > ${arrayStores(array).sampleQcPcaClusterData.fet} &&
-      sed '1d' ${arrayStores(array).sampleQcData.pcaScores} | cut -f2- | sed 's/\t/ /g' >> ${arrayStores(array).sampleQcPcaClusterData.fet} &&
-      FEATURES=1; for i in $$(seq 2 $$N); do FEATURES=$${FEATURES}1; done &&
-      $binKlustakwik ${arrayStores(array).sampleQcPcaClusterData.base} 1 -UseFeatures $$FEATURES -UseDistributional 0 >
-      ${arrayStores(array).sampleQcPcaClusterData.log}"""
+    cmd"""$shKlustakwikPca $binKlustakwik ${arrayStores(array).sampleQcData.pcaScores} ${arrayStores(array).sampleQcPcaClusterData.fet} ${arrayStores(array).sampleQcPcaClusterData.base} ${arrayStores(array).sampleQcPcaClusterData.log}"""
       .in(arrayStores(array).sampleQcData.pcaScores)
       .out(arrayStores(array).sampleQcPcaClusterData.fet, arrayStores(array).sampleQcPcaClusterData.clu, arrayStores(array).sampleQcPcaClusterData.klg, arrayStores(array).sampleQcPcaClusterData.log)
-      .tag(s"${arrayStores(array).sampleQcPcaClusterData.base}.binKlustakwik".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcPcaClusterData.base}.shKlustakwikPca".split("/").last)
 
   }
 
@@ -159,22 +160,12 @@ def SampleQc(array: String): Unit = {
   
   } yield { 
 
-    drmWith(imageName = s"$imgTools") {
-  
-      cmd"""(metricIdx=`head -1 ${arrayStores(array).sampleQcData.statsAdj} | tr '\t' '\n' | awk '{print NR" "$$0}' | grep -w ${metric} | awk '{print $$1}'` &&
-        echo 1 && sed '1d' ${arrayStores(array).sampleQcData.statsAdj} | awk -v col=$${metricIdx} '{print $$col}') > ${metricData.fet}"""
+    drmWith(imageName = s"$imgTools", mem = projectConfig.nMemKlustakwik) {
+
+      cmd"""$shKlustakwikMetric $binKlustakwik ${arrayStores(array).sampleQcData.statsAdj} ${metric} ${metricData.base} ${metricData.fet} ${metricData.log}"""
         .in(arrayStores(array).sampleQcData.statsAdj)
         .out(metricData.fet)
-        .tag(s"${metricData.fet}".split("/").last)
-  
-    }
-  
-    drmWith(imageName = s"imgTools", mem=8) {
-  
-      cmd"""$binKlustakwik ${metricData.base} 1 -UseFeatures 1 -UseDistributional 0 > ${metricData.log}"""
-        .in(metricData.fet)
-        .out(metricData.clu, metricData.klg, metricData.log)
-        .tag(s"${metricData.base}.binKlustakwik".split("/").last)
+        .tag(s"${metricData.base}.shKlustakwikMetric".split("/").last)
   
     }
   

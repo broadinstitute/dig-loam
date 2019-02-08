@@ -320,9 +320,9 @@ def QcReport(): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTex") {
+  drmWith(imageName = s"$imgTex", mem=8) {
     
-    cmd"""$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}"""
+    cmd"""bash -c "$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}""""
       .in(qcReportStores.tex)
       .out(qcReportStores.pdf)
       .tag(s"${qcReportStores.pdf}".split("/").last)
