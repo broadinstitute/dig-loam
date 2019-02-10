@@ -125,7 +125,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
           c <- configMerge.cohorts_metas
         } yield {
       
-          val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle.get).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._2.meta.resultsGoogle.isDefined).map(e => e._2.meta.resultsGoogle.get).toSeq).head
+          val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq).head
           c + "___" + s"${result.toString.split("@")(1)}"
       
         }
@@ -138,7 +138,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
           c <- configMerge.cohorts_metas
         } yield {
       
-          (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle.get).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._2.meta.resultsGoogle.isDefined).map(e => e._2.meta.resultsGoogle.get).toSeq).head
+          (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq).head
       
         }
       
@@ -148,18 +148,18 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
       
         hail"""$pyHailMerge --
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.merge.resultsGoogle.get}
-          --log ${known.merge.hailLogGoogle.get}"""
+          --out ${known.resultsGoogle.get}
+          --log ${known.hailLogGoogle.get}"""
             .in(resultsList)
-            .out(known.merge.resultsGoogle.get, known.merge.hailLogGoogle.get)
-            .tag(s"${known.merge.results}.google".split("/").last)
+            .out(known.resultsGoogle.get, known.hailLogGoogle.get)
+            .tag(s"${known.results}.google".split("/").last)
       
       }
       
       local {
       
-        googleCopy(known.merge.resultsGoogle.get, known.merge.results)
-        googleCopy(known.merge.hailLogGoogle.get, known.merge.hailLog)
+        googleCopy(known.resultsGoogle.get, known.results)
+        googleCopy(known.hailLogGoogle.get, known.hailLog)
       
       }
 
@@ -171,7 +171,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
           c <- configMerge.cohorts_metas
         } yield {
       
-          val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.meta.results).toSeq).head
+          val result = (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.results).toSeq).head
           c + "___" + s"${result.toString.split("@")(1)}"
       
         }
@@ -184,7 +184,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
           c <- configMerge.cohorts_metas
         } yield {
       
-          (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.meta.results).toSeq).head
+          (knownLociStores.filter(e => ! e._1._4.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ knownMetaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._1._3 == configKnown).map(e => e._2.results).toSeq).head
       
         }
       
@@ -194,11 +194,11 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
 
         cmd"""$binPython $pyHailMerge
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.merge.results}
-          --log ${known.merge.hailLog}"""
+          --out ${known.results}
+          --log ${known.hailLog}"""
             .in(resultsList)
-            .out(known.merge.results, known.merge.hailLog)
-            .tag(s"${known.merge.results}".split("/").last)
+            .out(known.results, known.hailLog)
+            .tag(s"${known.results}".split("/").last)
 
       }
 
@@ -206,10 +206,10 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
   
   drmWith(imageName = s"$imgTools") {
   
-    cmd"""$binTabix -f -b 2 -e 2 ${known.merge.results}"""
-      .in(known.merge.results)
-      .out(known.merge.tbi)
-      .tag(s"${known.merge.tbi}".split("/").last)
+    cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
+      .in(known.results)
+      .out(known.tbi)
+      .tag(s"${known.tbi}".split("/").last)
   
   }
 

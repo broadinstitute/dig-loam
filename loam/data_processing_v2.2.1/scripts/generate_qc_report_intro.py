@@ -28,9 +28,11 @@ def main(args=None):
 				else:
 					authors = authors + ", " + author
 
-		f.write("\n"); f.write("Prepared by " + authors.replace("_","\_") + " on behalf of the AMP-DCC Analysis Team"); f.write("\n")
+		f.write("\n"); f.write("Prepared by: " + authors.replace("_","\_") + " on behalf of " + args.organization.replace("_","\_")); f.write("\n")
 		f.write("\n"); f.write(r"\bigskip"); f.write("\n")
-		f.write("\n"); f.write(r"Contact: AMP-DCC Analysis Team (\href{mailto:amp-dcc-dat@broadinstitute.org}{amp-dcc-dat@broadinstitute.org})"); f.write("\n")
+		f.write("\n"); f.write(r"Contact: " + args.contact.replace("_","\_") + " (\href{mailto:" + args.email.replace("_","\_") + "}{" + args.email.replace("_","\_") + "})"); f.write("\n")
+		f.write("\n"); f.write(r"\bigskip"); f.write("\n")
+		f.write("\n"); f.write("This document was generated using Loamstream \cite{Loamstream} and the AMP-DCC Data Analysis Pipeline \cite{Pipeline}"); f.write("\n")
 
 		## table of contents
 		f.write("\n"); f.write(r"\tableofcontents"); f.write("\n")
@@ -78,6 +80,9 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--id', help='a project ID', required=True)
 	requiredArgs.add_argument('--authors', help='a comma separated list of authors', required=True)
+	requiredArgs.add_argument('--organization', help='an organization name', required=True)
+	requiredArgs.add_argument('--contact', help='a contact name', required=True)
+	requiredArgs.add_argument('--email', help='an email address', required=True)
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--array-data', nargs='+', help='a list of array data (plink binary file name or vcf file) each a comma delimited datatype (bfile or vcf) and data file pair', required=True)
 	args = parser.parse_args()

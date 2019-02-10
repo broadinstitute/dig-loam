@@ -62,7 +62,10 @@ def QcReport(): Unit = {
     
     cmd"""$binPython $pyGenerateQcReportIntro
       --id ${projectConfig.projectId}
-      --authors "${projectConfig.qcReportAuthors.mkString(",")}"
+      --authors "${projectConfig.authors.mkString(",")}"
+      --organization "${projectConfig.organization}"
+      --contact "${projectConfig.contact}"
+      --email "${projectConfig.email}"
       --out ${qcReportStores.texData.intro} 
       --array-data ${dataStrings.mkString(" ")}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data).toSeq)
@@ -305,6 +308,9 @@ def QcReport(): Unit = {
   drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyGenerateQcReportBibliography
+      --acknowledgements "${projectConfig.acknowledgementsQcReport.mkString(",")}"
+      --loamstream-version "${projectConfig.loamstreamVersion}"
+      --pipeline-version "${projectConfig.pipelineVersion}"
       --out ${qcReportStores.texData.bibliography}"""
       .out(qcReportStores.texData.bibliography)
       .tag(s"${qcReportStores.texData.bibliography}".split("/").last)

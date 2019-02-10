@@ -38,8 +38,8 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
   
   }
-  
-  val hiLdFiles = knownLociStores.filter(e => e._1._1 == configModel).map(e => e._2.known.hiLd).toSeq.distinct
+
+  val hiLdFiles = knownLociStores.filter(e => e._1._1 == configModel).map(e => ProjectStores.knownStores(e._1._3).hiLd).toSeq.distinct
 
   val hiLdStrings = {
   
@@ -156,29 +156,11 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
   val summaryKnownLociStores = resultsKnownLociSummaryStores((configModel, configCohort, configMeta, configMerge, configKnown))
 
   val results = configCohort match {
-    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).assoc.results
+    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).results
     case None =>
       configMeta match {
-        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).meta.results
-        case None => knownMergeStores((configModel, configMerge.get, configKnown)).merge.results
-      }
-  }
-
-  val known_data = configCohort match {
-    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).known.data
-    case None =>
-      configMeta match {
-        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).known.data
-        case None => knownMergeStores((configModel, configMerge.get, configKnown)).known.data
-      }
-  }
-
-  val hiLd = configCohort match {
-    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).known.hiLd
-    case None =>
-      configMeta match {
-        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).known.hiLd
-        case None => knownMergeStores((configModel, configMerge.get, configKnown)).known.hiLd
+        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).results
+        case None => knownMergeStores((configModel, configMerge.get, configKnown)).results
       }
   }
 
@@ -187,14 +169,14 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known
       --results ${results}
-      --known-loci ${known_data}
-      --known-ld ${hiLd}
+      --known-loci ${ProjectStores.knownStores(configKnown).data}
+      --known-ld ${ProjectStores.knownStores(configKnown).hiLd}
       --known-loci-n "${configKnown.n}"
       --known-loci-case "${configKnown.nCase}"
       --known-loci-ctrl "${configKnown.nCtrl}"
       --test ${configModel.test}
       --out ${summaryKnownLociStores.resultsKnownLociSummaryData.top50}"""
-      .in(results, known_data, hiLd)
+      .in(results, ProjectStores.knownStores(configKnown).data, ProjectStores.knownStores(configKnown).hiLd)
       .out(summaryKnownLociStores.resultsKnownLociSummaryData.top50)
       .tag(s"${summaryKnownLociStores.resultsKnownLociSummaryData.top50}".split("/").last)
   

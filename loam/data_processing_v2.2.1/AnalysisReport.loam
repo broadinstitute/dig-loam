@@ -25,7 +25,10 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
     cmd"""$binPython $pyGenerateAnalysisReportIntro
       --id ${projectConfig.projectId}
       --name "${configReport.name}"
-      --authors "${projectConfig.analysisReportAuthors.mkString(",")}"
+      --authors "${projectConfig.authors.mkString(",")}"
+      --organization "${projectConfig.organization}"
+      --contact "${projectConfig.contact}"
+      --email "${projectConfig.email}"
       --out-tex ${analysisReportStores(configReport).globalData.intro}
       --out-input ${analysisReportStores(configReport).globalData.introInput}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
@@ -115,8 +118,10 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyGenerateAnalysisReportBibliography
-      --names "${projectConfig.analysisReportAcknowledgements.mkString(",")}"
+      --acknowledgements "${projectConfig.acknowledgementsAnalysisReport.mkString(",")}"
       --known-loci-citations "${knownLociCitations.mkString(",,,")}"
+      --loamstream-version "${projectConfig.loamstreamVersion}"
+      --pipeline-version "${projectConfig.pipelineVersion}"
       --out-tex ${analysisReportStores(configReport).globalData.bibliography}
       --out-input ${analysisReportStores(configReport).globalData.bibliographyInput}"""
       .out(analysisReportStores(configReport).globalData.bibliography, analysisReportStores(configReport).globalData.bibliographyInput)

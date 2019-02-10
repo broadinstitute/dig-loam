@@ -127,7 +127,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
           c <- configMeta.cohorts
         } yield {
       
-          val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.assoc.resultsGoogle.isDefined).map(e => e._2.assoc.resultsGoogle.get).toSeq.head
+          val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq.head
           c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
       
         }
@@ -140,7 +140,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
           c <- configMeta.cohorts
         } yield {
       
-          knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.assoc.resultsGoogle.isDefined).map(e => e._2.assoc.resultsGoogle.get).toSeq.head
+          knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq.head
       
         }
       
@@ -151,18 +151,18 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
         hail"""$pyHailMetaAnalysis --
           --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.meta.resultsGoogle.get}
-          --log ${known.meta.hailLogGoogle.get}"""
+          --out ${known.resultsGoogle.get}
+          --log ${known.hailLogGoogle.get}"""
             .in(resultsList)
-            .out(known.meta.resultsGoogle.get, known.meta.hailLogGoogle.get)
-            .tag(s"${known.meta.results}.google".split("/").last)
+            .out(known.resultsGoogle.get, known.hailLogGoogle.get)
+            .tag(s"${known.results}.google".split("/").last)
       
       }
       
       local {
       
-        googleCopy(known.meta.resultsGoogle.get, known.meta.results)
-        googleCopy(known.meta.hailLogGoogle.get, known.meta.hailLog)
+        googleCopy(known.resultsGoogle.get, known.results)
+        googleCopy(known.hailLogGoogle.get, known.hailLog)
       
       }
 
@@ -174,7 +174,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
           c <- configMeta.cohorts
         } yield {
       
-          val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq.head
+          val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq.head
           c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
       
         }
@@ -187,7 +187,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
           c <- configMeta.cohorts
         } yield {
       
-          knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.results).toSeq.head
+          knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq.head
       
         }
       
@@ -198,11 +198,11 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
         cmd"""$binPython $pyHailMetaAnalysis
           --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.meta.results}
-          --log ${known.meta.hailLog}"""
+          --out ${known.results}
+          --log ${known.hailLog}"""
             .in(resultsList)
-            .out(known.meta.results, known.meta.hailLog)
-            .tag(s"${known.meta.results}".split("/").last)
+            .out(known.results, known.hailLog)
+            .tag(s"${known.results}".split("/").last)
 
       }
 
@@ -210,10 +210,10 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
   
   drmWith(imageName = s"$imgTools") {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${known.meta.results}"""
-      .in(known.meta.results)
-      .out(known.meta.tbi)
-      .tag(s"${known.meta.tbi}".split("/").last)
+    cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
+      .in(known.results)
+      .out(known.tbi)
+      .tag(s"${known.tbi}".split("/").last)
 
   }
 
