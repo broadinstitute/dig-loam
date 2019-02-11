@@ -53,13 +53,13 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   val cohortsString = {
   
     for {
-      cohort <- projectConfig.Cohorts
+      cohort <- projectConfig.Cohorts if cohortsList contains cohort
     } yield {
       Seq(cohort.id, cohort.array, cohort.ancestry.mkString("+"), if ( cohortsReport contains cohort ) { "YES" } else { "NO" }).mkString(",")
     }
   
   }
-  
+
   val metasString = {
   
     for {

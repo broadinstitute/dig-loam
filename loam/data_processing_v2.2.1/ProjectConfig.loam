@@ -862,6 +862,64 @@ val modelMergeKnowns: Seq[ModelMergeKnown] = {
 
 }.flatten.distinct
 
+val cohortsList: Seq[ConfigCohort] = {
+
+  val w = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
+  } yield {
+   
+    for {
+      c <- section.cohorts.get
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val x = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
+  } yield {
+   
+    for {
+      t <- section.metas.get
+      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val y = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      g <- section.merges.get
+      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val z = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      g <- section.merges.get
+      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
+      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  w ++ x ++ y ++ z
+
+}.flatten.distinct
+
 val cohortsReport: Seq[ConfigCohort] = {
 
   for {
