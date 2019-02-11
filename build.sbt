@@ -14,10 +14,6 @@ lazy val MyResolvers = new {
   //It would be nice to put the S3 resolver here, but it has to be done inside a macro, like with :=, etc. :\
 }
 
-lazy val Dependencies = new {
-  val digLoamImages = Orgs.DIG %% "dig-loam-images" % "1.0-SNAPSHOT"
-}
-
 //Publish Ivy Style
 publishMavenStyle := false
 //Publish locally (to the Broad FS) and to S3
@@ -56,8 +52,7 @@ lazy val root = (project in file("."))
     name := "dig-loam",
     organization := Orgs.DIG,
     // add the .zip file to what gets published 
-    addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings,
-    libraryDependencies ++= Seq(Dependencies.digLoamImages)
+    addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings
   )
 
 //Make sure the contents of recipes/ makes it into binary artifact
@@ -89,4 +84,3 @@ buildInfoTask := {
 }
 
 (resourceGenerators in Compile) += buildInfoTask.taskValue
-
