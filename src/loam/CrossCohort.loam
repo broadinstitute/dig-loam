@@ -27,9 +27,9 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     }
   }.flatten.distinct
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
-    cmd"""(for f in ${bimStringList.mkString(" ")}; do awk '{print $$1":"$$2":"$$4":"$$5":"$$6}' $$f; done) | sort | uniq -c | awk '{if($$1 == ${bimStringList.size.toString}) print $$2}' | awk -F':' '{print $$2}' > ${metaKinshipStores(configMeta).commonVariants}"""
+    cmd"""$shCrossCohortCommonVariants ${bimStringList.mkString(",")} ${metaKinshipStores(configMeta).commonVariants}"""
     .in(dataList)
     .out(metaKinshipStores(configMeta).commonVariants)
     .tag(s"${metaKinshipStores(configMeta).commonVariants}".split("/").last)
@@ -40,10 +40,10 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
-    cmd"""join -1 2 -2 1 <(sort -k 2 ${arrayStores(configCohort.array).harmonizedData.refBase}.fam) <(sort -k 1 ${ProjectStores.ancestryInferred}) | awk -v var=${configCohort.ancestry.mkString(",")} '{ split(var,arr,","); for ( a in arr ) { if (arr[a] == $$7 ) print $$2"\t"$$1 } }' > ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(ProjectStores.ancestryInferred)
+    cmd"""$shMetaCohortSamples ${arrayStores(configCohort.array).harmonizedData.refBase}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
+    .in(arrayStores(configCohort.array).harmonizedData.refData :+ ProjectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 
@@ -65,7 +65,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   val mergeString = metaKinshipStores(configMeta).metaCohort.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""echo "${mergeString}" > ${metaKinshipStores(configMeta).mergeList}"""
     .out(metaKinshipStores(configMeta).mergeList)
@@ -87,7 +87,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drm {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rExcludeCrossArray
@@ -99,7 +99,6 @@ def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit
       """
       .in(metaKinshipStores(configMeta).kin0Related, metaKinshipStores(configMeta).metaCohort(configCohort).samples)
       .out(metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude)
-      .using("R-3.4")
       .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}".split("/").last)
   
   }

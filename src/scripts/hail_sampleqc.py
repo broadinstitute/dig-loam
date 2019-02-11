@@ -1,8 +1,9 @@
 import hail as hl
 import argparse
-hl.init()
 
 def main(args=None):
+
+	hl.init(log = args.log)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -59,6 +60,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--clusters-in', help='a tab delimited file consisting of sample IDs and their cluster assignment (eg: Sample1    EUR)', required=True)
 	requiredArgs.add_argument('--qc-out', help='an output filename for sample qc statistics', required=True)

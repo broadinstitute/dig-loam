@@ -10,4 +10,6 @@ data_processing_v2.*:
    This version was used to process FUSION and NUS Phase 1
    Adds meta-analysis, and the concept of cohorts/metas/merges
    v2.1 is a full working version using Hail v0.1
-   v2.2 is in progress and will include Hail v0.2 allowing for analysis of imputed data
+   v2.2 is a full working version using Hail v0.2
+      This version was used to process BioMe QC and complications analyses
+   v2.2.1 is a full working version using Hail v0.2 that is compatible with Singularity images (on UGER and LSF)

@@ -32,11 +32,12 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
 
     case x if x > 1 =>
 
-      drm {
+      drmWith(imageName = s"$imgPython27") {
       
         cmd"""$binPython $pyPhenoDistPlot
           --pheno ${ProjectStores.phenoFile}
           --pheno-name ${configPheno.id}
+          --iid-col ${projectConfig.phenoFileId}
           --fam ${arrayStores(configCohort.array).cleanData.base}.fam
           --samples-exclude "${excludeCrossArrayString}"
           --strat
@@ -51,11 +52,12 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
 
     case y if y == 1 =>
 
-      drm {
+      drmWith(imageName = s"$imgPython27") {
       
         cmd"""$binPython $pyPhenoDistPlot
           --pheno ${ProjectStores.phenoFile}
           --pheno-name ${configPheno.id}
+          --iid-col ${projectConfig.phenoFileId}
           --fam ${arrayStores(configCohort.array).cleanData.base}.fam
           --samples-exclude "${excludeCrossArrayString}"
           --ancestry ${arrayStores(configCohort.array).ancestryData.inferred}

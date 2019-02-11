@@ -22,7 +22,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       }
   }
 
-  drm {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyTop1000
       --results ${results}
@@ -31,15 +31,15 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .in(results)
       .out(summaryStores.resultsSummaryData.top1000)
       .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
-    
-    cmd"""(sed '1d' ${summaryStores.resultsSummaryData.top1000} | awk '{print $$1"\t"$$2}' | $binPython $pyAddGeneAnnot --outside-name NA --chr-col 1 --pos-col 2 --gene-file ${ProjectStores.genePositions} --out-delim \\t) | sort -u > ${summaryStores.resultsSummaryData.top1000Genes}"""
+
+    cmd"""$shTop1000Genes ${summaryStores.resultsSummaryData.top1000} $binPython $pyAddGeneAnnot ${ProjectStores.genePositions} ${summaryStores.resultsSummaryData.top1000Genes}"""
       .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
       .out(summaryStores.resultsSummaryData.top1000Genes)
       .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
   
   }
-  
-  val hiLdFiles = knownLociStores.filter(e => e._1._1 == configModel).map(e => e._2.known.hiLd).toSeq.distinct
+
+  val hiLdFiles = knownLociStores.filter(e => e._1._1 == configModel).map(e => ProjectStores.knownStores(e._1._3).hiLd).toSeq.distinct
 
   val hiLdStrings = {
   
@@ -53,7 +53,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   
   }.distinct
   
-  drm {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rTop20
@@ -67,8 +67,11 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       --out ${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}"""
       .in(hiLdFiles :+ summaryStores.resultsSummaryData.top1000 :+ summaryStores.resultsSummaryData.top1000Genes)
       .out(summaryStores.resultsSummaryData.top20AnnotAlignedRisk)
-      .using("R-3.4")
       .tag(s"${summaryStores.resultsSummaryData.top20AnnotAlignedRisk}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyQqPlot
       --results ${results}
@@ -87,16 +90,48 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .in(results)
       .out(summaryStores.resultsSummaryData.mhtPlotPng)
       .tag(s"${summaryStores.resultsSummaryData.mhtPlotPng}".split("/").last)
-    
-    cmd"""$binPython $pyExtractTopRegions
-      --results ${results}
-      --chr "#chr"
-      --pos pos
-      --p pval
-      --out ${summaryStores.resultsSummaryData.sigRegions}"""
-      .in(results)
-      .out(summaryStores.resultsSummaryData.sigRegions)
-      .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+
+  }
+
+
+  projectConfig.maxSigRegions match {
+
+    case Some(s) =>
+
+      drmWith(imageName = s"$imgPython27") {
+        
+        cmd"""$binPython $pyExtractTopRegions
+          --results ${results}
+          --chr "#chr"
+          --pos pos
+          --p pval
+          --max-regions ${s}
+          --out ${summaryStores.resultsSummaryData.sigRegions}"""
+          .in(results)
+          .out(summaryStores.resultsSummaryData.sigRegions)
+          .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+      
+      }
+
+    case None =>
+
+      drmWith(imageName = s"$imgPython27") {
+        
+        cmd"""$binPython $pyExtractTopRegions
+          --results ${results}
+          --chr "#chr"
+          --pos pos
+          --p pval
+          --out ${summaryStores.resultsSummaryData.sigRegions}"""
+          .in(results)
+          .out(summaryStores.resultsSummaryData.sigRegions)
+          .tag(s"${summaryStores.resultsSummaryData.sigRegions}".split("/").last)
+      
+      }
+
+  }
+
+  drmWith(imageName = s"$imgLocuszoom") {
   
     cmd"""$shRegPlot 
       $binTabix
@@ -110,7 +145,6 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       ${summaryStores.resultsSummaryData.regPlotsBase}"""
       .in(results, summaryStores.resultsSummaryData.sigRegions)
       .out(summaryStores.resultsSummaryData.regPlotsPdf)
-      .using("R-3.4")
       .tag(s"${summaryStores.resultsSummaryData.regPlotsPdf}".split("/").last)
   
   }
@@ -122,47 +156,28 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
   val summaryKnownLociStores = resultsKnownLociSummaryStores((configModel, configCohort, configMeta, configMerge, configKnown))
 
   val results = configCohort match {
-    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).assoc.results
+    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).results
     case None =>
       configMeta match {
-        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).meta.results
-        case None => knownMergeStores((configModel, configMerge.get, configKnown)).merge.results
+        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).results
+        case None => knownMergeStores((configModel, configMerge.get, configKnown)).results
       }
   }
 
-  val known_data = configCohort match {
-    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).known.data
-    case None =>
-      configMeta match {
-        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).known.data
-        case None => knownMergeStores((configModel, configMerge.get, configKnown)).known.data
-      }
-  }
-
-  val hiLd = configCohort match {
-    case Some(s) => knownLociStores((configModel, configCohort.get, configKnown, None)).known.hiLd
-    case None =>
-      configMeta match {
-        case Some(s) => knownMetaStores((configModel, configMeta.get, configKnown)).known.hiLd
-        case None => knownMergeStores((configModel, configMerge.get, configKnown)).known.hiLd
-      }
-  }
-
-  drm {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known
       --results ${results}
-      --known-loci ${known_data}
-      --known-ld ${hiLd}
+      --known-loci ${ProjectStores.knownStores(configKnown).data}
+      --known-ld ${ProjectStores.knownStores(configKnown).hiLd}
       --known-loci-n "${configKnown.n}"
       --known-loci-case "${configKnown.nCase}"
       --known-loci-ctrl "${configKnown.nCtrl}"
       --test ${configModel.test}
       --out ${summaryKnownLociStores.resultsKnownLociSummaryData.top50}"""
-      .in(results, known_data, hiLd)
+      .in(results, ProjectStores.knownStores(configKnown).data, ProjectStores.knownStores(configKnown).hiLd)
       .out(summaryKnownLociStores.resultsKnownLociSummaryData.top50)
-      .using("R-3.4")
       .tag(s"${summaryKnownLociStores.resultsKnownLociSummaryData.top50}".split("/").last)
   
   }

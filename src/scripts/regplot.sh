@@ -26,7 +26,7 @@ if [ "$nSig" -ge "1" ]; then
 		regionStart=`echo $line | awk '{print $2}'`
 		regionEnd=`echo $line | awk '{print $3}'`
 		regionVar=`echo $line | awk '{print $4}'`
-		pcol=`$tabix -H $results | tr "\t" "\n" | grep -n pval | awk -F':' '{print $1}'`
+		pcol=`tabix -H $results | tr "\t" "\n" | grep -n pval | awk -F':' '{print $1}'`
 		prefix=${out}.${regionVar}
 		prefixArray+=("$prefix")
 		data=${prefix}.results.tsv
@@ -37,7 +37,13 @@ if [ "$nSig" -ge "1" ]; then
 		pdfArray+=("$pdf")
 		log=${prefix}.log
 		logArray+=("$log")
-		(echo -e "id\tpval"; $tabix $results ${regionChr}:${regionStart}-${regionEnd} | awk -v pcol=$pcol '{if($pcol != "NA") { if(substr($4 ,0, 2) != "rs") { print "chr"$1":"$2"\t"$pcol } else print $4"\t"$pcol} }') > $data
+		(echo -e "id\tpval"; $tabix $results ${regionChr}:${regionStart}-${regionEnd} | awk -v pcol=$pcol '{if($pcol != "NA" && $pcol != "NaN") { if(substr($3 ,0, 2) != "rs") { print "chr"$1":"$2"\t"$pcol } else print $3"\t"$pcol} }') > $data
+		echo $line
+		echo $regionChr
+		echo $regionStart
+		echo $regionEnd
+		echo $regionVar
+		echo $data
 		options="--metal $data --chr $regionChr --start $regionStart --end $regionEnd --markercol id --pvalcol pval --no-date --prefix $prefix --cache None --build $build --pop $pop --source $source"
 		if [ "$regionChr" -ge "23" ]; then
 			options="$options --no-ld"
@@ -51,9 +57,9 @@ if [ "$nSig" -ge "1" ]; then
 		exitCode=$?
 	fi
 	cat $(IFS=" "; echo "${logArray[*]}") >> ${out}.log
-	rm $(IFS=" "; echo "${logArray[*]}")
-	rm $(IFS=" "; echo "${dataArray[*]}")
-	rm -r $(IFS=" "; echo "${dirArray[*]}")
+	#rm $(IFS=" "; echo "${logArray[*]}")
+	#rm $(IFS=" "; echo "${dataArray[*]}")
+	#rm -r $(IFS=" "; echo "${dirArray[*]}")
 else
 	touch ${out}.pdf
 fi

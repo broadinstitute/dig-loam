@@ -1,9 +1,10 @@
 import hail as hl
 import argparse
 import pandas as pd
-hl.init()
 
 def main(args=None):
+
+	hl.init(log = args.log)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -59,11 +60,12 @@ def main(args=None):
 	print("write sample list to file")
 	tbl = mt.cols()
 	tbl = tbl.select()
-	tbl.export(args.out_samples, header=False)
+	tbl.export(args.out_samples, header=False, types_file=None)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--bim-in', help='a filtered and pruned bim file', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a phenotype file', required=True)

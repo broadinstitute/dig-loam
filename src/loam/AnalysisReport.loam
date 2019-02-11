@@ -15,7 +15,7 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
-  drm {
+  drmWith(imageName = s"$imgPython27") {
 
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${analysisReportStores(configReport).globalData.header}"""
@@ -25,7 +25,10 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
     cmd"""$binPython $pyGenerateAnalysisReportIntro
       --id ${projectConfig.projectId}
       --name "${configReport.name}"
-      --authors "${projectConfig.analysisReportAuthors.mkString(",")}"
+      --authors "${projectConfig.authors.mkString(",")}"
+      --organization "${projectConfig.organization}"
+      --contact "${projectConfig.contact}"
+      --email "${projectConfig.email}"
       --out-tex ${analysisReportStores(configReport).globalData.intro}
       --out-input ${analysisReportStores(configReport).globalData.introInput}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
@@ -56,7 +59,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
     }
   
   }
-  
+
   val metasString = {
   
     for {
@@ -78,7 +81,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   
   }
 
-  drm {
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyGenerateAnalysisReportData
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -112,11 +115,13 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
-  drm {
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyGenerateAnalysisReportBibliography
-      --names "${projectConfig.analysisReportAcknowledgements.mkString(",")}"
+      --acknowledgements "${projectConfig.acknowledgementsAnalysisReport.mkString(",")}"
       --known-loci-citations "${knownLociCitations.mkString(",,,")}"
+      --loamstream-version "${projectConfig.loamstreamVersion}"
+      --pipeline-version "${projectConfig.pipelineVersion}"
       --out-tex ${analysisReportStores(configReport).globalData.bibliography}
       --out-input ${analysisReportStores(configReport).globalData.bibliographyInput}"""
       .out(analysisReportStores(configReport).globalData.bibliography, analysisReportStores(configReport).globalData.bibliographyInput)
@@ -152,7 +157,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.pheno) 
   }.toSeq
   
-  drm {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
       --dist-plot ${distPlotStrings.mkString(" ")}
@@ -172,32 +177,98 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
       .tag(s"${analysisReportStores(configReport).sectionData(configSection).summary}".split("/").last)
   
   }
-  
+
   val qqPlotStrings = {
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.qqPlotPng.path.toAbsolutePath()}")) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.qqPlotPng.path.toAbsolutePath()}")) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.qqPlotPng.path.toAbsolutePath()}"))
+
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.qqPlotPng.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.qqPlotPng.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.qqPlotPng.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq.distinct.sortBy(e => (e._1, e._2, e._3)).map(e => e.productIterator.mkString(","))
   
   val qqPlotFiles = {
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => e._2.resultsSummaryData.qqPlotPng) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.resultsSummaryData.qqPlotPng) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsSummaryData.qqPlotPng)
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => e._2.resultsSummaryData.qqPlotPng)
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => e._2.resultsSummaryData.qqPlotPng)
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => e._2.resultsSummaryData.qqPlotPng)
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq
-  
+
   val mhtPlotStrings = {
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}")) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}")) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}"))
+
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsSummaryData.mhtPlotPng.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq.distinct.sortBy(e => (e._1, e._2, e._3)).map(e => e.productIterator.mkString(","))
   
   val mhtPlotFiles = {
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => e._2.resultsSummaryData.mhtPlotPng) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.resultsSummaryData.mhtPlotPng) ++
-    resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsSummaryData.mhtPlotPng)
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => e._2.resultsSummaryData.mhtPlotPng)
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => e._2.resultsSummaryData.mhtPlotPng)
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => e._2.resultsSummaryData.mhtPlotPng)
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq
-  
-  drm {
+
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
       --qq-plots ${qqPlotStrings.mkString(" ")}
@@ -242,7 +313,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsSummaryData.regPlotsPdf)
   }.toSeq
   
-  drm {
+  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
       --top-results ${top20AnnotAlignedRiskStrings.mkString(" ")}
@@ -256,38 +327,102 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
       .tag(s"${analysisReportStores(configReport).sectionData(configSection).topLoci}".split("/").last)
   
   }
-  
+
   val top50Strings = {
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsKnownLociSummaryData.top50.path.toAbsolutePath()}")) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsKnownLociSummaryData.top50.path.toAbsolutePath()}")) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsKnownLociSummaryData.top50.path.toAbsolutePath()}"))
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsKnownLociSummaryData.top50.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsKnownLociSummaryData.top50.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), s"${e._2.resultsKnownLociSummaryData.top50.path.toAbsolutePath()}"))
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq.distinct.sortBy(e => (e._1, e._2, e._3)).map(e => e.productIterator.mkString(","))
   
   val top50Files = {
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => e._2.resultsKnownLociSummaryData.top50) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.resultsKnownLociSummaryData.top50) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsKnownLociSummaryData.top50)
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => e._2.resultsKnownLociSummaryData.top50)
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => e._2.resultsKnownLociSummaryData.top50)
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => e._2.resultsKnownLociSummaryData.top50)
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq
-  
+
   val knownDescStrings = {
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.desc)) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.desc)) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.desc))
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.desc))
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.desc))
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.desc))
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq.distinct.sortBy(e => (e._1, e._2, e._3)).map(e => e.productIterator.mkString("___"))
-  
+
   val knownIdStrings = {
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.id)) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.id)) ++
-    resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.id))
+    val cohorts = configSection.cohorts match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._2.isDefined).filter(e => s.contains(e._1._2.get.id)).map(e => (e._1._2.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.id))
+      case None =>
+        List()
+    }
+    val metas = configSection.metas match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).filter(e => s.contains(e._1._3.get.id)).map(e => (e._1._3.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.id))
+      case None =>
+        List()
+    }
+    val merges = configSection.merges match {
+      case Some(s) =>
+        resultsKnownLociSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).filter(e => s.contains(e._1._4.get.id)).map(e => (e._1._4.get.id, e._1._1.trans, e._1._1.covars.mkString("+").replace("[","").replace("]",""), e._1._5.id))
+      case None =>
+        List()
+    }
+    cohorts ++ metas ++ merges
   }.toSeq.distinct.sortBy(e => (e._1, e._2, e._3)).map(e => e.productIterator.mkString(","))
-  
+
   top50Strings.size match {
   
     case 0 => ()
   
     case _ =>
-  
-      drm {
+
+      drmWith(imageName = s"$imgPython27") {
         
         cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
           --top-known-loci ${top50Strings.mkString(" ")}
@@ -315,7 +450,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.path}""")
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""cat ${analysisReportStores(configReport).globalData.header} ${analysisReportStores(configReport).globalData.intro} ${analysisReportStores(configReport).globalData.data} ${analysisReportStores(configReport).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(configReport).globalData.bibliography} > ${analysisReportStores(configReport).globalData.tex}"""
       .in(reportAnalysisResultsList :+ analysisReportStores(configReport).globalData.header :+ analysisReportStores(configReport).globalData.intro :+ analysisReportStores(configReport).globalData.data :+ analysisReportStores(configReport).globalData.strategy :+ analysisReportStores(configReport).globalData.bibliography)
@@ -330,14 +465,18 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.path}""")
 
-  drm {
+  drmWith(imageName = s"$imgTools") {
     
     cmd"""cat ${analysisReportStores(configReport).globalData.introInput} ${analysisReportStores(configReport).globalData.dataInput} ${analysisReportStores(configReport).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(configReport).globalData.bibliographyInput} > ${analysisReportStores(configReport).globalData.input}"""
       .in(reportAnalysisResultsInputList :+ analysisReportStores(configReport).globalData.introInput :+ analysisReportStores(configReport).globalData.dataInput :+ analysisReportStores(configReport).globalData.strategyInput :+ analysisReportStores(configReport).globalData.bibliographyInput)
       .out(analysisReportStores(configReport).globalData.input)
       .tag(s"${analysisReportStores(configReport).globalData.input}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTex") {
     
-    cmd"""$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}"""
+    cmd"""bash -c "$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}""""
       .in(analysisReportStores(configReport).globalData.tex)
       .out(analysisReportStores(configReport).globalData.pdf)
       .tag(s"${analysisReportStores(configReport).globalData.pdf}".split("/").last)

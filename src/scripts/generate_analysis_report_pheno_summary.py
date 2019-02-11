@@ -6,7 +6,7 @@ import collections
 def main(args=None):
 
 	ancestry = pd.read_table(args.ancestry, sep="\t")
-	ancestry.columns = ['ID','POP']
+	ancestry.columns = [args.id_col,'POP']
 
 	sex = pd.read_table(args.pheno_master, sep="\t")
 	sex = sex[[args.id_col,args.sex_col]]
@@ -120,29 +120,41 @@ def main(args=None):
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Distributions}".encode('utf-8')); f.write("\n")
 
 		text = []
+		j = 0
 		for c in dist_plots:
-			n = 0
+			j = j + 1
+			k = 0
+			if c == "":
+				figcap = r"Distribution of " + args.pheno_name.replace("_","\_") + r" in cohort-level analyses"
+			else:
+				figcap = r"Distribution of " + args.pheno_name.replace("_","\_") + r" in " + c.replace("_","\_") + r" by cohort"
 			text.extend([
-				r"\begin{figure}[H]",
-				r"   \centering"])
+							r"\begin{figure}[H]",
+							r"   \centering"])
 			for d in dist_plots[c]:
-				n = n + 1
-				delim = r"\\" if n % 2 == 0 else r"%"
-				if c == "":
-					figcap = r"Distribution of " + args.pheno_name.replace("_","\_") + r" in cohort-level analyses"
+				k = k + 1
+				if k % 2 != 0:
+					delim = r"%"
+					if k > 1:
+						text.extend([
+							r"\end{figure}",
+							r"\begin{figure}[H]\ContinuedFloat",
+							r"   \centering"])
 				else:
-					figcap = r"Distribution of " + args.pheno_name.replace("_","\_") + r" in " + c.replace("_","\_") + r" by cohort"
+					delim = ""
 				text.extend([
-					r"   \begin{subfigure}{.5\textwidth}",
-					r"      \centering",
-					r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[c][d] + r"}",
-					r"      \caption{" + d.replace("_","\_") + r"}",
-					r"      \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + d.replace("_","-") + r"-Distribution}",
-					r"   \end{subfigure}" + delim])
-			text.extend([
-					r"   \caption{" + figcap + r"}",
-					r"   \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + r"-Distributions}",
-					r"\end{figure}"])
+							r"   \begin{subfigure}{.5\textwidth}",
+							r"      \centering",
+							r"      \includegraphics[width=\linewidth,page=1]{" + dist_plots[c][d] + r"}",
+							r"      \caption{" + d.replace("_","\_") + r"}",
+							r"      \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + d.replace("_","-") + r"-Distribution}",
+							r"   \end{subfigure}" + delim])
+				if k == len(dist_plots[c]):
+					text.extend([
+							r"   \caption{" + figcap + r"}",
+							r"   \label{fig:" + args.pheno_name.replace("_","-") + c.replace("_","-") + r"-Distributions}",
+							r"\end{figure}"])
+
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Table}".encode('utf-8')); f.write("\n")

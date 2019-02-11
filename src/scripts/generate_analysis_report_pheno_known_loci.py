@@ -44,7 +44,6 @@ def main(args=None):
 
 	desc = collections.OrderedDict()
 	for s in args.desc.split(",,,"):
-		print s
 		ss = s.split("___")
 		if len(ss) > 4:
 			ss[1] = " ".join([ss[0],ss[1]])

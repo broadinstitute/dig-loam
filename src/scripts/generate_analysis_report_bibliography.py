@@ -11,7 +11,7 @@ def main(args=None):
 		
 		text = [r"We would like to acknowledge the following people for their significant contributions to this work.", "", r"\bigskip", ""]
 		i = 0
-		for name in args.acknowledgements.split(","):
+		for name in args.names.split(","):
 			i = i + 1
 			if i == 1:
 				text.extend([r"\noindent " + name + r" \\"])
@@ -42,10 +42,6 @@ def main(args=None):
 			text = c.split("___")[1]
 			f.write("\n"); f.write(r"\bibitem{" + tag + r"} " + text); f.write("\n")
 
-		f.write("\n"); f.write(r"\bibitem{Loamstream} Gilbert C, Ruebenacker O, Koesterer R, Massung J, Flannick J. Loamstream. " + args.loamstream_version + r". \url{https://github.com/broadinstitute/dig-loam-stream}."); f.write("\n")
-
-		f.write("\n"); f.write(r"\bibitem{Pipeline} Koesterer R, Gilbert C, Ruebenacker O, Massung J, Flannick J. AMP-DCC Data Analysis Pipeline. " + args.pipeline_version + r". \url{https://github.com/broadinstitute/dig-loam}."); f.write("\n")
-
 		text = r"\ExecuteMetaData[\currfilebase.input]{bibliography}"
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
@@ -62,9 +58,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--known-loci-citations', help='a 3 comma separated list of tags and citations, each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--acknowledgements', help='a comma separated list of names for acknowledgement', required=True)
-	requiredArgs.add_argument('--loamstream-version', help='a loamstream version', required=True)
-	requiredArgs.add_argument('--pipeline-version', help='a pipeline version', required=True)
+	requiredArgs.add_argument('--names', help='a comma separated list of names for acknowledgement', required=True)
 	requiredArgs.add_argument('--out-tex', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--out-input', help='an output file name with extension .input', required=True)
 	args = parser.parse_args()

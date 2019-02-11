@@ -14,8 +14,7 @@ args<-parser$parse_args()
 print(args)
 
 x<-read.table(args$results,header=T,as.is=T,sep="\t",comment.char="")
-y<-read.table(args$genes,header=T,as.is=T,sep="\t",comment.char="")
-
+y<-read.table(args$genes,header=F,as.is=T,sep="\t",comment.char="")
 names(y)[1]<-"gene"
 if(grepl("#",args$chr )) {
 	names(y)[2]<-gsub("#","X.",args$chr)
