@@ -164,7 +164,7 @@ def SampleQc(array: String): Unit = {
 
       cmd"""$shKlustakwikMetric $binKlustakwik ${arrayStores(array).sampleQcData.statsAdj} ${metric} ${metricData.base} ${metricData.fet} ${metricData.log}"""
         .in(arrayStores(array).sampleQcData.statsAdj)
-        .out(metricData.fet)
+        .out(metricData.fet, metricData.clu, metricData.klg, metricData.log)
         .tag(s"${metricData.base}.shKlustakwikMetric".split("/").last)
   
     }

@@ -166,7 +166,6 @@ while(iter < 11) {
 		pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 	}
 
-	write.table(out,"test.df",row.names=F,col.names=T,quote=F,sep="\t",append=F)
 	pc_outliers <- c()
 	for(pc in pcsin) {
 		pc_mean <- mean(out[,pc])

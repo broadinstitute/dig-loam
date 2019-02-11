@@ -68,15 +68,17 @@ final case class ConfigReport(
   sections: Seq[ConfigSection])
 
 final case class ProjectConfig(
+  loamstreamVersion: String,
+  pipelineVersion: String,
   projectId: String,
   referenceGenome: String,
   regionsExclude: String,
-  regionsExcludeGoogle: String,
+  regionsExcludeGoogle: Option[String],
   genePositions: String,
   kgPurcellVcf: String,
-  kgPurcellVcfGoogle: String,
+  kgPurcellVcfGoogle: Option[String],
   kgSample: String,
-  kgSampleGoogle: String,
+  kgSampleGoogle: Option[String],
   kgSampleId: String,
   kgSamplePop: String,
   kgSampleGroup: String,
@@ -90,11 +92,12 @@ final case class ProjectConfig(
   phenoFileFemaleCode: String,
   phenoFileSrRace: String,
   phenoFileStatus: String,
-  qcReportAuthors: Seq[String],
-  qcReportName: String,
-  analysisReportAuthors: Seq[String],
-  analysisReportAcknowledgements: Seq[String],
-  analysisReportName: String,
+  authors: Seq[String],
+  contact: String,
+  email: String,
+  organization: String,
+  acknowledgementsAnalysisReport: Seq[String],
+  acknowledgementsQcReport: Seq[String],
   nAncestryInferenceFeatures: Int,
   sampleQcMetrics: Seq[String],
   ancestryInferenceFeatures: String,
@@ -122,15 +125,17 @@ final case class ProjectConfig(
 val projectConfig = ProjectConfig(
 
   // required global values in conf file
+  loamstreamVersion = dataConfig.getStr("loamstreamVersion"),
+  pipelineVersion = dataConfig.getStr("pipelineVersion"),
   projectId = dataConfig.getStr("projectId"),
   referenceGenome = dataConfig.getStr("referenceGenome"),
   regionsExclude = dataConfig.getStr("regionsExclude"),
-  regionsExcludeGoogle = dataConfig.getStr("regionsExcludeGoogle"),
+  regionsExcludeGoogle = if(dataConfig.isDefined("regionsExcludeGoogle")) { Some(dataConfig.getStr("regionsExcludeGoogle")) } else { None },
   genePositions = dataConfig.getStr("genePositions"),
   kgPurcellVcf = dataConfig.getStr("kgPurcellVcf"),
-  kgPurcellVcfGoogle = dataConfig.getStr("kgPurcellVcfGoogle"),
+  kgPurcellVcfGoogle = if(dataConfig.isDefined("kgPurcellVcfGoogle")) { Some(dataConfig.getStr("kgPurcellVcfGoogle")) } else { None },
   kgSample = dataConfig.getStr("kgSample"),
-  kgSampleGoogle = dataConfig.getStr("kgSampleGoogle"),
+  kgSampleGoogle = if(dataConfig.isDefined("kgSampleGoogle")) { Some(dataConfig.getStr("kgSampleGoogle")) } else { None },
   kgSampleId = dataConfig.getStr("kgSampleId"),
   kgSamplePop = dataConfig.getStr("kgSamplePop"),
   kgSampleGroup = dataConfig.getStr("kgSampleGroup"),
@@ -144,11 +149,12 @@ val projectConfig = ProjectConfig(
   phenoFileFemaleCode = dataConfig.getStr("phenoFileFemaleCode"),
   phenoFileSrRace = dataConfig.getStr("phenoFileSrRace"),
   phenoFileStatus = dataConfig.getStr("phenoFileStatus"),
-  qcReportAuthors = dataConfig.getStrList("qcReportAuthors"),
-  qcReportName = dataConfig.getStr("qcReportName"),
-  analysisReportAuthors = dataConfig.getStrList("analysisReportAuthors"),
-  analysisReportAcknowledgements = dataConfig.getStrList("analysisReportAcknowledgements"),
-  analysisReportName = dataConfig.getStr("analysisReportName"),
+  authors = dataConfig.getStrList("authors"),
+  contact = dataConfig.getStr("contact"),
+  email = dataConfig.getStr("email"),
+  organization = dataConfig.getStr("organization"),
+  acknowledgementsAnalysisReport = dataConfig.getStrList("acknowledgementsAnalysisReport"),
+  acknowledgementsQcReport = dataConfig.getStrList("acknowledgementsQcReport"),
   nAncestryInferenceFeatures = dataConfig.getInt("nAncestryInferenceFeatures"),
   sampleQcMetrics = dataConfig.getStrList("sampleQcMetrics"),
   nCoresHail = dataConfig.getInt("nCoresHail"),
@@ -853,6 +859,64 @@ val modelMergeKnowns: Seq[ModelMergeKnown] = {
         known = projectConfig.Knowns.filter(e => e.id == k).head)
     }
   }
+
+}.flatten.distinct
+
+val cohortsList: Seq[ConfigCohort] = {
+
+  val w = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
+  } yield {
+   
+    for {
+      c <- section.cohorts.get
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val x = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
+  } yield {
+   
+    for {
+      t <- section.metas.get
+      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val y = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      g <- section.merges.get
+      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  val z = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      g <- section.merges.get
+      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
+      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
+    } yield {
+      projectConfig.Cohorts.filter(e => e.id == c).head
+    }
+  
+  }
+
+  w ++ x ++ y ++ z
 
 }.flatten.distinct
 

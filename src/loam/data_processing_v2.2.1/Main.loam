@@ -79,6 +79,15 @@ for {
 
 }
 
+// Copy known results to Google Cloud
+for {
+  x <- ProjectStores.knownStores.keys
+} yield {
+
+  KnownLociToGoogle(configKnown = x)
+
+}
+
 // Cohort variant association for known loci
 for {
   x <- modelCohortKnowns
