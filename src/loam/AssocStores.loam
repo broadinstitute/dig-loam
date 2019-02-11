@@ -16,76 +16,283 @@ final case class Assoc(
   tbi: Store,
   resultsGoogle: Store)
 
-final case class KnownLoci(
+final case class Known(
   data: Store,
   hiLd: Store,
-  hiLdGoogle: Store,
+  hiLdGoogle: Store)
+
+final case class KnownAssoc(
+  known: Known,
   assoc: Assoc)
 
-val assocStores = (( for { c <- projectConfig.Cohorts; m <- projectConfig.Models } yield { (None, c, m) } ) ++
-    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); m <- projectConfig.Models } yield { (Some(t), c, m) } )).map { assoc => 
+final case class MetaCohort(
+  data: Seq[Store],
+  base: Path,
+  samples: Store,
+  famMerge: Store,
+  kinshipSamplesExclude: Store)
 
-  val meta: Option[ConfigMeta] = assoc._1
-  val cohort = assoc._2
-  val model = assoc._3
+final case class MetaKinship(
+  commonVariants: Store,
+  mergeList: Store,
+  dataFiltered: Seq[Store],
+  baseFiltered: Path,
+  baseKinship: Path,
+  log: Store,
+  kin0: Store,
+  kin0Related: Store,
+  metaCohort: Map[ConfigCohort, MetaCohort])
 
-  val prefix = meta match {
-    case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}"
-    case None => s"${projectConfig.projectId}.${cohort.id}"
-  }
+final case class Meta(
+  results: Store,
+  resultsGoogle: Store,
+  tbi: Store)
 
-  val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
-  val modelPrefix = s"${prefix}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
+final case class Merge(
+  results: Store,
+  resultsGoogle: Store,
+  tbi: Store)
 
-  assoc -> Assoc(
-    phenoPrelim = store(localOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
-    phenoPrelimGoogle = store(googleOutDir / s"${modelPrefix}.prelim_pheno.tsv"),
-    samplesInclude = store(localOutDir / s"${modelPrefix}.samples.include"),
-    samplesIncludeGoogle = store(googleOutDir / s"${modelPrefix}.samples.include"),
-    phenoLog = store(localOutDir / s"${modelPrefix}.pheno.log"),
-    pheno = store(localOutDir / s"${modelPrefix}.pheno.tsv"),
-    pcs = store(localOutDir / s"${modelPrefix}.pcs.include"),
-    phenoGoogle = store(googleOutDir / s"${modelPrefix}.pheno.tsv"),
-    pcsGoogle = store(googleOutDir / s"${modelPrefix}.pcs.include"),
-    results = store(localOutDir / s"${modelPrefix}.results.tsv.bgz"),
-    tbi = store(localOutDir / s"${modelPrefix}.results.tsv.bgz.tbi"),
-    resultsGoogle = store(googleOutDir / s"${modelPrefix}.results.tsv.bgz"))
+final case class KnownMeta(
+  known: Known,
+  meta: Meta)
+
+final case class KnownMerge(
+  known: Known,
+  merge: Merge)
+
+val assocStores = (
+    (
+      for {
+		x <- modelCohorts
+      } yield {
+        (x.model, x.cohort, None)
+      } 
+    ) ++
+    (
+      for {
+        x <- modelCohortMetas
+      } yield {
+        (x.model, x.cohort, Some(x.meta))
+      }
+    )
+  ).map { assoc => 
+
+    val model = assoc._1
+    val cohort = assoc._2
+    val meta: Option[ConfigMeta] = assoc._3
+    
+    val prefix = meta match {
+      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}"
+      case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}"
+    }
+
+    assoc -> Assoc(
+      phenoPrelim = store(localOutDir / s"${prefix}.prelim_pheno.tsv"),
+      phenoPrelimGoogle = store(googleOutDir / s"${prefix}.prelim_pheno.tsv"),
+      samplesInclude = store(localOutDir / s"${prefix}.samples.include"),
+      samplesIncludeGoogle = store(googleOutDir / s"${prefix}.samples.include"),
+      phenoLog = store(localOutDir / s"${prefix}.pheno.log"),
+      pheno = store(localOutDir / s"${prefix}.pheno.tsv"),
+      pcs = store(localOutDir / s"${prefix}.pcs.include"),
+      phenoGoogle = store(googleOutDir / s"${prefix}.pheno.tsv"),
+      pcsGoogle = store(googleOutDir / s"${prefix}.pcs.include"),
+      results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"),
+      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz")
+    )
+
+  }.toMap
+
+val knownLociStores = (
+    (
+      for {
+        x <- modelCohortKnowns
+      } yield {
+        (x.model, x.cohort, x.known, None)
+      }
+    ) ++
+    (
+      for {
+        x <- modelCohortMetaKnowns
+      } yield {
+        (x.model, x.cohort, x.known, Some(x.meta))
+      }
+    )
+  ).map { knownLoci => 
+
+    val model = knownLoci._1
+    val cohort = knownLoci._2
+    val known = knownLoci._3
+    val meta: Option[ConfigMeta] = knownLoci._4
+    
+    val prefix = meta match {
+      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}.${known.id}"
+      case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}.${known.id}"
+    }
+
+    val knownHiLdStringBase = known.hiLd.split("/").last
+    
+    knownLoci -> KnownAssoc(
+      known = Known(
+        data = store(path(known.data)).asInput,
+        hiLd = store(path(known.hiLd)).asInput,
+        hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+      assoc = Assoc(
+        phenoPrelim = store(localOutDir / s"${prefix}.prelim_pheno.tsv"),
+        phenoPrelimGoogle = store(googleOutDir / s"${prefix}.prelim_pheno.tsv"),
+        samplesInclude = store(localOutDir / s"${prefix}.samples.include"),
+        samplesIncludeGoogle = store(googleOutDir / s"${prefix}.samples.include"),
+        phenoLog = store(localOutDir / s"${prefix}.pheno.log"),
+        pheno = store(localOutDir / s"${prefix}.pheno.tsv"),
+        pcs = store(localOutDir / s"${prefix}.pcs.include"),
+        phenoGoogle = store(googleOutDir / s"${prefix}.pheno.tsv"),
+        pcsGoogle = store(googleOutDir / s"${prefix}.pcs.include"),
+        results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
+        tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"),
+        resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"))
+      )
+
+  }.toMap
+
+val metaKinshipStores = metas.map { meta =>
+
+  val baseString = s"${projectConfig.projectId}.${meta.id}"
+  val baseRefFilteredString = s"${baseString}.ref.filtered"
+  val baseKinshipString = s"${baseString}.kinship"
+
+  val commonVariants = store(localOutDir / s"${baseRefFilteredString}.common_variants.txt")
+
+  val metaCohort = projectConfig.Cohorts.filter(e => meta.cohorts contains e.id).map { cohort =>
+
+    val cohortBaseString = s"${baseString}.${cohort.id}"
+    val cohortRefBaseString = s"${cohortBaseString}.ref"
+    val cohortKinshipBaseString = s"${cohortBaseString}.kinship"
+
+    cohort -> MetaCohort(
+      data = bedBimFam(localOutDir / cohortRefBaseString),
+      base = localOutDir / cohortRefBaseString,
+      samples = store(localOutDir / s"${cohortBaseString}.samples"),
+      famMerge = store(localOutDir / s"${cohortRefBaseString}.fam.merge"),
+      kinshipSamplesExclude = store(localOutDir / s"${cohortKinshipBaseString}.samples.exclude"))
+
+  }.toMap
+
+  meta -> MetaKinship(
+    commonVariants = commonVariants,
+    mergeList= store(localOutDir / s"${baseRefFilteredString}.merge_list.txt"),
+    dataFiltered = bedBimFam(localOutDir / baseRefFilteredString),
+    baseFiltered = localOutDir / baseRefFilteredString,
+    baseKinship = localOutDir / baseKinshipString,
+    log = store(localOutDir / s"${baseKinshipString}.log"),
+    kin0 = store(localOutDir / s"${baseKinshipString}.kin0"),
+    kin0Related = store(localOutDir / s"${baseKinshipString}.kin0.related"),
+    metaCohort = metaCohort)
 
 }.toMap
 
-val knownLociStores = (( for { c <- projectConfig.Cohorts; k <- projectConfig.KnownLoci; if c.report } yield { (None, c, k) } ) ++
-    ( for { t <- projectConfig.Metas; c <- projectConfig.Cohorts.filter(e => t.cohorts contains e.id); k <- projectConfig.KnownLoci; if t.report } yield { (Some(t), c, k) } )).map { knownLoci => 
+val metaStores = (
+    (
+      for {
+        x <- modelMetas
+      } yield {
+        (x.model, x.meta)
+      }
+    )
+  ).map { modelMeta =>
 
-  val meta: Option[ConfigMeta] = knownLoci._1
-  val cohort = knownLoci._2
-  val known = knownLoci._3
+  val model = modelMeta._1
+  val meta = modelMeta._2
 
-  val prefix = meta match {
-    case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}"
-    case None => s"${projectConfig.projectId}.${cohort.id}"
-  }
+  val baseString = s"${projectConfig.projectId}.${meta.id}.${model.id}"
 
-  val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
-  val knownPrefix = s"${prefix}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}.known_loci"
+  modelMeta -> Meta(
+    results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
+    tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi")
+  )
+
+}.toMap
+
+val knownMetaStores = (
+    (
+      for {
+        x <- modelMetaKnowns
+      } yield {
+        (x.model, x.meta, x.known)
+      }
+    )
+  ).map { modelMetaKnown =>
+
+  val model = modelMetaKnown._1
+  val meta = modelMetaKnown._2
+  val known = modelMetaKnown._3
+
+  val prefix = s"${projectConfig.projectId}.${meta.id}.${model.id}.${known.id}"
   val knownHiLdStringBase = known.hiLd.split("/").last
 
-  knownLoci -> KnownLoci(
-    data = store(path(known.data)).asInput,
-    hiLd = store(path(known.hiLd)).asInput,
-    hiLdGoogle = store(googleOutDir / s"${knownPrefix}.${knownHiLdStringBase}"),
-    assoc = Assoc(
-      phenoPrelim = store(localOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
-      phenoPrelimGoogle = store(googleOutDir / s"${knownPrefix}.prelim_pheno.tsv"),
-      samplesInclude = store(localOutDir / s"${knownPrefix}.samples.include"),
-      samplesIncludeGoogle = store(googleOutDir / s"${knownPrefix}.samples.include"),
-      phenoLog = store(localOutDir / s"${knownPrefix}.pheno.log"),
-      pheno = store(localOutDir / s"${knownPrefix}.pheno.tsv"),
-      pcs = store(localOutDir / s"${knownPrefix}.pcs.include"),
-      phenoGoogle = store(googleOutDir / s"${knownPrefix}.pheno.tsv"),
-      pcsGoogle = store(googleOutDir / s"${knownPrefix}.pcs.include"),
-      results = store(localOutDir / s"${knownPrefix}.results.tsv.bgz"),
-      tbi = store(localOutDir / s"${knownPrefix}.results.tsv.bgz.tbi"),
-      resultsGoogle = store(googleOutDir / s"${knownPrefix}.results.tsv.bgz"))
+  modelMetaKnown -> KnownMeta(
+    known = Known(
+      data = store(path(known.data)).asInput,
+      hiLd = store(path(known.hiLd)).asInput,
+      hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+    meta = Meta(
+      results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"))
+  )
+
+}.toMap
+
+val mergeStores = (
+    (
+      for {
+        x <- modelMerges
+      } yield {
+        (x.model, x.merge)
+      }
     )
+  ).map { modelMerge =>
+
+  val model = modelMerge._1
+  val merge = modelMerge._2
+
+  val baseString = s"${projectConfig.projectId}.${merge.id}.${model.id}"
+
+  modelMerge -> Merge(
+    results = store(localOutDir / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = store(googleOutDir / s"${baseString}.results.tsv.bgz"),
+    tbi = store(localOutDir / s"${baseString}.results.tsv.bgz.tbi")
+  )
+
+}.toMap
+
+val knownMergeStores = (
+    (
+      for {
+        x <- modelMergeKnowns
+      } yield {
+        (x.model, x.merge, x.known)
+      }
+    )
+  ).map { modelMergeKnown =>
+
+  val model = modelMergeKnown._1
+  val merge = modelMergeKnown._2
+  val known = modelMergeKnown._3
+
+  val prefix = s"${projectConfig.projectId}.${merge.id}.${model.id}.${known.id}"
+  val knownHiLdStringBase = known.hiLd.split("/").last
+
+  modelMergeKnown -> KnownMerge(
+    known = Known(
+      data = store(path(known.data)).asInput,
+      hiLd = store(path(known.hiLd)).asInput,
+      hiLdGoogle = store(googleOutDir / s"${prefix}.${knownHiLdStringBase}")),
+    merge = Merge(
+      results = store(localOutDir / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = store(googleOutDir / s"${prefix}.results.tsv.bgz"),
+      tbi = store(localOutDir / s"${prefix}.results.tsv.bgz.tbi"))
+  )
 
 }.toMap

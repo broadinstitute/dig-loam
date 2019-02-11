@@ -69,23 +69,16 @@ final case class HarmonizedData(
   imputeBase: Path,
   vcfGoogle: Store,
   tbiGoogle: Store,
-  vdsGoogle: Store,
-  variantQcGoogle: Store,
-  prunedInGoogle: Store)
-
-final case class ImputedData(
-  data: Store,
-  base: Path,
-  dataGoogle: Store,
-  baseGoogle: URI,
-  vdsGoogle = Store)
+  mtGoogle: Store,
+  pruneIn: Store,
+  regionsExcludePlink: Store)
 
 final case class PrunedData(
-  dataGoogle: Seq[Store],
-  baseGoogle: URI,
   data: Seq[Store],
   base: Path,
-  vdsGoogle: Store)
+  bimGoogle: Store,
+  vcf: Store,
+  tbi: Store)
 
 final case class KinshipData(
   base: Path,
@@ -96,10 +89,11 @@ final case class KinshipData(
   famSizes: Store)
 
 final case class Ref1kgData(
+  vcf: Store,
   data: Seq[Store],
   base: Path,
   gds: Store,
-  dataGoogle: Seq[Store],
+  vcfGoogle: Store,
   baseGoogle: URI)
 
 final case class AncestryData(
@@ -145,7 +139,7 @@ final case class SampleQcData(
   pcaPlots: Store,
   pcaScores: Store,
   outliers: Store,
-  outliersPlotsPdf: Store)
+  metricPlots: Store)
 
 final case class SampleQcPcaClusterData(
   base: Path,
@@ -167,6 +161,7 @@ final case class SampleQcMetricClusterData(
 final case class FinalData(
   samplesExclude: Store,
   samplesExcludeGoogle: Store,
+  samplesRestore: Store,
   variantsExclude: Store,
   variantsExcludeIds: Store,
   variantsExcludeGoogle: Store)
@@ -179,12 +174,11 @@ final case class CleanData(
   data: Seq[Store],
   base: Path,
   gds: Store,
-  dataGoogle: Seq[Store],
   baseGoogle: URI,
   vcf: Store,
   tbi: Store,
   vcfGoogle: Store,
-  vdsGoogle: Store,
+  mtGoogle: Store,
   pcaScores: Store,
   pcaLog: Store)
 
@@ -194,7 +188,6 @@ final case class Array(
   annotatedData: AnnotatedData,
   annotatedChrData: Map[String, AnnotatedChrData],
   harmonizedData: HarmonizedData,
-  imputedData: Option[ImputedData],
   prunedData: PrunedData,
   kinshipData: KinshipData,
   ref1kgData: Ref1kgData,
@@ -219,7 +212,6 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
   val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
   val imputeBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.impute"
-  val imputedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.${arrayCfg.imputedTag}"
   val qcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.qc"
   val kinshipBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.kinship"
   val ref1kgBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref1kg"
@@ -320,31 +312,16 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     imputeBase = localOutDir / imputeBaseString,
     vcfGoogle = store(googleOutDir / s"${refBaseString}.vcf.gz"),
     tbiGoogle = store(googleOutDir / s"${refBaseString}.vcf.gz.tbi"),
-    vdsGoogle = store(googleOutDir / s"${refBaseString}.vds"),
-    variantQcGoogle = store(googleOutDir / s"${refBaseString}.variantqc.tsv"),
-    prunedInGoogle = store(googleOutDir / s"${refBaseString}.prunedin.tsv"))
-
-  val imputedData = arrayCfg.isDefined("imputed") match {
-
-    case true =>
-
-      ImputedData(
-        data = store(path(arrayCfg.imputed)).asInput,
-        base = path(arrayCfg.imputed),
-        dataGoogle = store(googleOutDir / arrayCfg.imputed.split("/").last),
-        baseGoogle = googleOutDir / s"${imputedBaseString}",
-        vdsGoogle = store(googleOutDir / s"${imputedBaseString}.vds"))
-
-    case false => None
-
-  }
+    mtGoogle = store(googleOutDir / s"${refBaseString}.mt"),
+    pruneIn = store(localOutDir / s"${refBaseString}.prune.in"),
+    regionsExcludePlink = store(localOutDir / s"${refBaseString}.regions_exclude.txt"))
 
   val prunedData = PrunedData(
-    dataGoogle = bedBimFam(googleOutDir / qcBaseString),
-    baseGoogle = googleOutDir / qcBaseString,
     data = bedBimFam(localOutDir / qcBaseString),
     base = localOutDir / qcBaseString,
-    vdsGoogle = store(googleOutDir / s"${qcBaseString}.vds"))
+    bimGoogle = store(googleOutDir / s"${qcBaseString}.bim"),
+    vcf = store(localOutDir / s"${qcBaseString}.vcf.gz"),
+    tbi = store(localOutDir / s"${qcBaseString}.vcf.gz.tbi"))
 
   val kinshipData = KinshipData(
     base = localOutDir / kinshipBaseString,
@@ -355,10 +332,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     famSizes = store(localOutDir / s"${kinshipBaseString}.famsizes.tsv"))
 
   val ref1kgData = Ref1kgData(
+    vcf = store(localOutDir / s"${ref1kgBaseString}.vcf.bgz"),
     data = bedBimFam(localOutDir / ref1kgBaseString),
     base = localOutDir / ref1kgBaseString,
     gds = store(localOutDir / s"${ref1kgBaseString}.gds"),
-    dataGoogle = bedBimFam(googleOutDir / ref1kgBaseString),
+    vcfGoogle = store(googleOutDir / s"${ref1kgBaseString}.vcf.bgz"),
     baseGoogle = googleOutDir / ref1kgBaseString)
 
   val ancestryData = AncestryData(
@@ -404,7 +382,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     pcaPlots = store(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
     pcaScores = store(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
     outliers = store(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
-    outliersPlotsPdf = store(localOutDir / s"${sampleQcBaseString}.outliers.plots.pdf"))
+    metricPlots = store(localOutDir / s"${sampleQcBaseString}.metricplots.pdf"))
 
   val sampleQcPcaClusterData = SampleQcPcaClusterData(
     base = localOutDir / s"${sampleQcBaseString}.pca.cluster",
@@ -430,6 +408,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val finalData = FinalData(
     samplesExclude = store(localOutDir / s"${finalBaseString}.samples.exclude.txt"),
     samplesExcludeGoogle = store(googleOutDir / s"${finalBaseString}.samples.exclude.txt"),
+	samplesRestore = store(localOutDir / s"${finalBaseString}.samples.restore.tbl"),
     variantsExclude = store(localOutDir / s"${finalBaseString}.variants.exclude.txt"),
     variantsExcludeIds = store(localOutDir / s"${finalBaseString}.variants.exclude.ids.txt"),
     variantsExcludeGoogle = store(googleOutDir / s"${finalBaseString}.variants.exclude.txt"))
@@ -442,12 +421,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     data = bedBimFam(localOutDir / cleanBaseString),
     base = localOutDir / cleanBaseString,
     gds = store(localOutDir / s"${cleanBaseString}.gds"),
-    dataGoogle = bedBimFam(googleOutDir / cleanBaseString),
     baseGoogle = googleOutDir / cleanBaseString,
     vcf = store(localOutDir / s"${cleanBaseString}.vcf.bgz"),
     tbi = store(localOutDir / s"${cleanBaseString}.vcf.bgz.tbi"),
     vcfGoogle = store(googleOutDir / s"${cleanBaseString}.vcf.bgz"),
-    vdsGoogle = store(googleOutDir / s"${cleanBaseString}.vds"),
+    mtGoogle = store(googleOutDir / s"${cleanBaseString}.mt"),
     pcaScores = store(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
     pcaLog = store(localOutDir / s"${cleanBaseString}.pca.log"))
 
@@ -457,7 +435,6 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     annotatedData = annotatedData,
     annotatedChrData = annotatedChrData,
     harmonizedData = harmonizedData,
-    imputedData = imputedData,
     prunedData = prunedData,
     kinshipData = kinshipData,
     ref1kgData = ref1kgData,

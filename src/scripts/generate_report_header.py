@@ -30,10 +30,8 @@ header=r"""\documentclass[11pt]{article}
 \usepackage{currfile}
 \usepackage{catchfilebetweentags}
 \usepackage[export]{adjustbox}
-%\setcounter{section}{-1}
 \pagestyle{fancy}
-%\fancyhf{}
-\renewcommand{\sectionmark}[1]{\markboth{#1}{\thesection.\ #1}}
+\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
 \renewcommand{\subsectionmark}[1]{\markright{\thesubsection.\ #1}}
 \lhead{\fancyplain{}{\nouppercase{\leftmark}}} % 1. sectionname
 \rhead{\fancyplain{}{\nouppercase{\rightmark}}} % 1. sectionname
@@ -57,8 +55,8 @@ header=r"""\documentclass[11pt]{article}
 \usepackage{threeparttablex}
 \usepackage{needspace}
 \newcommand{\needlines}[1]{\Needspace*{#1\baselineskip}}
-%\usepackage{underscore}
 \usepackage[english]{babel}
+\usepackage{datetime}
 \pgfplotstableset{
 	highlight/.append style={
 		postproc cell content/.append code={
@@ -88,6 +86,14 @@ header=r"""\documentclass[11pt]{article}
 		}
 	}
 }
+\makeatletter
+\renewcommand\tableofcontents{
+	\section*{\contentsname
+		\@mkboth{
+			\MakeUppercase\contentsname}{}}
+	\@starttoc{toc}
+	}
+\makeatother
 """
 
 def main(args=None):

@@ -10,7 +10,7 @@ def main(args=None):
 	df.reset_index(drop=True, inplace=True)
 
 	print "sorting by p value"
-	df.sort_values(by=['pval'],inplace=True)
+	df.sort_values(by=[args.p],inplace=True)
 
 	print "extracting top 1000 variants"
 	df = df.head(n=1000)

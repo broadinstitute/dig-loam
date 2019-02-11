@@ -6,9 +6,23 @@
 import ProjectConfig._
 import PipelineConfig._
 import AssocStores._
-import MetaStores._
 
 def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
+
+  val meta = metaStores((configModel, configMeta))
+
+  val resultsListStrings = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      val result = assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq.head
+      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+
+    }
+
+  }
 
   val resultsList = {
 
@@ -16,8 +30,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       c <- configMeta.cohorts
     } yield {
 
-      val result = assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq(0)
-      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+      assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle).toSeq.head
   
     }
 
@@ -25,33 +38,49 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   google {
 
-    hail"""$pyHailMetaAnalysis
-      --results ${resultsList.mkString(",")}
-      --out ${metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle}"""
-        .in(assocStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configModel).map(e => e._2.resultsGoogle).toSeq)
-        .out(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle)
-        .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).results}.google".split("/").last)
+    hail"""$pyHailMetaAnalysis --
+      --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
+      --results ${resultsListStrings.mkString(",")}
+      --out ${meta.resultsGoogle}"""
+        .in(resultsList)
+        .out(meta.resultsGoogle)
+        .tag(s"${meta.results}.google".split("/").last)
   
   }
 
   local {
 
-    googleCopy(metaStores(configMeta.id).metaResultsData(configModel).resultsGoogle, metaStores(configMeta.id).metaResultsData(configModel).results)
+    googleCopy(meta.resultsGoogle, meta.results)
 
   }
   
   drm {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaResultsData(configModel).results}"""
-      .in(metaStores(configMeta.id).metaResultsData(configModel).results)
-      .out(metaStores(configMeta.id).metaResultsData(configModel).tbi)
-      .tag(s"${metaStores(configMeta.id).metaResultsData(configModel).tbi}".split("/").last)
+    cmd"""$binTabix -f -b 2 -e 2 ${meta.results}"""
+      .in(meta.results)
+      .out(meta.tbi)
+      .tag(s"${meta.tbi}".split("/").last)
 
   }
 
 }
 
-def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMeta): Unit = {
+def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, configKnown: ConfigKnown): Unit = {
+
+  val known = knownMetaStores((configModel, configMeta, configKnown))
+
+  val resultsListStrings = {
+
+    for {
+      c <- configMeta.cohorts
+    } yield {
+
+      val result = knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq.head
+      c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
+
+    }
+
+  }
 
   val resultsList = {
 
@@ -59,8 +88,7 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
       c <- configMeta.cohorts
     } yield {
 
-      val result = knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1.get == configMeta).filter(e => e._1._3 == configKnownLoci).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq(0)
-      c + "___" + configKnownLoci.model.test + "___" + s"${result.toString.split("@")(1)}"
+      knownLociStores.filter(e => e._1._4.isDefined).filter(e => e._1._4.get == configMeta).filter(e => e._1._3 == configKnown).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.assoc.resultsGoogle).toSeq.head
   
     }
 
@@ -68,27 +96,28 @@ def MetaAnalysisKnownLoci(configKnownLoci: ConfigKnownLoci, configMeta: ConfigMe
 
   google {
 
-    hail"""$pyHailMetaAnalysis
-      --results ${resultsList.mkString(",")}
-      --out ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle}"""
-        .in(knownLociStores.filter(e => e._1._1.isDefined).filter(e => e._1._1 == configMeta).filter(e => e._1._3 == configKnownLoci).map(e => e._2.assoc.resultsGoogle).toSeq)
-        .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle)
-        .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}.google".split("/").last)
+    hail"""$pyHailMetaAnalysis --
+      --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+      --results ${resultsListStrings.mkString(",")}
+      --out ${known.meta.resultsGoogle}"""
+        .in(resultsList)
+        .out(known.meta.resultsGoogle)
+        .tag(s"${known.meta.results}.google".split("/").last)
   
   }
 
   local {
 
-    googleCopy(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).resultsGoogle, metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)
+    googleCopy(known.meta.resultsGoogle, known.meta.results)
 
   }
   
   drm {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results}"""
-      .in(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).results)
-      .out(metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi)
-      .tag(s"${metaStores(configMeta.id).metaKnownLociResultsData(configKnownLoci).tbi}".split("/").last)
+    cmd"""$binTabix -f -b 2 -e 2 ${known.meta.results}"""
+      .in(known.meta.results)
+      .out(known.meta.tbi)
+      .tag(s"${known.meta.tbi}".split("/").last)
 
   }
 

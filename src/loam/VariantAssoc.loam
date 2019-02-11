@@ -8,27 +8,33 @@ import PipelineConfig._
 import ArrayStores._
 import AssocStores._
 import ProjectStores._
-import MetaStores._
 
-def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMeta: Option[ConfigMeta] = None): Unit = {
+def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMeta: Option[ConfigMeta] = None): Unit = {
 
-  val assoc = assocStores((configMeta, configCohort, configModel))
+  val assoc = assocStores((configModel, configCohort, configMeta))
 
   val array = configCohort.array
+  val Seq(_, prunedBim, _) = arrayStores(array).prunedData.data
+
+  local {
+
+    googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle)
+
+  }
 
   google {
 
-    hail"""$pyHailListSamples
-      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
-      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-      --pheno-in ${ProjectStores.phenoGoogle}
-      --iid-col ${projectConfig.phenoId}
+    hail"""$pyHailListSamples --
+      --mt-in ${arrayStores(array).cleanData.mtGoogle}
+      --bim-in ${arrayStores(array).prunedData.bimGoogle}
+      --pheno-in ${ProjectStores.phenoFileGoogle}
+      --iid-col ${projectConfig.phenoFileId}
       --pheno-col ${configModel.pheno}
       --test ${configModel.test}
       --covars "${configModel.covars}"
       --out-pheno-prelim ${assoc.phenoPrelimGoogle}
       --out-samples ${assoc.samplesIncludeGoogle}"""
-    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle)
     .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
     .tag(s"${assoc.phenoPrelim}.google".split("/").last)
 
@@ -43,15 +49,15 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   val excludeCrossArrayString = configMeta match {
 
-    case Some(s) => s"""${metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude.toString.split("@")(1)}"""
+    case Some(s) => s"""${metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude.toString.split("@")(1)}"""
     case None => ""
 
   }
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, assoc.samplesInclude, arrayStores(array).finalData.variantsExclude, metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, assoc.samplesInclude, arrayStores(array).finalData.variantsExclude)
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, assoc.samplesInclude, arrayStores(array).finalData.variantsExcludeIds, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, assoc.samplesInclude, arrayStores(array).finalData.variantsExcludeIds)
 
   }
   
@@ -61,14 +67,14 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       $rGeneratePheno
       --cpus 4
       --gds-in ${arrayStores(array).pcaData.gds}
-      --pheno-in ${ProjectStores.pheno}
+      --pheno-in ${ProjectStores.phenoFile}
       --ancestry-in ${ProjectStores.ancestryInferred}
       --ancestry-keep ${configCohort.ancestry.mkString(",")}
       --pheno-col ${configModel.pheno}
-      --iid-col ${projectConfig.phenoId}
+      --iid-col ${projectConfig.phenoFileId}
       --samples-include ${assoc.samplesInclude}
       --samples-exclude "${excludeCrossArrayString}"
-      --variants-exclude ID ${arrayStores(array).finalData.variantsExclude}
+      --variants-exclude ${arrayStores(array).finalData.variantsExcludeIds}
       --test ${configModel.test}
       --trans "${configModel.trans}"
       --covars "${configModel.covars}"
@@ -89,51 +95,23 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
 
-  configCohort.imputed match {
-
-    case false =>
+  google {
   
-      google {
-      
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
-          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+        hail"""$pyHailAssoc --
+          --mt-in ${arrayStores(array).cleanData.mtGoogle}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle}
           --pheno-in ${assoc.phenoGoogle}
-          --iid-col ${projectConfig.phenoId}
+          --iid-col ${projectConfig.phenoFileId}
           --pheno-col ${configModel.pheno}
           --pcs-include ${assoc.pcsGoogle}
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, assoc.phenoGoogle, assoc.pcsGoogle)
             .out(assoc.resultsGoogle)
             .tag(s"${assoc.results}.google".split("/").last)
-      
-      }
-
-    case true =>
-
-      google {
-      
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
-          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-          --pheno-in ${assoc.phenoGoogle}
-          --imputed
-          --iid-col ${projectConfig.phenoId}
-          --pheno-col ${configModel.pheno}
-          --pcs-include ${assoc.pcsGoogle}
-          --test ${configModel.test}
-          --trans "${configModel.trans}"
-          --covars "${configModel.covars}"
-          --out ${assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
-            .out(assoc.resultsGoogle)
-            .tag(s"${assoc.results}.google".split("/").last)
-      
-      }
-
+  
   }
   
   local {
@@ -153,28 +131,28 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
 }
 
-def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci, configMeta: Option[ConfigMeta] = None): Unit = {
+def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configKnown: ConfigKnown, configMeta: Option[ConfigMeta] = None): Unit = {
 
-  val known = knownLociStores((configMeta, configCohort, configKnownLoci))
+  val known = knownLociStores((configModel, configCohort, configKnown, configMeta))
 
   val array = configCohort.array
 
   google {
-
-    hail"""$pyHailListSamples
-      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
-      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-      --pheno-in ${ProjectStores.phenoGoogle}
-      --iid-col ${projectConfig.phenoId}
-      --pheno-col ${configKnownLoci.model.pheno}
-      --test ${configKnownLoci.model.test}
-      --covars "${configKnownLoci.model.covars}"
+  
+    hail"""$pyHailListSamples --
+      --mt-in ${arrayStores(array).cleanData.mtGoogle}
+      --bim-in ${arrayStores(array).prunedData.bimGoogle}
+      --pheno-in ${ProjectStores.phenoFileGoogle}
+      --iid-col ${projectConfig.phenoFileId}
+      --pheno-col ${configModel.pheno}
+      --test ${configModel.test}
+      --covars "${configModel.covars}"
       --out-pheno-prelim ${known.assoc.phenoPrelimGoogle}
       --out-samples ${known.assoc.samplesIncludeGoogle}"""
-    .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
+    .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle)
     .out(known.assoc.phenoPrelimGoogle, known.assoc.samplesIncludeGoogle)
     .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
-
+  
   }
     
   local {
@@ -186,15 +164,15 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   val excludeCrossArrayString = configMeta match {
 
-    case Some(s) => s"""${metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude.toString.split("@")(1)}"""
+    case Some(s) => s"""${metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude.toString.split("@")(1)}"""
     case None => ""
 
   }
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, known.assoc.samplesInclude, arrayStores(array).finalData.variantsExclude, metaStores(configMeta.get.id).metaCohortData(configCohort.id).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.pheno, ProjectStores.ancestryInferred, known.assoc.samplesInclude, arrayStores(array).finalData.variantsExclude)
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, known.assoc.samplesInclude, arrayStores(array).finalData.variantsExcludeIds, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, known.assoc.samplesInclude, arrayStores(array).finalData.variantsExcludeIds)
 
   }
   
@@ -204,17 +182,17 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       $rGeneratePheno
       --cpus 4
       --gds-in ${arrayStores(array).pcaData.gds}
-      --pheno-in ${ProjectStores.pheno}
+      --pheno-in ${ProjectStores.phenoFile}
       --ancestry-in ${ProjectStores.ancestryInferred}
-      --ancestry-keep ${configKnownLoci.ancestry.mkString(",")}
-      --pheno-col ${configKnownLoci.model.pheno}
-      --iid-col ${projectConfig.phenoId}
+      --ancestry-keep ${configCohort.ancestry.mkString(",")}
+      --pheno-col ${configModel.pheno}
+      --iid-col ${projectConfig.phenoFileId}
       --samples-include ${known.assoc.samplesInclude}
       --samples-exclude "${excludeCrossArrayString}"
-      --variants-exclude ID ${arrayStores(array).finalData.variantsExclude}
-      --test ${configKnownLoci.model.test}
-      --trans "${configKnownLoci.model.trans}"
-      --covars "${configKnownLoci.model.covars}"
+      --variants-exclude ${arrayStores(array).finalData.variantsExcludeIds}
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
       --out-pheno ${known.assoc.pheno}
       --out-pcs ${known.assoc.pcs}
       > ${known.assoc.phenoLog}"""
@@ -226,66 +204,37 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
   }
   
   local {
-
+  
     googleCopy(known.assoc.pheno, known.assoc.phenoGoogle)
     googleCopy(known.assoc.pcs, known.assoc.pcsGoogle)
-    googleCopy(known.hiLd, known.hiLdGoogle)
-
-  }
-
-  configCohort.imputed match {
-
-    case false =>
+    googleCopy(known.known.hiLd, known.known.hiLdGoogle)
   
-      google {
-      
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
-          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-          --pheno-in ${known.assoc.phenoGoogle}
-          --iid-col ${projectConfig.phenoId}
-          --pheno-col ${configKnownLoci.model.pheno}
-          --pcs-include ${known.assoc.pcsGoogle}
-          --extract-ld ${known.hiLdGoogle}
-          --test ${configKnownLoci.model.test}
-          --trans "${configKnownLoci.model.trans}"
-          --covars "${configKnownLoci.model.covars}"
-          --out ${known.assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
-            .out(known.assoc.resultsGoogle)
-            .tag(s"${known.assoc.results}.google".split("/").last)
-      
-      }
-
-    case true =>
-
-      google {
-      
-        hail"""$pyHailAssoc
-          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
-          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-          --pheno-in ${known.assoc.phenoGoogle}
-          --imputed
-          --iid-col ${projectConfig.phenoId}
-          --pheno-col ${configKnownLoci.model.pheno}
-          --pcs-include ${known.assoc.pcsGoogle}
-          --extract-ld ${known.hiLdGoogle}
-          --test ${configKnownLoci.model.test}
-          --trans "${configKnownLoci.model.trans}"
-          --covars "${configKnownLoci.model.covars}"
-          --out ${known.assoc.resultsGoogle}"""
-            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
-            .out(known.assoc.resultsGoogle)
-            .tag(s"${known.assoc.results}.google".split("/").last)
-      
-      }
-
+  }
+  
+  google {
+  
+    hail"""$pyHailAssoc --
+      --mt-in ${arrayStores(array).cleanData.mtGoogle}
+      --bim-in ${arrayStores(array).prunedData.bimGoogle}
+      --pheno-in ${known.assoc.phenoGoogle}
+      --iid-col ${projectConfig.phenoFileId}
+      --pheno-col ${configModel.pheno}
+      --pcs-include ${known.assoc.pcsGoogle}
+      --extract-ld ${known.known.hiLdGoogle}
+      --test ${configModel.test}
+      --trans "${configModel.trans}"
+      --covars "${configModel.covars}"
+      --out ${known.assoc.resultsGoogle}"""
+        .in(arrayStores(array).prunedData.bimGoogle, arrayStores(array).cleanData.mtGoogle, ProjectStores.phenoFileGoogle, known.assoc.phenoGoogle, known.assoc.pcsGoogle, known.known.hiLdGoogle)
+        .out(known.assoc.resultsGoogle)
+        .tag(s"${known.assoc.results}.google".split("/").last)
+  
   }
   
   local {
-
+  
     googleCopy(known.assoc.resultsGoogle, known.assoc.results)
-
+  
   }
   
   drm {

@@ -1,7 +1,7 @@
 /**
   * Load Step
-  *  Description: Generate the Hail VDS from VCF file
-  *  Requires: Hail
+  *  Description: Generate the Hail matrix table from VCF file
+  *  Requires: Hail v0.2
   */
 import ProjectConfig._
 import PipelineConfig._
@@ -17,34 +17,15 @@ def Load(array: String): Unit = {
   }
   
   google {
-  
-    hail"""$pyHailLoad
+
+    hail"""$pyHailLoad --
+      --reference-genome ${projectConfig.referenceGenome}
+      --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
       --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle}
-      --vds-out ${arrayStores(array).harmonizedData.vdsGoogle}"""
+      --mt-out ${arrayStores(array).harmonizedData.mtGoogle}"""
       .in(arrayStores(array).harmonizedData.vcfGoogle, arrayStores(array).harmonizedData.tbiGoogle)
-      .out(arrayStores(array).harmonizedData.vdsGoogle)
+      .out(arrayStores(array).harmonizedData.mtGoogle)
       .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad.google".split("/").last)
-  
-  }
-
-}
-
-def LoadImputed(array: String): Unit = {
-
-  local {
-  
-    googleCopy(arrayStores(array).data, arrayStores(array).dataGoogle)
-
-  }
-  
-  google {
-  
-    hail"""$pyHailLoad
-      --vcf-in ${projectConfig.projectId} ${arrayStores(array).dataGoogle}
-      --vds-out ${arrayStores(array).vdsGoogle}"""
-      .in(arrayStores(array).dataGoogle)
-      .out(arrayStores(array).vdsGoogle)
-      .tag(s"${arrayStores(array).base}.pyHailLoad.google".split("/").last)
   
   }
 

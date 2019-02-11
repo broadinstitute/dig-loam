@@ -1,8 +1,7 @@
-from hail import *
-hc = HailContext()
-import pandas as pd
+import hail as hl
 import argparse
-
+import pandas as pd
+hl.init()
 
 def main(args=None):
 
@@ -20,93 +19,132 @@ def main(args=None):
 	i = 0
 	for c in cohorts:
 		i = i + 1
-		print "importing keytable for cohort " + c
-		kt_temp = hc.import_table(files[c], impute=True, min_partitions=8).key_by('uid')
-		kt_temp = kt_temp.drop(["#chr","pos","ref","alt"])
-		for col in [x for x in kt_temp.columns if x != 'uid']:
-			kt_temp = kt_temp.rename({col: c + '_' + col})
-		# if p value is missing, set all to missing
-		kt_temp = kt_temp.annotate(", ".join([x + " = orMissing(! isMissing(" + c + "_pval), " + x + ")" for x in kt_temp.columns if x != 'uid']))
+		print("importing hail table for cohort " + c)
+		tbl_temp = hl.import_table(files[c], impute=True, min_partitions=args.partitions)
+		tbl_temp = tbl_temp.rename({'#chr': 'chr'})
+		tbl_temp = tbl_temp.annotate(locus = hl.parse_locus(hl.str(tbl_temp.chr) + ":" + hl.str(tbl_temp.pos)), alleles =  [tbl_temp.ref, tbl_temp.alt])
+		tbl_temp = tbl_temp.key_by('locus', 'alleles')
+		tbl_temp = tbl_temp.drop(tbl_temp.chr, tbl_temp.pos, tbl_temp.ref, tbl_temp.alt)
+
+		# convert any numeric columns that imputed as string
+		if 'beta' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(beta = hl.float(tbl_temp.beta))
+		if 'se' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(se = hl.float(tbl_temp.se))
+		if 't_stat' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(t_stat = hl.float(tbl_temp.t_stat))
+		if 'z_stat' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(z_stat = hl.float(tbl_temp.z_stat))
+		if 'chi_sq_stat' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(chi_sq_stat = hl.float(tbl_temp.chi_sq_stat))
+		if 'pval' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(pval = hl.float(tbl_temp.pval))
+
+		# filter out if pval missing
+		tbl_temp = tbl_temp.filter(~ hl.is_missing(tbl_temp.pval))
+		
+		# add cohort specific calculations
+		tbl_temp = tbl_temp.annotate(
+			af_n = tbl_temp.af * tbl_temp.n,
+			dir = hl.cond(
+				~ hl.is_missing(tbl_temp.beta),
+				hl.cond(
+					hl.sign(tbl_temp.beta) == 1,
+					"+",
+					hl.cond(
+						hl.sign(tbl_temp.beta) == -1,
+						"-",
+						"x"
+					)
+				),
+				"x"
+			)
+		)
+
+		# calculate standard errors if firth, lrt, or lmm
+		if tests[c] in ['firth','lrt','lmm']:
+			tbl_temp = tbl_temp.annotate(se = tbl_temp.beta / hl.sqrt(tbl_temp.chi_sq_stat))
+
+		# add cohort weights
+		tbl_temp = tbl_temp.annotate(w = 1 / (tbl_temp.se ** 2))
+		tbl_temp = tbl_temp.annotate(bw = tbl_temp.beta * tbl_temp.w)
+
+		tbl_temp = tbl_temp.rename(dict(zip(list(tbl_temp.row_value), [c + '_' + x for x in list(tbl_temp.row_value)])))
 		if i == 1:
-			kt = kt_temp
+			tbl = tbl_temp
 		else:
-			kt = kt.join(kt_temp, how='outer')
+			tbl = tbl.join(tbl_temp, how='outer')
 	
 	# add n, male, female, case, and ctrl columns as sums
-	nCols = [x + "_n" for x in cohorts]
-	maleCols = [x + "_male" for x in cohorts]
-	femaleCols = [x + "_female" for x in cohorts]
-	caseCols = [x + "_case" for x in cohorts if x + "_case" in kt.columns]
-	ctrlCols = [x + "_ctrl" for x in cohorts if x + "_ctrl" in kt.columns]
-	kt = kt.annotate("n = [" + ",".join([x for x in nCols]) + "].sum(), male = [" + ",".join([x for x in maleCols]) + "].sum(), female = [" + ",".join([x for x in femaleCols]) + "].sum()")
-	if len(caseCols) > 0:
-		kt = kt.annotate("case = [" + ",".join([x for x in caseCols]) + "].sum()")
-	
-	if len(ctrlCols) > 0:
-		kt = kt.annotate("ctrl = [" + ",".join([x for x in ctrlCols]) + "].sum()")
+	n_cols = [x + "_n" for x in cohorts]
+	male_cols = [x + "_male" for x in cohorts]
+	female_cols = [x + "_female" for x in cohorts]
+	case_cols = [x + "_case" for x in cohorts if x + "_case" in list(tbl.row_value)]
+	ctrl_cols = [x + "_ctrl" for x in cohorts if x + "_ctrl" in list(tbl.row_value)]
+
+	tbl = tbl.annotate(
+		n = hl.sum([tbl[x] for x in n_cols]),
+		male = hl.sum([tbl[x] for x in male_cols]),
+		female = hl.sum([tbl[x] for x in female_cols])
+	)
+
+	if len(case_cols) > 0:
+		tbl = tbl.annotate(case = hl.sum([tbl[x] for x in case_cols]))
+
+	if len(ctrl_cols) > 0:
+		tbl = tbl.annotate(ctrl = hl.sum([tbl[x] for x in ctrl_cols]))
 
 	# calculate weighted average avgaf, minaf, and maxaf
-	afCols = [x + "_af" for x in cohorts]
-	kt = kt.annotate("afmin = [" + ",".join([x + "_af" for x in cohorts]) + "].min()")
-	kt = kt.annotate("afmax = [" + ",".join([x + "_af" for x in cohorts]) + "].max()")
-	kt = kt.annotate(", ".join([x + "_af_n = " + x + "_af*" + x + "_n"  for x in cohorts]))
-	kt = kt.annotate("sum_af_n = [" + ",".join([x + "_af_n" for x in cohorts]) + "].sum()")
-	kt = kt.annotate("sum_n = [" + ",".join([x + "_n" for x in cohorts]) + "].sum()")
-	kt = kt.annotate("afavg = sum_af_n / sum_n")
-	
+	af_cols = [x + "_af" for x in cohorts]
+	af_n_cols = [x + "_af_n" for x in cohorts]
+	tbl = tbl.annotate(
+		afmin = hl.min([tbl[x] for x in af_cols]),
+		afmax = hl.max([tbl[x] for x in af_cols]),
+		sum_af_n = hl.sum([tbl[x] for x in af_n_cols])
+	)
+
+	# calculate avg allele freq
+	tbl = tbl.annotate(afavg = tbl.sum_af_n / tbl.n)
+
 	# add dir
-	kt = kt.annotate(", ".join([x + '_dir = if(! isMissing(' + x + '_beta)) ( if(signum(' + x + '_beta) == 1) ("+") else (if(signum(' + x + '_beta) == -1) ("-") else ("x"))) else ("x")'  for x in cohorts]))
-	kt = kt.annotate('dir = [' + ",".join([x + '_dir' for x in cohorts]) + '].mkString("")')
-	
+	dir_cols = [x + "_dir" for x in cohorts]
+	tbl = tbl.annotate(dir = hl.delimit([tbl[x] for x in dir_cols], delimiter='').replace('null','x'))
+
+	# score test has no notion of direction, so not yet supported
 	if 'score' in tests.values():
 		stop("score test is not yet supported!")
-	
-	# calculate standard errors if firth, lrt, or lmm
-	kt = kt.annotate(", ".join([x + "_se = " + x + "_beta / sqrt(" + x + "_chi2)" for x in cohorts if tests[x] in ['firth','lrt','lmm']]))
-	
-	# add cohort weights
-	kt = kt.annotate(", ".join([x + "_w = 1 / pow(" + x + "_se,2)" for x in cohorts]))
-	kt = kt.annotate(", ".join([x + "_bw = " + x + "_beta * " + x + "_w" for x in cohorts]))
-	
+
 	# calculate meta stats
-	# values available for meta by assoc test
-	# lm: beta, se, tstat, pval
-	# wald: beta, se, zstat, pval
-	# firth: beta, chi2, pval
-	# lrt: beta, chi2, pval
-	# score: chi2, pval
-	# lmm: beta, sigmaG2, chi2, pval
-	kt = kt.annotate("beta = ([" + ",".join([x + "_bw" for x in cohorts]) + "].sum()) / ([" + ",".join([x + "_w" for x in cohorts]) + "].sum())")
-	kt = kt.annotate("se = sqrt(1 / ([" + ",".join([x + "_w" for x in cohorts]) + "].sum()))")
-	kt = kt.annotate("or = exp(beta)")
-	kt = kt.annotate("zscore = beta / se")
-	kt = kt.annotate("pval = 2 * pnorm(-1 * abs(zscore))")
+	w_cols = [x + "_w" for x in cohorts]
+	bw_cols = [x + "_bw" for x in cohorts]
+	tbl = tbl.annotate(
+		beta = hl.sum([tbl[x] for x in bw_cols]) / hl.sum([tbl[x] for x in w_cols]),
+		se = hl.or_missing(hl.sum([tbl[x] for x in w_cols]) != 0, hl.sqrt(1 / hl.sum([tbl[x] for x in w_cols]))) 
+	)
+	tbl = tbl.annotate(
+		odds_ratio = hl.exp(tbl.beta),
+		zscore = tbl.beta / tbl.se
+	)
+	tbl = tbl.annotate(pval = 2 * hl.pnorm(-1 * hl.abs(tbl.zscore)))
 	
 	# loop over cohort 2+ and fill in missing ids
-	kt = kt.annotate("id = " + cohorts[0] + "_id")
+	tbl = tbl.annotate(id = tbl[cohorts[0] + "_id"])
 	for c in cohorts[1:]:
-		kt = kt.annotate("id = orElse(id, " + c + "_id)")
-	
+		tbl = tbl.annotate(id = hl.or_else(tbl.id, tbl[c + "_id"]))
+
 	# add variant attribute columns and select output
-	kt = kt.annotate("uidstr = str(uid), chr = uid.contig, pos = uid.start, ref = uid.ref, alt = uid.alt")
-	cols_keep = ['chr','pos','uidstr','id','ref','alt','n','male','female']
-	if 'case' in kt.columns:
+	tbl = tbl.annotate(chr = tbl.locus.contig, pos = tbl.locus.position, ref = tbl.alleles[0], alt = tbl.alleles[1])
+	cols_keep = ['chr','pos','id','ref','alt','n','male','female']
+	if 'case' in list(tbl.row_value):
 		cols_keep = cols_keep + ['case']
-	if 'ctrl' in kt.columns:
+	if 'ctrl' in list(tbl.row_value):
 		cols_keep = cols_keep + ['ctrl']
-	cols_keep = cols_keep + ['afmin','afmax','afavg','dir','beta','se','or','zscore','pval']
-	kt = kt.select(cols_keep)
+	cols_keep = cols_keep + ['afmin','afmax','afavg','dir','beta','se','odds_ratio','zscore','pval']
+	tbl = tbl.select(*cols_keep)
 
-	ktout = kt.to_pandas(expand=False)
-	ktout[['chr','pos']] = ktout[['chr','pos']].astype(int)
-	ktout = ktout.sort_values(['chr','pos'])
-	ktout.rename(columns = {'chr': '#chr', 'uidstr': 'uid'}, inplace=True)
-
-	with hadoop_write(args.out) as f:
-		ktout.to_csv(f, header=True, index=False, sep="\t", na_rep="NA", float_format='%.5g', compression="gzip")
+	tbl = tbl.key_by()
+	tbl = tbl.drop(tbl.locus, tbl.alleles)
+	tbl = tbl.order_by(hl.int(tbl.chr), hl.int(tbl.pos), tbl.ref, tbl.alt)
+	tbl = tbl.rename({'chr': '#chr', 'odds_ratio': 'or'})
+	tbl.export(args.out)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a comma separated list of test codes and results files each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)

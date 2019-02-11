@@ -73,6 +73,12 @@ for(cl in names(stats_adj)[grep("_CLUSTER",names(stats_adj))]) {
 	}
 }
 sdata$METRIC_ORIG<-gsub("_res","",sdata$METRIC)
+
+# reset sample with cluster X and values above the mean to cluster 1 to account for unidirectional metric filters
+for(m in c("call_rate_res","n_called_res")) {
+	sdata$CLUSTER[sdata$CLUSTER == "X" & sdata$VALUE >= mean(stats_adj[,m])] <- "1"
+}
+
 sdata$DECISION<-"KEEP"
 sdata$DECISION[sdata$CLUSTER == "X" & sdata$OUTLIER_PCA == 0]<-"OUTLIER_IND"
 sdata$DECISION[sdata$CLUSTER == "X" & sdata$OUTLIER_PCA == 1]<-"OUTLIER_IND_PCA"

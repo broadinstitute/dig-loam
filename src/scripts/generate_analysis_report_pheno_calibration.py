@@ -46,6 +46,7 @@ def main(args=None):
 
 		print "writing calibration section"
 		f.write("\n"); f.write(r"\subsection{Calibration}"); f.write("\n")
+		f.write(r"\label{" + args.pheno_name.replace("_","-") + r"-Calibration}"); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{"  + args.pheno_name.replace("_","-") + r"-Calibration}".encode('utf-8')); f.write("\n")
 

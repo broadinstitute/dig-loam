@@ -78,6 +78,7 @@ def main(args=None):
 	
 			print "writing top associations section"
 			f.write("\n"); f.write(r"\subsection{Top associations}"); f.write("\n")
+			f.write(r"\label{" + args.pheno_name.replace("_","-") + r"-Top-associations}"); f.write("\n")
 	
 			f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{"  + args.pheno_name.replace("_","-") + r"-Top-Associations}".encode('utf-8')); f.write("\n")
 

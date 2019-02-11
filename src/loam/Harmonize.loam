@@ -34,7 +34,7 @@ def Harmonize(array: String): Unit = {
 
     if (! arrayCfg.skipGh.contains(chr)) {
 
-      drmWith(mem=8, maxRunTime=6) {
+      drmWith(mem=8, maxRunTime=12) {
       
         cmd"""$binGenotypeHarmonizer
         --input ${chrData.base}
