@@ -30,7 +30,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       --out-samples ${assoc.samplesIncludeGoogle}"""
     .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
     .out(assoc.phenoPrelimGoogle, assoc.samplesIncludeGoogle)
-    .named(s"${assoc.phenoPrelim}.google".split("/").last)
+    .tag(s"${assoc.phenoPrelim}.google".split("/").last)
 
   }
     
@@ -55,7 +55,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
   
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -78,7 +78,7 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
       .in(generatePhenoIn)
       .out(assoc.pheno, assoc.pcs, assoc.phenoLog)
       .using("R-3.4")
-      .named(s"${assoc.pheno}".split("/").last)
+      .tag(s"${assoc.pheno}".split("/").last)
 
   }
   
@@ -88,24 +88,52 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
     googleCopy(assoc.pcs, assoc.pcsGoogle)
 
   }
-  
-  google {
 
-    hail"""$pyHailAssoc
-      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
-      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-      --pheno-in ${assoc.phenoGoogle}
-      --iid-col ${projectConfig.phenoId}
-      --pheno-col ${configModel.pheno}
-      --pcs-include ${assoc.pcsGoogle}
-      --test ${configModel.test}
-      --trans "${configModel.trans}"
-      --covars "${configModel.covars}"
-      --out ${assoc.resultsGoogle}"""
-        .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
-        .out(assoc.resultsGoogle)
-        .named(s"${assoc.results}.google".split("/").last)
+  configCohort.imputed match {
+
+    case false =>
   
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${assoc.phenoGoogle}
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${assoc.pcsGoogle}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .out(assoc.resultsGoogle)
+            .tag(s"${assoc.results}.google".split("/").last)
+      
+      }
+
+    case true =>
+
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${assoc.phenoGoogle}
+          --imputed
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${assoc.pcsGoogle}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ assoc.phenoGoogle :+ assoc.pcsGoogle)
+            .out(assoc.resultsGoogle)
+            .tag(s"${assoc.results}.google".split("/").last)
+      
+      }
+
   }
   
   local {
@@ -114,12 +142,12 @@ def VariantAssoc(configCohort: ConfigCohort, configModel: ConfigModel, configMet
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
       .out(assoc.tbi)
-      .named(s"${assoc.tbi}".split("/").last)
+      .tag(s"${assoc.tbi}".split("/").last)
 
   }
 
@@ -145,7 +173,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       --out-samples ${known.assoc.samplesIncludeGoogle}"""
     .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle)
     .out(known.assoc.phenoPrelimGoogle, known.assoc.samplesIncludeGoogle)
-    .named(s"${known.assoc.phenoPrelim}.google".split("/").last)
+    .tag(s"${known.assoc.phenoPrelim}.google".split("/").last)
 
   }
     
@@ -170,7 +198,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   }
   
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -193,7 +221,7 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
       .in(generatePhenoIn)
       .out(known.assoc.pheno, known.assoc.pcs, known.assoc.phenoLog)
       .using("R-3.4")
-      .named(s"${known.assoc.pheno}".split("/").last)
+      .tag(s"${known.assoc.pheno}".split("/").last)
 
   }
   
@@ -204,24 +232,53 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
     googleCopy(known.hiLd, known.hiLdGoogle)
 
   }
-  
-  google {
 
-    hail"""$pyHailAssoc
-      --vds-in ${arrayStores(array).cleanData.vdsGoogle}
-      --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
-      --pheno-in ${known.assoc.phenoGoogle}
-      --iid-col ${projectConfig.phenoId}
-      --pheno-col ${configKnownLoci.model.pheno}
-      --pcs-include ${known.assoc.pcsGoogle}
-      --extract-ld ${known.hiLdGoogle}
-      --test ${configKnownLoci.model.test}
-      --trans "${configKnownLoci.model.trans}"
-      --covars "${configKnownLoci.model.covars}"
-      --out ${known.assoc.resultsGoogle}"""
-        .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
-        .out(known.assoc.resultsGoogle)
-        .named(s"${known.assoc.results}.google".split("/").last)
+  configCohort.imputed match {
+
+    case false =>
+  
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).cleanData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${known.assoc.phenoGoogle}
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configKnownLoci.model.pheno}
+          --pcs-include ${known.assoc.pcsGoogle}
+          --extract-ld ${known.hiLdGoogle}
+          --test ${configKnownLoci.model.test}
+          --trans "${configKnownLoci.model.trans}"
+          --covars "${configKnownLoci.model.covars}"
+          --out ${known.assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).cleanData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+            .out(known.assoc.resultsGoogle)
+            .tag(s"${known.assoc.results}.google".split("/").last)
+      
+      }
+
+    case true =>
+
+      google {
+      
+        hail"""$pyHailAssoc
+          --vds-in ${arrayStores(array).imputedData.vdsGoogle}
+          --bim-in ${arrayStores(array).prunedData.baseGoogle}.bim
+          --pheno-in ${known.assoc.phenoGoogle}
+          --imputed
+          --iid-col ${projectConfig.phenoId}
+          --pheno-col ${configKnownLoci.model.pheno}
+          --pcs-include ${known.assoc.pcsGoogle}
+          --extract-ld ${known.hiLdGoogle}
+          --test ${configKnownLoci.model.test}
+          --trans "${configKnownLoci.model.trans}"
+          --covars "${configKnownLoci.model.covars}"
+          --out ${known.assoc.resultsGoogle}"""
+            .in(arrayStores(array).prunedData.dataGoogle :+ arrayStores(array).imputedData.vdsGoogle :+ ProjectStores.phenoGoogle :+ known.assoc.phenoGoogle :+ known.assoc.pcsGoogle :+ known.hiLdGoogle)
+            .out(known.assoc.resultsGoogle)
+            .tag(s"${known.assoc.results}.google".split("/").last)
+      
+      }
 
   }
   
@@ -231,12 +288,12 @@ def KnownLociAssoc(configCohort: ConfigCohort, configKnownLoci: ConfigKnownLoci,
 
   }
   
-  uger {
+  drm {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.assoc.results}"""
       .in(known.assoc.results)
       .out(known.assoc.tbi)
-      .named(s"${known.assoc.tbi}".split("/").last)
+      .tag(s"${known.assoc.tbi}".split("/").last)
 
   }
 

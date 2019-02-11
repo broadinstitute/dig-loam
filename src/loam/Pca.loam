@@ -10,7 +10,7 @@ import ProjectStores._
 
 def Pca(array: String): Unit = {
 
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair
@@ -25,7 +25,7 @@ def Pca(array: String): Unit = {
       .in(arrayStores(array).prunedData.data :+ ProjectStores.ancestryInferred :+ ProjectStores.ancestryOutliers)
       .out(arrayStores(array).pcaData.gds, arrayStores(array).pcaData.log, arrayStores(array).pcaData.scores)
       .using("R-3.4")
-      .named(s"${arrayStores(array).pcaData.scores}".split("/").last)
+      .tag(s"${arrayStores(array).pcaData.scores}".split("/").last)
 
   }
 

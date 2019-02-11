@@ -32,7 +32,7 @@ def FilterFinal(array: String): Unit = {
       --vds-out ${arrayStores(array).cleanData.vdsGoogle}"""
       .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.ancestryInferredGoogle, arrayStores(array).sexcheckData.sexcheckGoogle, ProjectStores.phenoGoogle, arrayStores(array).finalData.samplesExcludeGoogle)
       .out(arrayStores(array).cleanData.dataGoogle :+ arrayStores(array).cleanData.vcfGoogle :+ arrayStores(array).variantQcData.statsGoogle :+ arrayStores(array).finalData.variantsExcludeGoogle :+ arrayStores(array).cleanData.vdsGoogle)
-      .named(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal.google".split("/").last)
+      .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailFilterFinal.google".split("/").last)
   
   }
   
@@ -45,16 +45,16 @@ def FilterFinal(array: String): Unit = {
   
   }
   
-  uger {
+  drm {
   
     cmd"""$binTabix -f -p vcf ${arrayStores(array).cleanData.vcf}"""
       .in(arrayStores(array).cleanData.vcf)
       .out(arrayStores(array).cleanData.tbi)
-      .named(s"${arrayStores(array).cleanData.tbi}".split("/").last)
+      .tag(s"${arrayStores(array).cleanData.tbi}".split("/").last)
   
   }
   
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair
@@ -67,7 +67,7 @@ def FilterFinal(array: String): Unit = {
       .in(arrayStores(array).prunedData.data :+ arrayStores(array).finalData.samplesExclude)
       .out(arrayStores(array).cleanData.gds, arrayStores(array).cleanData.pcaScores, arrayStores(array).cleanData.pcaLog)
       .using("R-3.4")
-      .named(s"${arrayStores(array).cleanData.pcaScores}".split("/").last)
+      .tag(s"${arrayStores(array).cleanData.pcaScores}".split("/").last)
   
   }
 

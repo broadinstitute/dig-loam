@@ -28,7 +28,7 @@ def PhenotypeDistPlots(configCohort: ConfigCohort, pheno: String, configMeta: Op
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binPython $pyPhenoDistPlot
       --pheno ${ProjectStores.pheno}
@@ -38,7 +38,7 @@ def PhenotypeDistPlots(configCohort: ConfigCohort, pheno: String, configMeta: Op
       --out ${phenoStores.figureData.distPlot}"""
       .in(phenoDistPlotIn.flatten)
       .out(phenoStores.figureData.distPlot)
-      .named(s"${phenoStores.figureData.distPlot}".split("/").last)
+      .tag(s"${phenoStores.figureData.distPlot}".split("/").last)
 
   }
 

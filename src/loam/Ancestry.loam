@@ -21,7 +21,7 @@ def AncestryPca(array: String): Unit = {
       --plink-out ${arrayStores(array).ref1kgData.baseGoogle}"""
       .in(arrayStores(array).harmonizedData.vdsGoogle, ProjectStores.kgPurcellVcfGoogle, ProjectStores.kgSampleGoogle)
       .out(arrayStores(array).ref1kgData.dataGoogle)
-      .named(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
+      .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
 
   }
   
@@ -31,7 +31,7 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPcair
@@ -47,11 +47,11 @@ def AncestryPca(array: String): Unit = {
       .in(arrayStores(array).ref1kgData.data :+ ProjectStores.kgSample)
       .out(arrayStores(array).ref1kgData.gds, arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores)
       .using("R-3.4")
-      .named(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
+      .tag(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryPca
@@ -61,7 +61,7 @@ def AncestryPca(array: String): Unit = {
       .in(arrayStores(array).ancestryPcaData.scores)
       .out(arrayStores(array).ancestryPcaData.plots)
       .using("R-3.4")
-      .named(s"${arrayStores(array).ancestryPcaData.plots}".split("/").last)
+      .tag(s"${arrayStores(array).ancestryPcaData.plots}".split("/").last)
 
   }
 
@@ -78,25 +78,25 @@ def AncestryPca(array: String): Unit = {
 
 def AncestryCluster(array: String): Unit = {
 
-  uger {
+  drm {
 
     cmd"""(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}"""
       .in(arrayStores(array).ancestryPcaData.scores)
       .out(arrayStores(array).ancestryClusterData.fet)
-      .named(s"${arrayStores(array).ancestryClusterData.fet}".split("/").last)
+      .tag(s"${arrayStores(array).ancestryClusterData.fet}".split("/").last)
 
   }
 
-  ugerWith(mem=8) {
+  drmWith(mem=8) {
   
     cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)
       .out(arrayStores(array).ancestryClusterData.clu, arrayStores(array).ancestryClusterData.klg, arrayStores(array).ancestryClusterData.log)
-      .named(s"${arrayStores(array).ancestryClusterData.base}.binKlustakwik".split("/").last)
+      .tag(s"${arrayStores(array).ancestryClusterData.base}.binKlustakwik".split("/").last)
 
   }
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryCluster
@@ -115,7 +115,7 @@ def AncestryCluster(array: String): Unit = {
       .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryClusterData.clu, ProjectStores.pheno)
       .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
       .using("R-3.4")
-      .named(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
+      .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
 
   }
 
@@ -132,7 +132,7 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
 
-  uger {
+  drm {
   
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterMerge
@@ -142,7 +142,7 @@ def MergeInferredAncestry(): Unit = {
       .in(projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred))
       .out(ProjectStores.ancestryInferred, ProjectStores.ancestryOutliers)
       .using("R-3.4")
-      .named(s"${ProjectStores.ancestryInferred}".split("/").last)
+      .tag(s"${ProjectStores.ancestryInferred}".split("/").last)
   
   }
 

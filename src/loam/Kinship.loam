@@ -12,16 +12,16 @@ import ArrayStores._
 
 def Kinship(array: String): Unit = {
 
-  ugerWith(cores=4, mem=4) {
+  drmWith(cores=4, mem=4) {
 
     cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} 4"""
     .in(arrayStores(array).prunedData.data)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.kin0Related)
-    .named(s"${arrayStores(array).prunedData.base}.shKing".split("/").last)
+    .tag(s"${arrayStores(array).prunedData.base}.shKing".split("/").last)
 
   }
 
-  uger {
+  drm {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcKinshipFamSizes
@@ -30,7 +30,7 @@ def Kinship(array: String): Unit = {
       .in(arrayStores(array).kinshipData.kin0Related)
       .out(arrayStores(array).kinshipData.famSizes)
       .using("R-3.4")
-      .named(s"${arrayStores(array).kinshipData.famSizes}".split("/").last)
+      .tag(s"${arrayStores(array).kinshipData.famSizes}".split("/").last)
 
   }
 

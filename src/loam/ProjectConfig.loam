@@ -5,11 +5,18 @@ final case class ConfigArray(
   filename: String,
   format: String,
   liftOver: Option[String] = None,
-  xChr: Boolean)
+  xChr: Boolean,
+  yChr: Boolean,
+  mtChr: Boolean,
+  skipGh: Seq[String],
+  imputed: Option[String],
+  imputedInfo: Option[String],
+  imputedTag: Option[String])
 
 final case class ConfigCohort(
   id: String,
   array: String,
+  imputed: Boolean,
   ancestry: Seq[String],
   report: Boolean)
 
@@ -59,8 +66,8 @@ final case class ProjectConfig(
   kgSampleId: String,
   kgSamplePop: String,
   kgSampleGroup: String,
-  kgVcfBaseWild: String,
-  kgLegendWild: String,
+  kgVcf: String,
+  kgIds: String,
   humanReferenceWild: String,
   pheno: String,
   phenoId: String,
@@ -105,8 +112,8 @@ val projectConfig = ProjectConfig(
   kgSampleId = dataConfig.getStr("kgSampleId"),
   kgSamplePop = dataConfig.getStr("kgSamplePop"),
   kgSampleGroup = dataConfig.getStr("kgSampleGroup"),
-  kgVcfBaseWild = dataConfig.getStr("kgVcfBaseWild"),
-  kgLegendWild = dataConfig.getStr("kgLegendWild"),
+  kgVcf = dataConfig.getStr("kgVcf"),
+  kgIds = dataConfig.getStr("kgIds"),
   humanReferenceWild = dataConfig.getStr("humanReferenceWild"),
   pheno = dataConfig.getStr("pheno"),
   phenoId = dataConfig.getStr("phenoId"),
@@ -144,7 +151,13 @@ val projectConfig = ProjectConfig(
         filename = array.getStr("filename"),
         format = array.getStr("format"),
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
-        xChr = array.getBool("xChr"))
+        xChr = array.getBool("xChr"),
+        yChr = array.getBool("yChr"),
+        mtChr = array.getBool("mtChr"),
+        skipGh = array.getStrList("skipGh"),
+        imputed = if (array.isDefined("imputed")) { Some(array.getStrList("imputed")) } else { None },
+        imputedInfo = if (array.isDefined("imputedInfo")) { Some(array.getStrList("imputedInfo")) } else { None },
+        imputedTag = if (array.isDefined("imputedTag")) { Some(array.getStrList("imputedTag")) } else { None })
 
     }
 
@@ -159,6 +172,7 @@ val projectConfig = ProjectConfig(
       ConfigCohort(
         id = cohort.getStr("id"),
         array = cohort.getStr("array"),
+        imputed = cohort.getStr("imputed"),
         ancestry = cohort.getStrList("ancestry"),
         report = cohort.getBool("report"))
 

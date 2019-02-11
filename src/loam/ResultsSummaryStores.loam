@@ -27,21 +27,21 @@ val resultsSummaryStores = (( for { c <- projectConfig.Cohorts; m <- projectConf
   val id = rs._1
   val model = rs._2
 
-  val modelCovarsString = model.covars.replace("+","_")
+  val modelCovarsString = model.covars.replace("+","_").replace("[","").replace("]","")
 
   val prefix = s"${projectConfig.projectId}.${id}.${model.pheno}.${model.trans}.${modelCovarsString}.${model.test}"
 
   val regPlotsBaseString = s"${prefix}.results.regplots"
 
   val resultsSummaryData = ResultsSummaryData(
-    sigRegions = store.at(localOutDir / s"${prefix}.results.sigregions.tsv"),
-    top1000 = store.at(localOutDir / s"${prefix}.results.top1000.tsv"),
-    top1000Genes = store.at(localOutDir / s"${prefix}.results.top1000.genes.tsv"),
-    top20AnnotAlignedRisk = store.at(localOutDir / s"${prefix}.results.top20.annot.aligned_risk.tsv"),
-    qqPlotPng = store.at(localOutDir / s"${prefix}.results.qq.png"),
-    mhtPlotPng = store.at(localOutDir / s"${prefix}.results.mht.png"),
+    sigRegions = store(localOutDir / s"${prefix}.results.sigregions.tsv"),
+    top1000 = store(localOutDir / s"${prefix}.results.top1000.tsv"),
+    top1000Genes = store(localOutDir / s"${prefix}.results.top1000.genes.tsv"),
+    top20AnnotAlignedRisk = store(localOutDir / s"${prefix}.results.top20.annot.aligned_risk.tsv"),
+    qqPlotPng = store(localOutDir / s"${prefix}.results.qq.png"),
+    mhtPlotPng = store(localOutDir / s"${prefix}.results.mht.png"),
     regPlotsBase = localOutDir / regPlotsBaseString,
-    regPlotsPdf = store.at(localOutDir / s"${regPlotsBaseString}.pdf"))
+    regPlotsPdf = store(localOutDir / s"${regPlotsBaseString}.pdf"))
 
   rs -> ResultsSummary(
     resultsSummaryData = resultsSummaryData)
@@ -54,12 +54,12 @@ val resultsKnownLociSummaryStores = (( for { c <- projectConfig.Cohorts; k <- pr
   val id = rskl._1
   val known = rskl._2
 
-  val modelCovarsString = known.model.covars.replace("+","_")
+  val modelCovarsString = known.model.covars.replace("+","_").replace("[","").replace("]","")
 
   val prefix = s"${projectConfig.projectId}.${id}.${known.model.pheno}.${known.model.trans}.${modelCovarsString}.${known.model.test}"
 
   val resultsKnownLociSummaryData = ResultsKnownLociSummaryData(
-    top50 = store.at(localOutDir / s"${prefix}.known_loci.top50.tsv"))
+    top50 = store(localOutDir / s"${prefix}.known_loci.top50.tsv"))
 
   rskl -> ResultsKnownLociSummary(
     resultsKnownLociSummaryData = resultsKnownLociSummaryData)

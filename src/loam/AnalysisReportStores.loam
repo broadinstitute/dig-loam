@@ -35,30 +35,30 @@ val analysisReportStores = projectConfig.Models.map(m => m.phase).distinct.sorte
   val baseString = s"${projectConfig.projectId}.analysisreport.phase${phase.toString}"
 
   val globalData = GlobalData(
-    header = store.at(localOutDir / s"${baseString}.header.tex"),
-    intro = store.at(localOutDir / s"${baseString}.intro.tex"),
-    introInput = store.at(localOutDir / s"${baseString}.intro.input"),
-    data = store.at(localOutDir / s"${baseString}.data.tex"),
-    dataInput = store.at(localOutDir / s"${baseString}.data.input"),
-    strategy = store.at(localOutDir / s"${baseString}.strategy.tex"),
-    strategyInput = store.at(localOutDir / s"${baseString}.strategy.input"),
-    bibliography = store.at(localOutDir / s"${baseString}.bibliography.tex"),
-    bibliographyInput = store.at(localOutDir / s"${baseString}.bibliography.input"),
-    tex = store.at(localOutDir / s"${baseString}.tex"),
-    input = store.at(localOutDir / s"${baseString}.input"),
-    pdf = store.at(localOutDir / s"${baseString}.pdf"))
+    header = store(localOutDir / s"${baseString}.header.tex"),
+    intro = store(localOutDir / s"${baseString}.intro.tex"),
+    introInput = store(localOutDir / s"${baseString}.intro.input"),
+    data = store(localOutDir / s"${baseString}.data.tex"),
+    dataInput = store(localOutDir / s"${baseString}.data.input"),
+    strategy = store(localOutDir / s"${baseString}.strategy.tex"),
+    strategyInput = store(localOutDir / s"${baseString}.strategy.input"),
+    bibliography = store(localOutDir / s"${baseString}.bibliography.tex"),
+    bibliographyInput = store(localOutDir / s"${baseString}.bibliography.input"),
+    tex = store(localOutDir / s"${baseString}.tex"),
+    input = store(localOutDir / s"${baseString}.input"),
+    pdf = store(localOutDir / s"${baseString}.pdf"))
 
   val phenoData = projectConfig.Models.map(m => m.pheno).distinct.map { pheno =>
 
     pheno -> PhenoData(
-      summary = store.at(localOutDir / s"${baseString}.${pheno}.summary.tex"),
-      summaryInput = store.at(localOutDir / s"${baseString}.${pheno}.summary.input"),
-      calibration = store.at(localOutDir / s"${baseString}.${pheno}.calibration.tex"),
-      calibrationInput = store.at(localOutDir / s"${baseString}.${pheno}.calibration.input"),
-      topLoci = store.at(localOutDir / s"${baseString}.${pheno}.toploci.tex"),
-      topLociInput = store.at(localOutDir / s"${baseString}.${pheno}.toploci.input"),
-      knownLoci = store.at(localOutDir / s"${baseString}.${pheno}.knownloci.tex"),
-      knownLociInput = store.at(localOutDir / s"${baseString}.${pheno}.knownloci.input"))
+      summary = store(localOutDir / s"${baseString}.${pheno}.summary.tex"),
+      summaryInput = store(localOutDir / s"${baseString}.${pheno}.summary.input"),
+      calibration = store(localOutDir / s"${baseString}.${pheno}.calibration.tex"),
+      calibrationInput = store(localOutDir / s"${baseString}.${pheno}.calibration.input"),
+      topLoci = store(localOutDir / s"${baseString}.${pheno}.toploci.tex"),
+      topLociInput = store(localOutDir / s"${baseString}.${pheno}.toploci.input"),
+      knownLoci = store(localOutDir / s"${baseString}.${pheno}.knownloci.tex"),
+      knownLociInput = store(localOutDir / s"${baseString}.${pheno}.knownloci.input"))
 
   }.toMap
 
