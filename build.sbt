@@ -55,6 +55,7 @@ lazy val root = (project in file("."))
     //NB: version set in version.sbt
     name := "dig-loam",
     organization := Orgs.DIG,
+    resolvers ++= Seq[Resolver](MyResolvers.LocalRepo),
     // add the .zip file to what gets published 
     addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings,
     libraryDependencies ++= Seq(Dependencies.digLoamImages)
