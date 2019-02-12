@@ -22,13 +22,18 @@ lazy val Dependencies = new {
   val digLoamImages = (Orgs.DIG %% "dig-loam-images" % "1.0").artifacts(Artifact("dig-loam-images", "zip", "zip"))
 }
 
+lazy val S3Locations = new {
+  val snapshotDir = s"${Buckets.digRepo}/snapshots"
+  val releaseDir = s"${Buckets.digRepo}/releases"
+}
+
 //Publish locally (to the Broad FS) and to S3
 publishResolvers := Seq[Resolver](
   MyResolvers.LocalRepo,
   {
-    val prefix = if (isSnapshot.value) "snapshots" else "releases"
+    val location = if(isSnapshot.value) S3Locations.snapshotDir else S3Locations.releaseDir
 
-    s3resolver.value(s"${Buckets.digRepo}/${prefix}", s3(s"${Buckets.digRepo}/${prefix}"))
+    s3resolver.value(location, s3(location))
   }
 )
 
@@ -57,11 +62,12 @@ lazy val root = (project in file("."))
     organization := Orgs.DIG,
     resolvers ++= Seq[Resolver](
       MyResolvers.LocalRepo,
-      {
-        val prefix = if (isSnapshot.value) "snapshots" else "releases"
-
-        s3resolver.value(s"${Buckets.digRepo}/${prefix}", s3(s"${Buckets.digRepo}/${prefix}"))
-      }),
+      //NB: Look for dependency releases locally (the Broad FS) and S3.
+      //S3 isn't strictly necessary, but dig-loam-images got published to funny coords:
+      //org.broadinstitute.dig:dig-loam-images_2.12:1.0.part - note the .part
+      //TODO: Just look on the broad FS once publishing to their works better
+      s3resolver.value(S3Locations.releaseDir, s3(S3Locations.releaseDir))
+    ),
     // add the .zip file to what gets published 
     addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings,
     libraryDependencies ++= Seq(Dependencies.digLoamImages)
