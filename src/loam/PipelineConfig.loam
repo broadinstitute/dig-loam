@@ -4,7 +4,7 @@ val imagesDir = dataConfig.getStr("imagesDir")
 val scriptsDir = dataConfig.getStr("scriptsDir")
 
 val hailCloud = dataConfig.getBool("hailCloud")
-val localOutDir = if (dataConfig.isDefined("localOutDir")) { path(dataConfig.getStr("localOutDir")) } else { "loam_out" }
+val localOutDir = if (dataConfig.isDefined("localOutDir")) { path(dataConfig.getStr("localOutDir")) } else { path("loam_out") }
 val googleOutDir = if (dataConfig.isDefined("googleOutDir")) { Some(uri(dataConfig.getStr("googleOutDir"))) } else { None }
 
 // Images

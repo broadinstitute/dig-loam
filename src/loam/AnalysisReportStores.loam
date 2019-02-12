@@ -32,7 +32,7 @@ final case class AnalysisReport(
 
 val analysisReportStores = projectConfig.Reports.map { report =>
 
-  val baseString = s"${projectConfig.analysisReportName}_${projectConfig.projectId}.${report.id}"
+  val baseString = s"DAR.${projectConfig.projectId}.${report.id}"
 
   val globalData = GlobalData(
     header = store(localOutDir / s"${baseString}.header.tex"),

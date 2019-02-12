@@ -4,8 +4,22 @@ def main(args=None):
 
 	## open latex file for writing
 	with open(args.out,'w') as f:
+	
+		print "writing acknowledgements section"
+		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
+		f.write("\n"); f.write(r"\section{Acknowledgements}"); f.write("\n")
+		
+		text = [r"We would like to acknowledge the following people for their significant contributions to this work.", "", r"\bigskip", ""]
+		i = 0
+		for name in args.acknowledgements.split(","):
+			i = i + 1
+			if i == 1:
+				text.extend([r"\noindent " + name + r" \\"])
+			else:
+				text.extend([name + r" \\"])
+		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		print "writing data section"
+		print "writing biliography section"
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\begin{thebibliography}{}"); f.write("\n")
 
@@ -27,6 +41,10 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\bibitem{hail} Seed C, Bloemendal A, Bloom JM, Goldstein JI, King D, Poterba T, Neale BM. Hail: An Open-Source Framework for Scalable Genetic Data Analysis. In preparation. \url{https://github.com/hail-is/hail}."); f.write("\n")
 
+		f.write("\n"); f.write(r"\bibitem{Loamstream} Gilbert C, Ruebenacker O, Koesterer R, Massung J, Flannick J. Loamstream. " + args.loamstream_version + r". \url{https://github.com/broadinstitute/dig-loam-stream}."); f.write("\n")
+
+		f.write("\n"); f.write(r"\bibitem{Pipeline} Koesterer R, Gilbert C, Ruebenacker O, Massung J, Flannick J. AMP-DCC Data Analysis Pipeline. " + args.pipeline_version + r". \url{https://github.com/broadinstitute/dig-loam}."); f.write("\n")
+
 		f.write("\n"); f.write(r"\end{thebibliography}"); f.write("\n")
 		f.write("\n"); f.write(r"\end{document}"); f.write("\n")
 
@@ -35,6 +53,9 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--loamstream-version', help='a loamstream version', required=True)
+	requiredArgs.add_argument('--pipeline-version', help='a pipeline version', required=True)
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
+	requiredArgs.add_argument('--acknowledgements', help='a comma separated list of names for acknowledgement', required=True)
 	args = parser.parse_args()
 	main(args)
