@@ -14,17 +14,21 @@ lazy val MyResolvers = new {
   //It would be nice to put the S3 resolver here, but it has to be done inside a macro, like with :=, etc. :\
 }
 
-//Publish Ivy Style
-publishMavenStyle := false
+lazy val Buckets = new {
+  val digRepo = "dig-repo"
+}
+
+lazy val Dependencies = new {
+  val digLoamImages = (Orgs.DIG %% "dig-loam-images" % "1.0").artifacts(Artifact("dig-loam-images", "zip", "zip"))
+}
+
 //Publish locally (to the Broad FS) and to S3
 publishResolvers := Seq[Resolver](
   MyResolvers.LocalRepo,
   {
     val prefix = if (isSnapshot.value) "snapshots" else "releases"
 
-    val bucket = "dig-integration-tests"
-
-    s3resolver.value(s"My S3 bucket/${prefix}", s3(s"${bucket}/${prefix}")).withIvyPatterns
+    s3resolver.value(s"${Buckets.digRepo}/${prefix}", s3(s"${Buckets.digRepo}/${prefix}"))
   }
 )
 
@@ -39,7 +43,7 @@ publishArtifact in (Compile / packageDoc) := false
 // disable publishing the source jar
 publishArtifact in (Compile / packageSrc) := false
 
-// create an Artifact for publishing a .zip file instead of a .jar
+// Create an Artifact for publishing a .zip file instead of a .jar
 artifact in (Compile / packageBin) := {
   val previous: Artifact = (artifact in (Compile / packageBin)).value
 
@@ -51,8 +55,10 @@ lazy val root = (project in file("."))
     //NB: version set in version.sbt
     name := "dig-loam",
     organization := Orgs.DIG,
+    resolvers ++= Seq[Resolver](MyResolvers.LocalRepo),
     // add the .zip file to what gets published 
-    addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings
+    addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings,
+    libraryDependencies ++= Seq(Dependencies.digLoamImages)
   )
 
 //Make sure the contents of recipes/ makes it into binary artifact
