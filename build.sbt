@@ -8,7 +8,7 @@ lazy val Paths = new {
 }
 
 lazy val MyResolvers = new {
-  val LocalRepo = Resolver.file("localRepo", new File(Paths.LocalRepo))
+  val LocalRepo = Resolver.file("localRepo", file(Paths.LocalRepo))
   val SonatypeReleases = Resolver.sonatypeRepo("releases")
   val SonatypeSnapshots = Resolver.sonatypeRepo("snapshots")
   //It would be nice to put the S3 resolver here, but it has to be done inside a macro, like with :=, etc. :\
@@ -55,7 +55,13 @@ lazy val root = (project in file("."))
     //NB: version set in version.sbt
     name := "dig-loam",
     organization := Orgs.DIG,
-    resolvers ++= Seq[Resolver](MyResolvers.LocalRepo),
+    resolvers ++= Seq[Resolver](
+      MyResolvers.LocalRepo,
+      {
+        val prefix = if (isSnapshot.value) "snapshots" else "releases"
+
+        s3resolver.value(s"${Buckets.digRepo}/${prefix}", s3(s"${Buckets.digRepo}/${prefix}"))
+      }),
     // add the .zip file to what gets published 
     addArtifact(artifact in (Compile / packageBin), Compile / packageBin).settings,
     libraryDependencies ++= Seq(Dependencies.digLoamImages)
