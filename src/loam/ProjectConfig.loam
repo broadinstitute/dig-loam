@@ -676,29 +676,42 @@ println("... Pipeline Utilities Configuration Loaded Successfully!")
 
 writeConfig(cfg, utils)
 
+final case class DirTreeDataArray:
+  base: MultiStrPath,
+  ancestry: MultiStrPath,
+  filterfinal: MultiStrPath,
+  filterforqc: MultiStrPath,
+  harmonize: MultiStrPath,
+  impute: MultiStrPath,
+  kinship: MultiStrPath,
+  pca: MultiStrPath,
+  prepare: MultiStrPath,
+  sampleqc: MultiStrPath) extends Debug
+
+final case class DirTreeAnalysis:
+  base: MultiStrPath,
+  pheno: Map[ConfigPheno, MultiStrPath]) extends Debug
+
+final case class DirTreeReportAnalysis:
+  base MultiStrPath,
+  phase: Map[ConfigReport, MultiStrPath]) extends Debug
+
 final case class DirTree(
   base: MultiStrPath,
   data: MultiStrPath,
-  raw: MultiStrPath,
-  rawArray: Map[ConfigArray, MultiStrPath],
-  prepared: MultiStrPath,
-  preparedArray: Map[ConfigArray, MultiStrPath],
-  annotated: MultiStrPath,
-  annotatedArray: Map[ConfigArray, MultiStrPath],
-  harmonized: MultiStrPath,
-  harmonizedArray: Map[ConfigArray, MultiStrPath],
-  pruned: MultiStrPath,
-  prunedArray: Map[ConfigArray, MultiStrPath],
-  kinship: MultiStrPath,
-  kinshipArray: Map[ConfigArray, MultiStrPath],
-  ancestry: MultiStrPath,
-  ancestryArray: Map[ConfigArray, MultiStrPath],
-  sampleqc: MultiStrPath,
-  sampleqcArray: Map[ConfigArray, MultiStrPath],
-  variantqc: MultiStrPath,
-  variantqcArray: Map[ConfigArray, MultiStrPath],
-  clean: MultiStrPath,
-  cleanArray: Map[ConfigArray, MultiStrPath]) extends Debug
+  data_array: MultiStrPath,
+  data_array_map: Map[ConfigArray, DirTreeDataArray],
+  data_global: MultiStrPath,
+  data_global_ancestry: MultiStrPath,
+  data_global_kinship: MultiStrPath,
+  data_global_kinship_map: Map[ConfigMeta, MultiStrPath],
+  analysis: MultiStrPath,
+  analysis_merge_map: Map[ConfigMerge, DirTreeAnalysis],
+  analysis_meta_map: Map[ConfigMeta, DirTreeAnalysis],
+  report: MultiStrPath,
+  report_qc: MultiStrPath,
+  report_analysis: MultiStrPath,
+  report_analysis_map: Map[ConfigReport, DirTreeReportAnalysis]) extends Debug
 
 object DirTree = {
 
@@ -720,21 +733,143 @@ object DirTree = {
       }
     )
 
-    val raw = MultiStrPath(
-      local = Some(initDir(data.local + "/raw")),
+    val data_array = MultiStrPath(
+      local = Some(initDir(data.local + "/array")),
       google = cfg.hailCloud match {
-        case true => Some(data.google.get + "/raw")
+        case true => Some(data.google.get + "/array")
         case false => None
       }
     )
 
-    val rawArray = cfg.Arrays.map { array =>
-      array -> MultiStrPath(
-        local = Some(initDir(raw.local + "/" + array.id)),
+    val data_global = MultiStrPath(
+      local = Some(initDir(data.local + "/global")),
+      google = cfg.hailCloud match {
+        case true => Some(data.google.get + "/global")
+        case false => None
+      }
+    )
+
+    val data_global_ancestry = MultiStrPath(
+      local = Some(initDir(data_global.local + "/ancestry")),
+      google = cfg.hailCloud match {
+        case true => Some(data_global.google.get + "/ancestry")
+        case false => None
+      }
+    )
+
+    val data_global_kinship = MultiStrPath(
+      local = Some(initDir(data_global.local + "/kinship")),
+      google = cfg.hailCloud match {
+        case true => Some(data_global.google.get + "/kinship")
+        case false => None
+      }
+    )
+
+    val analysis = MultiStrPath(
+      local = Some(initDir(base.local + "/analysis")),
+      google = cfg.hailCloud match {
+        case true => Some(base.google.get + "/analysis")
+        case false => None
+      }
+    )
+
+    val report = MultiStrPath(
+      local = Some(initDir(base.local + "/report")),
+      google = cfg.hailCloud match {
+        case true => Some(base.google.get + "/report")
+        case false => None
+      }
+    )
+
+    val report_qc = MultiStrPath(
+      local = Some(initDir(report.local + "/qc")),
+      google = cfg.hailCloud match {
+        case true => Some(report.google.get + "/qc")
+        case false => None
+      }
+    )
+
+    val report_analysis = MultiStrPath(
+      local = Some(initDir(report.local + "/analysis")),
+      google = cfg.hailCloud match {
+        case true => Some(report.google.get + "/analysis")
+        case false => None
+      }
+    )
+
+    val data_array_map = cfg.Arrays.map { array =>
+      val base = MultiStrPath(
+        local = Some(initDir(data_array.local + "/" + array.id)),
         google = cfg.hailCloud match {
-          case true => Some(raw.google.get + "/" + array.id)
+          case true => Some(data_array.google.get + "/" + array.id)
           case false => None
         }
+      )
+      array -> DirTreeDataArray(
+        base = base,
+        ancestry = MultiStrPath(
+          local = Some(initDir(base.local + "/ancestry")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/ancestry")
+            case false => None
+          }
+        ),
+        filterfinal = MultiStrPath(
+          local = Some(initDir(base.local + "/filterfinal")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/filterfinal")
+            case false => None
+          }
+        ),
+        filterforqc = MultiStrPath(
+          local = Some(initDir(base.local + "/filterforqc")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/filterforqc")
+            case false => None
+          }
+        ),
+        harmonize = MultiStrPath(
+          local = Some(initDir(base.local + "/harmonize")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/harmonize")
+            case false => None
+          }
+        ),
+        impute = MultiStrPath(
+          local = Some(initDir(base.local + "/impute")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/impute")
+            case false => None
+          }
+        ),
+        kinship = MultiStrPath(
+          local = Some(initDir(base.local + "/kinship")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/kinship")
+            case false => None
+          }
+        ),
+        pca = MultiStrPath(
+          local = Some(initDir(base.local + "/pca")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/pca")
+            case false => None
+          }
+        ),
+        prepare = MultiStrPath(
+          local = Some(initDir(base.local + "/prepare")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/prepare")
+            case false => None
+          }
+        ),
+        sampleqc = MultiStrPath(
+          local = Some(initDir(base.local + "/sampleqc")),
+          google = cfg.hailCloud match {
+            case true => Some(base.google.get + "/sampleqc")
+            case false => None
+          }
+        )
       )
     }.toMap
     
