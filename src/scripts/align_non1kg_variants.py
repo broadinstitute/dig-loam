@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import argparse
+import gzip
 
 def complement(a):
 	if a != "NA":
@@ -48,8 +49,8 @@ def main(args=None):
 	bim['alt'] = bim['a2']
 	bim['status'] = "ignore"
 
-	with open(args.ref,"r") as ref_file:
-		ref_seq = ref_file.read()
+	with gzip.open(args.ref,"rb") as ref_file:
+		ref_seq = ''.join(ref_file.read().splitlines()[1:])
 
 	snps = []
 	for idx, row in bim[bim['kg'] == 0].iterrows():

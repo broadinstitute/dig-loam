@@ -1,11 +1,10 @@
 import ProjectConfig._
 import Collections._
-
+import Prepare._
 //import Directories._
 //import StoreHelpers._
 //import ProjectStores._
 //import ArrayStores._
-//import Prepare._
 //import Harmonize._
 //import Load._
 //import FilterForQc._
@@ -30,21 +29,21 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-//// Array specific QC steps up to ancestry inferrence
-//for {
-//  array <- cfg.Arrays
-//} yield { 
-//
-//  Prepare(array.id)
-//  //Harmonize(array.id)
-//  //Load(array.id)
-//  //FilterForQc(array.id)
-//  //Kinship(array.id)
-//  //AncestryPca(array.id)
-//  //AncestryCluster(array.id)
-//
-//}
-//
+// Array specific QC steps up to ancestry inferrence
+for {
+  array <- cfg.Arrays
+} yield { 
+
+  Prepare(array.id)
+  //Harmonize(array.id)
+  //Load(array.id)
+  //FilterForQc(array.id)
+  //Kinship(array.id)
+  //AncestryPca(array.id)
+  //AncestryCluster(array.id)
+
+}
+
 //// Reconcile inferred ancestry
 //MergeInferredAncestry()
 //
