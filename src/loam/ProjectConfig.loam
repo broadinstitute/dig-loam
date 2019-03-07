@@ -359,6 +359,23 @@ final case class ModelCohort(
   }
 }
 
+final case class PhenoCohort(
+    pheno: ConfigPheno,
+    cohort: ConfigCohort) {
+  def canEqual(a: Any) = a.isInstanceOf[PhenoCohort]
+  override def equals(that: Any): Boolean = that match {
+    case that: PhenoCohort => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + pheno.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result
+  }
+}
+
 final case class ModelCohortKnown(
     model: ConfigModel,
     cohort: ConfigCohort,
@@ -391,6 +408,25 @@ final case class ModelCohortMeta(
       val prime = 31
       var result = 1
       result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result
+  }
+}
+
+final case class PhenoCohortMeta(
+    pheno: ConfigPheno,
+    cohort: ConfigCohort,
+    meta: ConfigMeta) {
+  def canEqual(a: Any) = a.isInstanceOf[PhenoCohortMeta]
+  override def equals(that: Any): Boolean = that match {
+    case that: PhenoCohortMeta => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + pheno.id.hashCode
       result = prime * result + cohort.id.hashCode
       result = prime * result + meta.id.hashCode
       result
@@ -556,6 +592,42 @@ val modelCohorts: Seq[ModelCohort] = {
 
 }.flatten.distinct
 
+val phenoCohorts: Seq[PhenoCohort] = {
+
+  val x = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
+  } yield {
+   
+    for {
+      m <- section.models
+      c <- section.cohorts.get
+    } yield {
+      PhenoCohort(
+        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
+        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
+    }
+  
+  }
+
+  val y = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      m <- section.models
+      g <- section.merges.get
+      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
+    } yield {
+      PhenoCohort(
+        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
+        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
+    }
+  
+  }
+  x ++ y
+
+}.flatten.distinct
+
 val modelCohortKnowns: Seq[ModelCohortKnown] = {
 
   val x = for {
@@ -627,6 +699,46 @@ val modelCohortMetas: Seq[ModelCohortMeta] = {
     } yield {
       ModelCohortMeta(
         model = projectConfig.Models.filter(e => e.id == m).head,
+        meta = projectConfig.Metas.filter(e => e.id == t).head,
+        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
+    }
+  
+  }
+  x ++ y
+
+}.flatten.distinct
+
+val phenoCohortMetas: Seq[PhenoCohortMeta] = {
+
+  val x = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
+  } yield {
+   
+    for {
+      m <- section.models
+      t <- section.metas.get
+      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
+    } yield {
+      PhenoCohortMeta(
+        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
+        meta = projectConfig.Metas.filter(e => e.id == t).head,
+        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
+    }
+  
+  }
+
+  val y = for {
+    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
+  } yield {
+   
+    for {
+      m <- section.models
+      g <- section.merges.get
+      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
+      c <- projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == t).head.cohorts contains e.id).map(e => e.id)
+    } yield {
+      PhenoCohortMeta(
+        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
         meta = projectConfig.Metas.filter(e => e.id == t).head,
         cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
     }

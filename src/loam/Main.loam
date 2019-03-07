@@ -245,21 +245,19 @@ for {
 
 // Generate Phenotype Figures for Cohorts
 for {
-  x <- modelCohorts
-  p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
+  x <- phenoCohorts
 } yield { 
 
-  PhenotypeDistPlots(configPheno = p, configCohort = x.cohort, configMeta = None)
+  PhenotypeDistPlots(configPheno = x.pheno, configCohort = x.cohort, configMeta = None)
 
 }
 
 // Generate Phenotype Figures for Meta Cohorts
 for {
-  x <- modelCohortMetas
-  p <- projectConfig.Phenos.filter(e => e.id == x.model.pheno)
+  x <- phenoCohortMetas
 } yield { 
 
-  PhenotypeDistPlots(configPheno = p, configCohort = x.cohort, configMeta = Some(x.meta))
+  PhenotypeDistPlots(configPheno = x.pheno, configCohort = x.cohort, configMeta = Some(x.meta))
 
 }
 
