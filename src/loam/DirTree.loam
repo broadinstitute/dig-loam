@@ -32,18 +32,18 @@ final case class DirTreeAnalysisPheno(
 final case class DirTree(
   base: MultiStrPath,
   data: MultiStrPath,
-  data_array: MultiStrPath,
-  data_array_map: Map[ConfigArray, DirTreeDataArray],
-  data_global: MultiStrPath,
-  data_global_ancestry: MultiStrPath,
-  data_global_kinship: MultiStrPath,
-  data_global_kinship_map: Map[ConfigMeta, MultiStrPath],
+  dataArray: MultiStrPath,
+  dataArrayMap: Map[ConfigArray, DirTreeDataArray],
+  dataGlobal: MultiStrPath,
+  dataGlobalAncestry: MultiStrPath,
+  dataGlobalKinship: MultiStrPath,
+  dataGlobalKinshipMap: Map[ConfigMeta, MultiStrPath],
   analysis: MultiStrPath,
-  analysis_pheno_map: Map[ConfigPheno, DirTreeAnalysisPheno],
+  analysisPhenoMap: Map[ConfigPheno, DirTreeAnalysisPheno],
   report: MultiStrPath,
-  report_qc: MultiStrPath,
-  report_analysis: MultiStrPath,
-  report_analysis_map: Map[ConfigReport, MultiStrPath]) extends Debug
+  reportQc: MultiStrPath,
+  reportAnalysis: MultiStrPath,
+  reportAnalysisMap: Map[ConfigReport, MultiStrPath]) extends Debug
 
 def appendSubDir(msp: MultiStrPath, name: String): MultiStrPath = {
   MultiStrPath(
@@ -68,17 +68,17 @@ object DirTree {
     )
     
     val data = appendSubDir(base, "data")
-    val data_array = appendSubDir(data, "array")
-    val data_global = appendSubDir(data, "global")
-    val data_global_ancestry = appendSubDir(data_global, "ancestry")
-    val data_global_kinship = appendSubDir(data_global, "kinship")
+    val dataArray = appendSubDir(data, "array")
+    val dataGlobal = appendSubDir(data, "global")
+    val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
+    val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
     val analysis = appendSubDir(base, "analysis")
     val report = appendSubDir(base, "report")
-    val report_qc = appendSubDir(report, "qc")
-    val report_analysis = appendSubDir(report, "analysis")
+    val reportQc = appendSubDir(report, "qc")
+    val reportAnalysis = appendSubDir(report, "analysis")
 
-    val data_array_map = cfg.Arrays.map { array =>
-      val base = appendSubDir(data_array, array.id)
+    val dataArrayMap = cfg.Arrays.map { array =>
+      val base = appendSubDir(dataArray, array.id)
       array -> DirTreeDataArray(
         base = base,
         ancestry = appendSubDir(base, "ancestry"),
@@ -93,11 +93,11 @@ object DirTree {
       )
     }.toMap
 
-    val data_global_kinship_map = metasReport.map { meta =>
-      meta -> appendSubDir(data_global_kinship, meta.id)
+    val dataGlobalKinshipMap = metasReport.map { meta =>
+      meta -> appendSubDir(dataGlobalKinship, meta.id)
     }.toMap
 
-    val analysis_pheno_map = phenosReport.map { pheno =>
+    val analysisPhenoMap = phenosReport.map { pheno =>
 
       val base_pheno = appendSubDir(analysis, pheno.id)
 
@@ -151,25 +151,25 @@ object DirTree {
 
     }.toMap
     
-    val report_analysis_map = cfg.Reports.map { report =>
-      report -> appendSubDir(report_analysis, report.id)
+    val reportAnalysisMap = cfg.Reports.map { report =>
+      report -> appendSubDir(reportAnalysis, report.id)
     }.toMap
 
     new DirTree(
       base = base,
       data = data,
-      data_array = data_array,
-      data_array_map = data_array_map,
-      data_global = data_global,
-      data_global_ancestry = data_global_ancestry,
-      data_global_kinship = data_global_kinship,
-      data_global_kinship_map = data_global_kinship_map,
+      dataArray = dataArray,
+      dataArrayMap = dataArrayMap,
+      dataGlobal = dataGlobal,
+      dataGlobalAncestry = dataGlobalAncestry,
+      dataGlobalKinship = dataGlobalKinship,
+      dataGlobalKinshipMap = dataGlobalKinshipMap,
       analysis = analysis,
-      analysis_pheno_map = analysis_pheno_map,
+      analysisPhenoMap = analysisPhenoMap,
       report = report,
-      report_qc = report_qc,
-      report_analysis = report_analysis,
-      report_analysis_map = report_analysis_map
+      reportQc = reportQc,
+      reportAnalysis = reportAnalysis,
+      reportAnalysisMap = reportAnalysisMap
     )
 
   }

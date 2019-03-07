@@ -4,47 +4,54 @@
   *  Requires: Plink1.9, liftOver
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 
 def Prepare(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  arrayStores(array).rawData.data match {
 
-    cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unplaced}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.unplaced)
-      .tag(s"${arrayStores(array).rawData.unplaced}".split("/").last)
-  
-    cmd"""awk '{k=$$1":"$$4":"$$5":"$$6; if(!m[k]) {print $$2; m[k]=1}}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unique}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.unique)
-      .tag(s"${arrayStores(array).rawData.unique}".split("/").last)
-  
-    cmd"""awk '{if($$5$$6 == "ID" || $$5$$6 == "DI") print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.indel}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.indel)
-      .tag(s"${arrayStores(array).rawData.indel}".split("/").last)
-  
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --missing --out ${arrayStores(array).rawData.rawBase}.missing"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.lmiss, arrayStores(array).rawData.imiss)
-      .tag(s"${arrayStores(array).rawData.base}.missing".split("/").last)
+    case _: Plink =>
 
-    cmd"""sed '1d' ${arrayStores(array).rawData.imiss} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(array).rawData.imissRemove}"""
-      .in(arrayStores(array).rawData.imiss)
-      .out(arrayStores(array).rawData.imissRemove)
-      .tag(s"${arrayStores(array).rawData.imissRemove}".split("/").last)
+      drmWith(imageName = s"$imgTools") {
+      
+        cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unplaced}"""
+          .in(arrayStores(array).rawData.data)
+          .out(arrayStores(array).rawData.unplaced)
+          .tag(s"${arrayStores(array).rawData.unplaced}".split("/").last)
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --freq --out ${arrayStores(array).rawData.rawBase}.freq"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.freq)
-      .tag(s"${arrayStores(array).rawData.freq}".split("/").last)
-  
-    cmd"""sed '1d' ${arrayStores(array).rawData.freq} | awk '{if($$5 == 0) print $$2}' > ${arrayStores(array).rawData.mono}"""
-      .in(arrayStores(array).rawData.freq)
-      .out(arrayStores(array).rawData.mono)
-      .tag(s"${arrayStores(array).rawData.mono}".split("/").last)
+        cmd"""awk '{k=$$1":"$$4":"$$5":"$$6; if(!m[k]) {print $$2; m[k]=1}}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unique}"""
+          .in(arrayStores(array).rawData.data)
+          .out(arrayStores(array).rawData.unique)
+          .tag(s"${arrayStores(array).rawData.unique}".split("/").last)
+        
+        cmd"""awk '{if($$5$$6 == "ID" || $$5$$6 == "DI") print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.indel}"""
+          .in(arrayStores(array).rawData.data)
+          .out(arrayStores(array).rawData.indel)
+          .tag(s"${arrayStores(array).rawData.indel}".split("/").last)
+        
+        cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --missing --out ${arrayStores(array).rawData.rawBase}.missing"""
+          .in(arrayStores(array).rawData.data)
+          .out(arrayStores(array).rawData.lmiss, arrayStores(array).rawData.imiss)
+          .tag(s"${arrayStores(array).rawData.base}.missing".split("/").last)
+        
+        cmd"""sed '1d' ${arrayStores(array).rawData.imiss} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(array).rawData.imissRemove}"""
+          .in(arrayStores(array).rawData.imiss)
+          .out(arrayStores(array).rawData.imissRemove)
+          .tag(s"${arrayStores(array).rawData.imissRemove}".split("/").last)
+        
+        cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --freq --out ${arrayStores(array).rawData.rawBase}.freq"""
+          .in(arrayStores(array).rawData.data)
+          .out(arrayStores(array).rawData.freq)
+          .tag(s"${arrayStores(array).rawData.freq}".split("/").last)
+        
+        cmd"""sed '1d' ${arrayStores(array).rawData.freq} | awk '{if($$5 == 0) print $$2}' > ${arrayStores(array).rawData.mono}"""
+          .in(arrayStores(array).rawData.freq)
+          .out(arrayStores(array).rawData.mono)
+          .tag(s"${arrayStores(array).rawData.mono}".split("/").last)
+      
+      }
+
+        case _: Vcf => ()
 
   }
 

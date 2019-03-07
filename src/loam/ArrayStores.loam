@@ -4,8 +4,7 @@ import Stores._
 
 final case class RawData(
   data: GenotypeData,
-  rawBase: Path,
-  unplaced: Store,
+  unplaced: Option[Store],
   unique: Store,
   indel: Store,
   lmiss: Store,
@@ -79,16 +78,12 @@ final case class KinshipData(
   famSizes: Store)
 
 final case class Ref1kgData(
-  vcf: Store,
-  data: Seq[Store],
-  base: Path,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
-  kgSamples: Store,
-  kgSamplesGoogle: Option[Store],
-  gds: Store,
-  vcfGoogle: Option[Store],
-  baseGoogle: Option[URI])
+  vcf: GenotypeData,
+  data: GenotypeData,
+  base: MultiStrPath,
+  hailLog: MultiStore,
+  kgSamples: MultiStore,
+  gds: Store)
 
 final case class AncestryData(
   inferred: Store)
@@ -117,18 +112,13 @@ final case class PcaData(
   scores: Store)
 
 final case class SexcheckData(
-  sexcheck: Store,
-  sexcheckGoogle: Option[Store],
-  problems: Store,
-  problemsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store])
+  sexcheck: MultiStore,
+  problems: MultiStore,
+  hailLog: MultiStore)
 
 final case class SampleQcData(
-  stats: Store,
-  statsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
+  stats: MultiStore,
+  hailLog: MultiStore,
   statsAdj: Store,
   corrPlots: Store,
   boxPlots: Store,
@@ -157,29 +147,22 @@ final case class SampleQcMetricClusterData(
   log: Store)
 
 final case class FinalData(
-  samplesExclude: Store,
-  samplesExcludeGoogle: Option[Store],
+  samplesExclude: MultiStore,
   samplesRestore: Store,
-  variantsExclude: Store,
-  variantsExcludeIds: Store,
-  variantsExcludeGoogle: Option[Store])
+  variantsExclude: MultiStore,
+  variantsExcludeIds: Store)
 
 final case class VariantQcData(
-  stats: Store,
-  statsGoogle: Option[Store])
+  stats: MultiStore)
 
 final case class CleanData(
-  data: Seq[Store],
-  base: Path,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
+  data: GenotypeData,
+  base: MultiStrPath,
+  hailLog: MultiStore,
   gds: Store,
-  baseGoogle: Option[URI],
-  vcf: Store,
+  vcf: GenotypeData,
   tbi: Store,
-  vcfGoogle: Option[Store],
-  mt: Option[Store],
-  mtGoogle: Option[Store],
+  mt: MultiStore,
   pcaScores: Store,
   pcaLog: Store)
 
@@ -206,87 +189,89 @@ final case class Array(
 
 val arrayStores = cfg.Arrays.map(a => a.id).map { array =>
 
-  val arrayCfg = cfg.Arrays.filter(_.id == array).head
+  val cfgArray = cfg.Arrays.filter(_.id == array).head
 
-  val rawBaseString = s"${cfg.projectId}.${arrayCfg.id}.raw"
-  val preparedBaseString = s"${cfg.projectId}.${arrayCfg.id}.prepared"
-  val annotatedBaseString = s"${cfg.projectId}.${arrayCfg.id}.prepared.annotated"
-  val harmonizedBaseString = s"${cfg.projectId}.${arrayCfg.id}.harmonized"
-  val refBaseString = s"${cfg.projectId}.${arrayCfg.id}.ref"
-  val imputeBaseString = s"${cfg.projectId}.${arrayCfg.id}.impute"
-  val qcBaseString = s"${cfg.projectId}.${arrayCfg.id}.ref.qc"
-  val kinshipBaseString = s"${cfg.projectId}.${arrayCfg.id}.kinship"
-  val ref1kgBaseString = s"${cfg.projectId}.${arrayCfg.id}.ref1kg"
-  val ancestryBaseString = s"${cfg.projectId}.${arrayCfg.id}.ancestry"
-  val ancestryPcaBaseString = s"${cfg.projectId}.${arrayCfg.id}.ancestry.pca"
-  val ancestryClusterBaseString = s"${cfg.projectId}.${arrayCfg.id}.ancestry.cluster"
-  val pcaBaseString = s"${cfg.projectId}.${arrayCfg.id}.pca"
-  val sampleQcBaseString = s"${cfg.projectId}.${arrayCfg.id}.sampleqc"
-  val finalBaseString = s"${cfg.projectId}.${arrayCfg.id}.final"
-  val variantQcBaseString = s"${cfg.projectId}.${arrayCfg.id}.variantqc"
-  val cleanBaseString = s"${cfg.projectId}.${arrayCfg.id}.clean"
+  val rawBaseString = s"${cfg.projectId}.${cfgArray.id}.raw"
+  val preparedBaseString = s"${cfg.projectId}.${cfgArray.id}.prepared"
+  val annotatedBaseString = s"${cfg.projectId}.${cfgArray.id}.prepared.annotated"
+  val harmonizedBaseString = s"${cfg.projectId}.${cfgArray.id}.harmonized"
+  val refBaseString = s"${cfg.projectId}.${cfgArray.id}.ref"
+  val imputeBaseString = s"${cfg.projectId}.${cfgArray.id}.impute"
+  val qcBaseString = s"${cfg.projectId}.${cfgArray.id}.ref.qc"
+  val kinshipBaseString = s"${cfg.projectId}.${cfgArray.id}.kinship"
+  val ref1kgBaseString = s"${cfg.projectId}.${cfgArray.id}.ref1kg"
+  val ancestryBaseString = s"${cfg.projectId}.${cfgArray.id}.ancestry"
+  val ancestryPcaBaseString = s"${cfg.projectId}.${cfgArray.id}.ancestry.pca"
+  val ancestryClusterBaseString = s"${cfg.projectId}.${cfgArray.id}.ancestry.cluster"
+  val pcaBaseString = s"${cfg.projectId}.${cfgArray.id}.pca"
+  val sampleQcBaseString = s"${cfg.projectId}.${cfgArray.id}.sampleqc"
+  val finalBaseString = s"${cfg.projectId}.${cfgArray.id}.final"
+  val variantQcBaseString = s"${cfg.projectId}.${cfgArray.id}.variantqc"
+  val cleanBaseString = s"${cfg.projectId}.${cfgArray.id}.clean"
 
   val data = {
-    arrayCfg.format match {
+    cfgArray.format match {
       case "plink" =>
         Plink(
-          base = MultiStrPath(local = Some(arrayCfg.file), google = None),
-          bed = MultiStore(local = Some(store(checkPath(arrayCfg.file + ".bed")).asInput), google = None),
-          bim = MultiStore(local = Some(store(checkPath(arrayCfg.file + ".bim")).asInput), google = None),
-          fam = MultiStore(local = Some(store(checkPath(arrayCfg.file + ".fam")).asInput), google = None)
+          base = MultiStrPath(local = Some(cfgArray.file), google = None),
+          bed = MultiStore(local = Some(store(checkPath(cfgArray.file + ".bed")).asInput), google = None),
+          bim = MultiStore(local = Some(store(checkPath(cfgArray.file + ".bim")).asInput), google = None),
+          fam = MultiStore(local = Some(store(checkPath(cfgArray.file + ".fam")).asInput), google = None)
         )
       case "vcf" =>
         Vcf(
-          base = MultiStrPath(local = Some(arrayCfg.file.replaceAll(".vcf.gz$","").replaceAll(".vcf.bgz$","").replaceAll(".gz$","").replaceAll(".bgz$","")), google = None),
-          vcf = MultiStore(local = Some(store(checkPath(arrayCfg.file)).asInput), google = None)
+          base = MultiStrPath(local = Some(cfgArray.file.replaceAll(".vcf.gz$","").replaceAll(".vcf.bgz$","").replaceAll(".gz$","").replaceAll(".bgz$","")), google = None),
+          vcf = MultiStore(local = Some(store(checkPath(cfgArray.file)).asInput), google = None)
         )
     }
   }
 
   val rawData = RawData(
     data = data,
-    rawBase = dirTree.rawArray(arrayCfg).local.get / rawBaseString,
-    unplaced = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.unplaced"),
-    unique = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.unique"),
-    indel = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.indel"),
-    lmiss = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.missing.lmiss"),
-    imiss = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.missing.imiss"),
-    imissRemove = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.missing.imiss.remove"),
-    freq = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.freq.frq"),
-    mono = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.mono"),
-    dupRemove = store(dirTree.rawArray(arrayCfg).local.get / s"${rawBaseString}.dup.remove"))
+    unplaced = data match {
+      case _: Plink => store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.unplaced")
+      case _: Vcf => None
+    },
+    unique = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.unique"),
+    indel = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.indel"),
+    lmiss = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.missing.lmiss"),
+    imiss = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.missing.imiss"),
+    imissRemove = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.missing.imiss.remove"),
+    freq = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.freq.frq"),
+    mono = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.mono"),
+    dupRemove = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${rawBaseString}.dup.remove"))
 
   val preparedData = PreparedData(
     data = Plink(
-      base = MultiStrPath(local = Some(dirTree.preparedArray(arrayCfg).local.get / preparedBaseString), google = None),
-      bed = MultiStore(local = Some(store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.bed").asInput), google = None),
-      bim = MultiStore(local = Some(store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.bim").asInput), google = None),
-      fam = MultiStore(local = Some(store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.fam").asInput), google = None)
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).prepare.local.get / preparedBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.bed").asInput), google = None),
+      bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.bim").asInput), google = None),
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.fam").asInput), google = None)
     ),
-    multiallelic = store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.multiallelic"),
-    chain = arrayCfg.liftOver.map(s => store(path(s)).asInput),
-    bed = arrayCfg.liftOver.map(s => store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.liftover.bed")),
-    lifted = arrayCfg.liftOver.map(s => store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.lifted")),
-    unlifted = arrayCfg.liftOver.map(s => store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.unlifted")),
-    liftedUpdate = arrayCfg.liftOver.map(s => store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.lifted.update")),
-    liftedExtract = arrayCfg.liftOver.map(s => store(dirTree.preparedArray(arrayCfg).local.get / s"${preparedBaseString}.lifted.extract")))
+    multiallelic = store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.multiallelic"),
+    chain = cfgArray.liftOver.map(s => store(path(s)).asInput),
+    bed = cfgArray.liftOver.map(s => store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.liftover.bed")),
+    lifted = cfgArray.liftOver.map(s => store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.lifted")),
+    unlifted = cfgArray.liftOver.map(s => store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.unlifted")),
+    liftedUpdate = cfgArray.liftOver.map(s => store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.lifted.update")),
+    liftedExtract = cfgArray.liftOver.map(s => store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${preparedBaseString}.lifted.extract")))
 
   val annotatedData = AnnotatedData(
-    data = arrayCfg.liftOver match {
+    data = cfgArray.liftOver match {
       case Some(s) => 
         Plink(
-          base = MultiStrPath(local = Some(dirTree.annotatedArray(arrayCfg).local.get / annotatedBaseString), google = None),
-          bed = MultiStore(local = Some(store(dirTree.annotatedArray(arrayCfg).local.get / s"${annotatedBaseString}.bed").asInput), google = None),
-          bim = MultiStore(local = Some(store(dirTree.annotatedArray(arrayCfg).local.get / s"${annotatedBaseString}.bim").asInput), google = None),
-          fam = MultiStore(local = Some(store(dirTree.annotatedArray(arrayCfg).local.get / s"${annotatedBaseString}.fam").asInput), google = None)
+          base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).prepare.local.get / annotatedBaseString), google = None),
+          bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${annotatedBaseString}.bed").asInput), google = None),
+          bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${annotatedBaseString}.bim").asInput), google = None),
+          fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).prepare.local.get / s"${annotatedBaseString}.fam").asInput), google = None)
         )
       case None => preparedData.data 
     }
   )
 
-  val annotatedChrData = expandChrList(arrayCfg.chrs).map { chr =>
+  val annotatedChrData = expandChrList(cfgArray.chrs).map { chr =>
 
-    val chrBaseString = s"${cfg.projectId}.${arrayCfg.id}.chr${chr}"
+    val chrBaseString = s"${cfg.projectId}.${cfgArray.id}.chr${chr}"
 
     val mergedKgBaseString = s"${chrBaseString}.harmkg"
     val mergedKgHuRefBaseString = s"${mergedKgBaseString}.huref"
@@ -294,235 +279,276 @@ val arrayStores = cfg.Arrays.map(a => a.id).map { array =>
 
     chr -> AnnotatedChrData(
       data = Plink(
-        base = MultiStrPath(local = Some(dirTree.annotatedArray(arrayCfg).local.get / chrBaseString), google = None),
-        bed = MultiStore(local = Some(store(dirTree.annotatedArray(arrayCfg).local.get / s"${chrBaseString}.bed").asInput), google = None),
-        bim = MultiStore(local = Some(store(dirTree.annotatedArray(arrayCfg).local.get / s"${chrBaseString}.bim").asInput), google = None),
-        fam = MultiStore(local = Some(store(dirTree.annotatedArray(arrayCfg).local.get / s"${chrBaseString}.fam").asInput), google = None)
+        base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).harmonize.local.get / chrBaseString), google = None),
+        bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${chrBaseString}.bed").asInput), google = None),
+        bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${chrBaseString}.bim").asInput), google = None),
+        fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${chrBaseString}.fam").asInput), google = None)
       ),
-      mergedKgBase = dirTree.annotatedArray(arrayCfg).local.get / mergedKgBaseString,
-      mergedKg = bedBimFam(dirTree.annotatedArray(arrayCfg).local.get / mergedKgBaseString),
-      mergedKgHuRefBase = dirTree.annotatedArray(arrayCfg).local.get / mergedKgHuRefBaseString,
-      mergedKgHuRef = bedBimFam(dirTree.annotatedArray(arrayCfg).local.get / mergedKgHuRefBaseString),
-      mergedKgNonKgBase = dirTree.annotatedArray(arrayCfg).local.get / mergedKgNonKgBaseString,
-      nonKgRemove = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgNonKgBaseString}.remove"),
-      nonKgIgnore = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgNonKgBaseString}.ignore"),
-      nonKgMono = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgNonKgBaseString}.mono"),
-      nonKgNomatch = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgNonKgBaseString}.nomatch"),
-      nonKgFlip = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgNonKgBaseString}.flip"),
-      nonKgForceA1 = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgNonKgBaseString}.force_a1"),
-      mergedKgVarIdUpdate = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgBaseString}_idUpdates.txt"),
-      mergedKgVarSnpLog = store(dirTree.annotatedArray(arrayCfg).local.get / s"${mergedKgBaseString}_snpLog.log"))
+      mergedKgBase = dirTree.dataArrayMap(cfgArray).harmonize.local.get / mergedKgBaseString,
+      mergedKg = bedBimFam(dirTree.dataArrayMap(cfgArray).harmonize.local.get / mergedKgBaseString),
+      mergedKgHuRefBase = dirTree.dataArrayMap(cfgArray).harmonize.local.get / mergedKgHuRefBaseString,
+      mergedKgHuRef = bedBimFam(dirTree.dataArrayMap(cfgArray).harmonize.local.get / mergedKgHuRefBaseString),
+      mergedKgNonKgBase = dirTree.dataArrayMap(cfgArray).harmonize.local.get / mergedKgNonKgBaseString,
+      nonKgRemove = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgNonKgBaseString}.remove"),
+      nonKgIgnore = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgNonKgBaseString}.ignore"),
+      nonKgMono = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgNonKgBaseString}.mono"),
+      nonKgNomatch = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgNonKgBaseString}.nomatch"),
+      nonKgFlip = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgNonKgBaseString}.flip"),
+      nonKgForceA1 = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgNonKgBaseString}.force_a1"),
+      mergedKgVarIdUpdate = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgBaseString}_idUpdates.txt"),
+      mergedKgVarSnpLog = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${mergedKgBaseString}_snpLog.log"))
 
   }.toMap
 
   val harmonizedData = HarmonizedData(
     data = Plink(
-      base = MultiStrPath(local = Some(dirTree.harmonizedArray(arrayCfg).local.get / harmonizedBaseString), google = None),
-      bed = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.bed").asInput), google = None),
-      bim = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.bim").asInput), google = None),
-      fam = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.fam").asInput), google = None)
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).harmonize.local.get / harmonizedBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.bed").asInput), google = None),
+      bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.bim").asInput), google = None),
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.fam").asInput), google = None)
     ),
     hailLog = MultiStore(
-      local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.hail.log")),
-      google = hailCloud match { case true => Some(store(dirTree.harmonizedArray(arrayCfg).google.get / s"${harmonizedBaseString}.hail.log")); case false => None }
+      local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.hail.log")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).harmonize.google.get / s"${harmonizedBaseString}.hail.log")); case false => None }
     ),
-    mergeList = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.merge.txt"),
-    nonKgRemove = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.nonkg.remove"),
-    nonKgIgnore = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.nonkg.ignore"),
-    nonKgMono = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.nonkg.mono"),
-    nonKgNomatch = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.nonkg.nomatch"),
-    nonKgFlip = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.nonkg.flip"),
-    nonKgForceA1 = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}.nonkg.force_a1"),
-    mergedKgVarIdUpdate = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}_idUpdates.txt"),
-    mergedKgVarSnpLog = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${harmonizedBaseString}_snpLog.log"),
-    forceA2 = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.force_a2.txt"),
+    mergeList = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.merge.txt"),
+    nonKgRemove = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.nonkg.remove"),
+    nonKgIgnore = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.nonkg.ignore"),
+    nonKgMono = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.nonkg.mono"),
+    nonKgNomatch = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.nonkg.nomatch"),
+    nonKgFlip = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.nonkg.flip"),
+    nonKgForceA1 = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}.nonkg.force_a1"),
+    mergedKgVarIdUpdate = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}_idUpdates.txt"),
+    mergedKgVarSnpLog = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${harmonizedBaseString}_snpLog.log"),
+    forceA2 = store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.force_a2.txt"),
     refData = Plink(
-      base = MultiStrPath(local = Some(dirTree.harmonizedArray(arrayCfg).local.get / refBaseString), google = None),
-      bed = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.bed").asInput), google = None),
-      bim = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.bim").asInput), google = None),
-      fam = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.fam").asInput), google = None)
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).harmonize.local.get / refBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.bed").asInput), google = None),
+      bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.bim").asInput), google = None),
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.fam").asInput), google = None)
     ),
     vcf = Vcf(
       base = MultiStrPath(
-        local = Some(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.vcf.gz"),
-        google = hailCloud match { case true => Some(dirTree.harmonizedArray(arrayCfg).google / s"${refBaseString}.vcf.gz"); case false => None }
+        local = Some(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.vcf.gz"),
+        google = hailCloud match { case true => Some(dirTree.dataArrayMap(cfgArray).harmonize.google.get / s"${refBaseString}.vcf.gz"); case false => None }
       ),
       vcf = MultiStore(
-        local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.vcf.gz")),
-        google = hailCloud match { case true => Some(store(dirTree.harmonizedArray(arrayCfg).google.get / s"${refBaseString}.vcf.gz")); case false => None }
+        local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.vcf.gz")),
+        google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).harmonize.google.get / s"${refBaseString}.vcf.gz")); case false => None }
       )
     ),
     tbi = MultiStore(
-      local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.vcf.gz.tbi")),
-      google = hailCloud match { case true => Some(store(dirTree.harmonizedArray(arrayCfg).google.get / s"${refBaseString}.vcf.gz.tbi")); case false => None }
+      local = Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.vcf.gz.tbi")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).harmonize.google.get / s"${refBaseString}.vcf.gz.tbi")); case false => None }
     ),
     imputeData = Plink(
-      base = MultiStrPath(local = Some(dirTree.harmonizedArray(arrayCfg).local.get / imputeBaseString), google = None),
-      bed = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${imputeBaseString}.bed").asInput), google = None),
-      bim = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${imputeBaseString}.bim").asInput), google = None),
-      fam = MultiStore(local = Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${imputeBaseString}.fam").asInput), google = None)
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).impute.local.get / imputeBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).impute.local.get / s"${imputeBaseString}.bed").asInput), google = None),
+      bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).impute.local.get / s"${imputeBaseString}.bim").asInput), google = None),
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).impute.local.get / s"${imputeBaseString}.fam").asInput), google = None)
     ),
     mt = MultiStore(
-      local = hailCloud match { case false => Some(store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.mt")); case true => None },
-      google = hailCloud match { case true => Some(store(dirTree.harmonizedArray(arrayCfg).google.get / s"${refBaseString}.mt")); case false => None }
+      local = hailCloud match { case false => Some(store(dirTree.dataArrayMap(cfgArray).harmonize.local.get / s"${refBaseString}.mt")); case true => None },
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).harmonize.google.get / s"${refBaseString}.mt")); case false => None }
     ),
-    pruneIn = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.prune.in"),
-    regionsExcludePlink = store(dirTree.harmonizedArray(arrayCfg).local.get / s"${refBaseString}.regions_exclude.txt"))
+    pruneIn = store(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${refBaseString}.prune.in"),
+    regionsExcludePlink = store(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${refBaseString}.regions_exclude.txt"))
 
   val prunedData = PrunedData(
     data = Plink(
-      base = MultiStrPath(local = Some(dirTree.prunedArray(arrayCfg).local.get / qcBaseString), google = None),
-      bed = MultiStore(local = Some(store(dirTree.prunedArray(arrayCfg).local.get / s"${qcBaseString}.bed").asInput), google = None),
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / qcBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${qcBaseString}.bed").asInput), google = None),
       bim = MultiStore(
-        local = Some(store(dirTree.prunedArray(arrayCfg).local.get / s"${qcBaseString}.bim").asInput),
-        google = hailCloud match { case true => Some(store(dirTree.prunedArray(arrayCfg).google.get / s"${qcBaseString}.bim")); case false => None }
+        local = Some(store(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${qcBaseString}.bim").asInput),
+        google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).filterforqc.google.get / s"${qcBaseString}.bim")); case false => None }
       ),
-      fam = MultiStore(local = Some(store(dirTree.prunedArray(arrayCfg).local.get / s"${qcBaseString}.fam").asInput), google = None)
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${qcBaseString}.fam").asInput), google = None)
     ),
     vcf = Vcf(
       base = MultiStrPath(
-        local = Some(dirTree.prunedArray(arrayCfg).local.get / s"${qcBaseString}.vcf.gz"),
+        local = Some(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${qcBaseString}.vcf.gz"),
         google = None }
       ),
       vcf = MultiStore(
-        local = Some(store(dirTree.prunedArray(arrayCfg).local.get / s"${qcBaseString}.vcf.gz")),
+        local = Some(store(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${qcBaseString}.vcf.gz")),
         google = None }
       )
     ),
     tbi = MultiStore(
-      local = Some(dirTree.prunedArray(arrayCfg).local.get / s"${qcBaseString}.vcf.gz.tbi"),
+      local = Some(dirTree.dataArrayMap(cfgArray).filterforqc.local.get / s"${qcBaseString}.vcf.gz.tbi"),
       google = None
-    )
-  )
-
-
-
-
-
-
-
-
-
-
-
-
+    ))
 
   val kinshipData = KinshipData(
-    base = dirTree.kinshipArray(arrayCfg).local.get / kinshipBaseString,
-    log = store(dirTree.kinshipArray(arrayCfg).local.get / s"${kinshipBaseString}.log"),
-    kin = store(dirTree.kinshipArray(arrayCfg).local.get / s"${kinshipBaseString}.kin"),
-    kin0 = store(dirTree.kinshipArray(arrayCfg).local.get / s"${kinshipBaseString}.kin0"),
-    kin0Related = store(dirTree.kinshipArray(arrayCfg).local.get / s"${kinshipBaseString}.kin0.related"),
-    famSizes = store(dirTree.kinshipArray(arrayCfg).local.get / s"${kinshipBaseString}.famsizes.tsv"))
+    base = dirTree.dataArrayMap(cfgArray).kinship.local.get / kinshipBaseString,
+    log = store(dirTree.dataArrayMap(cfgArray).kinship.local.get / s"${kinshipBaseString}.log"),
+    kin = store(dirTree.dataArrayMap(cfgArray).kinship.local.get / s"${kinshipBaseString}.kin"),
+    kin0 = store(dirTree.dataArrayMap(cfgArray).kinship.local.get / s"${kinshipBaseString}.kin0"),
+    kin0Related = store(dirTree.dataArrayMap(cfgArray).kinship.local.get / s"${kinshipBaseString}.kin0.related"),
+    famSizes = store(dirTree.dataArrayMap(cfgArray).kinship.local.get / s"${kinshipBaseString}.famsizes.tsv"))
 
   val ref1kgData = Ref1kgData(
-    vcf = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ref1kgBaseString}.vcf.bgz"),
-    data = bedBimFam(dirTree.ancestryArray(arrayCfg).local.get / ref1kgBaseString),
-    base = dirTree.ancestryArray(arrayCfg).local.get / ref1kgBaseString,
-    hailLog = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ref1kgBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.hail.log")); case false => None },
-    kgSamples = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ref1kgBaseString}.kgsamples.tsv"),
-    kgSamplesGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None },
-    gds = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ref1kgBaseString}.gds"),
-    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.vcf.bgz")); case false => None },
-    baseGoogle = hailCloud match { case true => Some(googleOutDir.get / ref1kgBaseString); case false => None })
+    vcf = Vcf(
+      base = MultiStrPath(
+        local = Some(dirTree.dataArrayMap(cfgArray).ancestry.local.get / ref1kgBaseString),
+        google = hailCloud match { case true => Some(dirTree.dataArrayMap(cfgArray).ancestry.google.get / ref1kgBaseString); case false => None }
+      ),
+      vcf = MultiStore(
+        local = Some(store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.vcf.bgz")),
+        google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).ancestry.google.get / s"${ref1kgBaseString}.vcf.bgz")); case false => None }
+      )
+    ),
+    data = Plink(
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).ancestry.local.get / ref1kgBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.bed").asInput), google = None),
+      bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.bim").asInput), google = None),
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.fam").asInput), google = None)
+    ),
+    base = MultiStrPath(
+      local = Some(dirTree.dataArrayMap(cfgArray).ancestry.local.get / ref1kgBaseString),
+      google = hailCloud match { case true => Some(dirTree.dataArrayMap(cfgArray).ancestry.google.get / ref1kgBaseString); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.hail.log")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).ancestry.google.get / s"${ref1kgBaseString}.hail.log")); case false => None }
+    ),
+    kgSamples = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.kgsamples.tsv")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None }
+    ),
+    gds = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ref1kgBaseString}.gds"))
 
   val ancestryData = AncestryData(
-    inferred = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryBaseString}.inferred.tsv"))
+    inferred = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryBaseString}.inferred.tsv"))
 
   val ancestryPcaData = AncestryPcaData(
-    base = dirTree.ancestryArray(arrayCfg).local.get / ancestryPcaBaseString,
-    log = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryPcaBaseString}.log"),
-    scores = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryPcaBaseString}.scores.tsv"),
-    plots = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryPcaBaseString}.plots.pdf"))
+    base = dirTree.dataArrayMap(cfgArray).ancestry.local.get / ancestryPcaBaseString,
+    log = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryPcaBaseString}.log"),
+    scores = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryPcaBaseString}.scores.tsv"),
+    plots = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"))
   
   val ancestryClusterData = AncestryClusterData(
-    base = dirTree.ancestryArray(arrayCfg).local.get / ancestryClusterBaseString,
-    log = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.log"),
-    fet = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.fet.1"),
-    clu = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.clu.1"),
-    klg = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.klg.1"),
-    plots = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.plots.pdf"),
-    centerPlots = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.plots.centers.pdf"),
-    no1kgPlots = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
-    xtab = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.xtab"),
-    groups = store(dirTree.ancestryArray(arrayCfg).local.get / s"${ancestryClusterBaseString}.groups.tsv"))
+    base = dirTree.dataArrayMap(cfgArray).ancestry.local.get / ancestryClusterBaseString,
+    log = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.log"),
+    fet = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.fet.1"),
+    clu = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.clu.1"),
+    klg = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.klg.1"),
+    plots = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pdf"),
+    centerPlots = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.plots.centers.pdf"),
+    no1kgPlots = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
+    xtab = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.xtab"),
+    groups = store(dirTree.dataArrayMap(cfgArray).ancestry.local.get / s"${ancestryClusterBaseString}.groups.tsv"))
 
   val pcaData = PcaData(
-    gds = store(dirTree.ancestryArray(arrayCfg).local.get / s"${pcaBaseString}.gds"),
-    log = store(dirTree.ancestryArray(arrayCfg).local.get / s"${pcaBaseString}.log"),
-    scores = store(dirTree.ancestryArray(arrayCfg).local.get / s"${pcaBaseString}.scores.tsv"))
+    gds = store(dirTree.dataArrayMap(cfgArray).pca.local.get / s"${pcaBaseString}.gds"),
+    log = store(dirTree.dataArrayMap(cfgArray).pca.local.get / s"${pcaBaseString}.log"),
+    scores = store(dirTree.dataArrayMap(cfgArray).pca.local.get / s"${pcaBaseString}.scores.tsv"))
 
   val sexcheckData = SexcheckData(
-    sexcheck = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.sexcheck.tsv"),
-    sexcheckGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None },
-    problems = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None },
-    hailLog = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.sexcheck.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.hail.log")); case false => None })
+    sexcheck = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.sexcheck.tsv")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.google.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None }
+    ),
+    problems = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.sexcheck.hail.log")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.google.get / s"${sampleQcBaseString}.sexcheck.hail.log")); case false => None }
+    ))
 
   val sampleQcData = SampleQcData(
-    stats = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.stats.tsv"),
-    statsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.stats.tsv")); case false => None },
-    hailLog = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.stats.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.stats.hail.log")); case false => None },
-    statsAdj = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.stats.adj.tsv"),
-    corrPlots = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.corr.pdf"),
-    boxPlots = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.boxplots.pdf"),
-    discreteness = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.discreteness.txt"),
-    pcaLoadings = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.loadings.tsv"),
-    pcaPlots = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.plots.pdf"),
-    pcaScores = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.scores.tsv"),
-    outliers = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.outliers.tsv"),
-    metricPlots = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.metricplots.pdf"))
+    stats = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.stats.tsv")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.google.get / s"${sampleQcBaseString}.stats.tsv")); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.stats.hail.log")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).sampleqc.google.get / s"${sampleQcBaseString}.stats.hail.log")); case false => None }
+    ),
+    statsAdj = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.stats.adj.tsv"),
+    corrPlots = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.corr.pdf"),
+    boxPlots = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.boxplots.pdf"),
+    discreteness = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.discreteness.txt"),
+    pcaLoadings = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.loadings.tsv"),
+    pcaPlots = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.plots.pdf"),
+    pcaScores = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.scores.tsv"),
+    outliers = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.outliers.tsv"),
+    metricPlots = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.metricplots.pdf"))
 
   val sampleQcPcaClusterData = SampleQcPcaClusterData(
-    base = dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster",
-    fet = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.fet.1"),
-    clu = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.clu.1"),
-    klg = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.klg.1"),
-    log = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.log"),
-    outliers = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.outliers.tsv"),
-    plots = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.plots.pdf"),
-    xtab = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.pca.cluster.xtab"))
+    base = dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster",
+    fet = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.fet.1"),
+    clu = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.clu.1"),
+    klg = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.klg.1"),
+    log = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.log"),
+    outliers = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.outliers.tsv"),
+    plots = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.plots.pdf"),
+    xtab = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.pca.cluster.xtab"))
 
   val sampleQcMetricClusterData = cfg.sampleQcMetrics.map { metric =>
   
       metric -> SampleQcMetricClusterData(
-        base = dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.${metric}.cluster",
-        fet = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.${metric}.cluster.fet.1"),
-        clu = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.${metric}.cluster.clu.1"),
-        klg = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.${metric}.cluster.klg.1"),
-        log = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${sampleQcBaseString}.${metric}.cluster.log"))
+        base = dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.${metric}.cluster",
+        fet = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.${metric}.cluster.fet.1"),
+        clu = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.${metric}.cluster.clu.1"),
+        klg = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.${metric}.cluster.klg.1"),
+        log = store(dirTree.dataArrayMap(cfgArray).sampleqc.local.get / s"${sampleQcBaseString}.${metric}.cluster.log"))
 
   }.toMap
 
   val finalData = FinalData(
-    samplesExclude = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${finalBaseString}.samples.exclude.txt"),
-    samplesExcludeGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${finalBaseString}.samples.exclude.txt")); case false => None },
-	samplesRestore = store(dirTree.sampleqcArray(arrayCfg).local.get / s"${finalBaseString}.samples.restore.tbl"),
-    variantsExclude = store(dirTree.variantqcArray(arrayCfg).local.get / s"${finalBaseString}.variants.exclude.txt"),
-    variantsExcludeIds = store(dirTree.variantqcArray(arrayCfg).local.get / s"${finalBaseString}.variants.exclude.ids.txt"),
-    variantsExcludeGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${finalBaseString}.variants.exclude.txt")); case false => None })
+    samplesExclude = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).filterfinal.local.get / s"${finalBaseString}.samples.exclude.txt")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).filterfinal.google.get / s"${finalBaseString}.samples.exclude.txt")); case false => None }
+    ),
+	samplesRestore = store(dirTree.dataArrayMap(cfgArray).filterfinal.local.get / s"${finalBaseString}.samples.restore.tbl"),
+    variantsExclude = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).filterfinal.local.get / s"${finalBaseString}.variants.exclude.txt")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).filterfinal.google.get / s"${finalBaseString}.variants.exclude.txt")); case false => None }
+    ),
+    variantsExcludeIds = store(dirTree.dataArrayMap(cfgArray).filterfinal.local.get / s"${finalBaseString}.variants.exclude.ids.txt"))
 
   val variantQcData = VariantQcData(
-    stats = store(dirTree.variantqcArray(arrayCfg).local.get / s"${variantQcBaseString}.stats.tsv"),
-    statsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${variantQcBaseString}.stats.tsv")); case false => None })
+    stats = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).filterfinal.local.get / s"${variantQcBaseString}.stats.tsv")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).filterfinal.google.get / s"${variantQcBaseString}.stats.tsv")); case false => None }
+    ))
 
   val cleanData = CleanData(
-    data = bedBimFam(dirTree.cleanArray(arrayCfg).local.get / cleanBaseString),
-    base = dirTree.cleanArray(arrayCfg).local.get / cleanBaseString,
-    hailLog = store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${cleanBaseString}.hail.log")); case false => None },
-    gds = store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.gds"),
-    baseGoogle = hailCloud match { case true => Some(googleOutDir.get / cleanBaseString); case false => None },
-    vcf = store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.vcf.bgz"),
-    tbi = store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.vcf.bgz.tbi"),
-    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${cleanBaseString}.vcf.bgz")); case false => None },
-    mt = hailCloud match { case false => Some(store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.mt")); case true => None },
-    mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${cleanBaseString}.mt")); case false => None },
-    pcaScores = store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.pca.scores.tsv"),
-    pcaLog = store(dirTree.cleanArray(arrayCfg).local.get / s"${cleanBaseString}.pca.log"))
+    data = Plink(
+      base = MultiStrPath(local = Some(dirTree.dataArrayMap(cfgArray).clean.local.get / cleanBaseString), google = None),
+      bed = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.bed").asInput), google = None),
+      bim = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.bim").asInput), google = None),
+      fam = MultiStore(local = Some(store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.fam").asInput), google = None)
+    ),
+    base = MultiStrPath(
+      local = Some(dirTree.dataArrayMap(cfgArray).clean.local.get / cleanBaseString),
+      google = hailCloud match { case true => Some(dirTree.dataArrayMap(cfgArray).clean.google.get / cleanBaseString); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.hail.log")),
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).clean.google.get / s"${cleanBaseString}.hail.log")); case false => None }
+    ),
+    gds = store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.gds"),
+    vcf = Vcf(
+      base = MultiStrPath(
+        local = Some(dirTree.dataArrayMap(cfgArray).clean.local.get / cleanBaseString),
+        google = hailCloud match { case true => Some(dirTree.dataArrayMap(cfgArray).clean.google.get / cleanBaseString); case false => None }
+      ),
+      vcf = MultiStore(
+        local = Some(store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.vcf.bgz")),
+        google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).clean.google.get / s"${cleanBaseString}.vcf.bgz")); case false => None }
+      )
+    ),
+    tbi = store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.vcf.bgz.tbi"),
+    mt = MultiStore(
+      local = hailCloud match { case false => Some(store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.mt")); case true => None },
+      google = hailCloud match { case true => Some(store(dirTree.dataArrayMap(cfgArray).clean.google.get / s"${cleanBaseString}.mt")); case false => None }
+    ),
+    pcaScores = store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.pca.scores.tsv"),
+    pcaLog = store(dirTree.dataArrayMap(cfgArray).clean.local.get / s"${cleanBaseString}.pca.log"))
 
   array -> Array(
     rawData = rawData,

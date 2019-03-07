@@ -86,9 +86,7 @@ final case class ProjectConfig(
   regionsExclude: String,
   genePositions: String,
   kgPurcellVcf: String,
-  kgPurcellVcfGoogle: Option[String],
   kgSample: String,
-  kgSampleGoogle: Option[String],
   kgSampleId: String,
   kgSamplePop: String,
   kgSampleGroup: String,
@@ -240,12 +238,9 @@ object ProjectConfig {
     val cloudHome = optionalStr(config = config, field = "cloudHome")
     val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = "hg18|hg19|hg38")
     val regionsExclude = requiredStr(config = config, field = "regionsExclude")
-    val regionsExcludeGoogle = optionalStr(config = config, field = "regionsExcludeGoogle")
     val genePositions = requiredStr(config = config, field = "genePositions")
     val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
-    val kgPurcellVcfGoogle = optionalStr(config = config, field = "kgPurcellVcfGoogle")
     val kgSample = requiredStr(config = config, field = "kgSample")
-    val kgSampleGoogle = optionalStr(config = config, field = "kgSampleGoogle")
     val kgSampleId = requiredStr(config = config, field = "kgSampleId")
     val kgSamplePop = requiredStr(config = config, field = "kgSamplePop")
     val kgSampleGroup = requiredStr(config = config, field = "kgSampleGroup")
@@ -456,12 +451,9 @@ object ProjectConfig {
       cloudShare = cloudShare,
       referenceGenome = referenceGenome,
       regionsExclude = regionsExclude,
-      regionsExcludeGoogle = regionsExcludeGoogle,
       genePositions = genePositions,
       kgPurcellVcf = kgPurcellVcf,
-      kgPurcellVcfGoogle = kgPurcellVcfGoogle,
       kgSample = kgSample,
-      kgSampleGoogle = kgSampleGoogle,
       kgSampleId = kgSampleId,
       kgSamplePop = kgSamplePop,
       kgSampleGroup = kgSampleGroup,
