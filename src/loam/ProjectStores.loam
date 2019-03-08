@@ -54,11 +54,10 @@ object ProjectStores {
   }.toMap
 
   val regionsExclude = store(path(projectConfig.regionsExclude)).asInput
-  val regionsExcludeGoogle = hailCloud match { case true => Some(store(uri(projectConfig.regionsExcludeGoogle.get)).asInput); case false => None }
   val genePositions = store(path(projectConfig.genePositions)).asInput
-  val kgPurcellVcf = store(path(projectConfig.kgPurcellVcf)).asInput
+  val kgPurcellVcf = hailCloud match { case false => Some(store(path(projectConfig.kgPurcellVcf)).asInput); case true => None }
   val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgPurcellVcfGoogle.get)).asInput); case false => None }
-  val kgSample = store(path(projectConfig.kgSample)).asInput
+  val kgSample = hailCloud match { case false => Some(store(path(projectConfig.kgSample)).asInput); case true => None }
   val kgSampleGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgSampleGoogle.get)).asInput); case false => None }
   val phenoFile = store(path(projectConfig.phenoFile)).asInput
   val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None }

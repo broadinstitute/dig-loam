@@ -47,12 +47,12 @@ def AncestryPca(array: String): Unit = {
         cmd"""$binPython $pyHailAncestryPcaMerge1kg
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
-          --kg-vcf-in ${ProjectStores.kgPurcellVcf}
-          --kg-sample ${ProjectStores.kgSample}
+          --kg-vcf-in ${ProjectStores.kgPurcellVcf.get}
+          --kg-sample ${ProjectStores.kgSample.get}
           --vcf-out ${arrayStores(array).ref1kgData.vcf}
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
           --log ${arrayStores(array).ref1kgData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.kgPurcellVcf, ProjectStores.kgSample)
+          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.kgPurcellVcf.get, ProjectStores.kgSample.get)
           .out(arrayStores(array).ref1kgData.vcf, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
           .tag(s"${arrayStores(array).ref1kgData.base}".split("/").last)
 
