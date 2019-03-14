@@ -14,14 +14,6 @@ args<-parser$parse_args()
 print(args)
 
 x<-read.table(args$results,header=T,as.is=T,sep="\t",comment.char="")
-y<-read.table(args$genes,header=F,as.is=T,sep="\t",comment.char="")
-names(y)[1]<-"gene"
-if(grepl("#",args$chr )) {
-	names(y)[2]<-gsub("#","X.",args$chr)
-} else {
-	names(y)[2]<-args$chr
-}
-names(y)[3]<-args$pos
 
 if(args$test %in% c("wald","lrt","firth")) {
 	x$or <- exp(x$beta)
@@ -31,8 +23,21 @@ if(args$test %in% c("wald","lrt","firth")) {
 	post<-post[grep("\\bor\\b",post,invert=TRUE)]
 	x <- x[,c(pre,"or",post)]
 }
-x<-merge(x,y,all=T)
-x$gene[is.na(x$gene)]<-"NA"
+
+y<-try(read.table(args$genes,header=F,as.is=T,sep="\t",comment.char=""), silent=TRUE)
+if(! inherits(y, "try-error")) {
+	names(y)[1]<-"gene"
+	if(grepl("#",args$chr )) {
+		names(y)[2]<-gsub("#","X.",args$chr)
+	} else {
+		names(y)[2]<-args$chr
+	}
+	names(y)[3]<-args$pos
+	x<-merge(x,y,all=T)
+	x$gene[is.na(x$gene)]<-"NA"
+} else {
+	x$gene<-NA
+}
 
 for(i in 1:nrow(x)) {
 	if(x$beta[i] < 0) {

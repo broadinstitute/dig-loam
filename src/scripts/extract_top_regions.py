@@ -9,50 +9,55 @@ def main(args=None):
 	df.dropna(subset=[args.p], inplace=True)
 	df.reset_index(drop=True, inplace=True)
 
-	if df.shape[0] >= 1000000:
-		sig = 5.4e-8
-	else:
-		sig = 0.05 / df.shape[0]
-	print "significance level set to p-value = {0:.3g} (-1*log10(p-value) = {1:.3g})".format(sig, -1 * np.log10(sig))
+	if df.shape[0] > 0:
 
-	df_sig = df[df[args.p] <= sig]
-	if df_sig.shape[0] > 0:
-		df_sig.reset_index(drop=True, inplace=True)
-		print "{0:d} genome wide significant variants".format(df_sig.shape[0])
+		if df.shape[0] >= 1000000:
+			sig = 5.4e-8
+		else:
+			sig = 0.05 / df.shape[0]
+		print "significance level set to p-value = {0:.3g} (-1*log10(p-value) = {1:.3g})".format(sig, -1 * np.log10(sig))
 	
-		df_sig = df_sig.assign(start=df_sig[args.pos].values - 100000)
-		df_sig = df_sig.assign(end=df_sig[args.pos].values + 100000)
-	
-		df_sig = df_sig[[args.chr,'start','end','id']]
-		df_sig.sort_values([args.chr,'start'], inplace=True)
-		df_sig.reset_index(drop=True, inplace=True)
-	
-		print "extracting variants in significant regions"
-		for index, row in df_sig.iterrows():
-			if index == 0:
-				message = "initialize first variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end'])
-				out = df_sig.loc[[index]]
-			else:
-				if row[args.chr] != df_sig.loc[index-1,args.chr]:
+		df_sig = df[df[args.p] <= sig]
+		if df_sig.shape[0] > 0:
+			df_sig.reset_index(drop=True, inplace=True)
+			print "{0:d} genome wide significant variants".format(df_sig.shape[0])
+		
+			df_sig = df_sig.assign(start=df_sig[args.pos].values - 100000)
+			df_sig = df_sig.assign(end=df_sig[args.pos].values + 100000)
+		
+			df_sig = df_sig[[args.chr,'start','end','id']]
+			df_sig.sort_values([args.chr,'start'], inplace=True)
+			df_sig.reset_index(drop=True, inplace=True)
+		
+			print "extracting variants in significant regions"
+			for index, row in df_sig.iterrows():
+				if index == 0:
 					message = "initialize first variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end'])
-					out = out.append(row, ignore_index=True)
-				elif df_sig.loc[index-1,'start'] <= row['start'] and row['start'] <= df_sig.loc[index-1,'end'] and row['end'] > df_sig.loc[index-1,'end']:
-					message = "merge variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end']) + " with previous region "  + str(df_sig.loc[index-1,args.chr]) + ":" + str(df_sig.loc[index-1,'start']) + "-" + str(df_sig.loc[index-1,'end'])
-					out.loc[out.shape[0]-1,'end'] = row['end']
-				elif row['start'] > df_sig.loc[index-1,'end']:
-					message = "initialize first variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end'])
-					out = out.append(row, ignore_index=True)
-			print message
-	
-		out['top_variant'] = ""
-		out['top_pos'] = 0
-		out['top_pval'] = 0
-		for index, row in out.iterrows():
-			df_region = df.loc[(df[args.chr] == row[args.chr]) & (df[args.pos] >= row['start']) & (df[args.pos] <= row['end'])].reset_index(drop=True)
-			out.loc[index,'top_variant'] = df_region.loc[df_region[args.p].idxmin(), 'id']
-			out.loc[index,'top_pos'] = df_region.loc[df_region[args.p].idxmin(), args.pos]
-			out.loc[index,'top_pval'] = df_region.loc[df_region[args.p].idxmin(), args.p]
-		out.sort_values(['top_pval'], inplace=True)
+					out = df_sig.loc[[index]]
+				else:
+					if row[args.chr] != df_sig.loc[index-1,args.chr]:
+						message = "initialize first variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end'])
+						out = out.append(row, ignore_index=True)
+					elif df_sig.loc[index-1,'start'] <= row['start'] and row['start'] <= df_sig.loc[index-1,'end'] and row['end'] > df_sig.loc[index-1,'end']:
+						message = "merge variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end']) + " with previous region "  + str(df_sig.loc[index-1,args.chr]) + ":" + str(df_sig.loc[index-1,'start']) + "-" + str(df_sig.loc[index-1,'end'])
+						out.loc[out.shape[0]-1,'end'] = row['end']
+					elif row['start'] > df_sig.loc[index-1,'end']:
+						message = "initialize first variant " + row['id'] + " = " + str(row[args.chr]) + ":" + str(row['start']) + "-" + str(row['end'])
+						out = out.append(row, ignore_index=True)
+				print message
+		
+			out['top_variant'] = ""
+			out['top_pos'] = 0
+			out['top_pval'] = 0
+			for index, row in out.iterrows():
+				df_region = df.loc[(df[args.chr] == row[args.chr]) & (df[args.pos] >= row['start']) & (df[args.pos] <= row['end'])].reset_index(drop=True)
+				out.loc[index,'top_variant'] = df_region.loc[df_region[args.p].idxmin(), 'id']
+				out.loc[index,'top_pos'] = df_region.loc[df_region[args.p].idxmin(), args.pos]
+				out.loc[index,'top_pval'] = df_region.loc[df_region[args.p].idxmin(), args.p]
+			out.sort_values(['top_pval'], inplace=True)
+		else:
+			out = pd.DataFrame({args.chr: [], 'start': [], 'end': [], 'top_variant': [], 'top_pos': [], 'top_pval': []})
+
 	else:
 		out = pd.DataFrame({args.chr: [], 'start': [], 'end': [], 'top_variant': [], 'top_pos': [], 'top_pval': []})
 

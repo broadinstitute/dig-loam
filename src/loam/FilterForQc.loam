@@ -37,10 +37,18 @@ def FilterForQc(array: String): Unit = {
       .out(arrayStores(array).prunedData.data)
       .tag(s"${arrayStores(array).prunedData.base}".split("/").last)
 
+  }
+
+  drmWith(imageName = s"$imgTools", mem = 4) {
+
     cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory 3000 --threads 1"""
       .in(arrayStores(array).prunedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).prunedData.vcf)
       .tag(s"${arrayStores(array).prunedData.vcf}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTools") {
     
     cmd"""$binTabix -f -p vcf ${arrayStores(array).prunedData.vcf}"""
       .in(arrayStores(array).prunedData.vcf)
