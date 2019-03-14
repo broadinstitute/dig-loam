@@ -44,10 +44,9 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
       
         hail"""$pyHailMerge --
           --results ${resultsListStrings.mkString(",")}
-          --out ${merge.resultsGoogle.get}
-          --log ${merge.hailLogGoogle.get}"""
+          --out ${merge.resultsGoogle.get}"""
             .in(resultsList)
-            .out(merge.resultsGoogle.get, merge.hailLogGoogle.get)
+            .out(merge.resultsGoogle.get)
             .tag(s"${merge.results}.google".split("/").last)
       
       }
@@ -55,7 +54,6 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
       local {
       
         googleCopy(merge.resultsGoogle.get, merge.results)
-        googleCopy(merge.hailLogGoogle.get, merge.hailLog)
       
       }
 
@@ -90,10 +88,9 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
 
         cmd"""$binPython $pyHailMerge
           --results ${resultsListStrings.mkString(",")}
-          --out ${merge.results}
-          --log ${merge.hailLog}"""
+          --out ${merge.results}"""
             .in(resultsList)
-            .out(merge.results, merge.hailLog)
+            .out(merge.results)
             .tag(s"${merge.results}".split("/").last)
 
       }
@@ -148,10 +145,9 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
       
         hail"""$pyHailMerge --
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.resultsGoogle.get}
-          --log ${known.hailLogGoogle.get}"""
+          --out ${known.resultsGoogle.get}"""
             .in(resultsList)
-            .out(known.resultsGoogle.get, known.hailLogGoogle.get)
+            .out(known.resultsGoogle.get)
             .tag(s"${known.results}.google".split("/").last)
       
       }
@@ -159,7 +155,6 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
       local {
       
         googleCopy(known.resultsGoogle.get, known.results)
-        googleCopy(known.hailLogGoogle.get, known.hailLog)
       
       }
 
@@ -194,10 +189,9 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
 
         cmd"""$binPython $pyHailMerge
           --results ${resultsListStrings.mkString(",")}
-          --out ${known.results}
-          --log ${known.hailLog}"""
+          --out ${known.results}"""
             .in(resultsList)
-            .out(known.results, known.hailLog)
+            .out(known.results)
             .tag(s"${known.results}".split("/").last)
 
       }

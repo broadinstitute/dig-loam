@@ -51,8 +51,6 @@ final case class AnnotatedChrData(
 final case class HarmonizedData(
   data: Seq[Store],
   base: Path,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
   mergeList: Store,
   nonKgRemove: Store,
   nonKgIgnore: Store,
@@ -95,8 +93,6 @@ final case class Ref1kgData(
   vcf: Store,
   data: Seq[Store],
   base: Path,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
   kgSamples: Store,
   kgSamplesGoogle: Option[Store],
   gds: Store,
@@ -133,15 +129,11 @@ final case class SexcheckData(
   sexcheck: Store,
   sexcheckGoogle: Option[Store],
   problems: Store,
-  problemsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store])
+  problemsGoogle: Option[Store])
 
 final case class SampleQcData(
   stats: Store,
   statsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
   statsAdj: Store,
   corrPlots: Store,
   boxPlots: Store,
@@ -184,8 +176,6 @@ final case class VariantQcData(
 final case class CleanData(
   data: Seq[Store],
   base: Path,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
   gds: Store,
   baseGoogle: Option[URI],
   vcf: Store,
@@ -308,8 +298,6 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val harmonizedData = HarmonizedData(
     data = bedBimFam(localOutDir / harmonizedBaseString),
     base = localOutDir / harmonizedBaseString,
-    hailLog = store(localOutDir / s"${harmonizedBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${harmonizedBaseString}.hail.log")); case false => None },
     mergeList = store(localOutDir / s"${harmonizedBaseString}.merge.txt"),
     nonKgRemove = store(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
     nonKgIgnore = store(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
@@ -352,8 +340,6 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     vcf = store(localOutDir / s"${ref1kgBaseString}.vcf.bgz"),
     data = bedBimFam(localOutDir / ref1kgBaseString),
     base = localOutDir / ref1kgBaseString,
-    hailLog = store(localOutDir / s"${ref1kgBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.hail.log")); case false => None },
     kgSamples = store(localOutDir / s"${ref1kgBaseString}.kgsamples.tsv"),
     kgSamplesGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None },
     gds = store(localOutDir / s"${ref1kgBaseString}.gds"),
@@ -390,15 +376,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     sexcheck = store(localOutDir / s"${sampleQcBaseString}.sexcheck.tsv"),
     sexcheckGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None },
     problems = store(localOutDir / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None },
-    hailLog = store(localOutDir / s"${sampleQcBaseString}.sexcheck.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.hail.log")); case false => None })
+    problemsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None })
 
   val sampleQcData = SampleQcData(
     stats = store(localOutDir / s"${sampleQcBaseString}.stats.tsv"),
     statsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.stats.tsv")); case false => None },
-    hailLog = store(localOutDir / s"${sampleQcBaseString}.stats.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${sampleQcBaseString}.stats.hail.log")); case false => None },
     statsAdj = store(localOutDir / s"${sampleQcBaseString}.stats.adj.tsv"),
     corrPlots = store(localOutDir / s"${sampleQcBaseString}.corr.pdf"),
     boxPlots = store(localOutDir / s"${sampleQcBaseString}.boxplots.pdf"),
@@ -445,8 +427,6 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val cleanData = CleanData(
     data = bedBimFam(localOutDir / cleanBaseString),
     base = localOutDir / cleanBaseString,
-    hailLog = store(localOutDir / s"${cleanBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${cleanBaseString}.hail.log")); case false => None },
     gds = store(localOutDir / s"${cleanBaseString}.gds"),
     baseGoogle = hailCloud match { case true => Some(googleOutDir.get / cleanBaseString); case false => None },
     vcf = store(localOutDir / s"${cleanBaseString}.vcf.bgz"),

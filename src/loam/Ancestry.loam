@@ -24,10 +24,9 @@ def AncestryPca(array: String): Unit = {
           --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle.get}
           --kg-sample ${ProjectStores.kgSampleGoogle.get}
           --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle.get}
-          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}
-          --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
+          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}"""
           .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
-          .out(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.hailLogGoogle.get)
+          .out(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get)
           .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
       
       }
@@ -36,7 +35,6 @@ def AncestryPca(array: String): Unit = {
       
         googleCopy(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.vcf)
         googleCopy(arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.kgSamples)
-        googleCopy(arrayStores(array).ref1kgData.hailLogGoogle.get, arrayStores(array).ref1kgData.hailLog)
       
       }
 
@@ -50,10 +48,9 @@ def AncestryPca(array: String): Unit = {
           --kg-vcf-in ${ProjectStores.kgPurcellVcf.get}
           --kg-sample ${ProjectStores.kgSample.get}
           --vcf-out ${arrayStores(array).ref1kgData.vcf}
-          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
-          --log ${arrayStores(array).ref1kgData.hailLog}"""
+          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}"""
           .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.kgPurcellVcf.get, ProjectStores.kgSample.get)
-          .out(arrayStores(array).ref1kgData.vcf, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
+          .out(arrayStores(array).ref1kgData.vcf, arrayStores(array).ref1kgData.kgSamples)
           .tag(s"${arrayStores(array).ref1kgData.base}".split("/").last)
 
       }

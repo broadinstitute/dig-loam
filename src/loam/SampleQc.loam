@@ -33,20 +33,18 @@ def SampleQc(array: String): Unit = {
           --male-code ${projectConfig.phenoFileMaleCode}
           --female-code ${projectConfig.phenoFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
-          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}
-          --log ${arrayStores(array).sexcheckData.hailLogGoogle.get}"""
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}"""
           .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).harmonizedData.mtGoogle.get)
-          .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.hailLogGoogle.get)
+          .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
       
         hail"""$pyHailSampleqc --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
           --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
-          --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}
-          --log ${arrayStores(array).sampleQcData.hailLogGoogle.get}"""
+          --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}"""
           .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
-          .out(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.hailLogGoogle.get)
+          .out(arrayStores(array).sampleQcData.statsGoogle.get)
           .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
       
       }
@@ -55,9 +53,7 @@ def SampleQc(array: String): Unit = {
 
         googleCopy(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.sexcheck)
         googleCopy(arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.problems)
-        googleCopy(arrayStores(array).sexcheckData.hailLogGoogle.get, arrayStores(array).sexcheckData.hailLog)
         googleCopy(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.stats)
-        googleCopy(arrayStores(array).sampleQcData.hailLogGoogle.get, arrayStores(array).sampleQcData.hailLog)
       
       }
 
@@ -73,20 +69,18 @@ def SampleQc(array: String): Unit = {
           --male-code ${projectConfig.phenoFileMaleCode}
           --female-code ${projectConfig.phenoFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
-          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
-          --log ${arrayStores(array).sexcheckData.hailLog}"""
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}"""
           .in(ProjectStores.phenoFile, arrayStores(array).harmonizedData.mt.get)
-          .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).sexcheckData.hailLog)
+          .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}".split("/").last)
 
       cmd"""$binPython $pyHailSampleqc
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
           --clusters-in ${ProjectStores.ancestryInferred}
-          --qc-out ${arrayStores(array).sampleQcData.stats}
-          --log ${arrayStores(array).sampleQcData.hailLog}"""
+          --qc-out ${arrayStores(array).sampleQcData.stats}"""
           .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred)
-          .out(arrayStores(array).sampleQcData.stats, arrayStores(array).sampleQcData.hailLog)
+          .out(arrayStores(array).sampleQcData.stats)
           .tag(s"${arrayStores(array).sampleQcData.stats}".split("/").last)
 
       }

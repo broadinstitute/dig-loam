@@ -1,9 +1,9 @@
 import hail as hl
 import argparse
 
-def main(args=None):
+hl.init(log = None)
 
-	hl.init(log = args.log)
+def main(args=None):
 
 	print("reading matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -45,7 +45,6 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a tab delimited phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the phenotype file', required=True)

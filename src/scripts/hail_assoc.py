@@ -2,9 +2,9 @@ import hail as hl
 import argparse
 import pandas as pd
 
-def main(args=None):
+hl.init(log = None)
 
-	hl.init(log = args.log)
+def main(args=None):
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -418,7 +418,6 @@ if __name__ == "__main__":
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
 	parser.add_argument('--pops', help='a comma separated list of populations to include in analysis')
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a matrix table', required=True)
 	requiredArgs.add_argument('--bim-in', help='a filtered and pruned bim file', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a phenotype file', required=True)

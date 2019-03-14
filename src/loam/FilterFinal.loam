@@ -32,10 +32,9 @@ def FilterFinal(array: String): Unit = {
           --variantqc-out ${arrayStores(array).variantQcData.statsGoogle.get}
           --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle.get}
           --vcf-out ${arrayStores(array).cleanData.vcfGoogle.get}
-          --mt-out ${arrayStores(array).cleanData.mtGoogle.get}
-          --log ${arrayStores(array).cleanData.hailLogGoogle.get}"""
+          --mt-out ${arrayStores(array).cleanData.mtGoogle.get}"""
           .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, ProjectStores.phenoFileGoogle.get, arrayStores(array).finalData.samplesExcludeGoogle.get)
-          .out(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).cleanData.mtGoogle.get, arrayStores(array).cleanData.hailLogGoogle.get)
+          .out(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).cleanData.mtGoogle.get)
           .tag(s"${arrayStores(array).cleanData.vcf}.google".split("/").last)
       
       }
@@ -45,7 +44,6 @@ def FilterFinal(array: String): Unit = {
         googleCopy(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).cleanData.vcf)
         googleCopy(arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).variantQcData.stats)
         googleCopy(arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).finalData.variantsExclude)
-        googleCopy(arrayStores(array).cleanData.hailLogGoogle.get, arrayStores(array).cleanData.hailLog)
       
       }
 
@@ -64,10 +62,9 @@ def FilterFinal(array: String): Unit = {
           --variantqc-out ${arrayStores(array).variantQcData.stats}
           --variants-exclude-out ${arrayStores(array).finalData.variantsExclude}
           --vcf-out ${arrayStores(array).cleanData.vcf}
-          --mt-out ${arrayStores(array).cleanData.mt.get}
-          --log ${arrayStores(array).cleanData.hailLog}"""
+          --mt-out ${arrayStores(array).cleanData.mt.get}"""
           .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, ProjectStores.phenoFile, arrayStores(array).finalData.samplesExclude)
-          .out(arrayStores(array).cleanData.vcf, arrayStores(array).variantQcData.stats, arrayStores(array).finalData.variantsExclude, arrayStores(array).cleanData.mt.get, arrayStores(array).cleanData.hailLog)
+          .out(arrayStores(array).cleanData.vcf, arrayStores(array).variantQcData.stats, arrayStores(array).finalData.variantsExclude, arrayStores(array).cleanData.mt.get)
           .tag(s"${arrayStores(array).cleanData.vcf}".split("/").last)
 
       }

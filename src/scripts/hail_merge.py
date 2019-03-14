@@ -1,9 +1,9 @@
 import hail as hl
 import argparse
 
-def main(args=None):
+hl.init(log = None)
 
-	hl.init(log = args.log)
+def main(args=None):
 
 	results=[]
 	for r in args.results.split(","):
@@ -55,7 +55,6 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--results', help='a comma separated list of cohort codes followed by a file name containing results, each separated by "___"', required=True)
 	requiredArgs.add_argument('--out', help='an output filename for merged results', required=True)
 	args = parser.parse_args()

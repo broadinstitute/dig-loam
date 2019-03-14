@@ -1,9 +1,9 @@
 import hail as hl
 import argparse
 
-def main(args=None):
+hl.init(log = None)
 
-	hl.init(log = args.log)
+def main(args=None):
 
 	print("read vcf file")
 	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions)
@@ -26,7 +26,6 @@ if __name__ == "__main__":
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)
 	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)
 	args = parser.parse_args()

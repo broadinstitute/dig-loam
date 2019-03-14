@@ -2,9 +2,9 @@ import hail as hl
 import argparse
 import pandas as pd
 
-def main(args=None):
+hl.init(log = None)
 
-	hl.init(log = args.log)
+def main(args=None):
 
 	cohorts = []
 	tests = {}
@@ -147,7 +147,6 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--results', help='a comma separated list of test codes and results files each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
