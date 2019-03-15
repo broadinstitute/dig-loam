@@ -1,9 +1,12 @@
 import hail as hl
 import argparse
 
-hl.init(log = None)
-
 def main(args=None):
+
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -58,10 +61,15 @@ def main(args=None):
 	print("write ref sample table to file")
 	kg.rename({'s': 'ID'}).cols().export(args.kg_samples_out, header=True, types_file=None)
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--kg-vcf-in', help='a vcf file consisting of ~5k 1000 Genomes variants (selected by Purcell for ancestry)', required=True)
 	requiredArgs.add_argument('--kg-sample', help='a 1KG sample file (header: ID POP GROUP SEX)', required=False)

@@ -1,9 +1,12 @@
 import hail as hl
 import argparse
 
-hl.init(log = None)
-
 def main(args=None):
+
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	results=[]
 	for r in args.results.split(","):
@@ -52,9 +55,14 @@ def main(args=None):
 	tbl = tbl.rename({'chr': '#chr'})
 	tbl.export(args.out)
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--results', help='a comma separated list of cohort codes followed by a file name containing results, each separated by "___"', required=True)
 	requiredArgs.add_argument('--out', help='an output filename for merged results', required=True)
 	args = parser.parse_args()

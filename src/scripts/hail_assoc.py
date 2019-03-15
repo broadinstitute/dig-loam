@@ -2,9 +2,12 @@ import hail as hl
 import argparse
 import pandas as pd
 
-hl.init(log = None)
-
 def main(args=None):
+
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -409,6 +412,9 @@ def main(args=None):
 	#else:
 	#	return 1
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--trans', help='a transformation code')
@@ -417,7 +423,9 @@ if __name__ == "__main__":
 	parser.add_argument('--extract-ld', help="a file containing hild proxy results in the form (SNP_A	SNP_B	R2)")
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
 	parser.add_argument('--pops', help='a comma separated list of populations to include in analysis')
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a matrix table', required=True)
 	requiredArgs.add_argument('--bim-in', help='a filtered and pruned bim file', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a phenotype file', required=True)

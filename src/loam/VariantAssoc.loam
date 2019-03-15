@@ -38,9 +38,11 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --test ${configModel.test}
           --covars "${configModel.covars}"
           --out-pheno-prelim ${assoc.phenoPrelimGoogle.get}
-          --out-samples ${assoc.samplesIncludeGoogle.get}"""
+          --out-samples ${assoc.samplesIncludeGoogle.get}
+          --cloud
+          --log ${assoc.listSamplesHailLogGoogle.get}"""
         .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get)
-        .out(assoc.phenoPrelimGoogle.get, assoc.samplesIncludeGoogle.get)
+        .out(assoc.phenoPrelimGoogle.get, assoc.samplesIncludeGoogle.get, assoc.listSamplesHailLogGoogle.get)
         .tag(s"${assoc.phenoPrelim}.google".split("/").last)
       
       }
@@ -49,6 +51,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       
         googleCopy(assoc.phenoPrelimGoogle.get, assoc.phenoPrelim)
         googleCopy(assoc.samplesIncludeGoogle.get, assoc.samplesInclude)
+        googleCopy(assoc.listSamplesHailLogGoogle.get, assoc.listSamplesHailLog)
       
       }
 
@@ -65,9 +68,10 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --test ${configModel.test}
           --covars "${configModel.covars}"
           --out-pheno-prelim ${assoc.phenoPrelim}
-          --out-samples ${assoc.samplesInclude}"""
+          --out-samples ${assoc.samplesInclude}
+          --log ${assoc.listSamplesHailLog}"""
         .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ ProjectStores.phenoFile)
-        .out(assoc.phenoPrelim, assoc.samplesInclude)
+        .out(assoc.phenoPrelim, assoc.samplesInclude, assoc.listSamplesHailLog)
         .tag(s"${assoc.phenoPrelim}".split("/").last)
 
       }
@@ -137,9 +141,11 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
-          --out ${assoc.resultsGoogle.get}"""
+          --out ${assoc.resultsGoogle.get}
+          --cloud
+          --log ${assoc.resultsHailLogGoogle.get}"""
             .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
-            .out(assoc.resultsGoogle.get)
+            .out(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
             .tag(s"${assoc.results}.google".split("/").last)
       
       }
@@ -147,6 +153,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       local {
       
         googleCopy(assoc.resultsGoogle.get, assoc.results)
+        googleCopy(assoc.resultsHailLogGoogle.get, assoc.resultsHailLog)
       
       }
 
@@ -164,9 +171,10 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
-          --out ${assoc.results}"""
+          --out ${assoc.results}
+          --log ${assoc.resultsHailLog}"""
             .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ ProjectStores.phenoFile :+ assoc.pheno :+ assoc.pcs)
-            .out(assoc.results)
+            .out(assoc.results, assoc.resultsHailLog)
             .tag(s"${assoc.results}".split("/").last)
 
       }
@@ -223,9 +231,11 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --test ${configModel.test}
           --covars "${configModel.covars}"
           --out-pheno-prelim ${known.phenoPrelimGoogle.get}
-          --out-samples ${known.samplesIncludeGoogle.get}"""
+          --out-samples ${known.samplesIncludeGoogle.get}
+          --cloud
+          --log ${known.listSamplesHailLogGoogle.get}"""
         .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get)
-        .out(known.phenoPrelimGoogle.get, known.samplesIncludeGoogle.get)
+        .out(known.phenoPrelimGoogle.get, known.samplesIncludeGoogle.get, known.listSamplesHailLogGoogle.get)
         .tag(s"${known.phenoPrelim}.google".split("/").last)
       
       }
@@ -234,6 +244,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       
         googleCopy(known.phenoPrelimGoogle.get, known.phenoPrelim)
         googleCopy(known.samplesIncludeGoogle.get, known.samplesInclude)
+        googleCopy(known.listSamplesHailLogGoogle.get, known.listSamplesHailLog)
       
       }
 
@@ -250,9 +261,10 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --test ${configModel.test}
           --covars "${configModel.covars}"
           --out-pheno-prelim ${known.phenoPrelim}
-          --out-samples ${known.samplesInclude}"""
+          --out-samples ${known.samplesInclude}
+          --log ${known.listSamplesHailLog}"""
         .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ ProjectStores.phenoFile)
-        .out(known.phenoPrelim, known.samplesInclude)
+        .out(known.phenoPrelim, known.samplesInclude, known.listSamplesHailLog)
         .tag(s"${known.phenoPrelim}".split("/").last)
 
       }
@@ -323,9 +335,11 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
-          --out ${known.resultsGoogle.get}"""
+          --out ${known.resultsGoogle.get}
+          --cloud
+          --log ${known.resultsHailLogGoogle.get}"""
             .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
-            .out(known.resultsGoogle.get)
+            .out(known.resultsGoogle.get, known.resultsHailLogGoogle.get)
             .tag(s"${known.results}.google".split("/").last)
       
       }
@@ -333,6 +347,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       local {
       
         googleCopy(known.resultsGoogle.get, known.results)
+        googleCopy(known.resultsHailLogGoogle.get, known.resultsHailLog)
       
       }
 
@@ -351,9 +366,10 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
-          --out ${known.results}"""
+          --out ${known.results}
+          --log ${known.resultsHailLog}"""
             .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ ProjectStores.phenoFile :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
-            .out(known.results)
+            .out(known.results, known.resultsHailLog)
             .tag(s"${known.results}".split("/").last)
 
       }

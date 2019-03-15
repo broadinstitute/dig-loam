@@ -1,9 +1,12 @@
 import hail as hl
 import argparse
 
-hl.init(log = None)
-
 def main(args=None):
+
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -43,10 +46,15 @@ def main(args=None):
 	hl.export_plink(mt, args.filt_pruned_plink_out, call = hl.call(1, 0, phased=False), ind_id = mt.s, fam_id = mt.s)
 	hl.summarize_variants(mt)
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--regions-exclude', help='a list of Tabix formatted regions to exclude from QC', required=True)
 	requiredArgs.add_argument('--variant-qc-out', help='an output filename for variant QC filters', required=True)

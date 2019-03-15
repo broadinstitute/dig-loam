@@ -1,9 +1,12 @@
 import hail as hl
 import argparse
 
-hl.init(log = None)
-
 def main(args=None):
+
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	print("reading matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -42,9 +45,14 @@ def main(args=None):
 	tbl_out = tbl_out.filter(tbl_out.sexcheck == "PROBLEM", keep=True)
 	tbl_out.flatten().export(args.sexcheck_problems_out)
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
+	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a tab delimited phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the phenotype file', required=True)
