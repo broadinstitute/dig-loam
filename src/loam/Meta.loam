@@ -46,6 +46,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
           --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
           --results ${resultsListStrings.mkString(",")}
           --out ${meta.resultsGoogle.get}
+          --cloud
           --log ${meta.hailLogGoogle.get}"""
             .in(resultsList)
             .out(meta.resultsGoogle.get, meta.hailLogGoogle.get)
@@ -152,6 +153,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
           --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
           --results ${resultsListStrings.mkString(",")}
           --out ${known.resultsGoogle.get}
+          --cloud
           --log ${known.hailLogGoogle.get}"""
             .in(resultsList)
             .out(known.resultsGoogle.get, known.hailLogGoogle.get)

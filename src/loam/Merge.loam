@@ -45,6 +45,7 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
         hail"""$pyHailMerge --
           --results ${resultsListStrings.mkString(",")}
           --out ${merge.resultsGoogle.get}
+          --cloud
           --log ${merge.hailLogGoogle.get}"""
             .in(resultsList)
             .out(merge.resultsGoogle.get, merge.hailLogGoogle.get)
@@ -149,9 +150,10 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
         hail"""$pyHailMerge --
           --results ${resultsListStrings.mkString(",")}
           --out ${known.resultsGoogle.get}
+          --cloud
           --log ${known.hailLogGoogle.get}"""
             .in(resultsList)
-            .out(known.resultsGoogle.get, known.hailLogGoogle.get)
+            .out(known.resultsGoogle.get)
             .tag(s"${known.results}.google".split("/").last)
       
       }

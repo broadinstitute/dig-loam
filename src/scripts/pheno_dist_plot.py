@@ -59,7 +59,7 @@ def main(args=None):
 		if args.strat:
 
 			print "generating distribution plots stratified by ancestry"
-			g = sns.FacetGrid(df, col="POP", col_order=sort(df['POP'].unique()), sharex=False, sharey=True, size=6, aspect=0.3)
+			g = sns.FacetGrid(df, col="POP", col_order=np.sort(df['POP'].unique()), sharex=False, sharey=True, size=6, aspect=0.3)
 			g.map(dist_boxplot, args.pheno_name)
 
 			## format facets

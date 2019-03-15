@@ -3,7 +3,10 @@ import argparse
 
 def main(args=None):
 
-	hl.init(log = args.log)
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	results=[]
 	for r in args.results.split(","):
@@ -26,10 +29,11 @@ def main(args=None):
 			tbl = tbl.join(tbl_temp,how='outer')
 
 	cols_keep = [results[0][0] + '_' + c for c in cols[results[0][0]]]
+
 	it = iter(results[1:])
 	for x in it:
-		cols_shared = [c for c in cols[results[0][0]] if c in cols[x[0]]]
-		cols_notshared = [c for c in cols[x[0]] if c not in cols[results[0][0]]]
+		cols_shared = [c for c in cols[x[0]] if results[0][0] + '_' + c in cols_keep]
+		cols_notshared = [c for c in cols[x[0]] if results[0][0] + '_' + c not in cols_keep]
 		for c in cols_shared:
 			tbl = tbl.annotate(**{results[0][0] + "_" + c: hl.cond(~hl.is_missing(tbl[results[0][0] + "_pval"]), tbl[results[0][0] + "_" + c], tbl[x[0] + "_" + c])})
 			tbl = tbl.annotate(**{results[0][0] + "_cohort": hl.cond(~hl.is_missing(tbl[results[0][0] + "_pval"]), tbl[results[0][0] + "_cohort"], tbl[x[0] + "_cohort"])})
@@ -51,8 +55,12 @@ def main(args=None):
 	tbl = tbl.rename({'chr': '#chr'})
 	tbl.export(args.out)
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--results', help='a comma separated list of cohort codes followed by a file name containing results, each separated by "___"', required=True)

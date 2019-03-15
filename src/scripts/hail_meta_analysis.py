@@ -4,7 +4,10 @@ import pandas as pd
 
 def main(args=None):
 
-	hl.init(log = args.log)
+	if not args.cloud:
+		hl.init(log = args.log)
+	else:
+		hl.init()
 
 	cohorts = []
 	tests = {}
@@ -143,9 +146,13 @@ def main(args=None):
 	tbl = tbl.rename({'chr': '#chr', 'odds_ratio': 'or'})
 	tbl.export(args.out)
 
+	if args.cloud:
+		hl.copy_log(args.log)
+
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
+	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--results', help='a comma separated list of test codes and results files each separated by 3 underscores', required=True)

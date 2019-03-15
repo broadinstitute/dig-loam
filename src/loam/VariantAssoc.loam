@@ -39,6 +39,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --covars "${configModel.covars}"
           --out-pheno-prelim ${assoc.phenoPrelimGoogle.get}
           --out-samples ${assoc.samplesIncludeGoogle.get}
+          --cloud
           --log ${assoc.listSamplesHailLogGoogle.get}"""
         .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get)
         .out(assoc.phenoPrelimGoogle.get, assoc.samplesIncludeGoogle.get, assoc.listSamplesHailLogGoogle.get)
@@ -141,6 +142,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.resultsGoogle.get}
+          --cloud
           --log ${assoc.resultsHailLogGoogle.get}"""
             .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
             .out(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
@@ -230,6 +232,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --covars "${configModel.covars}"
           --out-pheno-prelim ${known.phenoPrelimGoogle.get}
           --out-samples ${known.samplesIncludeGoogle.get}
+          --cloud
           --log ${known.listSamplesHailLogGoogle.get}"""
         .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get)
         .out(known.phenoPrelimGoogle.get, known.samplesIncludeGoogle.get, known.listSamplesHailLogGoogle.get)
@@ -333,6 +336,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${known.resultsGoogle.get}
+          --cloud
           --log ${known.resultsHailLogGoogle.get}"""
             .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
             .out(known.resultsGoogle.get, known.resultsHailLogGoogle.get)

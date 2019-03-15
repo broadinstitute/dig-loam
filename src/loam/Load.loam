@@ -27,11 +27,18 @@ def Load(array: String): Unit = {
           --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle.get}
           --mt-out ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --cloud
           --log ${arrayStores(array).harmonizedData.hailLogGoogle.get}"""
           .in(arrayStores(array).harmonizedData.vcfGoogle.get, arrayStores(array).harmonizedData.tbiGoogle.get)
           .out(arrayStores(array).harmonizedData.mtGoogle.get, arrayStores(array).harmonizedData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).harmonizedData.mt.get}.google".split("/").last)
+          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad".split("/").last)
       
+      }
+
+      local {
+
+        googleCopy(arrayStores(array).harmonizedData.hailLogGoogle.get, arrayStores(array).harmonizedData.hailLog)
+
       }
 
     case false =>
@@ -46,7 +53,7 @@ def Load(array: String): Unit = {
           --log ${arrayStores(array).harmonizedData.hailLog}"""
           .in(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.tbi)
           .out(arrayStores(array).harmonizedData.mt.get, arrayStores(array).harmonizedData.hailLog)
-          .tag(s"${arrayStores(array).harmonizedData.mt.get}".split("/").last)
+          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad".split("/").last)
 
       }
 
