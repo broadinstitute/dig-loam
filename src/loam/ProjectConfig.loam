@@ -49,7 +49,7 @@ final case class ConfigModel(
   pheno: String,
   trans: String,
   test: String,
-  covars: Seq[String]) extends Debug
+  covars: String) extends Debug
 
 final case class ConfigKnown(
   id: String,
@@ -379,7 +379,7 @@ object ProjectConfig {
           pheno = requiredStr(config = model, field = "pheno"),
           trans = requiredStr(config = model, field = "trans"),
           test = requiredStr(config = model, field = "test"),
-          covars = requiredStrList(config = model, field = "covars")
+          covars = requiredStrList(config = model, field = "covars").mkString("+")
         )
       }
     
