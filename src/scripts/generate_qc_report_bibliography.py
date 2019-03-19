@@ -14,9 +14,9 @@ def main(args=None):
 		for name in args.acknowledgements.split(","):
 			i = i + 1
 			if i == 1:
-				text.extend([r"\noindent " + name + r" \\"])
+				text.extend([r"\noindent " + name.replace("_","\_") + r" \\"])
 			else:
-				text.extend([name + r" \\"])
+				text.extend([name.replace("_","\_") + r" \\"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		print "writing biliography section"
@@ -41,9 +41,9 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\bibitem{hail} Seed C, Bloemendal A, Bloom JM, Goldstein JI, King D, Poterba T, Neale BM. Hail: An Open-Source Framework for Scalable Genetic Data Analysis. In preparation. \url{https://github.com/hail-is/hail}."); f.write("\n")
 
-		f.write("\n"); f.write(r"\bibitem{Loamstream} Gilbert C, Ruebenacker O, Koesterer R, Massung J, Flannick J. Loamstream. " + args.loamstream_version + r". \url{https://github.com/broadinstitute/dig-loam-stream}."); f.write("\n")
+		f.write("\n"); f.write(r"\bibitem{Loamstream} Gilbert C, Ruebenacker O, Koesterer R, Massung J, Flannick J. Loamstream. " + args.loamstream_version.replace("_","\_") + r". \url{https://github.com/broadinstitute/dig-loam-stream}."); f.write("\n")
 
-		f.write("\n"); f.write(r"\bibitem{Pipeline} Koesterer R, Gilbert C, Ruebenacker O, Massung J, Flannick J. AMP-DCC Data Analysis Pipeline. " + args.pipeline_version + r". \url{https://github.com/broadinstitute/dig-loam}."); f.write("\n")
+		f.write("\n"); f.write(r"\bibitem{Pipeline} Koesterer R, Gilbert C, Ruebenacker O, Massung J, Flannick J. AMP-DCC Data Analysis Pipeline. " + args.pipeline_version.replace("_","\_") + r". \url{https://github.com/broadinstitute/dig-loam}."); f.write("\n")
 
 		f.write("\n"); f.write(r"\end{thebibliography}"); f.write("\n")
 		f.write("\n"); f.write(r"\end{document}"); f.write("\n")
