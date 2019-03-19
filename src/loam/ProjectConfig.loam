@@ -41,7 +41,7 @@ final case class ConfigModel(
   pheno: String,
   trans: String,
   test: String,
-  covars: Seq[String])
+  covars: String)
 
 final case class ConfigKnown(
   id: String,
@@ -269,7 +269,7 @@ val projectConfig = ProjectConfig(
         pheno = model.getStr("pheno"),
         trans = model.getStr("trans"),
         test = model.getStr("test"),
-        covars = model.getStrList("covars"))
+        covars = model.getStrList("covars").mkString("+"))
     }
 
   },
