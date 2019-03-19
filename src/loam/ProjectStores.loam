@@ -48,7 +48,7 @@ object ProjectStores {
     known -> Known(
       data = store(path(known.data)).asInput,
       hiLd = store(path(known.hiLd)).asInput,
-      hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${known.hiLd}".split("/").last)); case false => None }
+      hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${known.id}.${known.hiLd}".split("/").last)); case false => None }
     )
 
   }.toMap
