@@ -66,13 +66,13 @@ unrel_iids <- NULL
 if(! is.null(args$force_unrel) & ! is.null(kinship)) {
 	print("reading list of unrelated samples from file")
 	unrel_df<-read.table(file=args$force_unrel[2],header=TRUE,as.is=T,stringsAsFactors=FALSE)
-	unrel_iids<-unrel_df[,grep(args$force_unrel[1],names(unrel_df))]
+	unrel_iids<-unrel_df[,grep(paste0("\\b",args$force_unrel[1],"\\b"),names(unrel_df), value=TRUE)]
 }
 
 print("running pcair")
-mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, snp.block.size = 10000), silent=TRUE)
+mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, snp.block.size = 10000))
 if(inherits(mypcair, "try-error")) {
-	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, snp.block.size = 10000), silent=TRUE)
+	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, snp.block.size = 10000))
 	if(inherits(mypcair, "try-error")) {
 		print("unable to run pcair with or without kinship adjustment")
 		quit(status=1)
