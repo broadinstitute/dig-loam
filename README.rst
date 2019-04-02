@@ -11,8 +11,7 @@ Guidelines
 **********
 
 **versions**
-
-The strategy for versioning is v.f.x, where incrementing v implies a major overhaul to the code, incrementing f implies feature additions, and incrementing x implies bug fixes.
+   - The strategy for versioning is v.f.x, where incrementing v implies a major overhaul to the code, incrementing f implies feature additions, and incrementing x implies bug fixes.
 
 **master branch**
    - All users can commit to this branch
@@ -41,47 +40,53 @@ Tips
 
 To apply a feature or bug fix only to the master branch, let's say you have a feature called my_feature. The following code will provide the desired result.
 
-   >>> git checkout -b feature/my_feature master
-   >>> # implement my_feature, commiting work as needed
-   >>> git add -A
-   >>> git commit -m "some message about my_feature"
-   >>> git checkout master
-   >>> git merge --no-ff feature/my_feature
-   >>> # fix any conflicts found
-   >>> git push origin master
-   >>> git push origin feature/my_feature
+.. code-block:: bash
+
+   git checkout -b feature/my_feature master
+   # implement my_feature, commiting work as needed
+   git add -A
+   git commit -m "some message about my_feature"
+   git checkout master
+   git merge --no-ff feature/my_feature
+   # fix any conflicts found
+   git push origin master
+   git push origin feature/my_feature
 
 To apply a feature or bug fix only to the release branch 4.7.x, again consider my_feature. The following code will provide the desired result.
 
-   >>> git checkout -b feature/my_feature 4.7.x
-   >>> # implement my_feature, commiting work as needed
-   >>> git add -A
-   >>> git commit -m "some message about my_feature"
-   >>> git checkout 4.7.x
-   >>> git merge --no-ff feature/my_feature
-   >>> # fix any conflicts found
-   >>> git push origin 4.7.x
-   >>> git push origin feature/my_feature
+.. code-block:: bash
+
+   git checkout -b feature/my_feature 4.7.x
+   # implement my_feature, commiting work as needed
+   git add -A
+   git commit -m "some message about my_feature"
+   git checkout 4.7.x
+   git merge --no-ff feature/my_feature
+   # fix any conflicts found
+   git push origin 4.7.x
+   git push origin feature/my_feature
 
 To apply a feature or bug fix to the master branch and the release branch 4.7.x, again consider my_feature. The following code will provide the desired result.
 
-   >>> git checkout -b feature/my_feature master
-   >>> # implement my_feature, commiting work as needed
-   >>> git add -A
-   >>> git commit -m "some message about my_feature"
-   >>> # take note of the commit id (let's say it was 4d876342)
-   >>> git checkout master
-   >>> # go to Github and open a pull request if desired
-   >>> git merge --no-ff feature/my_feature
-   >>> # fix any conflicts found
-   >>> git checkout 4.7.x
-   >>> git cherry-pick 4d876342
-   >>> # fix any conflicts found
-   >>> # if conflicts can not be resolved, then enter 'git cherry-pick --abort'
-   >>> git cherry-pick --continue
-   >>> git push origin master
-   >>> git push origin feature/my_feature
-   >>> git push origin 4.7.x
+.. code-block:: bash
+
+   git checkout -b feature/my_feature master
+   # implement my_feature, commiting work as needed
+   git add -A
+   git commit -m "some message about my_feature"
+   # take note of the commit id (let's say it was 4d876342)
+   git checkout master
+   # go to Github and open a pull request if desired
+   git merge --no-ff feature/my_feature
+   # fix any conflicts found
+   git checkout 4.7.x
+   git cherry-pick 4d876342
+   # fix any conflicts found
+   # if conflicts can not be resolved, then enter 'git cherry-pick --abort'
+   git cherry-pick --continue
+   git push origin master
+   git push origin feature/my_feature
+   git push origin 4.7.x
 
 Contact
 =======
