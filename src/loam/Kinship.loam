@@ -12,16 +12,16 @@ import ArrayStores._
 
 def Kinship(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.nCoresKing, mem = projectConfig.nMemKing) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
 
-    cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.nCoresKing}"""
+    cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.highCpuLowMem.cpus}"""
     .in(arrayStores(array).prunedData.data)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.kin0Related)
     .tag(s"${arrayStores(array).prunedData.base}.shKing".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcKinshipFamSizes

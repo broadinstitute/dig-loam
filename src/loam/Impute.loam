@@ -8,14 +8,18 @@ import ArrayStores._
 
 def FilterImpute(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""sed '1d' ${arrayStores(array).finalData.variantsExclude} | awk '{print $$3}' > ${arrayStores(array).finalData.variantsExcludeIds}"""
     .in(arrayStores(array).finalData.variantsExclude)
     .out(arrayStores(array).finalData.variantsExcludeIds)
     .tag(s"${arrayStores(array).finalData.variantsExcludeIds}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.refBase} --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.imputeBase}"""
+  }
+
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+
+    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.refBase} --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.imputeBase} --memory ${projectConfig.midMem * 0.9 * 1000}"""
     .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).finalData.variantsExcludeIds)
     .out(arrayStores(array).harmonizedData.imputeData)
     .tag(s"${arrayStores(array).harmonizedData.imputeBase}".split("/").last)

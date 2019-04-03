@@ -10,11 +10,11 @@ import ProjectStores._
 
 def Pca(array: String): Unit = {
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.nCoresPca, mem = projectConfig.nMemPca) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair
-      --cpus ${projectConfig.nCoresPca}
+      --cpus ${projectConfig.highCpuLowMem.cpus}
       --plink-in ${arrayStores(array).prunedData.base}
       --gds-out ${arrayStores(array).pcaData.gds}
       --exclude ${ProjectStores.ancestryOutliers}

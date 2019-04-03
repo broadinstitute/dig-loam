@@ -87,7 +87,7 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailMerge
           --results ${resultsListStrings.mkString(",")}
@@ -101,7 +101,7 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""$binTabix -f -b 2 -e 2 ${merge.results}"""
       .in(merge.results)
@@ -192,7 +192,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailMerge
           --results ${resultsListStrings.mkString(",")}
@@ -206,7 +206,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
       .in(known.results)

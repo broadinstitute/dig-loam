@@ -57,7 +57,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailListSamples
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -92,11 +92,11 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"$imgR34", cores = projectConfig.nCoresPca, mem = projectConfig.nMemPca) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
-      --cpus ${projectConfig.nCoresPca}
+      --cpus ${projectConfig.highCpuLowMem.cpus}
       --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.phenoFile}
       --ancestry-in ${ProjectStores.ancestryInferred}
@@ -159,7 +159,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailAssoc
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -181,7 +181,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
@@ -250,7 +250,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailListSamples
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -285,11 +285,11 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"$imgR34", cores = projectConfig.nCoresPca, mem = projectConfig.nMemPca) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
-      --cpus ${projectConfig.nCoresPca}
+      --cpus ${projectConfig.highCpuLowMem.cpus}
       --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.phenoFile}
       --ancestry-in ${ProjectStores.ancestryInferred}
@@ -353,7 +353,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailAssoc
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -376,7 +376,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
       .in(known.results)

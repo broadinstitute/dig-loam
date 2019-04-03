@@ -1,5 +1,9 @@
 val dataConfig = loadConfig("dataConfig", "")
 
+final case class ConfigMachine(
+  cpus: Int,
+  mem: Int)
+
 final case class ConfigArray(
   id: String,
   filename: String,
@@ -100,13 +104,13 @@ final case class ProjectConfig(
   nAncestryInferenceFeatures: Int,
   sampleQcMetrics: Seq[String],
   ancestryInferenceFeatures: String,
-  nCoresHail: Int,
-  nMemHail: Int,
-  nCoresPca: Int,
-  nMemPca: Int,
-  nMemKlustakwik: Int,
-  nCoresKing: Int,
-  nMemKing: Int,
+  highCpuHighMem: ConfigMachine,
+  highCpuLowMem: ConfigMachine,
+  lowCpuHighMem: ConfigMachine,
+  lowCpuLowMem: ConfigMachine,
+  highMem: Int,
+  midMem: Int,
+  lowMem: Int,
   nArrays: Int,
   nCohorts: Int,
   nMetas: Int,
@@ -155,13 +159,13 @@ val projectConfig = ProjectConfig(
   acknowledgementsQcReport = dataConfig.getStrList("acknowledgementsQcReport"),
   nAncestryInferenceFeatures = dataConfig.getInt("nAncestryInferenceFeatures"),
   sampleQcMetrics = dataConfig.getStrList("sampleQcMetrics"),
-  nCoresHail = dataConfig.getInt("nCoresHail"),
-  nMemHail = dataConfig.getInt("nMemHail"),
-  nCoresPca = dataConfig.getInt("nCoresPca"),
-  nMemPca = dataConfig.getInt("nMemPca"),
-  nMemKlustakwik = dataConfig.getInt("nMemKlustakwik"),
-  nCoresKing = dataConfig.getInt("nCoresKing"),
-  nMemKing = dataConfig.getInt("nMemKing"),
+  highCpuHighMem = ConfigMachine( cpus = dataConfig.getObj("highCpuHighMem").getInt("cpus"), mem = dataConfig.getObj("highCpuHighMem").getInt("mem") ),
+  highCpuLowMem = ConfigMachine( cpus = dataConfig.getObj("highCpuLowMem").getInt("cpus"), mem = dataConfig.getObj("highCpuLowMem").getInt("mem") ),
+  lowCpuHighMem = ConfigMachine( cpus = dataConfig.getObj("lowCpuHighMem").getInt("cpus"), mem = dataConfig.getObj("lowCpuHighMem").getInt("mem") ),
+  lowCpuLowMem = ConfigMachine( cpus = dataConfig.getObj("lowCpuLowMem").getInt("cpus"), mem = dataConfig.getObj("lowCpuLowMem").getInt("mem") ),
+  highMem = dataConfig.getInt("highMem"),
+  midMem = dataConfig.getInt("midMem"),
+  lowMem = dataConfig.getInt("lowMem"),
   maxSigRegions = if (dataConfig.isDefined("maxSigRegions")) { Some(dataConfig.getInt("maxSigRegions")) } else { None },
 
   // inferred global values

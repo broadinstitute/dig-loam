@@ -65,7 +65,7 @@ def SampleQc(array: String): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailSexcheck
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
@@ -95,7 +95,7 @@ def SampleQc(array: String): Unit = {
 
   }
   
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcIstatsAdj
@@ -125,7 +125,7 @@ def SampleQc(array: String): Unit = {
    *  Requires: Klustakwik, R
    */
   
-  drmWith(imageName = s"$imgTools", mem = projectConfig.nMemKlustakwik) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
 
     cmd"""$shKlustakwikPca $binKlustakwik ${arrayStores(array).sampleQcData.pcaScores} ${arrayStores(array).sampleQcPcaClusterData.fet} ${arrayStores(array).sampleQcPcaClusterData.base} ${arrayStores(array).sampleQcPcaClusterData.log}"""
       .in(arrayStores(array).sampleQcData.pcaScores)
@@ -134,7 +134,7 @@ def SampleQc(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rIstatsPcsGmmClusterPlot
@@ -162,7 +162,7 @@ def SampleQc(array: String): Unit = {
   
   } yield { 
 
-    drmWith(imageName = s"$imgTools", mem = projectConfig.nMemKlustakwik) {
+    drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
 
       cmd"""$shKlustakwikMetric $binKlustakwik ${arrayStores(array).sampleQcData.statsAdj} ${metric} ${metricData.base} ${metricData.fet} ${metricData.log}"""
         .in(arrayStores(array).sampleQcData.statsAdj)
@@ -185,7 +185,7 @@ def SampleQc(array: String): Unit = {
   
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem) {
   
     cmd"""$binRscript --vanilla --verbose
       $rIstatsAdjGmmPlotMetrics
@@ -208,7 +208,7 @@ def SampleQc(array: String): Unit = {
    * Requires: Python
    */
   
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""$binPython $pyMakeSamplesRestoreTable
       --ancestry-outliers-keep "${arrayCfg.ancestryOutliersKeep.mkString(",")}"
@@ -227,7 +227,7 @@ def SampleQc(array: String): Unit = {
    * Requires: Python
    */
   
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""$binPython $pyCompileExclusions
       --ancestry-inferred ${ProjectStores.ancestryInferred}

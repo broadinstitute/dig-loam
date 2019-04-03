@@ -43,7 +43,7 @@ def AncestryPca(array: String): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.nCoresHail, mem = projectConfig.nMemHail) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
 
         cmd"""$binPython $pyHailAncestryPcaMerge1kg
           --reference-genome ${projectConfig.referenceGenome}
@@ -61,17 +61,17 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
 
-    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
+    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base} --memory ${projectConfig.midMem * 0.9 * 1000}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.nCoresPca, mem = projectConfig.nMemPca) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPcair
-      --cpus ${projectConfig.nCoresPca}
+      --cpus ${projectConfig.highCpuLowMem.cpus}
       --plink-in ${arrayStores(array).ref1kgData.base}
       --gds-out ${arrayStores(array).ref1kgData.gds}
       --scores ${arrayStores(array).ancestryPcaData.scores}
@@ -86,7 +86,7 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryPca
@@ -112,7 +112,7 @@ def AncestryPca(array: String): Unit = {
 
 def AncestryCluster(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
       .in(arrayStores(array).ancestryPcaData.scores)
@@ -121,7 +121,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", mem = projectConfig.nMemKlustakwik) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
   
     cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)
@@ -130,7 +130,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryCluster
@@ -165,7 +165,7 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterMerge

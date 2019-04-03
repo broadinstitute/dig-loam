@@ -9,7 +9,7 @@ import ArrayStores._
 
 def Prepare(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.base}.bim > ${arrayStores(array).rawData.unplaced}"""
       .in(arrayStores(array).rawData.data)
@@ -25,21 +25,37 @@ def Prepare(array: String): Unit = {
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.indel)
       .tag(s"${arrayStores(array).rawData.indel}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --missing --out ${arrayStores(array).rawData.rawBase}.missing"""
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --missing --out ${arrayStores(array).rawData.rawBase}.missing --memory ${projectConfig.midMem * 0.9 * 1000}"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.lmiss, arrayStores(array).rawData.imiss)
       .tag(s"${arrayStores(array).rawData.base}.missing".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
     cmd"""sed '1d' ${arrayStores(array).rawData.imiss} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(array).rawData.imissRemove}"""
       .in(arrayStores(array).rawData.imiss)
       .out(arrayStores(array).rawData.imissRemove)
       .tag(s"${arrayStores(array).rawData.imissRemove}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --freq --out ${arrayStores(array).rawData.rawBase}.freq"""
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --freq --out ${arrayStores(array).rawData.rawBase}.freq --memory ${projectConfig.midMem * 0.9 * 1000}"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.freq)
       .tag(s"${arrayStores(array).rawData.freq}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
   
     cmd"""sed '1d' ${arrayStores(array).rawData.freq} | awk '{if($$5 == 0) print $$2}' > ${arrayStores(array).rawData.mono}"""
       .in(arrayStores(array).rawData.freq)
@@ -48,7 +64,7 @@ def Prepare(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem) {
   
     cmd"""$binRscript --vanilla --verbose 
       $rFindBestDuplicateVariants
@@ -62,9 +78,9 @@ def Prepare(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --remove ${arrayStores(array).rawData.imissRemove} --exclude ${arrayStores(array).rawData.dupRemove} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(array).preparedData.base}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --remove ${arrayStores(array).rawData.imissRemove} --exclude ${arrayStores(array).rawData.dupRemove} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(array).preparedData.base} --memory ${projectConfig.midMem * 0.9 * 1000}"""
       .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove :+ arrayStores(array).rawData.dupRemove)
       .out(arrayStores(array).preparedData.data)
       .tag(s"${arrayStores(array).preparedData.base}".split("/").last)
@@ -80,7 +96,7 @@ def Prepare(array: String): Unit = {
 
     case Some(s) =>
 
-      drmWith(imageName = s"$imgTools") {
+      drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
       
         cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(array).preparedData.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(array).preparedData.bed.get}"""
           .in(arrayStores(array).preparedData.data)
@@ -88,7 +104,7 @@ def Prepare(array: String): Unit = {
       
       }
       
-      drmWith(imageName = s"$imgTools", mem=8, maxRunTime=2) {
+      drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = 2) {
       
         cmd"""$binLiftOver ${arrayStores(array).preparedData.bed.get} ${arrayStores(array).preparedData.chain.get} ${arrayStores(array).preparedData.lifted.get} ${arrayStores(array).preparedData.unlifted.get}"""
           .in(arrayStores(array).preparedData.bed.get, arrayStores(array).preparedData.chain.get)
@@ -96,7 +112,7 @@ def Prepare(array: String): Unit = {
       
       }
       
-      drmWith(imageName = s"$imgTools") {
+      drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
 
         cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(array).preparedData.lifted.get} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(array).preparedData.liftedUpdate.get}"""
           .in(arrayStores(array).preparedData.lifted.get)
@@ -105,6 +121,10 @@ def Prepare(array: String): Unit = {
         cmd"""awk '{print $$4}' ${arrayStores(array).preparedData.lifted.get} > ${arrayStores(array).preparedData.liftedExtract.get}"""
           .in(arrayStores(array).preparedData.lifted.get)
           .out(arrayStores(array).preparedData.liftedExtract.get)
+
+      }
+
+      drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
       
         cmd"""$binPlink
           --bfile ${arrayStores(array).preparedData.base}
@@ -113,7 +133,8 @@ def Prepare(array: String): Unit = {
           --update-map ${arrayStores(array).preparedData.liftedUpdate.get} 2 3
           --output-chr MT
           --make-bed
-          --out ${arrayStores(array).annotatedData.base}"""
+          --out ${arrayStores(array).annotatedData.base}
+          --memory ${projectConfig.midMem * 0.9 * 1000}"""
           .in(arrayStores(array).preparedData.data :+ arrayStores(array).preparedData.liftedExtract.get :+ arrayStores(array).preparedData.liftedUpdate.get)
           .out(arrayStores(array).annotatedData.data)
       
