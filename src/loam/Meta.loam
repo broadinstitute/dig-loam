@@ -88,7 +88,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
 
         cmd"""$binPython $pyHailMetaAnalysis
           --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
@@ -103,7 +103,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   }
   
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binTabix -f -b 2 -e 2 ${meta.results}"""
       .in(meta.results)
@@ -195,7 +195,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
 
         cmd"""$binPython $pyHailMetaAnalysis
           --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
@@ -210,7 +210,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
 
   }
   
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
       .in(known.results)

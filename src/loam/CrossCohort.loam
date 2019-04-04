@@ -27,7 +27,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     }
   }.flatten.distinct
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""$shCrossCohortCommonVariants ${bimStringList.mkString(",")} ${metaKinshipStores(configMeta).commonVariants}"""
     .in(dataList)
@@ -40,7 +40,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""$shMetaCohortSamples ${arrayStores(configCohort.array).harmonizedData.refBase}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
     .in(arrayStores(configCohort.array).harmonizedData.refData :+ ProjectStores.ancestryInferred)
@@ -49,7 +49,7 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.midMem * 0.9 * 1000}"""
     .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
@@ -58,7 +58,7 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${metaKinshipStores(configMeta).metaCohort(configCohort).base}.fam > ${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}"""
     .in(metaKinshipStores(configMeta).metaCohort(configCohort).data)
@@ -73,7 +73,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   val mergeString = metaKinshipStores(configMeta).metaCohort.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""echo "${mergeString}" > ${metaKinshipStores(configMeta).mergeList}"""
     .out(metaKinshipStores(configMeta).mergeList)
@@ -81,7 +81,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered}"""
     .in((metaKinshipStores(configMeta).metaCohort.map(e => e._2).flatMap(e => e.data).toSeq ++ metaKinshipStores(configMeta).metaCohort.map(e => e._2.famMerge).toSeq) :+ metaKinshipStores(configMeta).mergeList)
@@ -90,7 +90,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$shKing $binKing ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} ${projectConfig.highCpuLowMem.cpus}"""
     .in(metaKinshipStores(configMeta).dataFiltered)
@@ -103,7 +103,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
   
     cmd"""$binRscript --vanilla --verbose
       $rExcludeCrossArray

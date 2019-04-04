@@ -10,13 +10,13 @@ import ProjectStores._
 
 def FilterForQc(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""cat ${ProjectStores.regionsExclude} | awk -F':' '{print $$1"\t"$$2}' | awk -F'-' '{print $$1"\t"$$2"\thild"NR}' > ${arrayStores(array).harmonizedData.regionsExcludePlink}""".in(ProjectStores.regionsExclude).out(arrayStores(array).harmonizedData.regionsExcludePlink).tag(s"${arrayStores(array).harmonizedData.regionsExcludePlink}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binPlink
       --bfile ${arrayStores(array).harmonizedData.refBase}
@@ -50,7 +50,7 @@ def FilterForQc(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
     
     cmd"""$binTabix -f -p vcf ${arrayStores(array).prunedData.vcf}"""
       .in(arrayStores(array).prunedData.vcf)

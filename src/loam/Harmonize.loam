@@ -23,7 +23,7 @@ def Harmonize(array: String): Unit = {
 
   } yield { 
 
-    drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+    drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
 
 	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory ${projectConfig.midMem * 0.9 * 1000}"""
         .in(arrayStores(array).annotatedData.data)
@@ -34,7 +34,7 @@ def Harmonize(array: String): Unit = {
 
     if (! arrayCfg.skipGh.contains(chr)) {
 
-      drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = 12) {
+      drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.highRunTime) {
       
         cmd"""$binGenotypeHarmonizer
         --input ${chrData.base}
@@ -69,7 +69,7 @@ def Harmonize(array: String): Unit = {
 
     }
 
-    drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem) {
+    drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
       
       cmd"""$binPython $pyAlignNon1kgVariants
       --kg-ids ${ProjectStores.kgIds(chr)}
@@ -87,7 +87,7 @@ def Harmonize(array: String): Unit = {
 
     }
 
-    drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+    drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
       
       cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory ${projectConfig.midMem * 0.9 * 1000}"""
         .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
@@ -110,7 +110,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
   
     cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(array).harmonizedData.mergeList}"""
       .out(arrayStores(array).harmonizedData.mergeList)
@@ -118,7 +118,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
   
     cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(array).harmonizedData.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory ${projectConfig.midMem * 0.9 * 1000}"""
       .in(arrayStores(array).annotatedChrData.map(e => e._2).flatMap(e => e.mergedKgHuRef).toSeq :+ arrayStores(array).harmonizedData.mergeList)
@@ -127,7 +127,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
   
     cmd"""awk '{print $$2,$$5}' ${arrayStores(array).harmonizedData.base}.bim > ${arrayStores(array).harmonizedData.forceA2}"""
       .in(arrayStores(array).harmonizedData.data)
@@ -136,7 +136,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
   
     cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --output-chr MT --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.midMem * 0.9 * 1000}"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
@@ -150,7 +150,7 @@ def Harmonize(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
     
     cmd"""$binTabix -f -p vcf ${arrayStores(array).harmonizedData.vcf}"""
       .in(arrayStores(array).harmonizedData.vcf)
@@ -168,7 +168,7 @@ def Harmonize(array: String): Unit = {
   val mergedKgVarIdUpdateString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
   val mergedKgVarSnpLogString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
   
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
   
     cmd"""$binPython $pyMergeVariantLists
       --remove-in "$nonKgRemoveString"

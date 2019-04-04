@@ -8,7 +8,7 @@ import ArrayStores._
 
 def FilterImpute(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""sed '1d' ${arrayStores(array).finalData.variantsExclude} | awk '{print $$3}' > ${arrayStores(array).finalData.variantsExcludeIds}"""
     .in(arrayStores(array).finalData.variantsExclude)
@@ -17,7 +17,7 @@ def FilterImpute(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.refBase} --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.imputeBase} --memory ${projectConfig.midMem * 0.9 * 1000}"""
     .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).finalData.variantsExcludeIds)

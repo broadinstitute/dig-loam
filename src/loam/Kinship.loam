@@ -12,7 +12,7 @@ import ArrayStores._
 
 def Kinship(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.highRunTime) {
 
     cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.highCpuLowMem.cpus}"""
     .in(arrayStores(array).prunedData.data)
@@ -21,7 +21,7 @@ def Kinship(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcKinshipFamSizes

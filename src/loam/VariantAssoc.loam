@@ -57,7 +57,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
 
         cmd"""$binPython $pyHailListSamples
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -92,7 +92,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -159,7 +159,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
 
         cmd"""$binPython $pyHailAssoc
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -181,7 +181,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
@@ -250,7 +250,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
 
         cmd"""$binPython $pyHailListSamples
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -285,7 +285,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binRscript --vanilla --verbose
       $rGeneratePheno
@@ -353,7 +353,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
 
         cmd"""$binPython $pyHailAssoc
           --mt-in ${arrayStores(array).cleanData.mt.get}
@@ -376,7 +376,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
 
     cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
       .in(known.results)

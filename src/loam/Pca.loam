@@ -10,7 +10,7 @@ import ProjectStores._
 
 def Pca(array: String): Unit = {
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.highRunTime) {
   
     cmd"""$binRscript --vanilla --verbose
       $rPcair

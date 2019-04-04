@@ -15,7 +15,7 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${analysisReportStores(configReport).globalData.header}"""
@@ -81,7 +81,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   
   }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""$binPython $pyGenerateAnalysisReportData
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -115,7 +115,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""$binPython $pyGenerateAnalysisReportBibliography
       --acknowledgements "${projectConfig.acknowledgementsAnalysisReport.mkString(",")}"
@@ -157,7 +157,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.pheno) 
   }.toSeq
   
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
   
     cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
       --dist-plot ${distPlotStrings.mkString(" ")}
@@ -268,7 +268,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     cohorts ++ metas ++ merges
   }.toSeq
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
   
     cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
       --qq-plots ${qqPlotStrings.mkString(" ")}
@@ -313,7 +313,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsSummaryData.regPlotsPdf)
   }.toSeq
   
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
     
     cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
       --top-results ${top20AnnotAlignedRiskStrings.mkString(" ")}
@@ -426,7 +426,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
       
         case _ =>
       
-          drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem) {
+          drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
             
             cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
               --top-known-loci ${top50Strings.mkString(" ")}
@@ -458,7 +458,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.path}""")
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
 
     cmd"""cat ${analysisReportStores(configReport).globalData.header} ${analysisReportStores(configReport).globalData.intro} ${analysisReportStores(configReport).globalData.data} ${analysisReportStores(configReport).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(configReport).globalData.bibliography} > ${analysisReportStores(configReport).globalData.tex}"""
       .in(reportAnalysisResultsList :+ analysisReportStores(configReport).globalData.header :+ analysisReportStores(configReport).globalData.intro :+ analysisReportStores(configReport).globalData.data :+ analysisReportStores(configReport).globalData.strategy :+ analysisReportStores(configReport).globalData.bibliography)
@@ -473,7 +473,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.path}""")
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
     
     cmd"""cat ${analysisReportStores(configReport).globalData.introInput} ${analysisReportStores(configReport).globalData.dataInput} ${analysisReportStores(configReport).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(configReport).globalData.bibliographyInput} > ${analysisReportStores(configReport).globalData.input}"""
       .in(reportAnalysisResultsInputList :+ analysisReportStores(configReport).globalData.introInput :+ analysisReportStores(configReport).globalData.dataInput :+ analysisReportStores(configReport).globalData.strategyInput :+ analysisReportStores(configReport).globalData.bibliographyInput)
@@ -482,7 +482,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTex", cores = 1, mem = projectConfig.lowMem) {
+  drmWith(imageName = s"$imgTex", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
     
     cmd"""bash -c "$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}""""
       .in(analysisReportStores(configReport).globalData.tex)
