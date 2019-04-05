@@ -58,7 +58,7 @@ def main(args=None):
 				r"\end{table}"])
 		f.write("\n"); f.write("\n".join(cohort_tbl).encode('utf-8')); f.write("\n")
 
-		if len(args.metas.split("___")) > 0:
+		if args.metas != "" and len(args.metas.split("___")) > 0:
 
 			f.write("\n"); f.write(r"\subsubsection{Meta-analysis}"); f.write("\n")
 			f.write(r"\label{Meta-analysis}"); f.write("\n")
@@ -112,7 +112,7 @@ def main(args=None):
 							r"\end{table}"])
 			f.write("\n"); f.write("\n".join(meta_tbl).encode('utf-8')); f.write("\n")
 
-		if len(args.merges.split("___")) > 0:
+		if args.merges != "" and len(args.merges.split("___")) > 0:
 
 			f.write("\n"); f.write(r"\subsubsection{Merged results}"); f.write("\n")
 			f.write(r"\label{Merged-results}"); f.write("\n")
