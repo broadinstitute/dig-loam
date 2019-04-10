@@ -43,7 +43,7 @@ def Load(array: String): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.highRunTime) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.loadHail.cpus, mem = projectConfig.resources.loadHail.mem, maxRunTime = projectConfig.resources.loadHail.maxRunTime) {
 
         cmd"""$binPython $pyHailLoad
           --reference-genome ${projectConfig.referenceGenome}

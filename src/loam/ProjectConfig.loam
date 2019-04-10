@@ -2,7 +2,19 @@ val dataConfig = loadConfig("dataConfig", "")
 
 final case class ConfigMachine(
   cpus: Int,
-  mem: Int)
+  mem: Int,
+  maxRunTime: Int)
+
+final case class ConfigResources(
+  preparePlink: ConfigMachine,
+  prepareFindBestDuplicateVariants: ConfigMachine,
+  prepareLiftOver: ConfigMachine,
+  harmonizePlinkFull: ConfigMachine,
+  harmonizeGenotypeHarmonizer: ConfigMachine,
+  harmonizeAlignNon1kgVariants: ConfigMachine,
+  harmonizePlinkChr: ConfigMachine,
+  loadHail: ConfigMachine
+  )
 
 final case class ConfigArray(
   id: String,
@@ -104,16 +116,7 @@ final case class ProjectConfig(
   nAncestryInferenceFeatures: Int,
   sampleQcMetrics: Seq[String],
   ancestryInferenceFeatures: String,
-  highCpuHighMem: ConfigMachine,
-  highCpuLowMem: ConfigMachine,
-  lowCpuHighMem: ConfigMachine,
-  lowCpuLowMem: ConfigMachine,
-  highMem: Int,
-  midMem: Int,
-  lowMem: Int,
-  highRunTime: Int,
-  midRunTime: Int,
-  lowRunTime: Int,
+  resources: ConfigResources,
   nArrays: Int,
   nCohorts: Int,
   nMetas: Int,
@@ -162,16 +165,6 @@ val projectConfig = ProjectConfig(
   acknowledgementsQcReport = dataConfig.getStrList("acknowledgementsQcReport"),
   nAncestryInferenceFeatures = dataConfig.getInt("nAncestryInferenceFeatures"),
   sampleQcMetrics = dataConfig.getStrList("sampleQcMetrics"),
-  highCpuHighMem = ConfigMachine( cpus = dataConfig.getObj("highCpuHighMem").getInt("cpus"), mem = dataConfig.getObj("highCpuHighMem").getInt("mem") ),
-  highCpuLowMem = ConfigMachine( cpus = dataConfig.getObj("highCpuLowMem").getInt("cpus"), mem = dataConfig.getObj("highCpuLowMem").getInt("mem") ),
-  lowCpuHighMem = ConfigMachine( cpus = dataConfig.getObj("lowCpuHighMem").getInt("cpus"), mem = dataConfig.getObj("lowCpuHighMem").getInt("mem") ),
-  lowCpuLowMem = ConfigMachine( cpus = dataConfig.getObj("lowCpuLowMem").getInt("cpus"), mem = dataConfig.getObj("lowCpuLowMem").getInt("mem") ),
-  highMem = dataConfig.getInt("highMem"),
-  midMem = dataConfig.getInt("midMem"),
-  lowMem = dataConfig.getInt("lowMem"),
-  highRunTime = dataConfig.getInt("highRunTime"),
-  midRunTime = dataConfig.getInt("midRunTime"),
-  lowRunTime = dataConfig.getInt("lowRunTime"),
   maxSigRegions = if (dataConfig.isDefined("maxSigRegions")) { Some(dataConfig.getInt("maxSigRegions")) } else { None },
 
   // inferred global values
@@ -180,6 +173,17 @@ val projectConfig = ProjectConfig(
   nCohorts = dataConfig.getObjList("cohorts").size,
   nMetas = dataConfig.getObjList("metas").size,
   nMetrics = dataConfig.getStrList("sampleQcMetrics").size,
+
+  resources = ConfigResources(
+    preparePlink = ConfigMachine( cpus = dataConfig.getObjList("preparePlink").getInt("cpus"), mem = dataConfig.getObj("preparePlink").getInt("mem"), maxRunTime = dataConfig.getObj("preparePlink").getInt("maxRunTime") ),
+    prepareFindBestDuplicateVariants = ConfigMachine( cpus = dataConfig.getObjList("prepareFindBestDuplicateVariants").getInt("cpus"), mem = dataConfig.getObj("prepareFindBestDuplicateVariants").getInt("mem"), maxRunTime = dataConfig.getObj("prepareFindBestDuplicateVariants").getInt("maxRunTime") ),
+    prepareLiftOver = ConfigMachine( cpus = dataConfig.getObjList("prepareLiftOver").getInt("cpus"), mem = dataConfig.getObj("prepareLiftOver").getInt("mem"), maxRunTime = dataConfig.getObj("prepareLiftOver").getInt("maxRunTime") ),
+    harmonizePlinkFull = ConfigMachine( cpus = dataConfig.getObjList("harmonizePlinkFull").getInt("cpus"), mem = dataConfig.getObj("harmonizePlinkFull").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizePlinkFull").getInt("maxRunTime") ),
+    harmonizeGenotypeHarmonizer = ConfigMachine( cpus = dataConfig.getObjList("harmonizeGenotypeHarmonizer").getInt("cpus"), mem = dataConfig.getObj("harmonizeGenotypeHarmonizer").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizeGenotypeHarmonizer").getInt("maxRunTime") ),
+    harmonizeAlignNon1kgVariants = ConfigMachine( cpus = dataConfig.getObjList("harmonizeAlignNon1kgVariants").getInt("cpus"), mem = dataConfig.getObj("harmonizeAlignNon1kgVariants").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizeAlignNon1kgVariants").getInt("maxRunTime") ),
+    harmonizePlinkChr = ConfigMachine( cpus = dataConfig.getObjList("harmonizePlinkChr").getInt("cpus"), mem = dataConfig.getObj("harmonizePlinkChr").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizePlinkChr").getInt("maxRunTime") ),
+    loadHail = ConfigMachine( cpus = dataConfig.getObjList("loadHail").getInt("cpus"), mem = dataConfig.getObj("loadHail").getInt("mem"), maxRunTime = dataConfig.getObj("loadHail").getInt("maxRunTime") )
+  ),
 
   // arrays
   Arrays = {

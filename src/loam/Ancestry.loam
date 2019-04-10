@@ -86,7 +86,7 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryPca
@@ -112,7 +112,7 @@ def AncestryPca(array: String): Unit = {
 
 def AncestryCluster(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
       .in(arrayStores(array).ancestryPcaData.scores)
@@ -130,7 +130,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rPlotAncestryCluster
@@ -165,7 +165,7 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterMerge
