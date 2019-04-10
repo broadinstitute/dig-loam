@@ -49,8 +49,8 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			fam=pd.read_table(args.fam.split("___")[1], low_memory=False, header=None)
-			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split("___")[0], fam.shape[0])
+			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
+			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split(",")[0], fam.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Variants}"); f.write("\n")
@@ -155,7 +155,7 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			bim=pd.read_table(args.bim.split("___")[1], low_memory=False, header=None)
+			bim=pd.read_table(args.bim.split(",")[1], low_memory=False, header=None)
 			text = text + r"The resulting dataset consisted of {0:,d} total variants.".format(bim.shape[0])
 			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
