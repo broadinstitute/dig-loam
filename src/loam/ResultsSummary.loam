@@ -22,7 +22,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       }
   }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyTop1000
       --results ${results}
@@ -53,7 +53,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   
   }.distinct
   
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rTop20
@@ -71,7 +71,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
   }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyQqPlot
       --results ${results}
@@ -98,7 +98,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
     case Some(s) =>
 
-      drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+      drmWith(imageName = s"$imgPython27") {
         
         cmd"""$binPython $pyExtractTopRegions
           --results ${results}
@@ -115,7 +115,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
     case None =>
 
-      drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+      drmWith(imageName = s"$imgPython27") {
         
         cmd"""$binPython $pyExtractTopRegions
           --results ${results}
@@ -131,7 +131,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
   }
 
-  drmWith(imageName = s"$imgLocuszoom", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgLocuszoom") {
   
     cmd"""$shRegPlot 
       $binTabix
@@ -164,7 +164,7 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
       }
   }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rTop50Known

@@ -43,7 +43,7 @@ def AncestryPca(array: String): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.highCpuHighMem.cpus, mem = projectConfig.highCpuHighMem.mem, maxRunTime = projectConfig.midRunTime) {
+      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.ancestryPcaHail.cpus, mem = projectConfig.resources.ancestryPcaHail.mem, maxRunTime = projectConfig.resources.ancestryPcaHail.maxRunTime) {
 
         cmd"""$binPython $pyHailAncestryPcaMerge1kg
           --reference-genome ${projectConfig.referenceGenome}
@@ -61,17 +61,17 @@ def AncestryPca(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.ancestryPcaPlink.cpus, mem = projectConfig.resources.ancestryPcaPlink.mem, maxRunTime = projectConfig.resources.ancestryPcaPlink.maxRunTime) {
 
-    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base} --memory ${projectConfig.midMem * 0.9 * 1000}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
+    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base} --memory ${projectConfig.resources.ancestryPcaPlink.mem * 0.9 * 1000}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgR34", cores = projectConfig.resources.ancestryPcaPcair.cpus, mem = projectConfig.resources.ancestryPcaPcair.mem, maxRunTime = projectConfig.resources.ancestryPcaPcair.maxRunTime) {
 
     cmd"""$binRscript --vanilla --verbose
       $rPcair
-      --cpus ${projectConfig.highCpuLowMem.cpus}
+      --cpus ${projectConfig.resources.ancestryPcaPcair.cpus}
       --plink-in ${arrayStores(array).ref1kgData.base}
       --gds-out ${arrayStores(array).ref1kgData.gds}
       --scores ${arrayStores(array).ancestryPcaData.scores}
@@ -121,7 +121,7 @@ def AncestryCluster(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.ancestryClusterKlustakwik.cpus, mem = projectConfig.resources.ancestryClusterKlustakwik.mem, maxRunTime = projectConfig.resources.ancestryClusterKlustakwik.maxRunTime) {
   
     cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)

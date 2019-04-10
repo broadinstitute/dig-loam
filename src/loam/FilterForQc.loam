@@ -10,13 +10,13 @@ import ProjectStores._
 
 def FilterForQc(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""cat ${ProjectStores.regionsExclude} | awk -F':' '{print $$1"\t"$$2}' | awk -F'-' '{print $$1"\t"$$2"\thild"NR}' > ${arrayStores(array).harmonizedData.regionsExcludePlink}""".in(ProjectStores.regionsExclude).out(arrayStores(array).harmonizedData.regionsExcludePlink).tag(s"${arrayStores(array).harmonizedData.regionsExcludePlink}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterForQcPlink.cpus, mem = projectConfig.resources.filterForQcPlink.mem, maxRunTime = projectConfig.resources.filterForQcPlink.maxRunTime) {
 
     cmd"""$binPlink
       --bfile ${arrayStores(array).harmonizedData.refBase}
@@ -27,7 +27,7 @@ def FilterForQc(array: String): Unit = {
       --geno 0.02
       --indep-pairwise 1000kb 1 0.2
       --out ${arrayStores(array).harmonizedData.refBase}
-      --memory ${projectConfig.midMem * 0.9 * 1000}"""
+      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
       .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).harmonizedData.regionsExcludePlink)
       .out(arrayStores(array).harmonizedData.pruneIn)
       .tag(s"${arrayStores(array).harmonizedData.pruneIn}".split("/").last)
@@ -38,19 +38,19 @@ def FilterForQc(array: String): Unit = {
       --keep-allele-order
       --make-bed
       --out ${arrayStores(array).prunedData.base}
-      --memory ${projectConfig.midMem * 0.9 * 1000}"""
+      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
       .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).harmonizedData.pruneIn)
       .out(arrayStores(array).prunedData.data)
       .tag(s"${arrayStores(array).prunedData.base}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.midMem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
       .in(arrayStores(array).prunedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).prunedData.vcf)
       .tag(s"${arrayStores(array).prunedData.vcf}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools") {
     
     cmd"""$binTabix -f -p vcf ${arrayStores(array).prunedData.vcf}"""
       .in(arrayStores(array).prunedData.vcf)

@@ -27,7 +27,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     }
   }.flatten.distinct
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgTools") {
 
     cmd"""$shCrossCohortCommonVariants ${bimStringList.mkString(",")} ${metaKinshipStores(configMeta).commonVariants}"""
     .in(dataList)
@@ -49,9 +49,9 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortPrepPlink.cpus, mem = projectConfig.resources.crossCohortPrepPlink.mem, maxRunTime = projectConfig.resources.crossCohortPrepPlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.midMem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
     .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
@@ -81,18 +81,18 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortKinshipPlink.cpus, mem = projectConfig.resources.crossCohortKinshipPlink.mem, maxRunTime = projectConfig.resources.crossCohortKinshipPlink.maxRunTime) {
 
-    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered}"""
+    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000}"""
     .in((metaKinshipStores(configMeta).metaCohort.map(e => e._2).flatMap(e => e.data).toSeq ++ metaKinshipStores(configMeta).metaCohort.map(e => e._2.famMerge).toSeq) :+ metaKinshipStores(configMeta).mergeList)
     .out(metaKinshipStores(configMeta).dataFiltered)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.highCpuLowMem.cpus, mem = projectConfig.highCpuLowMem.mem, maxRunTime = projectConfig.midRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortKinshipKing.cpus, mem = projectConfig.resources.crossCohortKinshipKing.mem, maxRunTime = projectConfig.resources.crossCohortKinshipKing.maxRunTime) {
 
-    cmd"""$shKing $binKing ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} ${projectConfig.highCpuLowMem.cpus}"""
+    cmd"""$shKing $binKing ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} ${projectConfig.resources.crossCohortKinshipKing.cpus}"""
     .in(metaKinshipStores(configMeta).dataFiltered)
     .out(metaKinshipStores(configMeta).log, metaKinshipStores(configMeta).kin0, metaKinshipStores(configMeta).kin0Related)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}.shKing".split("/").last)

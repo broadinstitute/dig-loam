@@ -18,7 +18,7 @@ def QcReport(): Unit = {
   val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
   val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rVariantsSummaryTable
@@ -36,7 +36,7 @@ def QcReport(): Unit = {
   val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
   val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rAncestryClusterTable
@@ -53,7 +53,7 @@ def QcReport(): Unit = {
 
   val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.format, a.filename).mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
 
 	cmd"""$binPython $pyGenerateReportHeader
       --out ${qcReportStores.texData.header}"""
@@ -80,7 +80,7 @@ def QcReport(): Unit = {
   
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+    drmWith(imageName = s"$imgR34") {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -102,7 +102,7 @@ def QcReport(): Unit = {
 
     }
 
-    drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+    drmWith(imageName = s"$imgPython27") {
       
       cmd"""$binPython $pyGenerateQcReportData
         --narrays ${projectConfig.nArrays}
@@ -119,7 +119,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+    drmWith(imageName = s"$imgPython27") {
   
       cmd"""$binPython $pyGenerateQcReportData
       --narrays ${projectConfig.nArrays}
@@ -141,7 +141,7 @@ def QcReport(): Unit = {
   val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
   val restoreStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesRestore.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyGenerateQcReportAncestry
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
@@ -163,7 +163,7 @@ def QcReport(): Unit = {
   val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
   val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
     
     cmd"""$binPython $pyGenerateQcReportIbdSexcheck
       --filtered-bim ${refPrunedBimStrings.mkString(" ")}
@@ -178,7 +178,7 @@ def QcReport(): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
   
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
@@ -205,7 +205,7 @@ def QcReport(): Unit = {
   val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.path}""").mkString(",") } }
   val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.path}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
     
     cmd"""$binRscript --vanilla --verbose
       $rMakeOutlierTable
@@ -225,7 +225,7 @@ def QcReport(): Unit = {
 
   val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
 
-  drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgR34") {
     
     cmd"""$binRscript --vanilla --verbose
       $rUpsetplotBimFam
@@ -241,7 +241,7 @@ def QcReport(): Unit = {
 
   val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.metricPlots.path.toAbsolutePath()}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyGenerateQcReportSampleqc
       --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
@@ -264,7 +264,7 @@ def QcReport(): Unit = {
     
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"$imgR34", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+    drmWith(imageName = s"$imgR34") {
   
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
@@ -277,7 +277,7 @@ def QcReport(): Unit = {
 
     }
 
-    drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+    drmWith(imageName = s"$imgPython27") {
   	  
       cmd"""$binPython $pyGenerateQcReportVariantqc
         --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -291,7 +291,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+    drmWith(imageName = s"$imgPython27") {
   
       cmd"""$binPython $pyGenerateQcReportVariantqc
         --bim ${cleanBimStrings.head}
@@ -305,7 +305,7 @@ def QcReport(): Unit = {
   
   }
 
-  drmWith(imageName = s"$imgPython27", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyGenerateQcReportBibliography
       --acknowledgements "${projectConfig.acknowledgementsQcReport.mkString(",")}"
@@ -317,7 +317,7 @@ def QcReport(): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = 1, mem = projectConfig.lowMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgTools") {
     
     cmd"""cat ${qcReportStores.texData.header} ${qcReportStores.texData.intro} ${qcReportStores.texData.data} ${qcReportStores.texData.ancestry} ${qcReportStores.texData.ibdSexcheck} ${qcReportStores.texData.sampleQc} ${qcReportStores.texData.variantQc} ${qcReportStores.texData.bibliography} > ${qcReportStores.tex}"""
       .in(qcReportStores.texData.header, qcReportStores.texData.intro, qcReportStores.texData.data, qcReportStores.texData.ancestry, qcReportStores.texData.ibdSexcheck, qcReportStores.texData.sampleQc, qcReportStores.texData.variantQc, qcReportStores.texData.bibliography)
@@ -326,7 +326,7 @@ def QcReport(): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTex", cores = 1, mem = projectConfig.midMem, maxRunTime = projectConfig.lowRunTime) {
+  drmWith(imageName = s"$imgTex") {
     
     cmd"""bash -c "$binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${qcReportStores.tex}""""
       .in(qcReportStores.tex)
