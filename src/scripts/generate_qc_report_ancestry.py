@@ -50,7 +50,7 @@ def main(args=None):
 					else:
 						text1 = text1 + r", and \ref{fig:ancestryPcaPlots" + array.replace("_","") + r"} display"
 		else:
-			array = args.pca_plots.split(",")[0]
+			array = args.pca_plots[0].split(",")[0]
 			text1 = r"Figure \ref{fig:ancestryPcaPlots" + array + r"} displays"
 		text=r"{0} plots of the top three principal components along with the 1000 Genomes major population groups.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
@@ -94,7 +94,7 @@ def main(args=None):
 					else:
 						text2 = text2 + r", and \ref{fig:ancestryClusterPlots" + array.replace("_","") + r"} clearly indicate"
 		else:
-			array = args.cluster_plots.split(",")[0]
+			array = args.cluster_plots[0].split(",")[0]
 			text2 = r"Figure \ref{fig:ancestryClusterPlots" + array.replace("_","") + r"} clearly indicates"
 
 		text_dict3 = collections.OrderedDict()
