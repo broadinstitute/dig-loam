@@ -34,7 +34,7 @@ def main(args=None):
 			text = text + r" Figure \ref{fig:variantsRemaining} shows the number of variants remaining for analysis after applying filters."
 
 		else:
-			bim=pd.read_table(args.bim.split("___")[1], low_memory=False, header=None)
+			bim=pd.read_table(args.bim.split(",")[1], low_memory=False, header=None)
 			text = text + r" After applying variant filters, there were {0:,d} variants remaining for analysis.".format(bim.shape[0])
 
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
