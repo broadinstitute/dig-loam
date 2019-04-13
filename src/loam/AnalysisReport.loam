@@ -81,17 +81,39 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   
   }
 
-  drmWith(imageName = s"$imgPython27") {
+  val cleanBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.bim").mkString(",") } }
 
-    cmd"""$binPython $pyGenerateAnalysisReportData
-      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
-      --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
-      --arrays ${arraysString.mkString(" ")}
-      --out-tex ${analysisReportStores(configReport).globalData.data}
-      --out-input ${analysisReportStores(configReport).globalData.dataInput}"""
-      .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
-      .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
-      .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
+  if (projectConfig.nArrays > 1) {
+
+    drmWith(imageName = s"$imgPython27") {
+    
+      cmd"""$binPython $pyGenerateAnalysisReportData
+        --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --arrays ${arraysString.mkString(" ")}
+        --out-tex ${analysisReportStores(configReport).globalData.data}
+        --out-input ${analysisReportStores(configReport).globalData.dataInput}"""
+        .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
+        .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
+
+  } else {
+
+    drmWith(imageName = s"$imgPython27") {
+    
+      cmd"""$binPython $pyGenerateAnalysisReportData
+        --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --bim ${cleanBimStrings.head}
+        --arrays ${arraysString.mkString(" ")}
+        --out-tex ${analysisReportStores(configReport).globalData.data}
+        --out-input ${analysisReportStores(configReport).globalData.dataInput}"""
+        .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
+        .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
+
+  }
+
+  drmWith(imageName = s"$imgPython27") {
 
     cmd"""$binPython $pyGenerateAnalysisReportStrategy
       --cohorts "${cohortsString.mkString("___")}"
