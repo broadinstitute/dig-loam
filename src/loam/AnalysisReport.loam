@@ -97,6 +97,8 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
         .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
         .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
 
+    }
+
   } else {
 
     drmWith(imageName = s"$imgPython27") {
@@ -107,9 +109,11 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
         --arrays ${arraysString.mkString(" ")}
         --out-tex ${analysisReportStores(configReport).globalData.data}
         --out-input ${analysisReportStores(configReport).globalData.dataInput}"""
-        .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
         .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
         .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
+
+    }
 
   }
 

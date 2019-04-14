@@ -39,7 +39,7 @@ def main(args=None):
 
 		else:
 			bim=pd.read_table(args.bim.split(",")[1], low_memory=False, header=None)
-			text = text + r"See Figure \ref{fig:Data-Figure-Samples-Upset-Diagram} for intersection counts of samples available for analysis. After applying variant filters, there were {0:,d} variants remaining for analysis.".format(bim.shape[0])
+			text = r"See Figure \ref{{fig:Data-Figure-Samples-Upset-Diagram}} for intersection counts of samples available for analysis. After applying variant filters, there were {0:,d} variants remaining for analysis.".format(bim.shape[0])
 
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 

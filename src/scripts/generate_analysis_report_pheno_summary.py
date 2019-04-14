@@ -109,7 +109,7 @@ def main(args=None):
 
 		print "writing data section"
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
-		f.write("\n"); f.write(r"\section{" + args.pheno_long_name + " (" + args.pheno_name + r")}"); f.write("\n")
+		f.write("\n"); f.write(r"\section{" + args.pheno_long_name.replace("_","\_") + " (" + args.pheno_name.replace("_","\_") + r")}"); f.write("\n")
 		f.write(r"\label{" + args.pheno_name.replace("_","-") + r"}"); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Summary}"); f.write("\n")
