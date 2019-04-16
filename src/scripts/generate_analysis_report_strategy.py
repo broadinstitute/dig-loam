@@ -152,7 +152,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\subsection{Ancestry Adjustment and Outlier Removal}"); f.write("\n")
 		f.write(r"\label{Ancestry-Adjustment-and-Outlier-Removal}"); f.write("\n")
 
-		text=r"Adjusting the statistical models for underlying ancestry is often crucial to reduce or eliminate Type 1 error. Often analysts include principal components of ancestry as covariates in their models as a matter of convention. In our case, we undertook a more nuanced approach. First, the top ten PC's were calculated for each cohort using the PC-AiR method \cite{pcair}. Then, the phenotype of interest was regressed on the covariates to be used in the model and all of the PC's. If the $N$th PC exhibited a statistically significant $p$-value ($p <= 0.05$), we selected PC's $1-N$ to be included in association testing. Once determined, any sample lying outside $6$ standard deviations from the mean on any of the $N$ PC's was marked as an outlier and removed from the sample set. This process was repeated up to a maximum of ten times until no outliers were found, resulting in more homogeneous sample sets for each particular analysis."
+		text=r"Adjusting the statistical models for underlying ancestry is often crucial to reduce or eliminate Type 1 error. Often analysts include principal components of ancestry as covariates in their models as a matter of convention. In our case, we undertook a more nuanced approach. First, the top {0:,d} PC's were calculated for each cohort using the PC-AiR method \cite{{pcair}}. Then, the phenotype of interest was regressed on the covariates to be used in the model and all of the PC's. If the $N$th PC exhibited a statistically significant $p$-value ($p <= 0.05$), we selected PC's $1-N$ to be included in association testing. Once determined, any sample lying outside {1:,d} standard deviations from the mean on any of the $N$ PC's was marked as an outlier and removed from the sample set. This process was repeated up to a maximum of ten times until no outliers were found, resulting in more homogeneous sample sets for each particular analysis. For this project, a hard minimum of {2:,d} PC's to be included in analysis was set by the analyst.".format(args.max_pcs, args.n_stddevs, args.min_pcs)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy-Ancestry-Adjustment-and-Outlier-Removal}".encode('utf-8')); f.write("\n")
@@ -172,6 +172,9 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--cohorts', help='a three underscore delimited list of cohort attributes in the config each separated by comma', required=True)
 	requiredArgs.add_argument('--metas', help='a three underscore delimited list of meta attributes in the config and kinship removed files each separated by comma', required=True)
 	requiredArgs.add_argument('--merges', help='a three underscore delimited list of merge attributes in the config each separated by comma', required=True)
+	requiredArgs.add_argument('--min-pcs', type='int', help='a minimum number of pcs to include in analysis', required=True)
+	requiredArgs.add_argument('--max-pcs', type='int', help='a maximum number of pcs to include in analysis', required=True)
+	requiredArgs.add_argument('--n-stddevs', type='int', help='outlier threshold in number of stddevs from the mean', required=True)
 	requiredArgs.add_argument('--out-tex', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--out-input', help='an output file name with extension .input', required=True)
 	args = parser.parse_args()
