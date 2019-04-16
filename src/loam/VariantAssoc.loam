@@ -109,6 +109,9 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       --test ${configModel.test}
       --trans "${configModel.trans}"
       --covars "${configModel.covars}"
+      --min-pcs ${projectConfig.minPCs}
+      --max-pcs ${projectConfig.maxPCs}
+      --n-stddevs ${projectConfig.nStddevs}
       --out-pheno ${assoc.pheno}
       --out-pcs ${assoc.pcs}
       > ${assoc.phenoLog}"""
@@ -302,6 +305,8 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       --test ${configModel.test}
       --trans "${configModel.trans}"
       --covars "${configModel.covars}"
+      --min-pcs ${projectConfig.minPCs}
+      --max-pcs ${projectConfig.maxPCs}
       --out-pheno ${known.pheno}
       --out-pcs ${known.pcs}
       > ${known.phenoLog}"""

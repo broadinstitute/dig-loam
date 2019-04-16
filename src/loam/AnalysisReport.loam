@@ -123,6 +123,9 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
       --cohorts "${cohortsString.mkString("___")}"
       --metas "${metasString.mkString("___")}"
       --merges "${mergesString.mkString("___")}"
+      --min-pcs ${projectConfig.minPCs}
+      --max-pcs ${projectConfig.maxPCs}
+      --n-stddevs ${projectConfig.nStddevs}
       --out-tex ${analysisReportStores(configReport).globalData.strategy}
       --out-input ${analysisReportStores(configReport).globalData.strategyInput}"""
       .in(metaKinshipStores.flatMap(e => e._2.metaCohort.map(e => e._2.kinshipSamplesExclude)).toSeq)

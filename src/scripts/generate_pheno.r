@@ -19,6 +19,9 @@ parser$add_argument("--variants-exclude", dest="variants_exclude", default=NULL,
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
+parser$add_argument("--min-pcs", dest="min_pcs", type="character", help="minimum number of pcs to include in analysis")
+parser$add_argument("--max-pcs", dest="max_pcs", type="character", help="maximum number of pcs to include in analysis")
+parser$add_argument("--n-stddevs", dest="n_stddevs", type="character", help="outlier detection threshold in number of standard deviations from the mean")
 parser$add_argument("--out-pheno", dest="out_pheno", type="character", help="a phenotype output filename")
 parser$add_argument("--out-pcs", dest="out_pcs", type="character", help="an output filename for PCs to include in analysis")
 args<-parser$parse_args()
@@ -126,10 +129,10 @@ samples_remove <- c()
 while(iter < 11) {
 	cat("\n",paste0("pcair iteration #",iter),"\n")
 
-	if(length(samples_incl[! samples_incl %in% samples_remove]) < 20) {
+	if(length(samples_incl[! samples_incl %in% samples_remove]) < args$max_pcs) {
 		n_pcs <- length(samples_incl[! samples_incl %in% samples_remove])
 	} else {
-		n_pcs <- 20
+		n_pcs <- args$max_pcs
 	}
 	mypcair <- try(pcair(genoData = genoData, v = n_pcs, scan.include = samples_incl[! samples_incl %in% samples_remove], snp.include = variants_incl, kinMat = kinship, divMat = kinship, unrel.set = NULL, snp.block.size = 10000), silent=TRUE)
 	if(inherits(mypcair, "try-error")) {
@@ -188,6 +191,11 @@ if(length(samples_remove) > 0) {
 	}
 } else {
 	cat("no PC outliers were found\n")
+}
+
+if(args$min_pcs > length(pcsin)) {
+	cat("setting minimum number of PCs to",args$min_pcs,"\n")
+	pcsin <- paste("PC",seq(1,args$min_pcs,1),sep="")
 }
 
 if(length(pcsin) > 0) {
