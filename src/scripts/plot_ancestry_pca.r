@@ -25,7 +25,7 @@ p<-ggplot() +
 	geom_point(data=data[which(data$GROUP == args$id),],aes(PC1,PC2,color=GROUP), size=2, shape=1) +
 	scale_colour_manual(name = "GROUP",values = color) +
 	theme_bw() +
-	guides(col = guide_legend(override.aes=list(shape = as.integer(levels(data$GROUP) != "BioMe")*15 + 1, size=rep(4, length(levels(data$GROUP)))))) +
+	guides(col = guide_legend(override.aes=list(shape = as.integer(levels(data$GROUP) != args$id)*15 + 1, size=rep(4, length(levels(data$GROUP)))))) +
 	theme(axis.line = element_line(colour = "black"), 
 	panel.grid.major = element_blank(),
 	panel.grid.minor = element_blank(),

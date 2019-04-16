@@ -115,7 +115,7 @@ kinship<-NULL
 if(args$test == "lmm") {
 	cat(paste("memory before running king: ",mem_used() / (1024^2),sep=""),"\n")
 	cat("running King robust to get kinship matrix\n")
-	kinship <- calc_kinship(gds = args$gds_in, sam = samples_incl, vin = variants_incl, t = 4)
+	kinship <- calc_kinship(gds = args$gds_in, sam = samples_incl, vin = variants_incl, t = args$cpus)
 	cat(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""),"\n")
 }
 
