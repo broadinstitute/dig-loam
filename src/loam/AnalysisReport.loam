@@ -89,11 +89,11 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
     
       cmd"""$binPython $pyGenerateAnalysisReportData
         --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
-        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get.path.toAbsolutePath()}
         --arrays ${arraysString.mkString(" ")}
         --out-tex ${analysisReportStores(configReport).globalData.data}
         --out-input ${analysisReportStores(configReport).globalData.dataInput}"""
-        .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .in(qcReportStores.figureData.samplesRemainingUpsetPlotPdf, qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get)
         .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
         .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
 

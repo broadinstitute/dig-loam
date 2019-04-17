@@ -307,6 +307,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       --covars "${configModel.covars}"
       --min-pcs ${projectConfig.minPCs}
       --max-pcs ${projectConfig.maxPCs}
+      --n-stddevs ${projectConfig.nStddevs}
       --out-pheno ${known.pheno}
       --out-pcs ${known.pcs}
       > ${known.phenoLog}"""
