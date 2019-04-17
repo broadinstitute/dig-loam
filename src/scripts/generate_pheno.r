@@ -19,9 +19,9 @@ parser$add_argument("--variants-exclude", dest="variants_exclude", default=NULL,
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
-parser$add_argument("--min-pcs", dest="min_pcs", type="character", help="minimum number of pcs to include in analysis")
-parser$add_argument("--max-pcs", dest="max_pcs", type="character", help="maximum number of pcs to include in analysis")
-parser$add_argument("--n-stddevs", dest="n_stddevs", type="character", help="outlier detection threshold in number of standard deviations from the mean")
+parser$add_argument("--min-pcs", dest="min_pcs", type="integer", help="minimum number of pcs to include in analysis")
+parser$add_argument("--max-pcs", dest="max_pcs", type="integer", help="maximum number of pcs to include in analysis")
+parser$add_argument("--n-stddevs", dest="n_stddevs", type="integer", help="outlier detection threshold in number of standard deviations from the mean")
 parser$add_argument("--out-pheno", dest="out_pheno", type="character", help="a phenotype output filename")
 parser$add_argument("--out-pcs", dest="out_pcs", type="character", help="an output filename for PCs to include in analysis")
 args<-parser$parse_args()
@@ -48,7 +48,8 @@ pcs_include <- function(d, y, cv, n) {
 	} else {
 		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d))
 	}
-	mc <- m$coefficients
+	print(m)
+	mc <- as.data.frame(m$coefficients)
 	s <- rownames(mc[mc[,"Pr(>|t|)"] <= 0.05,])
 	spcs <- s[grep("^PC",s)]
 	if(length(spcs) > 0) {
@@ -173,8 +174,8 @@ while(iter < 11) {
 	for(pc in pcsin) {
 		pc_mean <- mean(out[,pc])
 		pc_sd <- sd(out[,pc])
-		lo <- pc_mean - 6 * pc_sd
-		hi <- pc_mean + 6 * pc_sd
+		lo <- pc_mean - args$n_stddevs * pc_sd
+		hi <- pc_mean + args$n_stddevs * pc_sd
 		pc_outliers <- c(pc_outliers,out[,args$iid_col][out[,pc] < lo | out[,pc] > hi])
 	}
 	if(length(pc_outliers) == 0) {

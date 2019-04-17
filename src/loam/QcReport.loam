@@ -86,19 +86,19 @@ def QcReport(): Unit = {
         $rUpsetplotBimFam
         --input ${famStrings.mkString(" ")}
         --type fam
-        --out ${qcReportStores.figureData.samplesUpsetPlotPdf}"""
+        --out ${qcReportStores.figureData.samplesUpsetPlotPdf.get}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
-        .out(qcReportStores.figureData.samplesUpsetPlotPdf)
-        .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf}".split("/").last)
+        .out(qcReportStores.figureData.samplesUpsetPlotPdf.get)
+        .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf.get}".split("/").last)
       
       cmd"""$binRscript --vanilla --verbose
         $rUpsetplotBimFam
         --input ${bimStrings.mkString(" ")}
         --type bim
-        --out ${qcReportStores.figureData.variantsUpsetPlotPdf}"""
+        --out ${qcReportStores.figureData.variantsUpsetPlotPdf.get}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
-        .out(qcReportStores.figureData.variantsUpsetPlotPdf)
-        .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf}".split("/").last)
+        .out(qcReportStores.figureData.variantsUpsetPlotPdf.get)
+        .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf.get}".split("/").last)
 
     }
 
@@ -107,11 +107,11 @@ def QcReport(): Unit = {
       cmd"""$binPython $pyGenerateQcReportData
         --narrays ${projectConfig.nArrays}
         --imiss ${imissRemoveStrings.mkString(" ")}
-        --samples-upset-diagram ${qcReportStores.figureData.samplesUpsetPlotPdf.path.toAbsolutePath()}
+        --samples-upset-diagram ${qcReportStores.figureData.samplesUpsetPlotPdf.get.path.toAbsolutePath()}
         --variants-summary-table ${qcReportStores.tablesData.variantsSummary.path.toAbsolutePath()} 
-        --variants-upset-diagram ${qcReportStores.figureData.variantsUpsetPlotPdf.path.toAbsolutePath()} 
+        --variants-upset-diagram ${qcReportStores.figureData.variantsUpsetPlotPdf.get.path.toAbsolutePath()} 
         --out ${qcReportStores.texData.data}"""
-        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq :+ qcReportStores.figureData.samplesUpsetPlotPdf :+ qcReportStores.tablesData.variantsSummary :+ qcReportStores.figureData.variantsUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq :+ qcReportStores.figureData.samplesUpsetPlotPdf.get :+ qcReportStores.tablesData.variantsSummary :+ qcReportStores.figureData.variantsUpsetPlotPdf.get)
         .out(qcReportStores.texData.data)
         .tag(s"${qcReportStores.texData.data}".split("/").last)
 
@@ -270,20 +270,20 @@ def QcReport(): Unit = {
         $rUpsetplotBimFam
         --input ${cleanBimStrings.mkString(" ")}
         --type bim
-        --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
+        --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get}"""
         .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq)
-        .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
-        .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
+        .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get)
+        .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get}".split("/").last)
 
     }
 
     drmWith(imageName = s"$imgPython27") {
   	  
       cmd"""$binPython $pyGenerateQcReportVariantqc
-        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get.path.toAbsolutePath()}
         --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
         --out ${qcReportStores.texData.variantQc}"""
-        .in(arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).map(e => e.finalData.variantsExclude).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get)
         .out(qcReportStores.texData.variantQc)
         .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
 

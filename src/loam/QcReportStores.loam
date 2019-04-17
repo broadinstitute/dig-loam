@@ -19,12 +19,12 @@ final case class TexData(
   bibliography: Store)
 
 final case class FigureData(
-  samplesUpsetPlotPdf: Store,
-  variantsUpsetPlotPdf: Store,
+  samplesUpsetPlotPdf: Option[Store],
+  variantsUpsetPlotPdf: Option[Store],
   metricDistUnadjPdf: Store,
   metricDistAdjPdf: Store,
   samplesRemainingUpsetPlotPdf: Store,
-  variantsRemainingUpsetPlotPdf: Store)
+  variantsRemainingUpsetPlotPdf: Option[Store])
 
 final case class QcReport(
   tablesData: TablesData,
@@ -52,12 +52,12 @@ val qcReportStores = QcReport(
     bibliography = store(localOutDir / s"QCR.${projectConfig.projectId}.bibliography.tex")),
 
   figureData = FigureData(
-    samplesUpsetPlotPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.samples.upsetplot.pdf"),
-    variantsUpsetPlotPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.variants.upsetplot.pdf"),
+    samplesUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(localOutDir / s"QCR.${projectConfig.projectId}.samples.upsetplot.pdf")) } else { None },
+    variantsUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(localOutDir / s"QCR.${projectConfig.projectId}.variants.upsetplot.pdf")) } else { None },
     metricDistUnadjPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.metric_dist_unadj.pdf"),
     metricDistAdjPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.metric_dist_adj.pdf"),
     samplesRemainingUpsetPlotPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.samples_remaining.upsetplot.pdf"),
-    variantsRemainingUpsetPlotPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.variants_remaining.upsetplot.pdf")),
+    variantsRemainingUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(localOutDir / s"QCR.${projectConfig.projectId}.variants_remaining.upsetplot.pdf")) } else { None }),
 
   tex = store(localOutDir / s"QCR.${projectConfig.projectId}.tex"),
   pdf = store(localOutDir / s"QCR.${projectConfig.projectId}.pdf")
