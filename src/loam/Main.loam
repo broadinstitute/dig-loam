@@ -31,11 +31,18 @@ import loamstream.util.CanBeClosed.enclosed
 
 // Array specific QC steps up to ancestry inferrence
 for {
-  array <- projectConfig.Arrays
-} yield { 
+      array <- projectConfig.Arrays
+} yield {
 
-  Prepare(array.id)
-  Harmonize(array.id)
+  arrayStores(array).rawData.data match {
+
+    case _: Plink => 
+    
+      Prepare(array.id)
+      Harmonize(array.id)
+
+    case _ => ()
+
   Load(array.id)
   FilterForQc(array.id)
   Kinship(array.id)

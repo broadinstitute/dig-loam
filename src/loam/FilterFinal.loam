@@ -22,7 +22,7 @@ def FilterFinal(array: String): Unit = {
       google {
       
         hail"""$pyHailFilterFinal --
-          --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --ancestry-in ${ProjectStores.ancestryInferredGoogle.get}
           --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
           --pheno-in ${ProjectStores.phenoFileGoogle.get}
@@ -35,7 +35,7 @@ def FilterFinal(array: String): Unit = {
           --mt-out ${arrayStores(array).cleanData.mtGoogle.get}
           --cloud
           --log ${arrayStores(array).cleanData.hailLogGoogle.get}"""
-          .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, ProjectStores.phenoFileGoogle.get, arrayStores(array).finalData.samplesExcludeGoogle.get)
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, ProjectStores.phenoFileGoogle.get, arrayStores(array).finalData.samplesExcludeGoogle.get)
           .out(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).cleanData.mtGoogle.get, arrayStores(array).cleanData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).cleanData.vcf}.google".split("/").last)
       
@@ -55,7 +55,7 @@ def FilterFinal(array: String): Unit = {
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
 
         cmd"""$binPython $pyHailFilterFinal
-          --mt-in ${arrayStores(array).harmonizedData.mt.get}
+          --mt-in ${arrayStores(array).refData.mt.get}
           --ancestry-in ${ProjectStores.ancestryInferred}
           --sexcheck-in ${arrayStores(array).sexcheckData.sexcheck}
           --pheno-in ${ProjectStores.phenoFile}
@@ -67,7 +67,7 @@ def FilterFinal(array: String): Unit = {
           --vcf-out ${arrayStores(array).cleanData.vcf}
           --mt-out ${arrayStores(array).cleanData.mt.get}
           --log ${arrayStores(array).cleanData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, ProjectStores.phenoFile, arrayStores(array).finalData.samplesExclude)
+          .in(arrayStores(array).refData.mt.get, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, ProjectStores.phenoFile, arrayStores(array).finalData.samplesExclude)
           .out(arrayStores(array).cleanData.vcf, arrayStores(array).variantQcData.stats, arrayStores(array).finalData.variantsExclude, arrayStores(array).cleanData.mt.get, arrayStores(array).cleanData.hailLog)
           .tag(s"${arrayStores(array).cleanData.vcf}".split("/").last)
 

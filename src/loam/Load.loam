@@ -15,8 +15,8 @@ def Load(array: String): Unit = {
 
       local {
       
-        googleCopy(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.vcfGoogle.get)
-        googleCopy(arrayStores(array).harmonizedData.tbi, arrayStores(array).harmonizedData.tbiGoogle.get)
+        googleCopy(arrayStores(array).refData.vcf, arrayStores(array).refData.vcfGoogle.get)
+        googleCopy(arrayStores(array).refData.tbi, arrayStores(array).refData.tbiGoogle.get)
       
       }
       
@@ -25,19 +25,19 @@ def Load(array: String): Unit = {
         hail"""$pyHailLoad --
           --reference-genome ${projectConfig.referenceGenome}
           --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle.get}
-          --mt-out ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcfGoogle.get}
+          --mt-out ${arrayStores(array).refData.mtGoogle.get}
           --cloud
-          --log ${arrayStores(array).harmonizedData.hailLogGoogle.get}"""
-          .in(arrayStores(array).harmonizedData.vcfGoogle.get, arrayStores(array).harmonizedData.tbiGoogle.get)
-          .out(arrayStores(array).harmonizedData.mtGoogle.get, arrayStores(array).harmonizedData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad".split("/").last)
+          --log ${arrayStores(array).refData.hailLogGoogle.get}"""
+          .in(arrayStores(array).refData.vcfGoogle.get, arrayStores(array).refData.tbiGoogle.get)
+          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).refData.vcf}.pyHailLoad".split("/").last)
       
       }
 
       local {
 
-        googleCopy(arrayStores(array).harmonizedData.hailLogGoogle.get, arrayStores(array).harmonizedData.hailLog)
+        googleCopy(arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.hailLog)
 
       }
 
@@ -48,12 +48,12 @@ def Load(array: String): Unit = {
         cmd"""$binPython $pyHailLoad
           --reference-genome ${projectConfig.referenceGenome}
           --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcf}
-          --mt-out ${arrayStores(array).harmonizedData.mt.get}
-          --log ${arrayStores(array).harmonizedData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.tbi)
-          .out(arrayStores(array).harmonizedData.mt.get, arrayStores(array).harmonizedData.hailLog)
-          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad".split("/").last)
+          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf}
+          --mt-out ${arrayStores(array).refData.mt.get}
+          --log ${arrayStores(array).refData.hailLog}"""
+          .in(arrayStores(array).refData.vcf, arrayStores(array).refData.tbi)
+          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.hailLog)
+          .tag(s"${arrayStores(array).refData.vcf}.pyHailLoad".split("/").last)
 
       }
 

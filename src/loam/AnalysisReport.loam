@@ -31,7 +31,6 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
       --email "${projectConfig.email}"
       --out-tex ${analysisReportStores(configReport).globalData.intro}
       --out-input ${analysisReportStores(configReport).globalData.introInput}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
       .out(analysisReportStores(configReport).globalData.intro, analysisReportStores(configReport).globalData.introInput)
       .tag(s"${analysisReportStores(configReport).globalData.intro}".split("/").last)
 

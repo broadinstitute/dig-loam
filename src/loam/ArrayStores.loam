@@ -1,20 +1,20 @@
 import ProjectConfig._
 import PipelineConfig._
 import StoreHelpers._
+import Stores._
 
 final case class RawData(
-  data: Seq[Store],
+  data: GenotypeData,
   base: Path,
-  rawBase: Path,
-  unplaced: Store,
-  unique: Store,
-  indel: Store,
-  lmiss: Store,
-  imiss: Store,
-  imissRemove: Store,
-  freq: Store,
-  mono: Store,
-  dupRemove: Store)
+  unplaced: Option[Store],
+  unique: Option[Store],
+  indel: Option[Store],
+  lmiss: Option[Store],
+  imiss: Option[Store],
+  imissRemove: Option[Store],
+  freq: Option[Store],
+  mono: Option[Store],
+  dupRemove: Option[Store])
 
 final case class PreparedData(
   data: Seq[Store],
@@ -51,8 +51,6 @@ final case class AnnotatedChrData(
 final case class HarmonizedData(
   data: Seq[Store],
   base: Path,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
   mergeList: Store,
   nonKgRemove: Store,
   nonKgIgnore: Store,
@@ -62,21 +60,27 @@ final case class HarmonizedData(
   nonKgForceA1: Store,
   mergedKgVarIdUpdate: Store,
   mergedKgVarSnpLog: Store,
-  forceA2: Store,
-  refData: Seq[Store],
-  refBase: Path,
+  forceA2: Store)
+
+final case class RefData(
+  data: Seq[Store],
+  base: Path,
   vcf: Store,
   tbi: Store,
-  imputeData: Seq[Store],
-  imputeBase: Path,
   vcfGoogle: Option[Store],
   tbiGoogle: Option[Store],
   mt: Option[Store],
   mtGoogle: Option[Store],
-  pruneIn: Store,
-  regionsExcludePlink: Store)
+  hailLog: Store,
+  hailLogGoogle: Option[Store])
+
+final case class ImputeData(
+  data: Seq[Store],
+  base: Path)
 
 final case class PrunedData(
+  pruneIn: Store,
+  regionsExcludePlink: Store,
   data: Seq[Store],
   base: Path,
   bimGoogle: Option[Store],
@@ -198,10 +202,12 @@ final case class CleanData(
 
 final case class Array(
   rawData: RawData,
-  preparedData: PreparedData,
-  annotatedData: AnnotatedData,
-  annotatedChrData: Map[String, AnnotatedChrData],
-  harmonizedData: HarmonizedData,
+  preparedData: Option[PreparedData],
+  annotatedData: Option[AnnotatedData],
+  annotatedChrData: Option[Map[String, AnnotatedChrData]],
+  harmonizedData: Option[HarmonizedData],
+  refData: RefData,
+  imputeData: ImputeData,
   prunedData: PrunedData,
   kinshipData: KinshipData,
   ref1kgData: Ref1kgData,
@@ -238,102 +244,155 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val variantQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.variantqc"
   val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
+  val data = {
+    arrayCfg.format match {
+      case "plink" =>
+        Plink(
+          base = path(cfgArray.filename),
+          bed = store(cfgArray.filename + ".bed").asInput,
+          bim = store(cfgArray.filename + ".bim").asInput,
+          fam = store(cfgArray.filename + ".fam").asInput
+        )
+      case "vcf" =>
+        Vcf(
+          base = path(cfgArray.filename.replaceAll(".vcf.gz$","").replaceAll(".vcf.bgz$","").replaceAll(".gz$","").replaceAll(".bgz$","")),
+          vcf = store(cfgArray.file).asInput
+        )
+    }
+  }
+
   val rawData = RawData(
-    data = Seq(store(path(arrayCfg.filename + s".bed")).asInput,store(path(arrayCfg.filename + s".bim")).asInput,store(path(arrayCfg.filename + s".fam")).asInput),
-    base = path(arrayCfg.filename),
-    rawBase = localOutDir / rawBaseString,
-    unplaced = store(localOutDir / s"${rawBaseString}.unplaced"),
-    unique = store(localOutDir / s"${rawBaseString}.unique"),
-    indel = store(localOutDir / s"${rawBaseString}.indel"),
-    lmiss = store(localOutDir / s"${rawBaseString}.missing.lmiss"),
-    imiss = store(localOutDir / s"${rawBaseString}.missing.imiss"),
-    imissRemove = store(localOutDir / s"${rawBaseString}.missing.imiss.remove"),
-    freq = store(localOutDir / s"${rawBaseString}.freq.frq"),
-    mono = store(localOutDir / s"${rawBaseString}.mono"),
-    dupRemove = store(localOutDir / s"${rawBaseString}.dup.remove"))
+    data = data,
+	base = localOutDir / rawBaseString,
+    unplaced = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.unplaced")); case false => None },
+    unique = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.unique")); case false => None },
+    indel = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.indel")); case false => None },
+    lmiss = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.missing.lmiss")); case false => None },
+    imiss = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.missing.imiss")); case false => None },
+    imissRemove = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.missing.imiss.remove")); case false => None },
+    freq = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.freq.frq")); case false => None },
+    mono = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.mono")); case false => None },
+    dupRemove = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.dup.remove")); case false => None })
 
-  val preparedData = PreparedData(
-    data = bedBimFam(localOutDir / preparedBaseString),
-    base = localOutDir / preparedBaseString,
-    multiallelic = store(localOutDir / s"${preparedBaseString}.multiallelic"),
-    chain = arrayCfg.liftOver.map(s => store(path(s)).asInput),
-    bed = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.liftover.bed")),
-    lifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted")),
-    unlifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.unlifted")),
-    liftedUpdate = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted.update")),
-    liftedExtract = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted.extract")))
+  val preparedData = arrayCfg.format match {
 
-  val annotatedData = AnnotatedData(
-    data = arrayCfg.liftOver match {
-      case Some(s) => bedBimFam(localOutDir / annotatedBaseString)
-      case None => preparedData.data 
-    },
-    base = arrayCfg.liftOver match {
-      case Some(s) => localOutDir / annotatedBaseString
-      case None => localOutDir / preparedBaseString 
-    })
+    case "plink" =>
+
+      Some(PreparedData(
+        data = bedBimFam(localOutDir / preparedBaseString),
+        base = localOutDir / preparedBaseString,
+        multiallelic = store(localOutDir / s"${preparedBaseString}.multiallelic"),
+        chain = arrayCfg.liftOver.map(s => store(path(s)).asInput),
+        bed = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.liftover.bed")),
+        lifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted")),
+        unlifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.unlifted")),
+        liftedUpdate = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted.update")),
+        liftedExtract = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted.extract"))))
+
+    case _ => None
+
+  }
+
+  val annotatedData = arrayCfg.format match {
+
+    case "plink" =>
+
+      Some(AnnotatedData(
+        data = arrayCfg.liftOver match {
+          case Some(s) => bedBimFam(localOutDir / annotatedBaseString)
+          case None => preparedData.get.data 
+        },
+        base = arrayCfg.liftOver match {
+          case Some(s) => localOutDir / annotatedBaseString
+          case None => localOutDir / preparedBaseString 
+        }))
+
+    case _ => None
+
+  }
 
   val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ (if (arrayCfg.xChr) Seq("X") else Seq.empty) ++ (if (arrayCfg.yChr) Seq("Y") else Seq.empty) ++ (if (arrayCfg.mtChr) Seq("MT") else Seq.empty)
-  val annotatedChrData = chrSeq.map { chr =>
 
-    val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
+  val annotatedChrData = arrayCfg.format match {
 
-    val mergedKgBaseString = ! arrayCfg.skipGh.contains(chr) match {
-      case true => s"${chrBaseString}.harmkg"
-      case false => s"$chrBaseString"
-    }
+    case "plink" =>
 
-    val mergedKgHuRefBaseString = s"${mergedKgBaseString}.huref"
-    val mergedKgNonKgBaseString = s"${mergedKgBaseString}.nonkg"
+      chrSeq.map { chr =>
 
-    chr -> AnnotatedChrData(
-      data = bedBimFam(localOutDir / chrBaseString),
-      base = localOutDir / chrBaseString,
-      mergedKgBase = localOutDir / mergedKgBaseString,
-      mergedKg = bedBimFam(localOutDir / mergedKgBaseString),
-      mergedKgHuRefBase = localOutDir / mergedKgHuRefBaseString,
-      mergedKgHuRef = bedBimFam(localOutDir / mergedKgHuRefBaseString),
-      mergedKgNonKgBase = localOutDir / mergedKgNonKgBaseString,
-      nonKgRemove = store(localOutDir / s"${mergedKgNonKgBaseString}.remove"),
-      nonKgIgnore = store(localOutDir / s"${mergedKgNonKgBaseString}.ignore"),
-      nonKgMono = store(localOutDir / s"${mergedKgNonKgBaseString}.mono"),
-      nonKgNomatch = store(localOutDir / s"${mergedKgNonKgBaseString}.nomatch"),
-      nonKgFlip = store(localOutDir / s"${mergedKgNonKgBaseString}.flip"),
-      nonKgForceA1 = store(localOutDir / s"${mergedKgNonKgBaseString}.force_a1"),
-      mergedKgVarIdUpdate = store(localOutDir / s"${mergedKgBaseString}_idUpdates.txt"),
-      mergedKgVarSnpLog = store(localOutDir / s"${mergedKgBaseString}_snpLog.log"))
+        val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
+        
+        val mergedKgBaseString = ! arrayCfg.skipGh.contains(chr) match {
+          case true => s"${chrBaseString}.harmkg"
+          case false => s"$chrBaseString"
+        }
 
-  }.toMap
+        val mergedKgHuRefBaseString = s"${mergedKgBaseString}.huref"
+        val mergedKgNonKgBaseString = s"${mergedKgBaseString}.nonkg"
+        
+        chr -> AnnotatedChrData(
+          data = bedBimFam(localOutDir / chrBaseString),
+          base = localOutDir / chrBaseString,
+          mergedKgBase = localOutDir / mergedKgBaseString,
+          mergedKg = bedBimFam(localOutDir / mergedKgBaseString),
+          mergedKgHuRefBase = localOutDir / mergedKgHuRefBaseString,
+          mergedKgHuRef = bedBimFam(localOutDir / mergedKgHuRefBaseString),
+          mergedKgNonKgBase = localOutDir / mergedKgNonKgBaseString,
+          nonKgRemove = store(localOutDir / s"${mergedKgNonKgBaseString}.remove"),
+          nonKgIgnore = store(localOutDir / s"${mergedKgNonKgBaseString}.ignore"),
+          nonKgMono = store(localOutDir / s"${mergedKgNonKgBaseString}.mono"),
+          nonKgNomatch = store(localOutDir / s"${mergedKgNonKgBaseString}.nomatch"),
+          nonKgFlip = store(localOutDir / s"${mergedKgNonKgBaseString}.flip"),
+          nonKgForceA1 = store(localOutDir / s"${mergedKgNonKgBaseString}.force_a1"),
+          mergedKgVarIdUpdate = store(localOutDir / s"${mergedKgBaseString}_idUpdates.txt"),
+          mergedKgVarSnpLog = store(localOutDir / s"${mergedKgBaseString}_snpLog.log"))
 
-  val harmonizedData = HarmonizedData(
-    data = bedBimFam(localOutDir / harmonizedBaseString),
-    base = localOutDir / harmonizedBaseString,
-    hailLog = store(localOutDir / s"${harmonizedBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${harmonizedBaseString}.hail.log")); case false => None },
-    mergeList = store(localOutDir / s"${harmonizedBaseString}.merge.txt"),
-    nonKgRemove = store(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
-    nonKgIgnore = store(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
-    nonKgMono = store(localOutDir / s"${harmonizedBaseString}.nonkg.mono"),
-    nonKgNomatch = store(localOutDir / s"${harmonizedBaseString}.nonkg.nomatch"),
-    nonKgFlip = store(localOutDir / s"${harmonizedBaseString}.nonkg.flip"),
-    nonKgForceA1 = store(localOutDir / s"${harmonizedBaseString}.nonkg.force_a1"),
-    mergedKgVarIdUpdate = store(localOutDir / s"${harmonizedBaseString}_idUpdates.txt"),
-    mergedKgVarSnpLog = store(localOutDir / s"${harmonizedBaseString}_snpLog.log"),
-    forceA2 = store(localOutDir / s"${refBaseString}.force_a2.txt"),
-    refData = bedBimFam(localOutDir / refBaseString),
-    refBase = localOutDir / refBaseString,
+      }.toMap
+
+    case _ => None
+
+  }
+
+  val harmonizedData = arrayCfg.format match {
+
+    case "plink" =>
+
+      Some(HarmonizedData(
+        data = bedBimFam(localOutDir / harmonizedBaseString),
+        base = localOutDir / harmonizedBaseString,
+        mergeList = store(localOutDir / s"${harmonizedBaseString}.merge.txt"),
+        nonKgRemove = store(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
+        nonKgIgnore = store(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
+        nonKgMono = store(localOutDir / s"${harmonizedBaseString}.nonkg.mono"),
+        nonKgNomatch = store(localOutDir / s"${harmonizedBaseString}.nonkg.nomatch"),
+        nonKgFlip = store(localOutDir / s"${harmonizedBaseString}.nonkg.flip"),
+        nonKgForceA1 = store(localOutDir / s"${harmonizedBaseString}.nonkg.force_a1"),
+        mergedKgVarIdUpdate = store(localOutDir / s"${harmonizedBaseString}_idUpdates.txt"),
+        mergedKgVarSnpLog = store(localOutDir / s"${harmonizedBaseString}_snpLog.log"),
+        forceA2 = store(localOutDir / s"${harmonizedBaseString}.force_a2.txt")))
+
+    case _ => None
+
+  }
+
+  val refData = RefData(
+    data = bedBimFam(localOutDir / refBaseString),
+    base = localOutDir / refBaseString,
     vcf = store(localOutDir / s"${refBaseString}.vcf.gz"),
     tbi = store(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
-    imputeData = bedBimFam(localOutDir / imputeBaseString),
-    imputeBase = localOutDir / imputeBaseString,
     vcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz")); case false => None },
     tbiGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None },
     mt = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt")); case true => None },
     mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt")); case false => None },
-    pruneIn = store(localOutDir / s"${refBaseString}.prune.in"),
-    regionsExcludePlink = store(localOutDir / s"${refBaseString}.regions_exclude.txt"))
+    hailLog = store(localOutDir / s"${refBaseString}.hail.log"),
+    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.hail.log")); case false => None })
+
+  val imputeData = ImputeData(
+    data = bedBimFam(localOutDir / imputeBaseString),
+    base = localOutDir / imputeBaseString)
 
   val prunedData = PrunedData(
+    pruneIn = store(localOutDir / s"${qcBaseString}.prune.in"),
+    regionsExcludePlink = store(localOutDir / s"${qcBaseString}.regions_exclude.txt"),
     data = bedBimFam(localOutDir / qcBaseString),
     base = localOutDir / qcBaseString,
     bimGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${qcBaseString}.bim")); case false => None },

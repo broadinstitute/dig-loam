@@ -20,14 +20,14 @@ def AncestryPca(array: String): Unit = {
       
         hail"""$pyHailAncestryPcaMerge1kg --
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle.get}
           --kg-sample ${ProjectStores.kgSampleGoogle.get}
           --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle.get}
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}
           --cloud
           --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
-          .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
           .out(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
       
@@ -47,13 +47,13 @@ def AncestryPca(array: String): Unit = {
 
         cmd"""$binPython $pyHailAncestryPcaMerge1kg
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).harmonizedData.mt.get}
+          --mt-in ${arrayStores(array).refData.mt.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcf.get}
           --kg-sample ${ProjectStores.kgSample.get}
           --vcf-out ${arrayStores(array).ref1kgData.vcf}
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
           --log ${arrayStores(array).ref1kgData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.kgPurcellVcf.get, ProjectStores.kgSample.get)
+          .in(arrayStores(array).refData.mt.get, ProjectStores.kgPurcellVcf.get, ProjectStores.kgSample.get)
           .out(arrayStores(array).ref1kgData.vcf, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
           .tag(s"${arrayStores(array).ref1kgData.base}".split("/").last)
 

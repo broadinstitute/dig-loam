@@ -1,0 +1,13 @@
+import loamstream.model.Store
+
+sealed trait GenotypeData
+
+final case class Vcf(
+  base: Path,
+  vcf: Store) extends GenotypeData
+
+final case class Plink(
+  base: Path,
+  bed: Store,
+  bim: Store,
+  fam: Store) extends GenotypeData

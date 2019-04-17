@@ -19,10 +19,10 @@ def FilterImpute(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterImputePlink.cpus, mem = projectConfig.resources.filterImputePlink.mem, maxRunTime = projectConfig.resources.filterImputePlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.refBase} --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.imputeBase} --memory ${projectConfig.resources.filterImputePlink.mem * 0.9 * 1000}"""
-    .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).finalData.variantsExcludeIds)
-    .out(arrayStores(array).harmonizedData.imputeData)
-    .tag(s"${arrayStores(array).harmonizedData.imputeBase}".split("/").last)
+    cmd"""$binPlink --bfile ${arrayStores(array).refData.base} --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).imputeData.base} --memory ${projectConfig.resources.filterImputePlink.mem * 0.9 * 1000}"""
+    .in(arrayStores(array).refData.data :+ arrayStores(array).finalData.variantsExcludeIds)
+    .out(arrayStores(array).imputeData.data)
+    .tag(s"${arrayStores(array).imputeData.base}".split("/").last)
 
   }
 

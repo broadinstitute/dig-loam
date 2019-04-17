@@ -15,7 +15,7 @@ def QcReport(): Unit = {
 
   val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.freq.path}""").mkString(",") } }
   val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.indel.path}""").mkString(",") } }
-  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
+  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
   val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
   drmWith(imageName = s"$imgR34") {
@@ -27,7 +27,7 @@ def QcReport(): Unit = {
       --multi-in ${multiStrings.mkString(" ")}
       --dupl-in ${dupRemoveStrings.mkString(" ")}
       --out ${qcReportStores.tablesData.variantsSummary}"""
-      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.get.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
       .out(qcReportStores.tablesData.variantsSummary)
       .tag(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
 
@@ -74,8 +74,8 @@ def QcReport(): Unit = {
 
   }
 
-  val famStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.fam").mkString(",") } }
-  val bimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.bim").mkString(",") } }
+  val famStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).refData.base}.fam").mkString(",") } }
+  val bimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).refData.base}.bim").mkString(",") } }
   val imissRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.imissRemove.path}""").mkString(",") } }
   
   if (projectConfig.nArrays > 1) {
@@ -87,7 +87,7 @@ def QcReport(): Unit = {
         --input ${famStrings.mkString(" ")}
         --type fam
         --out ${qcReportStores.figureData.samplesUpsetPlotPdf.get}"""
-        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.refData.data).toSeq)
         .out(qcReportStores.figureData.samplesUpsetPlotPdf.get)
         .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf.get}".split("/").last)
       
@@ -96,7 +96,7 @@ def QcReport(): Unit = {
         --input ${bimStrings.mkString(" ")}
         --type bim
         --out ${qcReportStores.figureData.variantsUpsetPlotPdf.get}"""
-        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.refData.data).toSeq)
         .out(qcReportStores.figureData.variantsUpsetPlotPdf.get)
         .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf.get}".split("/").last)
 
@@ -128,7 +128,7 @@ def QcReport(): Unit = {
       --variants-summary-table ${qcReportStores.tablesData.variantsSummary} 
       --bim ${bimStrings(0)}
       --out ${qcReportStores.texData.data}"""
-      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq :+ qcReportStores.tablesData.variantsSummary)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.refData.data).toSeq :+ qcReportStores.tablesData.variantsSummary)
       .out(qcReportStores.texData.data)
       .tag(s"${qcReportStores.texData.data}".split("/").last)
 
