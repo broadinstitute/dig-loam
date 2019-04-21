@@ -1,0 +1,18 @@
+import Strings.MultiStrPath
+import loamstream.model.Store
+
+final case class MultiStore(
+  local: Option[Store],
+  google: Option[Store])
+
+sealed trait GenotypeData
+
+final case class Vcf(
+  base: MultiStrPath,
+  vcf: MultiStore) extends GenotypeData
+
+final case class Plink(
+  base: MultiStrPath,
+  bed: MultiStore,
+  bim: MultiStore,
+  fam: MultiStore) extends GenotypeData
