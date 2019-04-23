@@ -1,13 +1,27 @@
 import loamstream.model.Store
 
-sealed trait GenotypeData
+final case class MultiPath(
+  local: Option[Path],
+  google: Option[URI])
+
+final case class MultiStore(
+  local: Option[Store],
+  google: Option[Store])
 
 final case class Vcf(
   base: Path,
-  vcf: Store) extends GenotypeData
+  data: Store,
+  tbi: Store)
+
+final case class MultiPathVcf(
+  base: MultiPath,
+  data: MultiStore,
+  tbi: MultiStore)
 
 final case class Plink(
   base: Path,
-  bed: Store,
-  bim: Store,
-  fam: Store) extends GenotypeData
+  data: Seq[Store])
+
+final case class MultiPathPlink(
+  base: MultiPath,
+  data: Seq[MultiStore])

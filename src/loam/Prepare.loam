@@ -7,60 +7,77 @@ import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
 
-def Prepare(array: String): Unit = {
+def Prepare(arrayCfg: ConfigArray): Unit = {
+
+  arrayCfg.format match {
+
+    case "vcf" =>
+
+      drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+      
+        cmd"""$binPlink --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data} --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+          .in(arrayStores(arrayCfg).rawData.vcf.get.data)
+          .out(arrayStores(arrayCfg).rawData.plink.get.data)
+          .tag(s"${arrayStores(arrayCfg).rawData.vcf.get.base}.convert_to_plink".split("/").last)
+      
+      }
+
+    case _ => ()
+
+  }
 
   drmWith(imageName = s"$imgTools") {
   
-    cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(array).rawData.data.base}.bim > ${arrayStores(array).rawData.unplaced.get}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.unplaced.get)
-      .tag(s"${arrayStores(array).rawData.unplaced.get}".split("/").last)
+    cmd"""awk '$$1 == 0 {print $$2}' ${arrayStores(arrayCfg).rawData.plink.get.base}.bim > ${arrayStores(arrayCfg).rawData.unplaced.get}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.unplaced.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.unplaced.get}".split("/").last)
   
-    cmd"""awk '{k=$$1":"$$4":"$$5":"$$6; if(!m[k]) {print $$2; m[k]=1}}' ${arrayStores(array).rawData.data.base}.bim > ${arrayStores(array).rawData.unique.get}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.unique.get)
-      .tag(s"${arrayStores(array).rawData.unique.get}".split("/").last)
+    cmd"""awk '{k=$$1":"$$4":"$$5":"$$6; if(!m[k]) {print $$2; m[k]=1}}' ${arrayStores(arrayCfg).rawData.plink.get.base}.bim > ${arrayStores(arrayCfg).rawData.unique.get}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.unique.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.unique.get}".split("/").last)
   
-    cmd"""awk '{if($$5$$6 == "ID" || $$5$$6 == "DI") print $$2}' ${arrayStores(array).rawData.data.base}.bim > ${arrayStores(array).rawData.indel.get}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.indel.get)
-      .tag(s"${arrayStores(array).rawData.indel.get}".split("/").last)
-  
-  }
-  
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
-  
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.data.base} --missing --out ${arrayStores(array).rawData.base}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.lmiss.get, arrayStores(array).rawData.imiss.get)
-      .tag(s"${arrayStores(array).rawData.data.base}.missing".split("/").last)
-  
-  }
-  
-  drmWith(imageName = s"$imgTools") {
-  
-    cmd"""sed '1d' ${arrayStores(array).rawData.imiss.get} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(array).rawData.imissRemove.get}"""
-      .in(arrayStores(array).rawData.imiss.get)
-      .out(arrayStores(array).rawData.imissRemove.get)
-      .tag(s"${arrayStores(array).rawData.imissRemove.get}".split("/").last)
+    cmd"""awk '{if($$5$$6 == "ID" || $$5$$6 == "DI") print $$2}' ${arrayStores(arrayCfg).rawData.plink.get.base}.bim > ${arrayStores(arrayCfg).rawData.indel.get}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.indel.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.indel.get}".split("/").last)
   
   }
   
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.data.base} --freq --out ${arrayStores(array).rawData.base}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.freq.get)
-      .tag(s"${arrayStores(array).rawData.freq.get}".split("/").last)
+    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --missing --out ${arrayStores(arrayCfg).rawData.plink.get.base}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.lmiss.get, arrayStores(arrayCfg).rawData.imiss.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.plink.get.base}.missing".split("/").last)
   
   }
   
   drmWith(imageName = s"$imgTools") {
   
-    cmd"""sed '1d' ${arrayStores(array).rawData.freq.get} | awk '{if($$5 == 0) print $$2}' > ${arrayStores(array).rawData.mono.get}"""
-      .in(arrayStores(array).rawData.freq.get)
-      .out(arrayStores(array).rawData.mono.get)
-      .tag(s"${arrayStores(array).rawData.mono.get}".split("/").last)
+    cmd"""sed '1d' ${arrayStores(arrayCfg).rawData.imiss.get} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(arrayCfg).rawData.imissRemove.get}"""
+      .in(arrayStores(arrayCfg).rawData.imiss.get)
+      .out(arrayStores(arrayCfg).rawData.imissRemove.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.imissRemove.get}".split("/").last)
+  
+  }
+  
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+  
+    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --freq --out ${arrayStores(arrayCfg).rawData.plink.get.base}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.freq.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.plink.get.base}.freq".split("/").last)
+  
+  }
+  
+  drmWith(imageName = s"$imgTools") {
+  
+    cmd"""sed '1d' ${arrayStores(arrayCfg).rawData.freq.get} | awk '{if($$5 == 0) print $$2}' > ${arrayStores(arrayCfg).rawData.mono.get}"""
+      .in(arrayStores(arrayCfg).rawData.freq.get)
+      .out(arrayStores(arrayCfg).rawData.mono.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.mono.get}".split("/").last)
   
   }
 
@@ -68,79 +85,79 @@ def Prepare(array: String): Unit = {
   
     cmd"""$binRscript --vanilla --verbose 
       $rFindBestDuplicateVariants
-      --bim-in ${arrayStores(array).rawData.data.base}.bim
-      --freq-in ${arrayStores(array).rawData.freq.get}
-      --miss-in ${arrayStores(array).rawData.lmiss.get}
-      --out ${arrayStores(array).rawData.dupRemove.get}"""
-      .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.freq.get :+ arrayStores(array).rawData.lmiss.get)
-      .out(arrayStores(array).rawData.dupRemove.get)
-      .tag(s"${arrayStores(array).rawData.dupRemove.get}".split("/").last)
+      --bim-in ${arrayStores(arrayCfg).rawData.plink.get.base}.bim
+      --freq-in ${arrayStores(arrayCfg).rawData.freq.get}
+      --miss-in ${arrayStores(arrayCfg).rawData.lmiss.get}
+      --out ${arrayStores(arrayCfg).rawData.dupRemove.get}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data :+ arrayStores(arrayCfg).rawData.freq.get :+ arrayStores(arrayCfg).rawData.lmiss.get)
+      .out(arrayStores(arrayCfg).rawData.dupRemove.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupRemove.get}".split("/").last)
   
   }
   
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.data.base} --remove ${arrayStores(array).rawData.imissRemove.get} --exclude ${arrayStores(array).rawData.dupRemove.get} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(array).preparedData.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove.get :+ arrayStores(array).rawData.dupRemove.get)
-      .out(arrayStores(array).preparedData.get.data)
-      .tag(s"${arrayStores(array).preparedData.get.base}".split("/").last)
+    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --remove ${arrayStores(arrayCfg).rawData.imissRemove.get} --exclude ${arrayStores(arrayCfg).rawData.dupRemove.get} --merge-x no-fail --output-chr MT --make-bed --out ${arrayStores(arrayCfg).preparedData.get.plink.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data :+ arrayStores(arrayCfg).rawData.imissRemove.get :+ arrayStores(arrayCfg).rawData.dupRemove.get)
+      .out(arrayStores(arrayCfg).preparedData.get.plink.data)
+      .tag(s"${arrayStores(arrayCfg).preparedData.get.plink.base}".split("/").last)
   
   }
   
   drmWith(imageName = s"$imgTools") {
   
-    cmd"""awk '{if(x[$$1":"$$4]) {x_count[$$1":"$$4]++; print $$2; if(x_count[$$1":"$$4] == 1) {print x[$$1":"$$4]}} x[$$1":"$$4] = $$2}' ${arrayStores(array).preparedData.get.base}.bim > ${arrayStores(array).preparedData.get.multiallelic}"""
-      .in(arrayStores(array).preparedData.get.data)
-      .out(arrayStores(array).preparedData.get.multiallelic)
-      .tag(s"${arrayStores(array).preparedData.get.multiallelic}".split("/").last)
+    cmd"""awk '{if(x[$$1":"$$4]) {x_count[$$1":"$$4]++; print $$2; if(x_count[$$1":"$$4] == 1) {print x[$$1":"$$4]}} x[$$1":"$$4] = $$2}' ${arrayStores(arrayCfg).preparedData.get.plink.base}.bim > ${arrayStores(arrayCfg).preparedData.get.multiallelic}"""
+      .in(arrayStores(arrayCfg).preparedData.get.plink.data)
+      .out(arrayStores(arrayCfg).preparedData.get.multiallelic)
+      .tag(s"${arrayStores(arrayCfg).preparedData.get.multiallelic}".split("/").last)
   
   }
   
-  projectConfig.Arrays.filter(_.id == array)(0).liftOver match {
+  arrayCfg.liftOver match {
   
     case Some(s) =>
   
       drmWith(imageName = s"$imgTools") {
       
-        cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(array).preparedData.get.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(array).preparedData.get.bed}"""
-          .in(arrayStores(array).preparedData.get.data)
-          .out(arrayStores(array).preparedData.get.bed)
+        cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(arrayCfg).preparedData.get.plink.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(arrayCfg).preparedData.get.bed.get}"""
+          .in(arrayStores(arrayCfg).preparedData.get.plink.data)
+          .out(arrayStores(arrayCfg).preparedData.get.bed.get)
       
       }
       
       drmWith(imageName = s"$imgTools", cores = projectConfig.resources.prepareLiftOver.cpus, mem = projectConfig.resources.prepareLiftOver.mem, maxRunTime = projectConfig.resources.prepareLiftOver.maxRunTime) {
       
-        cmd"""$binLiftOver ${arrayStores(array).preparedData.get.bed} ${arrayStores(array).preparedData.get.chain} ${arrayStores(array).preparedData.get.lifted} ${arrayStores(array).preparedData.get.unlifted}"""
-          .in(arrayStores(array).preparedData.get.bed, arrayStores(array).preparedData.get.chain)
-          .out(arrayStores(array).preparedData.get.lifted, arrayStores(array).preparedData.get.unlifted)
+        cmd"""$binLiftOver ${arrayStores(arrayCfg).preparedData.get.bed.get} ${arrayStores(arrayCfg).preparedData.get.chain.get} ${arrayStores(arrayCfg).preparedData.get.lifted.get} ${arrayStores(arrayCfg).preparedData.get.unlifted.get}"""
+          .in(arrayStores(arrayCfg).preparedData.get.bed.get, arrayStores(arrayCfg).preparedData.get.chain.get)
+          .out(arrayStores(arrayCfg).preparedData.get.lifted.get, arrayStores(arrayCfg).preparedData.get.unlifted.get)
       
       }
       
       drmWith(imageName = s"$imgTools") {
   
-        cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(array).preparedData.get.lifted} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(array).preparedData.get.liftedUpdate}"""
-          .in(arrayStores(array).preparedData.get.lifted)
-          .out(arrayStores(array).preparedData.get.liftedUpdate)
+        cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(arrayCfg).preparedData.get.lifted.get} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(arrayCfg).preparedData.get.liftedUpdate.get}"""
+          .in(arrayStores(arrayCfg).preparedData.get.lifted.get)
+          .out(arrayStores(arrayCfg).preparedData.get.liftedUpdate.get)
       
-        cmd"""awk '{print $$4}' ${arrayStores(array).preparedData.get.lifted} > ${arrayStores(array).preparedData.get.liftedExtract}"""
-          .in(arrayStores(array).preparedData.get.lifted)
-          .out(arrayStores(array).preparedData.get.liftedExtract)
+        cmd"""awk '{print $$4}' ${arrayStores(arrayCfg).preparedData.get.lifted.get} > ${arrayStores(arrayCfg).preparedData.get.liftedExtract.get}"""
+          .in(arrayStores(arrayCfg).preparedData.get.lifted.get)
+          .out(arrayStores(arrayCfg).preparedData.get.liftedExtract.get)
   
       }
   
       drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
       
         cmd"""$binPlink
-          --bfile ${arrayStores(array).preparedData.get.base}
-          --extract ${arrayStores(array).preparedData.get.liftedExtract}
-          --update-chr ${arrayStores(array).preparedData.get.liftedUpdate} 1 3
-          --update-map ${arrayStores(array).preparedData.get.liftedUpdate} 2 3
+          --bfile ${arrayStores(arrayCfg).preparedData.get.plink.base}
+          --extract ${arrayStores(arrayCfg).preparedData.get.liftedExtract.get}
+          --update-chr ${arrayStores(arrayCfg).preparedData.get.liftedUpdate.get} 1 3
+          --update-map ${arrayStores(arrayCfg).preparedData.get.liftedUpdate.get} 2 3
           --output-chr MT
           --make-bed
-          --out ${arrayStores(array).annotatedData.get.base}
+          --out ${arrayStores(arrayCfg).annotatedData.get.plink.base}
           --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
-          .in(arrayStores(array).preparedData.get.data :+ arrayStores(array).preparedData.get.liftedExtract :+ arrayStores(array).preparedData.get.liftedUpdate)
-          .out(arrayStores(array).annotatedData.get.data)
+          .in(arrayStores(arrayCfg).preparedData.get.plink.data :+ arrayStores(arrayCfg).preparedData.get.liftedExtract.get :+ arrayStores(arrayCfg).preparedData.get.liftedUpdate.get)
+          .out(arrayStores(arrayCfg).annotatedData.get.plink.data)
       
       }
   

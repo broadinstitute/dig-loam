@@ -4,8 +4,8 @@ import StoreHelpers._
 import Stores._
 
 final case class RawData(
-  data: GenotypeData,
-  base: Path,
+  plink: Option[Plink],
+  vcf: Option[Vcf],
   unplaced: Option[Store],
   unique: Option[Store],
   indel: Option[Store],
@@ -17,8 +17,7 @@ final case class RawData(
   dupRemove: Option[Store])
 
 final case class PreparedData(
-  data: Seq[Store],
-  base: Path,
+  plink: Plink,
   multiallelic: Store,
   chain: Option[Store] = None,
   bed: Option[Store] = None,
@@ -28,16 +27,12 @@ final case class PreparedData(
   liftedExtract: Option[Store] = None)
 
 final case class AnnotatedData(
-  data: Seq[Store],
-  base: Path)
+  plink: Plink)
 
 final case class AnnotatedChrData(
-  data: Seq[Store],
-  base: Path,
-  mergedKgBase: Path,
-  mergedKg: Seq[Store],
-  mergedKgHuRefBase: Path,
-  mergedKgHuRef: Seq[Store],
+  plink: Plink,
+  mergedKgPlink: Plink,
+  mergedKgHuRefPlink: Plink,
   mergedKgNonKgBase: Path,
   nonKgRemove: Store,
   nonKgIgnore: Store,
@@ -49,8 +44,7 @@ final case class AnnotatedChrData(
   mergedKgVarSnpLog: Store)
 
 final case class HarmonizedData(
-  data: Seq[Store],
-  base: Path,
+  plink: Plink,
   mergeList: Store,
   nonKgRemove: Store,
   nonKgIgnore: Store,
@@ -63,12 +57,8 @@ final case class HarmonizedData(
   forceA2: Store)
 
 final case class RefData(
-  data: Seq[Store],
-  base: Path,
-  vcf: Store,
-  tbi: Store,
-  vcfGoogle: Option[Store],
-  tbiGoogle: Option[Store],
+  plink: Plink,
+  vcf: MultiPathVcf,
   mt: Option[Store],
   mtGoogle: Option[Store],
   hailLog: Store,
@@ -223,9 +213,8 @@ final case class Array(
   variantQcData: VariantQcData,
   cleanData: CleanData)
 
-val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
+val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
-  val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
   val rawBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw"
   val preparedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
@@ -244,43 +233,56 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   val variantQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.variantqc"
   val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
-  val data = {
-    arrayCfg.format match {
-      case "plink" =>
-        Plink(
-          base = path(cfgArray.filename),
-          bed = store(cfgArray.filename + ".bed").asInput,
-          bim = store(cfgArray.filename + ".bim").asInput,
-          fam = store(cfgArray.filename + ".fam").asInput
-        )
-      case "vcf" =>
-        Vcf(
-          base = path(cfgArray.filename.replaceAll(".vcf.gz$","").replaceAll(".vcf.bgz$","").replaceAll(".gz$","").replaceAll(".bgz$","")),
-          vcf = store(cfgArray.file).asInput
-        )
-    }
+  val plink = arrayCfg.technology match {
+
+    case "gwas" =>
+
+      arrayCfg.format match {
+        case "plink" =>
+          Some(Plink(
+            base = path(arrayCfg.filename),
+            data = Seq(store(path(arrayCfg.filename + s".bed")).asInput,store(path(arrayCfg.filename + s".bim")).asInput,store(path(arrayCfg.filename + s".fam")).asInput),
+          ))
+        case _ =>
+          Some(Plink(
+            base = localOutDir / rawBaseString,
+            data = bedBimFam(localOutDir / rawBaseString)
+          ))
+      }
+
+    case _ => None
+
+  }
+
+  val vcf = arrayCfg.format match {
+    case "vcf" =>
+      Some(Vcf(
+        base = path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")),
+        data = store(arrayCfg.filename).asInput,
+        tbi = store(arrayCfg.filename + s".tbi").asInput
+      ))
+    case _ => None
   }
 
   val rawData = RawData(
-    data = data,
-	base = localOutDir / rawBaseString,
-    unplaced = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.unplaced")); case false => None },
-    unique = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.unique")); case false => None },
-    indel = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.indel")); case false => None },
-    lmiss = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.missing.lmiss")); case false => None },
-    imiss = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.missing.imiss")); case false => None },
-    imissRemove = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.missing.imiss.remove")); case false => None },
-    freq = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.freq.frq")); case false => None },
-    mono = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.mono")); case false => None },
-    dupRemove = arracyCfg.format match { case "plink" => Some(store(localOutDir / s"${rawBaseString}.dup.remove")); case false => None })
+    plink = plink,
+    vcf = vcf,
+    unplaced = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.unplaced")); case _ => None },
+    unique = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.unique")); case _ => None },
+    indel = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.indel")); case _ => None },
+    lmiss = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.missing.lmiss")); case _ => None },
+    imiss = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.missing.imiss")); case _ => None },
+    imissRemove = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.missing.imiss.remove")); case _ => None },
+    freq = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.freq.frq")); case _ => None },
+    mono = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.mono")); case _ => None },
+    dupRemove = arrayCfg.technology match { case "gwas" => Some(store(localOutDir / s"${rawBaseString}.dup.remove")); case _ => None })
 
-  val preparedData = arrayCfg.format match {
+  val preparedData = arrayCfg.technology match {
 
-    case "plink" =>
+    case "gwas" =>
 
       Some(PreparedData(
-        data = bedBimFam(localOutDir / preparedBaseString),
-        base = localOutDir / preparedBaseString,
+        plink = Plink(base = localOutDir / preparedBaseString, data = bedBimFam(localOutDir / preparedBaseString)),
         multiallelic = store(localOutDir / s"${preparedBaseString}.multiallelic"),
         chain = arrayCfg.liftOver.map(s => store(path(s)).asInput),
         bed = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.liftover.bed")),
@@ -293,19 +295,16 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
   }
 
-  val annotatedData = arrayCfg.format match {
+  val annotatedData = arrayCfg.technology match {
 
-    case "plink" =>
+    case "gwas" =>
 
       Some(AnnotatedData(
-        data = arrayCfg.liftOver match {
-          case Some(s) => bedBimFam(localOutDir / annotatedBaseString)
-          case None => preparedData.get.data 
-        },
-        base = arrayCfg.liftOver match {
-          case Some(s) => localOutDir / annotatedBaseString
-          case None => localOutDir / preparedBaseString 
-        }))
+        plink = arrayCfg.liftOver match {
+          case Some(s) => Plink(base = localOutDir / annotatedBaseString, data = bedBimFam(localOutDir / annotatedBaseString))
+          case None => preparedData.get.plink
+        }
+      ))
 
     case _ => None
 
@@ -313,11 +312,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
   val chrSeq = (1 to 22).map(e => e.toString).toSeq ++ (if (arrayCfg.xChr) Seq("X") else Seq.empty) ++ (if (arrayCfg.yChr) Seq("Y") else Seq.empty) ++ (if (arrayCfg.mtChr) Seq("MT") else Seq.empty)
 
-  val annotatedChrData = arrayCfg.format match {
+  val annotatedChrData = arrayCfg.technology match {
 
-    case "plink" =>
+    case "gwas" =>
 
-      chrSeq.map { chr =>
+      Some(chrSeq.map { chr =>
 
         val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
         
@@ -330,12 +329,9 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
         val mergedKgNonKgBaseString = s"${mergedKgBaseString}.nonkg"
         
         chr -> AnnotatedChrData(
-          data = bedBimFam(localOutDir / chrBaseString),
-          base = localOutDir / chrBaseString,
-          mergedKgBase = localOutDir / mergedKgBaseString,
-          mergedKg = bedBimFam(localOutDir / mergedKgBaseString),
-          mergedKgHuRefBase = localOutDir / mergedKgHuRefBaseString,
-          mergedKgHuRef = bedBimFam(localOutDir / mergedKgHuRefBaseString),
+          plink = Plink(base = localOutDir / chrBaseString, data = bedBimFam(localOutDir / chrBaseString)),
+          mergedKgPlink = Plink(base = localOutDir / mergedKgBaseString, data = bedBimFam(localOutDir / mergedKgBaseString)),
+          mergedKgHuRefPlink = Plink(base = localOutDir / mergedKgHuRefBaseString, data = bedBimFam(localOutDir / mergedKgHuRefBaseString)),
           mergedKgNonKgBase = localOutDir / mergedKgNonKgBaseString,
           nonKgRemove = store(localOutDir / s"${mergedKgNonKgBaseString}.remove"),
           nonKgIgnore = store(localOutDir / s"${mergedKgNonKgBaseString}.ignore"),
@@ -346,19 +342,18 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
           mergedKgVarIdUpdate = store(localOutDir / s"${mergedKgBaseString}_idUpdates.txt"),
           mergedKgVarSnpLog = store(localOutDir / s"${mergedKgBaseString}_snpLog.log"))
 
-      }.toMap
+      }.toMap)
 
     case _ => None
 
   }
 
-  val harmonizedData = arrayCfg.format match {
+  val harmonizedData = arrayCfg.technology match {
 
-    case "plink" =>
+    case "gwas" =>
 
       Some(HarmonizedData(
-        data = bedBimFam(localOutDir / harmonizedBaseString),
-        base = localOutDir / harmonizedBaseString,
+        plink = Plink(base = localOutDir / harmonizedBaseString, data = bedBimFam(localOutDir / harmonizedBaseString)),
         mergeList = store(localOutDir / s"${harmonizedBaseString}.merge.txt"),
         nonKgRemove = store(localOutDir / s"${harmonizedBaseString}.nonkg.remove"),
         nonKgIgnore = store(localOutDir / s"${harmonizedBaseString}.nonkg.ignore"),
@@ -375,12 +370,11 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
   }
 
   val refData = RefData(
-    data = bedBimFam(localOutDir / refBaseString),
-    base = localOutDir / refBaseString,
-    vcf = store(localOutDir / s"${refBaseString}.vcf.gz"),
-    tbi = store(localOutDir / s"${refBaseString}.vcf.gz.tbi"),
-    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz")); case false => None },
-    tbiGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None },
+    plink = Plink(base = localOutDir / refBaseString, data = bedBimFam(localOutDir / refBaseString)),
+    vcf = MultiPathVcf(
+      base = MultiPath(local = Some(localOutDir / refBaseString), google = hailCloud match { case true => Some(googleOutDir.get / refBaseString); case false => None }),
+      data = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz")); case false => None }),
+      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None })),
     mt = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt")); case true => None },
     mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt")); case false => None },
     hailLog = store(localOutDir / s"${refBaseString}.hail.log"),
@@ -516,12 +510,14 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     pcaScores = store(localOutDir / s"${cleanBaseString}.pca.scores.tsv"),
     pcaLog = store(localOutDir / s"${cleanBaseString}.pca.log"))
 
-  array -> Array(
+  arrayCfg -> Array(
     rawData = rawData,
     preparedData = preparedData,
     annotatedData = annotatedData,
     annotatedChrData = annotatedChrData,
     harmonizedData = harmonizedData,
+    refData = refData,
+    imputeData = imputeData,
     prunedData = prunedData,
     kinshipData = kinshipData,
     ref1kgData = ref1kgData,

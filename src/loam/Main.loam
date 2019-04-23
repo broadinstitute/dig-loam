@@ -1,56 +1,58 @@
 import ProjectConfig._
-import PipelineConfig._
-import Directories._
-import StoreHelpers._
-import ProjectStores._
+//import PipelineConfig._
+//import Directories._
+//import StoreHelpers._
+//import ProjectStores._
 import ArrayStores._
 import Prepare._
 import Harmonize._
-import Load._
-import FilterForQc._
-import Kinship._
-import Ancestry._
-import Pca._
-import SampleQc._
-import FilterFinal._
-import Impute._
-import VariantAssoc._
-import CrossCohort._
-import Meta._
-import Merge._
-import ResultsSummary._
-import AssocStores._
-import Phenotype._
-import QcReport._
-import AnalysisReport._
+//import Load._
+//import FilterForQc._
+//import Kinship._
+//import Ancestry._
+//import Pca._
+//import SampleQc._
+//import FilterFinal._
+//import Impute._
+//import VariantAssoc._
+//import CrossCohort._
+//import Meta._
+//import Merge._
+//import ResultsSummary._
+//import AssocStores._
+//import Phenotype._
+//import QcReport._
+//import AnalysisReport._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
+//throw new Exception(s"${projectConfig.Arrays}")
+
 // Array specific QC steps up to ancestry inferrence
 for {
-      array <- projectConfig.Arrays
+  array <- projectConfig.Arrays if array.technology == "gwas"
 } yield {
-
-  arrayStores(array).rawData.data match {
-
-    case _: Plink => 
     
-      Prepare(array.id)
-      Harmonize(array.id)
-
-    case _ => ()
-
-  Load(array.id)
-  FilterForQc(array.id)
-  Kinship(array.id)
-  AncestryPca(array.id)
-  AncestryCluster(array.id)
+  Prepare(array)
+  Harmonize(array)
 
 }
 
+//for {
+//  array <- projectConfig.Arrays
+//} yield {
+//
+//  Load(array.id)
+//  FilterForQc(array.id)
+//  Kinship(array.id)
+//  AncestryPca(array.id)
+//  AncestryCluster(array.id)
+//
+//}
+//
 //// Reconcile inferred ancestry
 //MergeInferredAncestry()
 //
