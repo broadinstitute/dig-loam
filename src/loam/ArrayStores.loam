@@ -5,7 +5,7 @@ import Stores._
 
 final case class RawData(
   plink: Option[Plink],
-  vcf: Option[Vcf],
+  vcf: Option[MultiPathVcf],
   unplaced: Option[Store],
   unique: Option[Store],
   indel: Option[Store],
@@ -57,7 +57,7 @@ final case class HarmonizedData(
   forceA2: Store)
 
 final case class RefData(
-  plink: Plink,
+  plink: Option[Plink],
   vcf: MultiPathVcf,
   mt: Option[Store],
   mtGoogle: Option[Store],
@@ -233,6 +233,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val variantQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.variantqc"
   val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
+  val baseName = arrayCfg.filename.split("/").last
+
   val plink = arrayCfg.technology match {
 
     case "gwas" =>
@@ -256,11 +258,18 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   val vcf = arrayCfg.format match {
     case "vcf" =>
-      Some(Vcf(
-        base = path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")),
-        data = store(arrayCfg.filename).asInput,
-        tbi = store(arrayCfg.filename + s".tbi").asInput
-      ))
+      arrayCfg.technology match {
+        case "gwas" =>
+          Some(MultiPathVcf(
+            base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = None),
+            data = MultiStore(local = Some(store(arrayCfg.filename).asInput), google = None),
+            tbi = MultiStore(local = Some(store(arrayCfg.filename + s".tbi").asInput), google = None)))
+        case _ =>
+          Some(MultiPathVcf(
+            base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = hailCloud match { case true => Some(googleOutDir.get / baseName.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")); case false => None }),
+            data = MultiStore(local = Some(store(arrayCfg.filename).asInput), google = hailCloud match { case true => Some(store(googleOutDir.get / baseName)); case false => None }),
+            tbi = MultiStore(local = Some(store(arrayCfg.filename + s".tbi").asInput), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${baseName}.tbi")); case false => None })))
+      }
     case _ => None
   }
 
@@ -369,12 +378,19 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   }
 
-  val refData = RefData(
-    plink = Plink(base = localOutDir / refBaseString, data = bedBimFam(localOutDir / refBaseString)),
-    vcf = MultiPathVcf(
+  val refVcf = arrayCfg.technology match {
+    case "gwas" =>
+      MultiPathVcf(
       base = MultiPath(local = Some(localOutDir / refBaseString), google = hailCloud match { case true => Some(googleOutDir.get / refBaseString); case false => None }),
       data = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz")); case false => None }),
-      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None })),
+      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None }))
+    case _ =>
+      rawData.vcf.get
+  }
+
+  val refData = RefData(
+    plink = arrayCfg.technology match { case "gwas" => Some(Plink(base = localOutDir / refBaseString, data = bedBimFam(localOutDir / refBaseString))); case _ => None },
+    vcf = refVcf,
     mt = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt")); case true => None },
     mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt")); case false => None },
     hailLog = store(localOutDir / s"${refBaseString}.hail.log"),

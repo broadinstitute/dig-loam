@@ -15,10 +15,10 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
       drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
       
-        cmd"""$binPlink --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data} --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
-          .in(arrayStores(arrayCfg).rawData.vcf.get.data)
+        cmd"""$binPlink --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data.local.get} --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+          .in(arrayStores(arrayCfg).rawData.vcf.get.data.local.get)
           .out(arrayStores(arrayCfg).rawData.plink.get.data)
-          .tag(s"${arrayStores(arrayCfg).rawData.vcf.get.base}.convert_to_plink".split("/").last)
+          .tag(s"${arrayStores(arrayCfg).rawData.vcf.get.base.local.get}.convert_to_plink".split("/").last)
       
       }
 

@@ -29,7 +29,7 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-//throw new Exception(s"${projectConfig.Arrays}")
+//throw new Exception(s"${arrayStores(projectConfig.Arrays.tail.head).refData}")
 
 // Array specific QC steps up to ancestry inferrence
 for {
