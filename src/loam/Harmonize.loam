@@ -141,7 +141,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
       .out(arrayStores(arrayCfg).refData.plink.data)
       .tag(s"${arrayStores(arrayCfg).refData.plink.base}".split("/").last)
     
-    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --out ${arrayStores(arrayCfg).refData.vcf.data.local.get} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --out ${arrayStores(arrayCfg).refData.vcf.base.local.get} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
       .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
       .out(arrayStores(arrayCfg).refData.vcf.data.local.get)
       .tag(s"${arrayStores(arrayCfg).refData.vcf.data.local.get}".split("/").last)
