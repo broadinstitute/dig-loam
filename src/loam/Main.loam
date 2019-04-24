@@ -6,7 +6,7 @@ import ProjectConfig._
 import ArrayStores._
 import Prepare._
 import Harmonize._
-//import Load._
+import Load._
 //import FilterForQc._
 //import Kinship._
 //import Ancestry._
@@ -41,18 +41,18 @@ for {
 
 }
 
-//for {
-//  array <- projectConfig.Arrays
-//} yield {
-//
-//  Load(array.id)
-//  FilterForQc(array.id)
-//  Kinship(array.id)
-//  AncestryPca(array.id)
-//  AncestryCluster(array.id)
-//
-//}
-//
+for {
+  array <- projectConfig.Arrays
+} yield {
+
+  Load(array)
+  //FilterForQc(array.id)
+  //Kinship(array.id)
+  //AncestryPca(array.id)
+  //AncestryCluster(array.id)
+
+}
+
 //// Reconcile inferred ancestry
 //MergeInferredAncestry()
 //

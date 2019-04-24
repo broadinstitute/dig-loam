@@ -7,7 +7,7 @@ import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
 
-def Load(array: String): Unit = {
+def Load(array: ConfigArray): Unit = {
 
   hailCloud match {
 
@@ -15,8 +15,8 @@ def Load(array: String): Unit = {
 
       local {
       
-        googleCopy(arrayStores(array).refData.vcf, arrayStores(array).refData.vcfGoogle.get)
-        googleCopy(arrayStores(array).refData.tbi, arrayStores(array).refData.tbiGoogle.get)
+        googleCopy(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.data.google.get)
+        googleCopy(arrayStores(array).refData.vcf.tbi.local.get, arrayStores(array).refData.vcf.tbi.google.get)
       
       }
       
@@ -24,20 +24,24 @@ def Load(array: String): Unit = {
       
         hail"""$pyHailLoad --
           --reference-genome ${projectConfig.referenceGenome}
-          --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcfGoogle.get}
+          --partitions ${array.partitions.toString}
+          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
+          --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
+          --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
           --mt-out ${arrayStores(array).refData.mtGoogle.get}
           --cloud
           --log ${arrayStores(array).refData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.vcfGoogle.get, arrayStores(array).refData.tbiGoogle.get)
-          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).refData.vcf}.pyHailLoad".split("/").last)
+          .in(arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get)
+          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
+          .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
       
       }
 
       local {
 
         googleCopy(arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.hailLog)
+        googleCopy(arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.variantMetrics)
+        googleCopy(arrayStores(array).refData.sitesVcfGoogle.get, arrayStores(array).refData.sitesVcf)
 
       }
 
@@ -47,13 +51,15 @@ def Load(array: String): Unit = {
 
         cmd"""$binPython $pyHailLoad
           --reference-genome ${projectConfig.referenceGenome}
-          --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf}
+          --partitions ${array.partitions.toString}
+          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.local.get}
+          --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
+          --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
           --mt-out ${arrayStores(array).refData.mt.get}
           --log ${arrayStores(array).refData.hailLog}"""
-          .in(arrayStores(array).refData.vcf, arrayStores(array).refData.tbi)
-          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.hailLog)
-          .tag(s"${arrayStores(array).refData.vcf}.pyHailLoad".split("/").last)
+          .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get)
+          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).refData.sitesVcf)
+          .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
 
       }
 

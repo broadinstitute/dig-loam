@@ -62,7 +62,11 @@ final case class RefData(
   mt: Option[Store],
   mtGoogle: Option[Store],
   hailLog: Store,
-  hailLogGoogle: Option[Store])
+  hailLogGoogle: Option[Store],
+  variantMetrics: Store,
+  variantMetricsGoogle: Option[Store],
+  sitesVcf: Store,
+  sitesVcfGoogle: Option[Store])
 
 final case class ImputeData(
   data: Seq[Store],
@@ -394,7 +398,11 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     mt = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt")); case true => None },
     mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt")); case false => None },
     hailLog = store(localOutDir / s"${refBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.hail.log")); case false => None })
+    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.hail.log")); case false => None },
+    variantMetrics = store(localOutDir / s"${refBaseString}.variant.metrics.tsv"),
+    variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.variant.metrics.tsv")); case false => None },
+    sitesVcf = store(localOutDir / s"${refBaseString}.sites_only.vcf"),
+    sitesVcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.sites_only.vcf")); case false => None })
 
   val imputeData = ImputeData(
     data = bedBimFam(localOutDir / imputeBaseString),
