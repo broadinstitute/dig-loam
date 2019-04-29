@@ -9,7 +9,7 @@ def main(args=None):
 		hl.init()
 
 	print("read vcf file")
-	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions)
+	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions, array_elements_required=False)
 
 	print("split multiallelic variants")
 	mt_multi = mt.filter_rows(hl.len(mt.alleles) > 2)
