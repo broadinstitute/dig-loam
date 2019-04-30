@@ -19,7 +19,6 @@ def SampleQc(array: String): Unit = {
       local {
       
         googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle.get)
-        googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle.get)
       
       }
       

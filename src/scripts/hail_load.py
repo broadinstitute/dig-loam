@@ -11,6 +11,15 @@ def main(args=None):
 	print("read vcf file")
 	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions, array_elements_required=False)
 
+	print("replace any spaces in sample ids with a hyphen")
+	mt = mt.annotate_cols(mt.s = mt.s.replace("\s+","-"))
+
+	print("add pheno annotations, replacing any spaces in sample ids with a hyphen")
+	tbl = hl.import_table(args.pheno_in, delimiter="\t", no_header=False, types={args.id_col: hl.tstr})
+	tbl = tbl.annotate(tbl[args.id_col] = tbl[args.id_col].replace("\s+","-"))
+	tbl = tbl.key_by(args.id_col)
+	mt = mt.annotate_cols(pheno = tbl[mt.s])
+
 	print("split multiallelic variants")
 	mt_multi = mt.filter_rows(hl.len(mt.alleles) > 2)
 	mt_multi = hl.split_multi_hts(mt_multi)
@@ -54,6 +63,8 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)
+	requiredArgs.add_argument('--pheno-in', help='a tab delimited phenotype file', required=True)
+	requiredArgs.add_argument('--id-col', help='a column name for sample id in the phenotype file', required=True)
 	requiredArgs.add_argument('--variant-metrics-out', help='an output filename for variant qc metrics', required=True)
 	requiredArgs.add_argument('--sites-vcf-out', help='an output filename for a sites only VCF file (must end in .vcf)', required=True)
 	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)

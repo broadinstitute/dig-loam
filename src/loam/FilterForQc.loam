@@ -8,54 +8,52 @@ import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 
-def FilterForQc(array: String): Unit = {
+def FilterForQc(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  hailCloud match {
 
-    cmd"""cat ${ProjectStores.regionsExclude} | awk -F':' '{print $$1"\t"$$2}' | awk -F'-' '{print $$1"\t"$$2"\thild"NR}' > ${arrayStores(array).prunedData.regionsExcludePlink}""".in(ProjectStores.regionsExclude).out(arrayStores(array).prunedData.regionsExcludePlink).tag(s"${arrayStores(array).prunedData.regionsExcludePlink}".split("/").last)
+    case true =>
 
-  }
+      google {
+      
+        hail"""$pyHailFilter --
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
+          --variants-out ${arrayStores(array).prunedData.variantMetricsGoogle.get}
+          --plink-out ${arrayStores(array).prunedData.plink.base.google.get}
+          --cloud
+          --log ${arrayStores(array).prunedData.hailLogGoogle.get}"""
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get)
+          .out(arrayStores(array).prunedData.plink.data.google.get :+ arrayStores(array).prunedData.variantMetricsGoogle.get :+ arrayStores(array).prunedData.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).prunedData.plink.base.local.get}.pyHailFilter".split("/").last)
+      
+      }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterForQcPlink.cpus, mem = projectConfig.resources.filterForQcPlink.mem, maxRunTime = projectConfig.resources.filterForQcPlink.maxRunTime) {
+      local {
 
-    cmd"""$binPlink
-      --bfile ${arrayStores(array).refData.base}
-      --chr 1-22
-      --snps-only just-acgt
-      --exclude range ${arrayStores(array).prunedData.regionsExcludePlink}
-      --maf 0.01
-      --geno 0.02
-      --indep-pairwise 1000kb 1 0.2
-      --out ${arrayStores(array).refData.base}
-      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).refData.data :+ arrayStores(array).prunedData.regionsExcludePlink)
-      .out(arrayStores(array).prunedData.pruneIn)
-      .tag(s"${arrayStores(array).prunedData.pruneIn}".split("/").last)
+        googleCopy(arrayStores(array).prunedData.plink.data.google.get, arrayStores(array).prunedData.plink.data.local.get)
+        googleCopy(arrayStores(array).prunedData.variantMetricsGoogle.get, arrayStores(array).prunedData.variantMetrics)
+        googleCopy(arrayStores(array).prunedData.hailLogGoogle.get, arrayStores(array).prunedData.hailLog)
 
-    cmd"""$binPlink
-      --bfile ${arrayStores(array).refData.base}
-      --extract ${arrayStores(array).prunedData.pruneIn}
-      --keep-allele-order
-      --make-bed
-      --out ${arrayStores(array).prunedData.base}
-      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).refData.data :+ arrayStores(array).prunedData.pruneIn)
-      .out(arrayStores(array).prunedData.data)
-      .tag(s"${arrayStores(array).prunedData.base}".split("/").last)
+      }
 
-    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.get.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).prunedData.data :+ arrayStores(array).harmonizedData.get.forceA2)
-      .out(arrayStores(array).prunedData.vcf)
-      .tag(s"${arrayStores(array).prunedData.vcf}".split("/").last)
+    case false =>
 
-  }
+      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
 
-  drmWith(imageName = s"$imgTools") {
-    
-    cmd"""$binTabix -f -p vcf ${arrayStores(array).prunedData.vcf}"""
-      .in(arrayStores(array).prunedData.vcf)
-      .out(arrayStores(array).prunedData.tbi)
-      .tag(s"${arrayStores(array).prunedData.tbi}".split("/").last)
+        cmd"""$binPython $pyHailFilter
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --regions-exclude ${ProjectStores.regionsExclude.get}
+          --variants-out ${arrayStores(array).prunedData.variantMetrics}
+          --plink-out ${arrayStores(array).prunedData.plink.base.local.get}
+          --log ${arrayStores(array).prunedData.hailLog}"""
+          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude.get)
+          .out(arrayStores(array).prunedData.plink.data.local.get :+ arrayStores(array).prunedData.variantMetrics :+ arrayStores(array).prunedData.hailLog)
+          .tag(s"${arrayStores(array).prunedData.plink.base.local.get}.pyHailFilter".split("/").last)
+
+      }
 
   }
 

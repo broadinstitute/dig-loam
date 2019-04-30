@@ -4,10 +4,11 @@ import ProjectConfig._
 //import StoreHelpers._
 //import ProjectStores._
 import ArrayStores._
+import Upload._
 import Prepare._
 import Harmonize._
 import Load._
-//import FilterForQc._
+import FilterForQc._
 //import Kinship._
 //import Ancestry._
 //import Pca._
@@ -31,6 +32,9 @@ import loamstream.util.CanBeClosed.enclosed
 
 //throw new Exception(s"${arrayStores(projectConfig.Arrays.tail.head).refData}")
 
+// Upload input files to Google Cloud
+Upload()
+
 // Array specific QC steps up to ancestry inferrence
 for {
   array <- projectConfig.Arrays if array.technology == "gwas"
@@ -46,7 +50,7 @@ for {
 } yield {
 
   Load(array)
-  //FilterForQc(array.id)
+  FilterForQc(array)
   //Kinship(array.id)
   //AncestryPca(array.id)
   //AncestryCluster(array.id)

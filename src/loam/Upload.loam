@@ -1,0 +1,53 @@
+/**
+  * Upload Step
+  *  Description: Upload input files to Google Cloud as needed
+  *  Requires: NA
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ProjectStores._
+import Fxns._
+
+def InitInputs(): Unit = {
+
+  hailCloud match {
+
+    case true =>
+    
+      checkURI(s"${ProjectStores.regionsExcludeGoogle.get}") match {
+        case 0 => ()
+        case 1 => 
+          local {
+            googleCopy(ProjectStores.regionsExclude, ProjectStores.regionsExcludeGoogle.get)
+          }
+      }
+
+      checkURI(s"${ProjectStores.kgPurcellVcfGoogle.get}") match {
+        case 0 => ()
+        case 1 => 
+          local {
+            googleCopy(ProjectStores.kgPurcellVcf, ProjectStores.kgPurcellVcfGoogle.get)
+          }
+      }
+      
+      checkURI(s"${ProjectStores.kgSampleGoogle.get}") match {
+        case 0 => ()
+        case 1 => 
+          local {
+            googleCopy(ProjectStores.kgSample, ProjectStores.kgSampleGoogle.get)
+          }
+      }
+      
+      checkURI(s"${ProjectStores.phenoFileGoogle.get}") match {
+        case 0 => ()
+        case 1 => 
+          local {
+            googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle.get)
+          }
+      }
+
+    case false => ()
+
+  }
+
+}

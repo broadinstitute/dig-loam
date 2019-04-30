@@ -1,11 +1,13 @@
 val dataConfig = loadConfig("dataConfig", "")
 
+val hailCloud = dataConfig.getBool("hailCloud")
+
 val imagesDir = dataConfig.getStr("imagesDir")
 val scriptsDir = dataConfig.getStr("scriptsDir")
+val googleInput = hailCloud match { case true => Some(uri(dataConfig.getStr("googleInput"))); case false => None }
 
-val hailCloud = dataConfig.getBool("hailCloud")
 val localOutDir = if (dataConfig.isDefined("localOutDir")) { path(dataConfig.getStr("localOutDir")) } else { path("loam_out") }
-val googleOutDir = if (dataConfig.isDefined("googleOutDir")) { Some(uri(dataConfig.getStr("googleOutDir"))) } else { None }
+val googleOutDir = hailCloud match { case true => Some(uri(dataConfig.getStr("googleOutDir"))); case false => None }
 
 // Images
 val imgHail = path(s"${imagesDir}/data_processing_v2.2_hailv02.simg")

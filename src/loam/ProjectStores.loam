@@ -1,5 +1,6 @@
 import ProjectConfig._
 import PipelineConfig._
+import Fxns._
 
 final case class Known(
   data: Store,
@@ -21,7 +22,7 @@ object ProjectStores {
 
   val kgVcf = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
   
-    val vcf = store(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr")).asInput
+    val vcf = store(checkPath(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr"))).asInput
   
     chr -> vcf
   
@@ -29,7 +30,7 @@ object ProjectStores {
   
   val kgIds = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
   
-    val ids = store(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr")).asInput
+    val ids = store(checkPath(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr"))).asInput
   
     chr -> ids
   
@@ -37,7 +38,7 @@ object ProjectStores {
   
   val humanReference = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
   
-    val ref = store(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr")).asInput
+    val ref = store(checkPath(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr"))).asInput
   
     chr -> ref
   
@@ -46,23 +47,24 @@ object ProjectStores {
   val knownStores = projectConfig.Knowns.filter(e => projectConfig.Reports.flatMap(e => e.sections).flatMap(e => e.knowns).flatten.toSeq.distinct.contains(e.id)).map { known =>
 
     known -> Known(
-      data = store(path(known.data)).asInput,
-      hiLd = store(path(known.hiLd)).asInput,
+      data = store(path(checkPath(known.data))).asInput,
+      hiLd = store(path(checkPath(known.hiLd))).asInput,
       hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
     )
 
   }.toMap
 
-  val regionsExclude = store(path(projectConfig.regionsExclude)).asInput
-  val genePositions = store(path(projectConfig.genePositions)).asInput
-  val kgPurcellVcf = hailCloud match { case false => Some(store(path(projectConfig.kgPurcellVcf)).asInput); case true => None }
-  val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgPurcellVcfGoogle.get)).asInput); case false => None }
-  val kgSample = hailCloud match { case false => Some(store(path(projectConfig.kgSample)).asInput); case true => None }
-  val kgSampleGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgSampleGoogle.get)).asInput); case false => None }
-  val phenoFile = store(path(projectConfig.phenoFile)).asInput
-  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None }
+  val regionsExclude = store(path(checkPath(projectConfig.regionsExclude))).asInput
+  val regionsExcludeGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.regionsExclude}".split("/").last).asInput); case false => None }
+  val genePositions = store(path(checkPath(projectConfig.genePositions))).asInput
+  val kgPurcellVcf = store(path(checkPath(projectConfig.kgPurcellVcf))).asInput
+  val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgPurcellVcf}".split("/").last).asInput); case false => None }
+  val kgSample = store(path(checkPath(projectConfig.kgSample))).asInput
+  val kgSampleGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgSample}".split("/").last).asInput); case false => None }
+  val phenoFile = store(path(checkPath(projectConfig.phenoFile))).asInput
+  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last).asInput); case false => None }
   val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
-  val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
+  val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ancestryInferred}".split("/").last)); case false => None }
   val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
 
 }

@@ -8,6 +8,10 @@ final case class MultiStore(
   local: Option[Store],
   google: Option[Store])
 
+final case class MultiSeqStore(
+  local: Option[Seq[Store]],
+  google: Option[Seq[Store]])
+
 final case class Vcf(
   base: Path,
   data: Store,
@@ -24,4 +28,4 @@ final case class Plink(
 
 final case class MultiPathPlink(
   base: MultiPath,
-  data: Seq[MultiStore])
+  data: MultiSeqStore)

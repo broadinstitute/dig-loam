@@ -2,6 +2,7 @@ import ProjectConfig._
 import PipelineConfig._
 import StoreHelpers._
 import Stores._
+import Fxns._
 
 final case class RawData(
   plink: Option[Plink],
@@ -73,13 +74,11 @@ final case class ImputeData(
   base: Path)
 
 final case class PrunedData(
-  pruneIn: Store,
-  regionsExcludePlink: Store,
-  data: Seq[Store],
-  base: Path,
-  bimGoogle: Option[Store],
-  vcf: Store,
-  tbi: Store)
+  variantMetrics: Store,
+  variantMetricsGoogle: Option[Store],
+  plink: MultiPathPlink,
+  hailLog: Store,
+  hailLogGoogle: Option[Store])
 
 final case class KinshipData(
   base: Path,
@@ -247,12 +246,12 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         case "plink" =>
           Some(Plink(
             base = path(arrayCfg.filename),
-            data = Seq(store(path(arrayCfg.filename + s".bed")).asInput,store(path(arrayCfg.filename + s".bim")).asInput,store(path(arrayCfg.filename + s".fam")).asInput),
+            data = Seq(store(path(checkPath(arrayCfg.filename + s".bed"))).asInput,store(path(checkPath(arrayCfg.filename + s".bim"))).asInput,store(path(checkPath(arrayCfg.filename + s".fam"))).asInput),
           ))
         case _ =>
           Some(Plink(
             base = localOutDir / rawBaseString,
-            data = bedBimFam(localOutDir / rawBaseString)
+            data = bedBimFam(checkPathPlink(localOutDir / rawBaseString))
           ))
       }
 
@@ -266,13 +265,13 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         case "gwas" =>
           Some(MultiPathVcf(
             base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = None),
-            data = MultiStore(local = Some(store(arrayCfg.filename).asInput), google = None),
-            tbi = MultiStore(local = Some(store(arrayCfg.filename + s".tbi").asInput), google = None)))
+            data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = None),
+            tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = None)))
         case _ =>
           Some(MultiPathVcf(
             base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = hailCloud match { case true => Some(googleOutDir.get / baseName.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")); case false => None }),
-            data = MultiStore(local = Some(store(arrayCfg.filename).asInput), google = hailCloud match { case true => Some(store(googleOutDir.get / baseName)); case false => None }),
-            tbi = MultiStore(local = Some(store(arrayCfg.filename + s".tbi").asInput), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${baseName}.tbi")); case false => None })))
+            data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = hailCloud match { case true => Some(store(googleOutDir.get / baseName)); case false => None }),
+            tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${baseName}.tbi")); case false => None })))
       }
     case _ => None
   }
@@ -297,7 +296,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
       Some(PreparedData(
         plink = Plink(base = localOutDir / preparedBaseString, data = bedBimFam(localOutDir / preparedBaseString)),
         multiallelic = store(localOutDir / s"${preparedBaseString}.multiallelic"),
-        chain = arrayCfg.liftOver.map(s => store(path(s)).asInput),
+        chain = arrayCfg.liftOver.map(s => store(path(checkPath(s))).asInput),
         bed = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.liftover.bed")),
         lifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.lifted")),
         unlifted = arrayCfg.liftOver.map(s => store(localOutDir / s"${preparedBaseString}.unlifted")),
@@ -386,8 +385,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     case "gwas" =>
       MultiPathVcf(
       base = MultiPath(local = Some(localOutDir / refBaseString), google = hailCloud match { case true => Some(googleOutDir.get / refBaseString); case false => None }),
-      data = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz")); case false => None }),
-      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None }))
+      data = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.bgz")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.bgz")); case false => None }),
+      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.bgz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.bgz.tbi")); case false => None }))
     case _ =>
       rawData.vcf.get
   }
@@ -399,23 +398,21 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt")); case false => None },
     hailLog = store(localOutDir / s"${refBaseString}.hail.log"),
     hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.hail.log")); case false => None },
-    variantMetrics = store(localOutDir / s"${refBaseString}.variant.metrics.tsv"),
-    variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.variant.metrics.tsv")); case false => None },
-    sitesVcf = store(localOutDir / s"${refBaseString}.sites_only.vcf"),
-    sitesVcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.sites_only.vcf")); case false => None })
+    variantMetrics = store(localOutDir / s"${refBaseString}.variant.metrics.tsv.bgz"),
+    variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.variant.metrics.tsv.bgz")); case false => None },
+    sitesVcf = store(localOutDir / s"${refBaseString}.sites_only.vcf.bgz"),
+    sitesVcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None })
 
   val imputeData = ImputeData(
     data = bedBimFam(localOutDir / imputeBaseString),
     base = localOutDir / imputeBaseString)
 
   val prunedData = PrunedData(
-    pruneIn = store(localOutDir / s"${qcBaseString}.prune.in"),
-    regionsExcludePlink = store(localOutDir / s"${qcBaseString}.regions_exclude.txt"),
-    data = bedBimFam(localOutDir / qcBaseString),
-    base = localOutDir / qcBaseString,
-    bimGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${qcBaseString}.bim")); case false => None },
-    vcf = store(localOutDir / s"${qcBaseString}.vcf.gz"),
-    tbi = store(localOutDir / s"${qcBaseString}.vcf.gz.tbi"))
+    variantMetrics = store(localOutDir / s"${qcBaseString}.variant.metrics.tsv.bgz"),
+    variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${qcBaseString}.variant.metrics.tsv.bgz")); case false => None },
+    plink = MultiPathPlink(base = MultiPath(local = Some(localOutDir / qcBaseString), google = hailCloud match { case true => Some(googleOutDir.get / qcBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(localOutDir / qcBaseString)), google = hailCloud match { case true => Some(bedBimFam(googleOutDir.get / qcBaseString)); case false => None })),
+    hailLog = store(localOutDir / s"${qcBaseString}.hail.log"),
+    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${qcBaseString}.hail.log")); case false => None })
 
   val kinshipData = KinshipData(
     base = localOutDir / kinshipBaseString,

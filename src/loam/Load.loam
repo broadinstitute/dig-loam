@@ -6,6 +6,7 @@
 import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
+import ProjectStores._
 
 def Load(array: ConfigArray): Unit = {
 
@@ -26,12 +27,14 @@ def Load(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --partitions ${array.partitions.toString}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
+          --pheno-in ${ProjectStores.phenoFileGoogle.get}
+          --id-col ${projectConfig.phenoFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
           --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
           --mt-out ${arrayStores(array).refData.mtGoogle.get}
           --cloud
           --log ${arrayStores(array).refData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get)
+          .in(arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, ProjectStores.phenoFileGoogle.get)
           .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
           .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
       
@@ -53,11 +56,13 @@ def Load(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --partitions ${array.partitions.toString}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.local.get}
+          --pheno-in ${ProjectStores.phenoFile}
+          --id-col ${projectConfig.phenoFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
           --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
           --mt-out ${arrayStores(array).refData.mt.get}
           --log ${arrayStores(array).refData.hailLog}"""
-          .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get)
+          .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get, ProjectStores.phenoFile)
           .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).refData.sitesVcf)
           .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
 

@@ -1,0 +1,41 @@
+import scala.util.{Try, Success, Failure}
+import scala.util.control.NonFatal
+import java.nio.file.{Paths, Files}
+import sys.process._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def checkPath(s: String): String = {
+  Files.exists(Paths.get(s)) match {
+    case false => throw new CfgException("checkPath: " + s + " not found")
+    case true  => s
+  }
+}
+
+def checkPlinkPath(s: String): String = {
+  val bed = Files.exists(Paths.get(s + ".bed")) 
+  val bim = Files.exists(Paths.get(s + ".bim")) 
+  val fam = Files.exists(Paths.get(s + ".fam"))
+  val bedMessage = bed match {
+    case true => s + ".bed exists"
+	case false => s + ".bed does not exist"
+  }
+  val bimMessage = bim match {
+    case true => s + ".bim exists"
+	case false => s + ".bim does not exist"
+  }
+  val famMessage = fam match {
+    case true => s + ".fam exists"
+	case false => s + ".fam does not exist"
+  }
+  Seq(bed, bim, fam).contains(false) match {
+    case false => 
+	  throw new CfgException("checkPlinkPath: files missing from Plink fileset " + s + "\n  " + s"${bedMessage}\n  ${bimMessage}\n  ${famMessage}")
+    case true  => s
+  }
+}
+
+def checkURI(s: String): Int = {
+  val cmd = s"gsutil -m ls ${s}"
+  cmd.!
+}
