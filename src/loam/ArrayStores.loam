@@ -73,12 +73,16 @@ final case class ImputeData(
   data: Seq[Store],
   base: Path)
 
-final case class PrunedData(
+final case class FilteredData(
   variantMetrics: Store,
   variantMetricsGoogle: Option[Store],
   plink: MultiPathPlink,
   hailLog: Store,
-  hailLogGoogle: Option[Store])
+  hailLogGoogle: Option[Store],
+  pruneIn: Store)
+
+final case class PrunedData(
+  plink: MultiPathPlink)
 
 final case class KinshipData(
   base: Path,
@@ -201,6 +205,7 @@ final case class Array(
   harmonizedData: Option[HarmonizedData],
   refData: RefData,
   imputeData: ImputeData,
+  filteredData: FilteredData,
   prunedData: PrunedData,
   kinshipData: KinshipData,
   ref1kgData: Ref1kgData,
@@ -224,7 +229,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
   val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref"
   val imputeBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.impute"
-  val qcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.qc"
+  val filteredBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.filtered"
+  val prunedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref.filtered.pruned"
   val kinshipBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.kinship"
   val ref1kgBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref1kg"
   val ancestryBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry"
@@ -407,12 +413,16 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     data = bedBimFam(localOutDir / imputeBaseString),
     base = localOutDir / imputeBaseString)
 
+  val filteredData = FilteredData(
+    variantMetrics = store(localOutDir / s"${filteredBaseString}.variant.metrics.tsv.bgz"),
+    variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${filteredBaseString}.variant.metrics.tsv.bgz")); case false => None },
+    plink = MultiPathPlink(base = MultiPath(local = Some(localOutDir / filteredBaseString), google = hailCloud match { case true => Some(googleOutDir.get / filteredBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(localOutDir / filteredBaseString)), google = hailCloud match { case true => Some(bedBimFam(googleOutDir.get / filteredBaseString)); case false => None })),
+    hailLog = store(localOutDir / s"${filteredBaseString}.hail.log"),
+    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${filteredBaseString}.hail.log")); case false => None },
+    pruneIn = store(localOutDir / s"${filteredBaseString}.prune.in"),)
+
   val prunedData = PrunedData(
-    variantMetrics = store(localOutDir / s"${qcBaseString}.variant.metrics.tsv.bgz"),
-    variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${qcBaseString}.variant.metrics.tsv.bgz")); case false => None },
-    plink = MultiPathPlink(base = MultiPath(local = Some(localOutDir / qcBaseString), google = hailCloud match { case true => Some(googleOutDir.get / qcBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(localOutDir / qcBaseString)), google = hailCloud match { case true => Some(bedBimFam(googleOutDir.get / qcBaseString)); case false => None })),
-    hailLog = store(localOutDir / s"${qcBaseString}.hail.log"),
-    hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${qcBaseString}.hail.log")); case false => None })
+    plink = Plink(base = localOutDir / prunedBaseString, data = bedBimFam(localOutDir / prunedBaseString)))
 
   val kinshipData = KinshipData(
     base = localOutDir / kinshipBaseString,
@@ -539,6 +549,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     harmonizedData = harmonizedData,
     refData = refData,
     imputeData = imputeData,
+    filteredData = filteredData,
     prunedData = prunedData,
     kinshipData = kinshipData,
     ref1kgData = ref1kgData,

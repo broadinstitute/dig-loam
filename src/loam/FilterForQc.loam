@@ -57,4 +57,28 @@ def FilterForQc(array: ConfigArray): Unit = {
 
   }
 
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.prunePlink.cpus, mem = projectConfig.resources.prunePlink.mem, maxRunTime = projectConfig.resources.prunePlink.maxRunTime) {
+
+    cmd"""$binPlink
+      --bfile ${arrayStores(array).filteredData.plink.base}
+      --indep-pairwise 1000kb 1 0.2
+      --out ${arrayStores(array).filteredData.plink.base}
+      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(array).filteredData.plink.data)
+      .out(arrayStores(array).filteredData.pruneIn)
+      .tag(s"${arrayStores(array).filteredData.pruneIn}".split("/").last)
+
+    cmd"""$binPlink
+      --bfile ${arrayStores(array).filteredData.plink.base}
+      --extract ${arrayStores(array).filteredData.pruneIn}
+      --keep-allele-order
+      --make-bed
+      --out ${arrayStores(array).prunedData.plink.base}
+      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(array).filteredData.plink.data :+ arrayStores(array).filteredData.pruneIn)
+      .out(arrayStores(array).prunedData.plink..data)
+      .tag(s"${arrayStores(array).prunedData.plink.base}".split("/").last)
+
+  }
+
 }
