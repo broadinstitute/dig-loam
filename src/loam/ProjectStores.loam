@@ -55,14 +55,14 @@ object ProjectStores {
   }.toMap
 
   val regionsExclude = store(path(checkPath(projectConfig.regionsExclude))).asInput
-  val regionsExcludeGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.regionsExclude}".split("/").last).asInput); case false => None }
+  val regionsExcludeGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
   val genePositions = store(path(checkPath(projectConfig.genePositions))).asInput
   val kgPurcellVcf = store(path(checkPath(projectConfig.kgPurcellVcf))).asInput
-  val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgPurcellVcf}".split("/").last).asInput); case false => None }
+  val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgPurcellVcf}".split("/").last)); case false => None }
   val kgSample = store(path(checkPath(projectConfig.kgSample))).asInput
-  val kgSampleGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgSample}".split("/").last).asInput); case false => None }
+  val kgSampleGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgSample}".split("/").last)); case false => None }
   val phenoFile = store(path(checkPath(projectConfig.phenoFile))).asInput
-  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last).asInput); case false => None }
+  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None }
   val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ancestryInferred}".split("/").last)); case false => None }
   val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")

@@ -9,7 +9,7 @@ import Prepare._
 import Harmonize._
 import Load._
 import FilterForQc._
-//import Kinship._
+import Kinship._
 //import Ancestry._
 //import Pca._
 //import SampleQc._
@@ -30,7 +30,7 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-//throw new Exception(s"${arrayStores(projectConfig.Arrays.tail.head).refData}")
+//throw new Exception(s"${ProjectStores.regionsExcludeGoogle.get.uri}")
 
 // Upload input files to Google Cloud
 Upload()
@@ -51,7 +51,7 @@ for {
 
   Load(array)
   FilterForQc(array)
-  //Kinship(array.id)
+  Kinship(array)
   //AncestryPca(array.id)
   //AncestryCluster(array.id)
 

@@ -8,13 +8,13 @@ import PipelineConfig._
 import ProjectStores._
 import Fxns._
 
-def InitInputs(): Unit = {
+def Upload(): Unit = {
 
   hailCloud match {
 
     case true =>
     
-      checkURI(s"${ProjectStores.regionsExcludeGoogle.get}") match {
+      checkURI(s"${ProjectStores.regionsExcludeGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
@@ -22,7 +22,7 @@ def InitInputs(): Unit = {
           }
       }
 
-      checkURI(s"${ProjectStores.kgPurcellVcfGoogle.get}") match {
+      checkURI(s"${ProjectStores.kgPurcellVcfGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
@@ -30,7 +30,7 @@ def InitInputs(): Unit = {
           }
       }
       
-      checkURI(s"${ProjectStores.kgSampleGoogle.get}") match {
+      checkURI(s"${ProjectStores.kgSampleGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
@@ -38,7 +38,7 @@ def InitInputs(): Unit = {
           }
       }
       
-      checkURI(s"${ProjectStores.phenoFileGoogle.get}") match {
+      checkURI(s"${ProjectStores.phenoFileGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {

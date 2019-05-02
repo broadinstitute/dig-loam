@@ -11,13 +11,18 @@ def main(args=None):
 	print("read vcf file")
 	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions, array_elements_required=False)
 
-	print("replace any spaces in sample ids with a hyphen")
-	mt = mt.annotate_cols(mt.s = mt.s.replace("\s+","-"))
+	print("replace any spaces in sample ids with an underscore")
+	mt = mt.annotate_cols(s_new = mt.s.replace("\s+","_"))
+	mt = mt.key_cols_by('s_new')
+	mt = mt.drop('s')
+	mt = mt.rename({'s_new': 's'})
 
-	print("add pheno annotations, replacing any spaces in sample ids with a hyphen")
+	print("add pheno annotations, replacing any spaces in sample ids with an underscore")
 	tbl = hl.import_table(args.pheno_in, delimiter="\t", no_header=False, types={args.id_col: hl.tstr})
-	tbl = tbl.annotate(tbl[args.id_col] = tbl[args.id_col].replace("\s+","-"))
-	tbl = tbl.key_by(args.id_col)
+	tbl = tbl.annotate(**{args.id_col + '_new': tbl[args.id_col].replace("\s+","_")})
+	tbl = tbl.key_by(args.id_col + '_new')
+	tbl = tbl.drop(args.id_col)
+	tbl = tbl.rename({args.id_col + '_new': args.id_col})
 	mt = mt.annotate_cols(pheno = tbl[mt.s])
 
 	print("split multiallelic variants")

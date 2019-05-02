@@ -20,21 +20,21 @@ def FilterForQc(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
-          --variants-out ${arrayStores(array).prunedData.variantMetricsGoogle.get}
-          --plink-out ${arrayStores(array).prunedData.plink.base.google.get}
+          --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
+          --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
           --cloud
-          --log ${arrayStores(array).prunedData.hailLogGoogle.get}"""
+          --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
           .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get)
-          .out(arrayStores(array).prunedData.plink.data.google.get :+ arrayStores(array).prunedData.variantMetricsGoogle.get :+ arrayStores(array).prunedData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).prunedData.plink.base.local.get}.pyHailFilter".split("/").last)
+          .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailFilter".split("/").last)
       
       }
 
       local {
 
-        googleCopy(arrayStores(array).prunedData.plink.data.google.get, arrayStores(array).prunedData.plink.data.local.get)
-        googleCopy(arrayStores(array).prunedData.variantMetricsGoogle.get, arrayStores(array).prunedData.variantMetrics)
-        googleCopy(arrayStores(array).prunedData.hailLogGoogle.get, arrayStores(array).prunedData.hailLog)
+        googleCopy(arrayStores(array).filteredData.plink.data.google.get, arrayStores(array).filteredData.plink.data.local.get)
+        googleCopy(arrayStores(array).filteredData.variantMetricsGoogle.get, arrayStores(array).filteredData.variantMetrics)
+        googleCopy(arrayStores(array).filteredData.hailLogGoogle.get, arrayStores(array).filteredData.hailLog)
 
       }
 
@@ -45,13 +45,13 @@ def FilterForQc(array: ConfigArray): Unit = {
         cmd"""$binPython $pyHailFilter
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
-          --regions-exclude ${ProjectStores.regionsExclude.get}
-          --variants-out ${arrayStores(array).prunedData.variantMetrics}
-          --plink-out ${arrayStores(array).prunedData.plink.base.local.get}
-          --log ${arrayStores(array).prunedData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude.get)
-          .out(arrayStores(array).prunedData.plink.data.local.get :+ arrayStores(array).prunedData.variantMetrics :+ arrayStores(array).prunedData.hailLog)
-          .tag(s"${arrayStores(array).prunedData.plink.base.local.get}.pyHailFilter".split("/").last)
+          --regions-exclude ${ProjectStores.regionsExclude}
+          --variants-out ${arrayStores(array).filteredData.variantMetrics}
+          --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
+          --log ${arrayStores(array).filteredData.hailLog}"""
+          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude)
+          .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
+          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailFilter".split("/").last)
 
       }
 
@@ -60,23 +60,23 @@ def FilterForQc(array: ConfigArray): Unit = {
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.prunePlink.cpus, mem = projectConfig.resources.prunePlink.mem, maxRunTime = projectConfig.resources.prunePlink.maxRunTime) {
 
     cmd"""$binPlink
-      --bfile ${arrayStores(array).filteredData.plink.base}
+      --bfile ${arrayStores(array).filteredData.plink.base.local.get}
       --indep-pairwise 1000kb 1 0.2
-      --out ${arrayStores(array).filteredData.plink.base}
+      --out ${arrayStores(array).filteredData.plink.base.local.get}
       --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).filteredData.plink.data)
+      .in(arrayStores(array).filteredData.plink.data.local.get)
       .out(arrayStores(array).filteredData.pruneIn)
       .tag(s"${arrayStores(array).filteredData.pruneIn}".split("/").last)
 
     cmd"""$binPlink
-      --bfile ${arrayStores(array).filteredData.plink.base}
+      --bfile ${arrayStores(array).filteredData.plink.base.local.get}
       --extract ${arrayStores(array).filteredData.pruneIn}
       --keep-allele-order
       --make-bed
       --out ${arrayStores(array).prunedData.plink.base}
       --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).filteredData.plink.data :+ arrayStores(array).filteredData.pruneIn)
-      .out(arrayStores(array).prunedData.plink..data)
+      .in(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.pruneIn)
+      .out(arrayStores(array).prunedData.plink.data)
       .tag(s"${arrayStores(array).prunedData.plink.base}".split("/").last)
 
   }

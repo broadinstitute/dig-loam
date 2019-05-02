@@ -82,7 +82,7 @@ final case class FilteredData(
   pruneIn: Store)
 
 final case class PrunedData(
-  plink: MultiPathPlink)
+  plink: Plink)
 
 final case class KinshipData(
   base: Path,
@@ -257,7 +257,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         case _ =>
           Some(Plink(
             base = localOutDir / rawBaseString,
-            data = bedBimFam(checkPathPlink(localOutDir / rawBaseString))
+            data = bedBimFam(path(checkPlinkPath(s"${localOutDir}" + s"/${rawBaseString}")))
           ))
       }
 
@@ -419,7 +419,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     plink = MultiPathPlink(base = MultiPath(local = Some(localOutDir / filteredBaseString), google = hailCloud match { case true => Some(googleOutDir.get / filteredBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(localOutDir / filteredBaseString)), google = hailCloud match { case true => Some(bedBimFam(googleOutDir.get / filteredBaseString)); case false => None })),
     hailLog = store(localOutDir / s"${filteredBaseString}.hail.log"),
     hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${filteredBaseString}.hail.log")); case false => None },
-    pruneIn = store(localOutDir / s"${filteredBaseString}.prune.in"),)
+    pruneIn = store(localOutDir / s"${filteredBaseString}.prune.in"))
 
   val prunedData = PrunedData(
     plink = Plink(base = localOutDir / prunedBaseString, data = bedBimFam(localOutDir / prunedBaseString)))

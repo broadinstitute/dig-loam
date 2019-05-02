@@ -1,7 +1,7 @@
 import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
 import java.nio.file.{Paths, Files}
-import sys.process._
+import scala.sys.process._
 
 final case class CfgException(s: String) extends Exception(s)
 
