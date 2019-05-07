@@ -10,7 +10,7 @@ import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 
-def AncestryPca(array: String): Unit = {
+def AncestryPca(array: ConfigArray): Unit = {
 
   hailCloud match {
 
@@ -23,13 +23,13 @@ def AncestryPca(array: String): Unit = {
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle.get}
           --kg-sample ${ProjectStores.kgSampleGoogle.get}
-          --vcf-out ${arrayStores(array).ref1kgData.vcfGoogle.get}
+          --plink-out ${arrayStores(array).ref1kgData.plink.base.google.get}
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}
           --cloud
           --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
           .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
-          .out(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).ref1kgData.base}.google".split("/").last)
+          .out(arrayStores(array).ref1kgData.plink.data.google.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}.pyHailAncestryPcaMerge1kg".split("/").last)
       
       }
       
@@ -50,20 +50,14 @@ def AncestryPca(array: String): Unit = {
           --mt-in ${arrayStores(array).refData.mt.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcf.get}
           --kg-sample ${ProjectStores.kgSample.get}
-          --vcf-out ${arrayStores(array).ref1kgData.vcf}
+          --plink-out ${arrayStores(array).ref1kgData.plink.base.local.get}
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
           --log ${arrayStores(array).ref1kgData.hailLog}"""
           .in(arrayStores(array).refData.mt.get, ProjectStores.kgPurcellVcf.get, ProjectStores.kgSample.get)
-          .out(arrayStores(array).ref1kgData.vcf, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
-          .tag(s"${arrayStores(array).ref1kgData.base}".split("/").last)
+          .out(arrayStores(array).ref1kgData.plink.data.local.get, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
+          .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}".split("/").last)
 
       }
-
-  }
-
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.ancestryPcaPlink.cpus, mem = projectConfig.resources.ancestryPcaPlink.mem, maxRunTime = projectConfig.resources.ancestryPcaPlink.maxRunTime) {
-
-    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base} --memory ${projectConfig.resources.ancestryPcaPlink.mem * 0.9 * 1000}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
 
   }
 
@@ -72,7 +66,7 @@ def AncestryPca(array: String): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rPcair
       --cpus ${projectConfig.resources.ancestryPcaPcair.cpus}
-      --plink-in ${arrayStores(array).ref1kgData.base}
+      --plink-in ${arrayStores(array).ref1kgData.plink.base.local.get}
       --gds-out ${arrayStores(array).ref1kgData.gds}
       --scores ${arrayStores(array).ancestryPcaData.scores}
       --id ${projectConfig.projectId}
@@ -80,7 +74,7 @@ def AncestryPca(array: String): Unit = {
       --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples}
       --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples}
       > ${arrayStores(array).ancestryPcaData.log}"""
-      .in(arrayStores(array).ref1kgData.data :+  arrayStores(array).ref1kgData.kgSamples)
+      .in(arrayStores(array).ref1kgData.plink.data.local.get :+  arrayStores(array).ref1kgData.kgSamples)
       .out(arrayStores(array).ref1kgData.gds, arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores)
       .tag(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
 
@@ -110,7 +104,7 @@ def AncestryPca(array: String): Unit = {
   *     This file is array specific
   */
 
-def AncestryCluster(array: String): Unit = {
+def AncestryCluster(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"$imgTools") {
 

@@ -8,7 +8,7 @@ import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 
-def SampleQc(array: String): Unit = {
+def SampleQc(array: ConfigArray): Unit = {
 
   val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
 

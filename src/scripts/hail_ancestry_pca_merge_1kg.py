@@ -55,8 +55,8 @@ def main(args=None):
 	hl.summarize_variants(mt)
 	print('merged data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
     
-	print("write merged vcf file")
-	hl.export_vcf(mt, args.vcf_out)
+	print("write Plink files to disk")
+	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s)
 
 	print("write ref sample table to file")
 	kg.rename({'s': 'ID'}).cols().export(args.kg_samples_out, header=True, types_file=None)
@@ -73,7 +73,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--kg-vcf-in', help='a vcf file consisting of ~5k 1000 Genomes variants (selected by Purcell for ancestry)', required=True)
 	requiredArgs.add_argument('--kg-sample', help='a 1KG sample file (header: ID POP GROUP SEX)', required=False)
-	requiredArgs.add_argument('--vcf-out', help='an output vcf filename', required=True)
+	requiredArgs.add_argument('--plink-out', help='an output plink filename', required=True)
 	requiredArgs.add_argument('--kg-samples-out', help='an output filename for kg samples that were merged', required=True)
 	args = parser.parse_args()
 	main(args)

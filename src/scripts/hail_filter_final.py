@@ -67,8 +67,18 @@ def main(args=None):
 		mac = hl.cond(mt.locus.in_y_nonpar(),  mt.n_male_hom_var, hl.cond(mt.locus.in_x_nonpar(), mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var, mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var)),
 		maf = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_hom_var / mt.n_male_called, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (mt.n_male_called + 2*mt.n_female_called), (mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (2*mt.n_male_called + 2*mt.n_female_called))))
 
-	print("filter variants for callrate")
+
+
+
+
+	##### add HET and AB filters...
+	##### filter out overall call rate < 0.3, heterozygosity of 1, or heterozygote allele balance of 0 or 1
+	print("filter variants for callrate, heterozygosity, and allele balance in the case of sequence data")
 	mt = mt.annotate_rows(failed = hl.cond(mt.call_rate < 0.98, 1, mt.failed))
+
+
+
+
 
 	groups_used = []
 	for group in group_counts:

@@ -11,8 +11,8 @@ import Load._
 import Annotate._
 import FilterForQc._
 import Kinship._
-//import Ancestry._
-//import Pca._
+import Ancestry._
+import Pca._
 //import SampleQc._
 //import FilterFinal._
 //import Impute._
@@ -54,25 +54,25 @@ for {
   FilterForQc(array)
   Annotate(array)
   Kinship(array)
-  //AncestryPca(array.id)
-  //AncestryCluster(array.id)
+  AncestryPca(array)
+  AncestryCluster(array)
 
 }
 
-//// Reconcile inferred ancestry
-//MergeInferredAncestry()
-//
-//// Array specific QC steps post ancestry inference
-//for {
-//  array <- projectConfig.Arrays
-//} yield { 
-//
-//  Pca(array.id)
-//  SampleQc(array.id)
-//  FilterFinal(array.id)
-//
-//}
-//
+// Reconcile inferred ancestry
+MergeInferredAncestry()
+
+// Array specific QC steps post ancestry inference
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Pca(array)
+  SampleQc(array)
+  FilterFinal(array)
+
+}
+
 //// QC Report
 //QcReport()
 //

@@ -26,16 +26,6 @@ def main(args=None):
 	with hl.hadoop_open(args.regions_exclude, 'r') as f:
 		hild = f.read().splitlines()
 	mt = hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in hild], keep=False)
-	
-	#print("write temporary filtered matrix table and read back in")
-	#mt.write("temp.mt", overwrite=True)
-	#mt = hl.read_matrix_table("temp.mt")
-
-	#print("extract pruned set of variants")
-	#pruned_tbl = hl.ld_prune(mt.GT, r2 = 0.2, bp_window_size = 1000000, memory_per_core = 256)
-	#pruned_tbl.write("pruned_tbl.ht", overwrite=True)
-	#pruned_tbl = hl.read_table('pruned_tbl.ht')
-	#mt = mt.filter_rows(hl.is_defined(pruned_tbl[mt.row_key]))
 
 	print("write variant qc metrics to file")
 	mt.rows().flatten().export(args.variants_out, types_file=None)

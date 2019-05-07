@@ -94,16 +94,12 @@ final case class KinshipData(
   famSizes: Store)
 
 final case class Ref1kgData(
-  vcf: Store,
-  data: Seq[Store],
-  base: Path,
+  plink: MultiPathPlink,
   hailLog: Store,
   hailLogGoogle: Option[Store],
   kgSamples: Store,
   kgSamplesGoogle: Option[Store],
-  gds: Store,
-  vcfGoogle: Option[Store],
-  baseGoogle: Option[URI])
+  gds: Store)
 
 final case class AncestryData(
   inferred: Store)
@@ -435,16 +431,12 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     famSizes = store(localOutDir / s"${kinshipBaseString}.famsizes.tsv"))
 
   val ref1kgData = Ref1kgData(
-    vcf = store(localOutDir / s"${ref1kgBaseString}.vcf.bgz"),
-    data = bedBimFam(localOutDir / ref1kgBaseString),
-    base = localOutDir / ref1kgBaseString,
+    plink = MultiPathPlink(base = MultiPath(local = Some(localOutDir / ref1kgBaseString), google = hailCloud match { case true => Some(googleOutDir.get / ref1kgBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(localOutDir / ref1kgBaseString)), google = hailCloud match { case true => Some(bedBimFam(googleOutDir.get / ref1kgBaseString)); case false => None })),
     hailLog = store(localOutDir / s"${ref1kgBaseString}.hail.log"),
     hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.hail.log")); case false => None },
     kgSamples = store(localOutDir / s"${ref1kgBaseString}.kgsamples.tsv"),
     kgSamplesGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None },
-    gds = store(localOutDir / s"${ref1kgBaseString}.gds"),
-    vcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ref1kgBaseString}.vcf.bgz")); case false => None },
-    baseGoogle = hailCloud match { case true => Some(googleOutDir.get / ref1kgBaseString); case false => None })
+    gds = store(localOutDir / s"${ref1kgBaseString}.gds"))
 
   val ancestryData = AncestryData(
     inferred = store(localOutDir / s"${ancestryBaseString}.inferred.tsv"))
