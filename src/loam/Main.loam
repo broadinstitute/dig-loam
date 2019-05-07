@@ -8,6 +8,7 @@ import Upload._
 import Prepare._
 import Harmonize._
 import Load._
+import Annotate._
 import FilterForQc._
 import Kinship._
 //import Ancestry._
@@ -51,6 +52,7 @@ for {
 
   Load(array)
   FilterForQc(array)
+  Annotate(array)
   Kinship(array)
   //AncestryPca(array.id)
   //AncestryCluster(array.id)

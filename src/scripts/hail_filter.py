@@ -41,7 +41,7 @@ def main(args=None):
 	mt.rows().flatten().export(args.variants_out, types_file=None)
 
 	print("write Plink files to disk")
-	hl.export_plink(mt, args.plink_out, call = hl.call(1, 0, phased=False), ind_id = mt.s, fam_id = mt.s)
+	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s)
 
 	if args.cloud:
 		hl.copy_log(args.log)

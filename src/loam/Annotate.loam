@@ -1,0 +1,50 @@
+/**
+  * Annotation Step
+  *  Description: Annotate sites vcf with VEP
+  *  Requires: Perl, VEP perl script
+  *  Notes:
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ProjectStores._
+import ArrayStores._
+
+def Annotate(array: ConfigArray): Unit = {
+
+  drmWith(imageName = s"$imgEnsemblVep", cores = projectConfig.resources.annotate.cpus, mem = projectConfig.resources.annotate.mem, maxRunTime = projectConfig.resources.annotate.maxRunTime) {
+
+    cmd"""
+      vep -i ${arrayStores(array).refData.sitesVcf}
+      --fork ${projectConfig.resources.annotate.cpus}
+      --force_overwrite
+      --no_stats
+      --offline
+      --fasta ${ProjectStores.fasta}
+      --tab
+      --compress_output bgzip
+      --cache
+      --dir_cache ${ProjectStores.vepCacheDir}
+      --dir_plugins ${ProjectStores.vepPluginsDir}
+      --polyphen b
+      --sift b
+      --ccds
+      --canonical
+      --appris
+      --tsl
+      --biotype
+      --regulatory
+      --assembly GRCh37
+      --flag_pick_allele
+      --pick_order tsl,biotype,appris,rank,ccds,canonical,length
+      --domains flags
+      --plugin LoFtool
+      --plugin dbNSFP,${ProjectStores.dbNSFP},ALL
+      --output_file ${arrayStores(array).refData.annotations}
+      --warning_file ${arrayStores(array).refData.annotationWarnings}"""
+    .in(arrayStores(array).refData.sitesVcf, ProjectStores.fasta, ProjectStores.vepCacheDir, ProjectStores.vepPluginsDir, ProjectStores.dbNSFP)
+    .out(arrayStores(array).refData.annotations)
+    .tag(s"${arrayStores(array).refData.annotations}".split("/").last)
+
+  }
+
+}

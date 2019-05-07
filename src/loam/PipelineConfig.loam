@@ -16,6 +16,7 @@ val imgPython27 = path(s"${imagesDir}/data_processing_v2.2_python27.simg")
 val imgR34 = path(s"${imagesDir}/data_processing_v2.2_r34.simg")
 val imgTools = path(s"${imagesDir}/data_processing_v2.2_tools.simg")
 val imgTex = path(s"${imagesDir}/tex.simg")
+val imgEnsemblVep = path(s"${imagesDir}/ensembl_vep.simg")
 
 // Binaries
 val binLiftOver = path("/usr/local/bin/liftOver")
