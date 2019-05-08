@@ -50,7 +50,7 @@ def main(args=None):
 
 	if args.test != "lmm":
 		print("prune samples to maximal independent set, favoring cases over controls")
-		pairs = hl.pc_relate(mt.GT, min_individual_maf = 0.01, k = 10, statistics = 'kin', min_kinship = 0.0884)
+		pairs = hl.pc_relate(mt.GT, min_individual_maf = 0.01, k = 10, statistics = 'kin', min_kinship = 0.0884, block_size=1024)
 		samples = mt.cols()
 		pairs_with_case = pairs.key_by(
 			i=hl.struct(id=pairs.i, is_case=samples[pairs.i].is_case),
