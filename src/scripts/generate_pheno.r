@@ -13,7 +13,8 @@ parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help=
 parser$add_argument("--ancestry-keep", dest="ancestry_keep", type="character", help="a comma separated list of population groups to keep (ie. EUR,AFR)")
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
-parser$add_argument("--samples-include", dest="samples_include", type="character", help="a final list of sample IDs to include")
+parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
+parser$add_argument("--kinship-in", dest="kinship_in", type="character", help="a kinship file containing related pairs")
 parser$add_argument("--samples-exclude", dest="samples_exclude", type="character", help="a list of sample IDs to exclude")
 parser$add_argument("--variants-exclude", dest="variants_exclude", default=NULL, type="character", help="variant IDs file")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
@@ -22,6 +23,7 @@ parser$add_argument("--covars", dest="covars", type="character", help="a '+' sep
 parser$add_argument("--min-pcs", dest="min_pcs", type="integer", help="minimum number of pcs to include in analysis")
 parser$add_argument("--max-pcs", dest="max_pcs", type="integer", help="maximum number of pcs to include in analysis")
 parser$add_argument("--n-stddevs", dest="n_stddevs", type="integer", help="outlier detection threshold in number of standard deviations from the mean")
+parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
 parser$add_argument("--out-pheno", dest="out_pheno", type="character", help="a phenotype output filename")
 parser$add_argument("--out-pcs", dest="out_pcs", type="character", help="an output filename for PCs to include in analysis")
 args<-parser$parse_args()
@@ -66,8 +68,8 @@ covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+")))
 
 cat("extracting model specific columns from phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
-pheno<-pheno[complete.cases(pheno),]
 out_cols<-colnames(pheno)
 
 covars_factors <- unlist(strsplit(args$covars,split="\\+"))
@@ -103,16 +105,74 @@ iids <- getScanID(geno)
 vids <- getSnpID(geno)
 close(geno)
 
-cat("generating sample and variant ID inclusion lists\n")
-samples_incl<-scan(file=args$samples_include,what="character")
-variants_excl<-scan(file=args$variants_exclude,what="character")
-samples_incl<-iids[iids %in% samples_incl & iids %in% pheno[,args$iid_col]]
+id_map <- data.frame(ID = pheno[,args$iid_col])
+id_map$removed_nogeno <- 0
+id_map$removed_sampleqc <- 0
+id_map$removed_incomplete_obs <- 0
+id_map$removed_kinship <- 0
+id_map$removed_nogeno[which(! id_map$ID %in% iids)] <- 1
+pheno <- pheno[which(pheno[,args$iid_col] %in% iids),]
 
+cat("read in sample IDs excluded during sample qc\n")
 if(args$samples_exclude != "") {
 	samples_excl<-scan(file=args$samples_exclude,what="character")
-    samples_incl<-samples_incl[! samples_incl %in% samples_excl]
+	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+	id_map$removed_sampleqc[which((id_map$removed_nogeno == 0) & (id_map$ID %in% samples_excl))] <- 1
+	cat(paste0("removed ",as.character(length(id_map$removed_sampleqc[which(id_map$removed_sampleqc == 1)]))," samples that did not pass sample qc"),"\n")
 }
 
+cat("reading in kinship values for related pairs\n")
+kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kinship_in$ID2 %in% pheno[,args$iid_col])),]
+kinship_in$pair_idx <- row.names(kinship_in)
+sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
+names(sampleqc_in)[1] <- "ID1"
+names(sampleqc_in)[2] <- "ID1_call_rate"
+kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
+names(sampleqc_in)[1] <- "ID2"
+names(sampleqc_in)[2] <- "ID2_call_rate"
+kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
+kinship_in <- kinship_in[order(-kinship_in$Kinship),]
+
+cat("removing lower quality sample for each related pair starting with the highest kinship value pair, until no more pairs remain\n")
+kinship_in$ID1_remove <- 0
+kinship_in$ID2_remove <- 0
+samples_excl <- c()
+if(args$test != "lmm") {
+	for(i in 1:nrow(kinship_in)) {
+		if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
+			if(kinship_in$ID1_call_rate[i] == kinship_in$ID2_call_rate[i]) {
+				randid <- sample(c(kinship_in$ID1[i],kinship_in$ID2[i]), size=1)
+				kinship_in$ID1_remove[which(kinship_in$ID1 == randid)] <- 1
+				kinship_in$ID2_remove[which(kinship_in$ID2 == randid)] <- 1
+			} else if(kinship_in$ID1_call_rate[i] > kinship_in$ID2_call_rate[i]) {
+				kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
+				kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+			} else {
+				kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
+				kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+			}
+		}
+	}
+	samples_excl <- kinship_in$ID1[which(kinship_in$ID1_remove == 1)]
+	samples_excl <- c(samples_excl, kinship_in$ID2[which(kinship_in$ID2_remove == 1)])
+	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+	id_map$removed_kinship[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$ID %in% samples_excl))] <- 1
+	cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)]))," samples due to kinship"),"\n")
+}
+
+cat("extracting only complete observations\n")
+pheno <- pheno[complete.cases(pheno),]
+id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
+cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
+
+write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
+
+cat("read variant exclusion list\n")
+variants_excl<-scan(file=args$variants_exclude,what="character")
+
+samples_incl<-pheno[,args$iid_col]
 variants_incl<-vids[! vids %in% variants_excl]
 
 kinship<-NULL
