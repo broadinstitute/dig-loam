@@ -127,11 +127,16 @@ kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kin
 kinship_in$pair_idx <- row.names(kinship_in)
 sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
+names(sampleqc_in)[1] <- args$iid_col
+sampleqc_in <- merge(sampleqc_in, pheno[,c(args$iid_col, args$pheno_col)], all.x=TRUE)
+sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", args$pheno_col)]
 names(sampleqc_in)[1] <- "ID1"
 names(sampleqc_in)[2] <- "ID1_call_rate"
+names(sampleqc_in)[3] <- "ID1_pheno"
 kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
 names(sampleqc_in)[1] <- "ID2"
 names(sampleqc_in)[2] <- "ID2_call_rate"
+names(sampleqc_in)[3] <- "ID2_pheno"
 kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
 kinship_in <- kinship_in[order(-kinship_in$Kinship),]
 
@@ -142,16 +147,26 @@ samples_excl <- c()
 if(args$test != "lmm") {
 	for(i in 1:nrow(kinship_in)) {
 		if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
-			if(kinship_in$ID1_call_rate[i] == kinship_in$ID2_call_rate[i]) {
-				randid <- sample(c(kinship_in$ID1[i],kinship_in$ID2[i]), size=1)
-				kinship_in$ID1_remove[which(kinship_in$ID1 == randid)] <- 1
-				kinship_in$ID2_remove[which(kinship_in$ID2 == randid)] <- 1
-			} else if(kinship_in$ID1_call_rate[i] > kinship_in$ID2_call_rate[i]) {
-				kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
-				kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+			if(length(unique(pheno[,args$pheno_col])) == 2 & kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {
+				if(kinship_in$ID1_pheno[i] > kinship_in$ID2_pheno[i]) {
+					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
+					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+				} else {
+					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
+					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+				}
 			} else {
-				kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
-				kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+				if(kinship_in$ID1_call_rate[i] == kinship_in$ID2_call_rate[i]) {
+					randid <- sample(c(kinship_in$ID1[i],kinship_in$ID2[i]), size=1)
+					kinship_in$ID1_remove[which(kinship_in$ID1 == randid)] <- 1
+					kinship_in$ID2_remove[which(kinship_in$ID2 == randid)] <- 1
+				} else if(kinship_in$ID1_call_rate[i] > kinship_in$ID2_call_rate[i]) {
+					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
+					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+				} else {
+					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
+					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+				}
 			}
 		}
 	}

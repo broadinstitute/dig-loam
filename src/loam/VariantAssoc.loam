@@ -51,7 +51,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       --min-pcs ${projectConfig.minPCs}
       --max-pcs ${projectConfig.maxPCs}
       --n-stddevs ${projectConfig.nStddevs}
-      --out-id-map  ${assoc.idMap}
+      --out-id-map ${assoc.idMap}
       --out-pheno ${assoc.pheno}
       --out-pcs ${assoc.pcs}
       > ${assoc.phenoLog}"""
@@ -194,12 +194,12 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       --min-pcs ${projectConfig.minPCs}
       --max-pcs ${projectConfig.maxPCs}
       --n-stddevs ${projectConfig.nStddevs}
-      --out-id-map  ${assoc.idMap}
+      --out-id-map ${known.idMap}
       --out-pheno ${known.pheno}
       --out-pcs ${known.pcs}
       > ${known.phenoLog}"""
       .in(generatePhenoIn)
-      .out(known.pheno, known.pcs, known.phenoLog)
+      .out(known.idMap, known.pheno, known.pcs, known.phenoLog)
       .tag(s"${known.pheno}".split("/").last)
 
   }
