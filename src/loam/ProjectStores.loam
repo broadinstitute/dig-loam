@@ -59,8 +59,9 @@ object ProjectStores {
   val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgPurcellVcfGoogle.get)).asInput); case false => None }
   val kgSample = hailCloud match { case false => Some(store(path(projectConfig.kgSample)).asInput); case true => None }
   val kgSampleGoogle = hailCloud match { case true => Some(store(uri(projectConfig.kgSampleGoogle.get)).asInput); case false => None }
-  val phenoFile = store(path(projectConfig.phenoFile)).asInput
-  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None }
+  val sampleFile = store(path(projectConfig.sampleFile)).asInput
+  val sampleFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
+  val phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(projectConfig.phenoFile)).asInput) }
   val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
   val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")

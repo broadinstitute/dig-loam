@@ -23,8 +23,8 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
 
   val phenoDistPlotIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile :+ arrayStores(configCohort.array).ancestryData.inferred :+ metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile :+ arrayStores(configCohort.array).ancestryData.inferred)
+    case Some(s) => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile.get :+ arrayStores(configCohort.array).ancestryData.inferred :+ metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(configCohort.array).cleanData.data :+ ProjectStores.phenoFile.get :+ arrayStores(configCohort.array).ancestryData.inferred)
 
   }
 
@@ -35,7 +35,7 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
       drmWith(imageName = s"$imgPython27") {
       
         cmd"""$binPython $pyPhenoDistPlot
-          --pheno ${ProjectStores.phenoFile}
+          --pheno ${ProjectStores.phenoFile.get}
           --pheno-name ${configPheno.id}
           --iid-col ${projectConfig.phenoFileId}
           --fam ${arrayStores(configCohort.array).cleanData.base}.fam
@@ -55,7 +55,7 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
       drmWith(imageName = s"$imgPython27") {
       
         cmd"""$binPython $pyPhenoDistPlot
-          --pheno ${ProjectStores.phenoFile}
+          --pheno ${ProjectStores.phenoFile.get}
           --pheno-name ${configPheno.id}
           --iid-col ${projectConfig.phenoFileId}
           --fam ${arrayStores(configCohort.array).cleanData.base}.fam

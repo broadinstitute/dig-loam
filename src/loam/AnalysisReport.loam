@@ -190,18 +190,18 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
   
     cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
       --dist-plot ${distPlotStrings.mkString(" ")}
-      --pheno-master ${ProjectStores.phenoFile}
-      --id-col ${projectConfig.phenoFileId}
-      --sex-col ${projectConfig.phenoFileSrSex}
-      --male-code ${projectConfig.phenoFileMaleCode}
-      --female-code ${projectConfig.phenoFileFemaleCode}
+      --sample-file ${ProjectStores.sampleFile}
+      --id-col ${projectConfig.sampleFileId}
+      --sex-col ${projectConfig.sampleFileSrSex}
+      --male-code ${projectConfig.sampleFileMaleCode}
+      --female-code ${projectConfig.sampleFileFemaleCode}
       --model-files ${modelFileStrings.mkString(" ")}
       --pheno-name ${configPheno.id}
       --pheno-long-name "${configPheno.name}"
       --ancestry ${ProjectStores.ancestryInferred}
       --out-tex ${analysisReportStores(configReport).sectionData(configSection).summary}
       --out-input ${analysisReportStores(configReport).sectionData(configSection).summaryInput}"""
-      .in(phenoFiles ++ pcFiles ++ distPlotFiles :+ ProjectStores.ancestryInferred :+ ProjectStores.phenoFile)
+      .in(phenoFiles ++ pcFiles ++ distPlotFiles :+ ProjectStores.ancestryInferred :+ ProjectStores.sampleFile)
       .out(analysisReportStores(configReport).sectionData(configSection).summary, analysisReportStores(configReport).sectionData(configSection).summaryInput)
       .tag(s"${analysisReportStores(configReport).sectionData(configSection).summary}".split("/").last)
   

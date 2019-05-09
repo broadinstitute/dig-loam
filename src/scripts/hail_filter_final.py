@@ -24,7 +24,7 @@ def main(args=None):
 	mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
 
 	print("add case/control status annotation")
-	tbl = hl.import_table(args.pheno_in, no_header=False, types={args.case_ctrl_col: hl.tint})
+	tbl = hl.import_table(args.sample_in, no_header=False, types={args.case_ctrl_col: hl.tint})
 	tbl = tbl.key_by(args.iid_col)
 	mt = mt.annotate_cols(is_case = tbl[mt.s][args.case_ctrl_col] == 1)
 	mt.describe()
@@ -108,7 +108,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)
 	requiredArgs.add_argument('--ancestry-in', help='an inferred ancestry file', required=True)
 	requiredArgs.add_argument('--sexcheck-in', help='an imputed sexcheck output file from Hail', required=True)
-	requiredArgs.add_argument('--pheno-in', help='a phenotype file', required=True)
+	requiredArgs.add_argument('--sample-in', help='a sample file', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
 	requiredArgs.add_argument('--case-ctrl-col', help='column name for case/control status in phenotype file', required=True)
 	requiredArgs.add_argument('--samples-remove', help='a file containing sample IDs that failed QC', required=True)

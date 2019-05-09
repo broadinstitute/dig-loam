@@ -8,7 +8,7 @@ def main(args=None):
 	ancestry = pd.read_table(args.ancestry, sep="\t")
 	ancestry.columns = [args.id_col,'POP']
 
-	sex = pd.read_table(args.pheno_master, sep="\t")
+	sex = pd.read_table(args.sample_file, sep="\t")
 	sex = sex[[args.id_col,args.sex_col]]
 
 	model_files = collections.OrderedDict()
@@ -175,7 +175,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--dist-plot', nargs='+', help='a list of cohort labels and phenotype distribution plots, each separated by comma', required=True)
-	requiredArgs.add_argument('--pheno-master', help='a master phenotype file', required=True)
+	requiredArgs.add_argument('--sample-file', help='a master phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in phenotype master file', required=True)
 	requiredArgs.add_argument('--sex-col', help='a column name for sample sex in phenotype master file', required=True)
 	requiredArgs.add_argument('--male-code', help='a column name for sample sex male code in phenotype master file', required=True)

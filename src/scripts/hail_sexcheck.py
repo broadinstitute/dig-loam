@@ -13,7 +13,7 @@ def main(args=None):
 	hl.summarize_variants(mt)
 
 	print("add pheno annotations")
-	tbl = hl.import_table(args.pheno_in, delimiter="\t", no_header=False, types={args.sex_col: hl.tstr})
+	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types={args.sex_col: hl.tstr})
 	tbl = tbl.key_by(args.id_col)
 	mt = mt.annotate_cols(pheno = tbl[mt.s])
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
-	requiredArgs.add_argument('--pheno-in', help='a tab delimited phenotype file', required=True)
+	requiredArgs.add_argument('--sample-in', help='a tab delimited phenotype file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the phenotype file', required=True)
 	requiredArgs.add_argument('--sex-col', help='a column name for sex in the phenotype file', required=True)
 	requiredArgs.add_argument('--male-code', help='a code for male', required=True)

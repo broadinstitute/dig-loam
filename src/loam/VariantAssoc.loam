@@ -25,8 +25,8 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds)
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds)
 
   }
   
@@ -36,7 +36,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       $rGeneratePheno
       --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
       --gds-in ${arrayStores(array).pcaData.gds}
-      --pheno-in ${ProjectStores.phenoFile}
+      --pheno-in ${ProjectStores.phenoFile.get}
       --ancestry-in ${ProjectStores.ancestryInferred}
       --ancestry-keep ${configCohort.ancestry.mkString(",")}
       --pheno-col ${configModel.pheno}
@@ -87,7 +87,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --out ${assoc.resultsGoogle.get}
           --cloud
           --log ${assoc.resultsHailLogGoogle.get}"""
-            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
+            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
             .out(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
             .tag(s"${assoc.results}.google".split("/").last)
       
@@ -116,7 +116,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --covars "${configModel.covars}"
           --out ${assoc.results}
           --log ${assoc.resultsHailLog}"""
-            .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ ProjectStores.phenoFile :+ assoc.pheno :+ assoc.pcs)
+            .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ assoc.pheno :+ assoc.pcs)
             .out(assoc.results, assoc.resultsHailLog)
             .tag(s"${assoc.results}".split("/").last)
 
@@ -168,8 +168,8 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds)
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).finalData.variantsExcludeIds)
 
   }
   
@@ -179,7 +179,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       $rGeneratePheno
       --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
       --gds-in ${arrayStores(array).pcaData.gds}
-      --pheno-in ${ProjectStores.phenoFile}
+      --pheno-in ${ProjectStores.phenoFile.get}
       --ancestry-in ${ProjectStores.ancestryInferred}
       --ancestry-keep ${configCohort.ancestry.mkString(",")}
       --pheno-col ${configModel.pheno}
@@ -231,7 +231,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --out ${known.resultsGoogle.get}
           --cloud
           --log ${known.resultsHailLogGoogle.get}"""
-            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, ProjectStores.phenoFileGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).cleanData.mtGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
             .out(known.resultsGoogle.get, known.resultsHailLogGoogle.get)
             .tag(s"${known.results}.google".split("/").last)
       
@@ -261,7 +261,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --covars "${configModel.covars}"
           --out ${known.results}
           --log ${known.resultsHailLog}"""
-            .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ ProjectStores.phenoFile :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
+            .in(arrayStores(array).prunedData.data :+ arrayStores(array).cleanData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
             .out(known.results, known.resultsHailLog)
             .tag(s"${known.results}".split("/").last)
 
