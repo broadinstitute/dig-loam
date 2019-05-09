@@ -27,6 +27,51 @@ def main(args=None):
 		model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pheno'] = model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pheno'].merge(ancestry)
 		if not args.sex_col in model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pheno'].columns:
 			model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pheno'] = model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['pheno'].merge(sex)
+		model_files[(ss[0],ss[1],ss[2])][(ss[3],ss[4])]['idmap'] = pd.read_table(ss[7],sep="\t")
+		
+	id_map_table = [
+			r"\begin{table}[H]",
+			r"	\footnotesize",
+			r"	\caption{Summary of samples removed from " + args.pheno_long_name.replace("_","\_") + " analysis by cohort and model}",
+			r"	\begin{center}",
+			r"	\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
+			r"	\begin{tabular}{rrrrr" + 'c'*(5) + "}",
+			r"		\toprule"]
+	id_map_table.extend([
+			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-missObs}",r"\textbf{-Kinship}",r"\textbf{-PcOutlier}"]) + r"\\"])
+	id_map_table.extend([
+			r"		\midrule"])
+	i = 0
+	for cohort in model_files.keys():
+		i = i + 1
+		if i % 2 != 0:
+			color = r"		\rowcolor{Gray}"
+		else:
+			color = r"		\rowcolor{white}"
+		j = 0
+		for model in model_files[cohort].keys():
+			j = j + 1
+			df_temp = model_files[cohort][model]['idmap']
+			row = []
+			row.extend([df_temp[df_temp['removed_nogeno'] == 0].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_sampleqc'] == 1)].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_incomplete_obs'] == 1)].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_kinship'] == 1)].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_pc_outlier'] == 1)].shape[0]])
+			if j < len(model_files[cohort].keys()):
+				lineEnd = r"\\*"
+			else:
+				lineEnd = r"\\"
+			if j == 1:
+				id_map_table.extend([color + "		" + cohort[0].replace("_","\_") + " & " + cohort[1].replace("_","\_") + " & " + cohort[2].replace("_","\_") + " & " + model[0].replace("_","\_") + " & " + model[1].replace("_","\_") + " & " + " & ".join([str(r).replace("_","\_") for r in row]) + lineEnd])
+			else:
+				id_map_table.extend([color + "		{} & {} & {} & " + model[0].replace("_","\_") + " & " + model[1].replace("_","\_") + " & " + " & ".join([str(r).replace("_","\_") for r in row]) + lineEnd])
+	id_map_table.extend([
+			r"		\bottomrule",
+			r"	\end{tabular}}",
+			r"	\end{center}",
+			r"	\label{table:" + args.pheno_name.replace("_","-") + r"-Sample-Map-Table}",
+			r"\end{table}"])
 
 	# cohort.id + array.id + array.ancestry + model.trans + model.covars + model.pcs
 	# META_EX EXBROAD EUR invn Age     3
@@ -45,7 +90,7 @@ def main(args=None):
 	sample_table = [
 			r"\begin{table}[H]",
 			r"	\footnotesize",
-			r"	\caption{Samples with " + args.pheno_long_name.replace("_","\_") + " data summarized by cohort, transformation, and run-time adjustments}",
+			r"	\caption{Summary of samples remaining for " + args.pheno_long_name.replace("_","\_") + " analysis by cohort and model}",
 			r"	\begin{center}",
 			r"	\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
 			r"	\begin{tabular}{rrrrr" + 'c'*(len(cols)-5) + "}",
@@ -93,7 +138,6 @@ def main(args=None):
 			r"	\end{center}",
 			r"	\label{table:" + args.pheno_name.replace("_","-") + r"-Summary-Table}",
 			r"\end{table}"])
-
 
 	dist_plots = collections.OrderedDict()
 	for s in args.dist_plot:
@@ -156,6 +200,10 @@ def main(args=None):
 							r"\end{figure}"])
 
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		
+		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Sample-Map-Table}".encode('utf-8')); f.write("\n")
+		
+		f.write("\n"); f.write("\n".join(id_map_table).encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{" + args.pheno_name.replace("_","-") + r"-Summary-Table}".encode('utf-8')); f.write("\n")
 

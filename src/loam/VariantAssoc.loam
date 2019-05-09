@@ -64,11 +64,14 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   hailCloud match {
 
     case true =>
+	
+      val Seq(_, prunedBim, _) = arrayStores(array).prunedData.data
   
       local {
       
         googleCopy(assoc.pheno, assoc.phenoGoogle.get)
         googleCopy(assoc.pcs, assoc.pcsGoogle.get)
+        googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle.get)
       
       }
       

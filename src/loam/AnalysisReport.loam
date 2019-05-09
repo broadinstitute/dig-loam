@@ -172,8 +172,8 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
   }.toSeq.distinct
   
   val modelFileStrings = {
-    assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => ! e._1._3.isDefined).map(e => ("", e._1._2.id, e._1._2.array, e._1._2.ancestry.mkString("+"), if ( e._1._1.trans != "" ) { e._1._1.trans } else { "-" }, e._1._1.covars.replace("[","").replace("]",""), s"${e._2.pcs.path}", s"${e._2.pheno.path}")) ++
-    assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._2.id, e._1._2.array, e._1._2.ancestry.mkString("+"), if ( e._1._1.trans != "" ) { e._1._1.trans } else { "-" }, e._1._1.covars.replace("[","").replace("]",""), s"${e._2.pcs.path}", s"${e._2.pheno.path}"))
+    assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => ! e._1._3.isDefined).map(e => ("", e._1._2.id, e._1._2.array, e._1._2.ancestry.mkString("+"), if ( e._1._1.trans != "" ) { e._1._1.trans } else { "-" }, e._1._1.covars.replace("[","").replace("]",""), s"${e._2.pcs.path}", s"${e._2.pheno.path}", s"${e._2.idMap.path}")) ++
+    assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => (e._1._3.get.id, e._1._2.id, e._1._2.array, e._1._2.ancestry.mkString("+"), if ( e._1._1.trans != "" ) { e._1._1.trans } else { "-" }, e._1._1.covars.replace("[","").replace("]",""), s"${e._2.pcs.path}", s"${e._2.pheno.path}", s"${e._2.idMap.path}"))
   }.toSeq.distinct.sortBy(e => (e._1, e._2, e._3, e._4, e._5)).map(e => e.productIterator.mkString(","))
 
   val pcFiles = {

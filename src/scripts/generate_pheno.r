@@ -110,6 +110,7 @@ id_map$removed_nogeno <- 0
 id_map$removed_sampleqc <- 0
 id_map$removed_incomplete_obs <- 0
 id_map$removed_kinship <- 0
+id_map$removed_pc_outlier <- 0
 id_map$removed_nogeno[which(! id_map$ID %in% iids)] <- 1
 pheno <- pheno[which(pheno[,args$iid_col] %in% iids),]
 
@@ -185,8 +186,6 @@ cat("extracting only complete observations\n")
 pheno <- pheno[complete.cases(pheno),]
 id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
-
-write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
 cat("read variant exclusion list\n")
 variants_excl<-scan(file=args$variants_exclude,what="character")
@@ -269,9 +268,12 @@ if(length(samples_remove) > 0) {
 	for(o in samples_remove) {
 		cat(o,"\n")
 	}
+	id_map$removed_pc_outlier[which(id_map$ID %in% samples_remove)] <- 1
 } else {
 	cat("no PC outliers were found\n")
 }
+
+write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
 if(args$min_pcs > length(pcsin)) {
 	cat("setting minimum number of PCs to",args$min_pcs,"\n")
