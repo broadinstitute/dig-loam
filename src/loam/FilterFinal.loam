@@ -86,7 +86,7 @@ def FilterFinal(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterFinalPlink.cpus, mem = projectConfig.resources.filterFinalPlink.mem, maxRunTime = projectConfig.resources.filterFinalPlink.maxRunTime) {
 
-    cmd"""$binPlink --vcf ${arrayStores(array).cleanData.vcf} --output-chr MT --keep-allele-order --make-bed --out ${arrayStores(array).cleanData.base} --memory ${projectConfig.resources.filterFinalPlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --vcf ${arrayStores(array).cleanData.vcf} --allow-no-sex --output-chr MT --keep-allele-order --make-bed --out ${arrayStores(array).cleanData.base} --memory ${projectConfig.resources.filterFinalPlink.mem * 0.9 * 1000}"""
       .in(arrayStores(array).cleanData.vcf)
       .out(arrayStores(array).cleanData.data)
       .tag(s"${arrayStores(array).cleanData.base}".split("/").last)

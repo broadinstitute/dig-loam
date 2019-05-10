@@ -20,6 +20,7 @@ def FilterForQc(array: String): Unit = {
 
     cmd"""$binPlink
       --bfile ${arrayStores(array).harmonizedData.refBase}
+      --allow-no-sex 
       --chr 1-22
       --snps-only just-acgt
       --exclude range ${arrayStores(array).harmonizedData.regionsExcludePlink}
@@ -34,6 +35,7 @@ def FilterForQc(array: String): Unit = {
 
     cmd"""$binPlink
       --bfile ${arrayStores(array).harmonizedData.refBase}
+      --allow-no-sex 
       --extract ${arrayStores(array).harmonizedData.pruneIn}
       --keep-allele-order
       --make-bed
@@ -43,7 +45,7 @@ def FilterForQc(array: String): Unit = {
       .out(arrayStores(array).prunedData.data)
       .tag(s"${arrayStores(array).prunedData.base}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --allow-no-sex --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
       .in(arrayStores(array).prunedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).prunedData.vcf)
       .tag(s"${arrayStores(array).prunedData.vcf}".split("/").last)
