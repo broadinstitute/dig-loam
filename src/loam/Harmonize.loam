@@ -142,8 +142,8 @@ def Harmonize(array: String): Unit = {
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.refData)
       .tag(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
-    
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --allow-no-sex --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}; $binPlink ${arrayStores(array).harmonizedData.vcf} --allow-no-sex --output-chr MT --vcf-half-call haploid --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+
+    cmd"""$shPlinkToVcfNoHalfCalls $binPlink ${arrayStores(array).harmonizedData.base} ${arrayStores(array).harmonizedData.forceA2} ${arrayStores(array).harmonizedData.refBase} ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} ${arrayStores(array).harmonizedData.vcf}"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.vcf)
       .tag(s"${arrayStores(array).harmonizedData.vcf}".split("/").last)
