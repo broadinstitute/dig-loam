@@ -184,7 +184,7 @@ if(nrow(kinship_in) > 0) {
 
 cat("extracting only complete observations\n")
 pheno <- pheno[complete.cases(pheno),]
-id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
+id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
 cat("read variant exclusion list\n")
