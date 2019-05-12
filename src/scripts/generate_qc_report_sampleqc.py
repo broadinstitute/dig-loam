@@ -69,7 +69,7 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsubsection{Principal Components of Variation in PCARM's}"); f.write("\n")
 
-		text=r"In addition to outliers along individual sample metrics, there may be samples that exhibit deviation from the norm across multiple metrics. In order to identify these samples, we calculated principal components explaining 95\% of the variation in all 10 PCARMs combined."
+		text=r"In addition to outliers along individual sample metrics, there may be samples that exhibit deviation from the norm across multiple metrics. In order to identify these samples, we calculated principal components explaining 95\% of the variation in 8 of the 10 PCARMs combined. The adjusted residuals for metrics 'call\_rate' and 'n\_called' are characterized by long tails that lead to the maximum value, which is not consistent with the other metrics. In order to avoid excessive flagging of samples with lower, yet still completely acceptable, call rates, these metrics were left out of principal component calculation."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsubsection{Combined PCARM Clustering}"); f.write("\n")
