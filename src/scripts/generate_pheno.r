@@ -46,9 +46,9 @@ INVN <- function(x){
 
 pcs_include <- function(d, y, cv, n) {
 	if(cv != "") {
-		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),"+1",sep="")),data=d))
+		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d))
 	} else {
-		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),"+1",sep="")),data=d))
+		m <- summary(lm(as.formula(paste(y,"~",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d))
 	}
 	print(m)
 	mc <- as.data.frame(m$coefficients)
@@ -217,7 +217,7 @@ if(failed) {
 	cat("exiting due to invalid model\n")
 	quit(status=1)
 }
-covars_analysis<-paste(covars_factors,collapse="+")
+covars_analysis<-paste(c(covars_factors,"1"),collapse="+")
 out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
 
 geno <- GdsGenotypeReader(filename = args$gds_in)
@@ -250,9 +250,9 @@ while(iter < 11) {
 		cat("calculating invn transformation\n")
 		if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
 			cat(paste("including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
-			mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,"+1",sep="")),data=out))
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
 		} else {
-			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,"+1",sep="")),data=out))
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
 		}
 		out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
 		pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "", n = n_pcs)
