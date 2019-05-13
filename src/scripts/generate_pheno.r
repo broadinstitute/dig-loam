@@ -72,22 +72,6 @@ cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, args$phe
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 out_cols<-colnames(pheno)
 
-covars_factors <- unlist(strsplit(args$covars,split="\\+"))
-for(cv in covars_factors) {
-	cvv <- unlist(strsplit(cv,split=""))
-	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
-		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-			pheno[,paste0(cvb,val)] <- 0
-			pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-			covars_factors <- c(covars_factors,paste0(cvb,val))
-		}
-		covars_factors <- covars_factors[covars_factors != cv]
-	}
-}
-covars_analysis<-paste(covars_factors,collapse="+")
-out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
-
 cat("reading inferred ancestry from file\n")
 ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 names(ancestry)[1]<-args$iid_col
@@ -200,6 +184,41 @@ if(args$test == "lmm") {
 	kinship <- calc_kinship(gds = args$gds_in, sam = samples_incl, vin = variants_incl, t = args$cpus)
 	cat(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""),"\n")
 }
+
+failed <- FALSE
+if(length(unique(pheno[,args$pheno_col])) == 1) {
+	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
+	failed <- TRUE
+}
+covars_factors <- unlist(strsplit(args$covars,split="\\+"))
+for(cv in covars_factors) {
+	cvv <- unlist(strsplit(cv,split=""))
+	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+		if(length(unique(pheno[,cvb])) == 1) {
+			cat(paste0("covariate ",cvb," has zero variance\n"))
+			failed <- TRUE
+		} else {
+			for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
+				pheno[,paste0(cvb,val)] <- 0
+				pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
+				covars_factors <- c(covars_factors,paste0(cvb,val))
+			}
+		}
+		covars_factors <- covars_factors[covars_factors != cv]
+	} else {
+		if(length(unique(pheno[,cv])) == 1) {
+			cat(paste0("covariate ",cv," has zero variance\n"))
+			failed <- TRUE
+		}
+	}
+}
+if(failed) {
+	cat("exiting due to invalid model\n")
+	quit(status=1)
+}
+covars_analysis<-paste(covars_factors,collapse="+")
+out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
 
 geno <- GdsGenotypeReader(filename = args$gds_in)
 genoData <- GenotypeData(geno)
