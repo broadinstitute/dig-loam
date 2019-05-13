@@ -217,7 +217,7 @@ if(failed) {
 	cat("exiting due to invalid model\n")
 	quit(status=1)
 }
-covars_analysis<-paste(covars_factors,collapse="+")
+covars_analysis<-paste(c(covars_factors,"1"),collapse="+")
 out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
 
 geno <- GdsGenotypeReader(filename = args$gds_in)
