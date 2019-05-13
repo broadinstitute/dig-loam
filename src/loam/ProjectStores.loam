@@ -65,8 +65,9 @@ object ProjectStores {
   val vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput
   val vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput
   val dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput
-  val phenoFile = store(path(checkPath(projectConfig.phenoFile))).asInput
-  val phenoFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None }
+  val sampleFile = store(path(projectConfig.sampleFile)).asInput
+  val sampleFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
+  val phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) }
   val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ancestryInferred}".split("/").last)); case false => None }
   val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")

@@ -19,6 +19,7 @@ def SampleQc(array: ConfigArray): Unit = {
       local {
       
         googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle.get)
+        googleCopy(ProjectStores.sampleFile, ProjectStores.sampleFileGoogle.get)
       
       }
       
@@ -26,16 +27,16 @@ def SampleQc(array: ConfigArray): Unit = {
       
         hail"""$pyHailSexcheck --
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --pheno-in ${ProjectStores.phenoFileGoogle.get}
-          --id-col ${projectConfig.phenoFileId}
-          --sex-col ${projectConfig.phenoFileSrSex}
-          --male-code ${projectConfig.phenoFileMaleCode}
-          --female-code ${projectConfig.phenoFileFemaleCode}
+          --sample-in ${ProjectStores.sampleFileGoogle.get}
+          --id-col ${projectConfig.sampleFileId}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
           --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}
           --cloud
           --log ${arrayStores(array).sexcheckData.hailLogGoogle.get}"""
-          .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).refData.mtGoogle.get)
+          .in(ProjectStores.sampleFileGoogle.get, arrayStores(array).refData.mtGoogle.get)
           .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
       
@@ -68,15 +69,15 @@ def SampleQc(array: ConfigArray): Unit = {
 
         cmd"""$binPython $pyHailSexcheck
           --mt-in ${arrayStores(array).refData.mt.get}
-          --pheno-in ${ProjectStores.phenoFile}
-          --id-col ${projectConfig.phenoFileId}
-          --sex-col ${projectConfig.phenoFileSrSex}
-          --male-code ${projectConfig.phenoFileMaleCode}
-          --female-code ${projectConfig.phenoFileFemaleCode}
+          --sample-in ${ProjectStores.sampleFile}
+          --id-col ${projectConfig.sampleFileId}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
           --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
           --log ${arrayStores(array).sexcheckData.hailLog}"""
-          .in(ProjectStores.phenoFile, arrayStores(array).refData.mt.get)
+          .in(ProjectStores.sampleFile, arrayStores(array).refData.mt.get)
           .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).sexcheckData.hailLog)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}".split("/").last)
 

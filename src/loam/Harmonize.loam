@@ -23,7 +23,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
 
-	  cmd"""$binPlink --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.plink.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+	  cmd"""$binPlink --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --chr $chr --keep-allele-order --make-bed --out ${chrData.plink.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
         .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
         .out(chrData.plink.data)
         .tag(s"${chrData.plink.base}".split("/").last)
@@ -87,7 +87,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkChr.cpus, mem = projectConfig.resources.harmonizePlinkChr.mem, maxRunTime = projectConfig.resources.harmonizePlinkChr.maxRunTime) {
       
-      cmd"""$binPlink --bfile ${chrData.mergedKgPlink.base} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000}"""
+      cmd"""$binPlink --bfile ${chrData.mergedKgPlink.base} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000}"""
         .in(chrData.mergedKgPlink.data :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
         .out(chrData.mergedKgHuRefPlink.data)
         .tag(s"${chrData.mergedKgHuRefPlink.base}".split("/").last)
@@ -118,7 +118,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(arrayCfg).harmonizedData.get.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --allow-no-sex --merge-list ${arrayStores(arrayCfg).harmonizedData.get.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
       .in(arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).flatMap(e => e.mergedKgHuRefPlink.data).toSeq :+ arrayStores(arrayCfg).harmonizedData.get.mergeList)
       .out(arrayStores(arrayCfg).harmonizedData.get.plink.data)
       .tag(s"${arrayStores(arrayCfg).harmonizedData.get.plink.base}".split("/").last)
@@ -136,12 +136,12 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
       .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
       .out(arrayStores(arrayCfg).refData.plink.get.data)
       .tag(s"${arrayStores(arrayCfg).refData.plink.get.base}".split("/").last)
-    
-    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --out ${arrayStores(arrayCfg).refData.vcf.base.local.get} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+
+    cmd"""$shPlinkToVcfNoHalfCalls $binPlink ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} ${arrayStores(arrayCfg).refData.vcf.data.local.get}"""
       .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
       .out(arrayStores(arrayCfg).refData.vcf.data.local.get)
       .tag(s"${arrayStores(arrayCfg).refData.vcf.data.local.get}".split("/").last)

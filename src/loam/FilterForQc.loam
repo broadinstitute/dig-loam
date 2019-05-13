@@ -61,6 +61,7 @@ def FilterForQc(array: ConfigArray): Unit = {
 
     cmd"""$binPlink
       --bfile ${arrayStores(array).filteredData.plink.base.local.get}
+      --allow-no-sex 
       --indep-pairwise 1000kb 1 0.2
       --out ${arrayStores(array).filteredData.plink.base.local.get}
       --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
@@ -70,6 +71,7 @@ def FilterForQc(array: ConfigArray): Unit = {
 
     cmd"""$binPlink
       --bfile ${arrayStores(array).filteredData.plink.base.local.get}
+      --allow-no-sex 
       --extract ${arrayStores(array).filteredData.pruneIn}
       --keep-allele-order
       --make-bed

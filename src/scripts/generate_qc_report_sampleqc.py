@@ -145,7 +145,7 @@ def main(args=None):
 		elif len(text_dict1) > 2:
 			text1 = ", ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:(len(text_dict1.keys())-1)]]) + " and " + str(text_dict1[text_dict1.keys()[len(text_dict1.keys())-1]]) + " " + text_dict1.keys()[len(text_dict1.keys())-1].replace("_","\_")
 
-		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 10 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis. Upon further inspection, {0} samples were manually reinstated during this step. More information is available upon request".format(text1)
+		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis. Upon further inspection, {0} samples were manually reinstated during this step. More information is available upon request".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[

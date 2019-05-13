@@ -5,10 +5,10 @@ library(argparse)
 parser <- ArgumentParser()
 parser$add_argument("--pca-scores", dest="pca_scores", type="character", help="A file containing PCA scores")
 parser$add_argument("--cluster", dest="cluster", type="character", help="A klustakwik cluster file")
-parser$add_argument("--pheno-file", dest="pheno_file", type="character", help="A phenotype file")
-parser$add_argument("--id", dest="id", type="character", help="A project id")
-parser$add_argument("--pheno", dest="pheno", type="character", help="A phenotype file column name")
-parser$add_argument("--sr-race", dest="sr_race", type="character", help="A phenotype file self reported race column name")
+parser$add_argument("--sample-file", dest="sample_file", type="character", help="A sample file")
+parser$add_argument("--project-id", dest="project_id", type="character", help="A project id")
+parser$add_argument("--sample-id", dest="sample_id", type="character", help="A sample file id column name")
+parser$add_argument("--sr-race", dest="sr_race", type="character", help="A sample file self reported race column name")
 parser$add_argument("--cluster-plots", dest="cluster_plots", type="character", help="An output filename for cluster plots")
 parser$add_argument("--xtabs", dest="xtabs", type="character", help="An output filename for cross tabs")
 parser$add_argument("--plots-centers", dest="plots_centers", type="character", help="An output filename for cluster plots with centers")
@@ -23,13 +23,13 @@ dat<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F)
 cl<-read.table(args$cluster, as.is=T, skip=1, stringsAsFactors=F)
 names(cl)[1]<-"CLUSTER"
 dat<-cbind(dat,cl)
-pheno<-read.table(args$pheno_file, header=T, as.is=T, stringsAsFactors=F, sep="\t")
-pheno<-pheno[,c(args$pheno,args$sr_race)]
+pheno<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t")
+pheno<-pheno[,c(args$sample_id,args$sr_race)]
 pheno[,args$sr_race]<-paste0("sr_",pheno[,args$sr_race])
 names(pheno)[1]<-"IID"
 dat<-merge(dat,pheno,all.x=T)
 
-outfile<-paste(unlist(strsplit(args$pca_scores,"/"))[1:(length(unlist(strsplit(args$pca_scores,"/")))-1)],args$id,sep="/")
+outfile<-paste(unlist(strsplit(args$pca_scores,"/"))[1:(length(unlist(strsplit(args$pca_scores,"/")))-1)],args$project_id,sep="/")
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)
   hcl(h=hues, l=65, c=100)[1:n]
@@ -57,7 +57,7 @@ dev.off()
 clusters_unknown<-c()
 clusters_exclude<-c()
 for(i in unique(dat$CLUSTER)[unique(dat$CLUSTER) != 1]) {
-	if(nrow(dat[dat$CLUSTER == i & dat$GROUP == args$id,]) > 0) {
+	if(nrow(dat[dat$CLUSTER == i & dat$GROUP == args$project_id,]) > 0) {
 		clusters_unknown<-c(clusters_unknown,i)
 	} else {
 		clusters_exclude<-c(clusters_exclude,i)
@@ -65,7 +65,7 @@ for(i in unique(dat$CLUSTER)[unique(dat$CLUSTER) != 1]) {
 }
 
 i<-0
-cohorts_1kg<-unique(dat$GROUP)[unique(dat$GROUP) != args$id]
+cohorts_1kg<-unique(dat$GROUP)[unique(dat$GROUP) != args$project_id]
 for(c in cohorts_1kg) {
 	i<-i+1
 	if(i == 1) {
@@ -81,9 +81,9 @@ i<-0
 for(c in clusters_unknown) {
 	i<-i+1
 	if(i == 1) {
-		centers_unknown<-colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args$id,])
+		centers_unknown<-colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args$project_id,])
 	} else {
-		centers_unknown<-rbind(centers_unknown,colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args$id,]))
+		centers_unknown<-rbind(centers_unknown,colMeans(dat[,c("PC1","PC2","PC3")][dat$CLUSTER == c & dat$GROUP == args$project_id,]))
 	}
 }
 for(c in clusters_exclude) {
@@ -178,7 +178,7 @@ for(i in 1:nrow(a)) {
 }
 
 ### WRITE ASSIGMENTS TO FILES
-write.table(dat[which(dat$GROUP == args$id),c("IID","ASSIGNED")],args$ancestry_inferred,col.names=F,row.names=F,quote=F,append=F,sep="\t")
+write.table(dat[which(dat$GROUP == args$project_id),c("IID","ASSIGNED")],args$ancestry_inferred,col.names=F,row.names=F,quote=F,append=F,sep="\t")
 
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)
@@ -186,7 +186,7 @@ gg_color_hue <- function(n) {
 }
 color<-gg_color_hue(max(dat$CLUSTER))
 
-dat<-dat[which(dat$GROUP == args$id & dat$ASSIGNED != "OUTLIERS"),]
+dat<-dat[which(dat$GROUP == args$project_id & dat$ASSIGNED != "OUTLIERS"),]
 pdf(args$cluster_plots_no1kg,width=7, height=7)
 for(i in seq(1,9)) {
 	p<-ggplot(dat, aes(dat[,paste("PC",i,sep="")],dat[,paste("PC",i+1,sep="")])) +

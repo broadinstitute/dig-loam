@@ -39,7 +39,7 @@ def complement(a):
 def main(args=None):
 	with open(args.kg_ids) as f:
 		x=f.read().splitlines()
-	bim = pd.read_table(args.bim, header=None, sep=None)
+	bim = pd.read_table(args.bim, header=None, sep=None, engine='python')
 	bim.columns = ["chr","rsid","cm","pos","a1","a2"]
 	bim['id'] = bim['rsid'].astype(str) + ":" + bim['pos'].astype(str) + ":" + bim['a1'].astype(str) + ":" + bim['a2'].astype(str)
 	bim['kg'] = 0
