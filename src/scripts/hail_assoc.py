@@ -59,11 +59,6 @@ def main(args=None):
 		pops = args.pops.split(",")
 		mt = mt.filter_cols(mt.ANCESTRY_INFERRED in pops, keep=True)
 
-	if args.trans == "invn":
-		pheno_analyzed = args.pheno_col + '_invn_' + "_".join([x.replace("[","").replace("]","") for x in args.covars.split("+")])
-	else:
-		pheno_analyzed = args.pheno_col
-
 	if args.test != 'lmm':
 		print("read in list of PCs to include in test")
 		with hl.hadoop_open(args.pcs_include, "r") as f:
@@ -72,15 +67,18 @@ def main(args=None):
 		pcs = []
 
 	covars = [x for x in args.covars.split("+")] if args.covars != "" else []
-
-	pheno_df = mt.cols().to_pandas()
-	for i in range(len(covars)):
-		if covars[i][0] == "[" and covars[i][-1] == "]":
-			for val in sorted(pheno_df['pheno.' + covars[i][1:-1]].unique())[1:]:
-				covars = covars + [covars[i][1:-1] + str(val)]
-			covars = [x for x in covars if x != covars[i]]
-
-	covars = covars + pcs
+	if args.trans == "invn":
+		pheno_analyzed = args.pheno_col + '_invn_' + "_".join([x.replace("[","").replace("]","") for x in args.covars.split("+")])
+		covars = pcs
+	else:
+		pheno_analyzed = args.pheno_col
+		pheno_df = mt.cols().to_pandas()
+		for i in range(len(covars)):
+			if covars[i][0] == "[" and covars[i][-1] == "]":
+				for val in sorted(pheno_df['pheno.' + covars[i][1:-1]].unique())[1:]:
+					covars = covars + [covars[i][1:-1] + str(val)]
+				covars = [x for x in covars if x != covars[i]]
+		covars = covars + pcs
 
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
 	mt_autosomal = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)], keep=True)

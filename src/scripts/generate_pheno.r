@@ -72,22 +72,6 @@ cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, args$phe
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 out_cols<-colnames(pheno)
 
-covars_factors <- unlist(strsplit(args$covars,split="\\+"))
-for(cv in covars_factors) {
-	cvv <- unlist(strsplit(cv,split=""))
-	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
-		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-			pheno[,paste0(cvb,val)] <- 0
-			pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-			covars_factors <- c(covars_factors,paste0(cvb,val))
-		}
-		covars_factors <- covars_factors[covars_factors != cv]
-	}
-}
-covars_analysis<-paste(covars_factors,collapse="+")
-out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
-
 cat("reading inferred ancestry from file\n")
 ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 names(ancestry)[1]<-args$iid_col
@@ -110,6 +94,7 @@ id_map$removed_nogeno <- 0
 id_map$removed_sampleqc <- 0
 id_map$removed_incomplete_obs <- 0
 id_map$removed_kinship <- 0
+id_map$removed_pc_outlier <- 0
 id_map$removed_nogeno[which(! id_map$ID %in% iids)] <- 1
 pheno <- pheno[which(pheno[,args$iid_col] %in% iids),]
 
@@ -124,65 +109,67 @@ if(args$samples_exclude != "") {
 cat("reading in kinship values for related pairs\n")
 kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kinship_in$ID2 %in% pheno[,args$iid_col])),]
-kinship_in$pair_idx <- row.names(kinship_in)
-sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
-sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
-names(sampleqc_in)[1] <- args$iid_col
-sampleqc_in <- merge(sampleqc_in, pheno[,c(args$iid_col, args$pheno_col)], all.x=TRUE)
-sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", args$pheno_col)]
-names(sampleqc_in)[1] <- "ID1"
-names(sampleqc_in)[2] <- "ID1_call_rate"
-names(sampleqc_in)[3] <- "ID1_pheno"
-kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
-names(sampleqc_in)[1] <- "ID2"
-names(sampleqc_in)[2] <- "ID2_call_rate"
-names(sampleqc_in)[3] <- "ID2_pheno"
-kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
-kinship_in <- kinship_in[order(-kinship_in$Kinship),]
-
-cat("removing lower quality sample for each related pair starting with the highest kinship value pair, until no more pairs remain\n")
-kinship_in$ID1_remove <- 0
-kinship_in$ID2_remove <- 0
-samples_excl <- c()
-if(args$test != "lmm") {
-	for(i in 1:nrow(kinship_in)) {
-		if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
-			if(length(unique(pheno[,args$pheno_col])) == 2 & kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {
-				if(kinship_in$ID1_pheno[i] > kinship_in$ID2_pheno[i]) {
-					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
-					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+if(nrow(kinship_in) > 0) {
+	kinship_in$pair_idx <- row.names(kinship_in)
+	sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+	sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
+	names(sampleqc_in)[1] <- args$iid_col
+	sampleqc_in <- merge(sampleqc_in, pheno[,c(args$iid_col, args$pheno_col)], all.x=TRUE)
+	sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", args$pheno_col)]
+	names(sampleqc_in)[1] <- "ID1"
+	names(sampleqc_in)[2] <- "ID1_call_rate"
+	names(sampleqc_in)[3] <- "ID1_pheno"
+	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
+	names(sampleqc_in)[1] <- "ID2"
+	names(sampleqc_in)[2] <- "ID2_call_rate"
+	names(sampleqc_in)[3] <- "ID2_pheno"
+	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
+	kinship_in <- kinship_in[order(-kinship_in$Kinship),]
+	
+	cat("removing lower quality sample for each related pair starting with the highest kinship value pair, until no more pairs remain\n")
+	kinship_in$ID1_remove <- 0
+	kinship_in$ID2_remove <- 0
+	samples_excl <- c()
+	if(args$test != "lmm") {
+		for(i in 1:nrow(kinship_in)) {
+			if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
+				if(length(unique(pheno[,args$pheno_col])) == 2 & kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {
+					if(kinship_in$ID1_pheno[i] > kinship_in$ID2_pheno[i]) {
+						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
+						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+					} else {
+						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
+						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+					}
 				} else {
-					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
-					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
-				}
-			} else {
-				if(kinship_in$ID1_call_rate[i] == kinship_in$ID2_call_rate[i]) {
-					randid <- sample(c(kinship_in$ID1[i],kinship_in$ID2[i]), size=1)
-					kinship_in$ID1_remove[which(kinship_in$ID1 == randid)] <- 1
-					kinship_in$ID2_remove[which(kinship_in$ID2 == randid)] <- 1
-				} else if(kinship_in$ID1_call_rate[i] > kinship_in$ID2_call_rate[i]) {
-					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
-					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
-				} else {
-					kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
-					kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+					if(kinship_in$ID1_call_rate[i] == kinship_in$ID2_call_rate[i]) {
+						randid <- sample(c(kinship_in$ID1[i],kinship_in$ID2[i]), size=1)
+						kinship_in$ID1_remove[which(kinship_in$ID1 == randid)] <- 1
+						kinship_in$ID2_remove[which(kinship_in$ID2 == randid)] <- 1
+					} else if(kinship_in$ID1_call_rate[i] > kinship_in$ID2_call_rate[i]) {
+						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
+						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
+					} else {
+						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID1[i])] <- 1
+						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID1[i])] <- 1
+					}
 				}
 			}
 		}
+		samples_excl <- kinship_in$ID1[which(kinship_in$ID1_remove == 1)]
+		samples_excl <- c(samples_excl, kinship_in$ID2[which(kinship_in$ID2_remove == 1)])
+		pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+		id_map$removed_kinship[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$ID %in% samples_excl))] <- 1
+		cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)]))," samples due to kinship"),"\n")
 	}
-	samples_excl <- kinship_in$ID1[which(kinship_in$ID1_remove == 1)]
-	samples_excl <- c(samples_excl, kinship_in$ID2[which(kinship_in$ID2_remove == 1)])
-	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
-	id_map$removed_kinship[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$ID %in% samples_excl))] <- 1
-	cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)]))," samples due to kinship"),"\n")
+} else {
+	cat(paste0("removed 0 samples due to kinship"),"\n")
 }
 
 cat("extracting only complete observations\n")
 pheno <- pheno[complete.cases(pheno),]
-id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
+id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
-
-write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
 cat("read variant exclusion list\n")
 variants_excl<-scan(file=args$variants_exclude,what="character")
@@ -197,6 +184,41 @@ if(args$test == "lmm") {
 	kinship <- calc_kinship(gds = args$gds_in, sam = samples_incl, vin = variants_incl, t = args$cpus)
 	cat(paste("memory after running king and before running pcair: ",mem_used() / (1024^2),sep=""),"\n")
 }
+
+failed <- FALSE
+if(length(unique(pheno[,args$pheno_col])) == 1) {
+	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
+	failed <- TRUE
+}
+covars_factors <- unlist(strsplit(args$covars,split="\\+"))
+for(cv in covars_factors) {
+	cvv <- unlist(strsplit(cv,split=""))
+	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+		if(length(unique(pheno[,cvb])) == 1) {
+			cat(paste0("covariate ",cvb," has zero variance\n"))
+			failed <- TRUE
+		} else {
+			for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
+				pheno[,paste0(cvb,val)] <- 0
+				pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
+				covars_factors <- c(covars_factors,paste0(cvb,val))
+			}
+		}
+		covars_factors <- covars_factors[covars_factors != cv]
+	} else {
+		if(length(unique(pheno[,cv])) == 1) {
+			cat(paste0("covariate ",cv," has zero variance\n"))
+			failed <- TRUE
+		}
+	}
+}
+if(failed) {
+	cat("exiting due to invalid model\n")
+	quit(status=1)
+}
+covars_analysis<-paste(covars_factors,collapse="+")
+out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
 
 geno <- GdsGenotypeReader(filename = args$gds_in)
 genoData <- GenotypeData(geno)
@@ -265,9 +287,12 @@ if(length(samples_remove) > 0) {
 	for(o in samples_remove) {
 		cat(o,"\n")
 	}
+	id_map$removed_pc_outlier[which(id_map$ID %in% samples_remove)] <- 1
 } else {
 	cat("no PC outliers were found\n")
 }
+
+write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
 if(args$min_pcs > length(pcsin)) {
 	cat("setting minimum number of PCs to",args$min_pcs,"\n")
