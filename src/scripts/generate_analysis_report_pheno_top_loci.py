@@ -159,6 +159,10 @@ def main(args=None):
 										for idx, row in sigdf.iterrows():
 											nplots = nplots + 1
 											delim = r"\\" if nplots % 2 == 0 else r"%"
+											if nplots % 7 == 0:
+												text.extend([
+													r"\begin{figure}[H]\ContinuedFloat",
+													r"   \centering"])
 											text.extend([
 												r"   \begin{subfigure}{.5\textwidth}",
 												r"      \centering",
@@ -166,10 +170,24 @@ def main(args=None):
 												r"      \caption{" + row[3].replace("_","\_") + r" $\pm 100 kb$}",
 												r"      \label{fig:" + args.pheno_name.replace("_","-") + r"-Top-Associations-Regional-Plots-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + "-" + row[3].replace("_","-") + r"}",
 												r"   \end{subfigure}" + delim])
+											if nplots % 6 == 0 and idx < sigdf.shape[0]:
+												if nplots == 6:
+													text.extend([
+														r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r" (Continued on next page)}",
+														r"\end{figure}"])
+												else:
+													text.extend([
+														r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r" (Continued)}",
+														r"\end{figure}"])
+										if nplots < 6:
+											text.extend([
+												r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r"}"])
+										else:
+											text.extend([
+												r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r" (Continued)}"])
 										text.extend([
-												r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r"}",
-												r"   \label{fig:" + args.pheno_name.replace("_","-") + r"-Top-Associations-Regional-Plots-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + r"}",
-												r"\end{figure}"])
+											r"   \label{fig:" + args.pheno_name.replace("_","-") + r"-Top-Associations-Regional-Plots-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + r"}",
+											r"\end{figure}"])
 									else:
 										text.extend([
 												r"\begin{figure}[H]",
