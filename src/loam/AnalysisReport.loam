@@ -27,7 +27,6 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
       --name "${configReport.name}"
       --authors "${projectConfig.authors.mkString(",")}"
       --organization "${projectConfig.organization}"
-      --contact "${projectConfig.contact}"
       --email "${projectConfig.email}"
       --out-tex ${analysisReportStores(configReport).globalData.intro}
       --out-input ${analysisReportStores(configReport).globalData.introInput}"""
