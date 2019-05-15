@@ -63,7 +63,7 @@ def AncestryPca(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.ancestryPcaPlink.cpus, mem = projectConfig.resources.ancestryPcaPlink.mem, maxRunTime = projectConfig.resources.ancestryPcaPlink.maxRunTime) {
 
-    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --make-bed --out ${arrayStores(array).ref1kgData.base} --memory ${projectConfig.resources.ancestryPcaPlink.mem * 0.9 * 1000}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
+    cmd"""$binPlink --vcf ${arrayStores(array).ref1kgData.vcf} --allow-no-sex --make-bed --out ${arrayStores(array).ref1kgData.base} --memory ${projectConfig.resources.ancestryPcaPlink.mem * 0.9 * 1000}""".in(arrayStores(array).ref1kgData.vcf).out(arrayStores(array).ref1kgData.data).tag(s"${arrayStores(array).ref1kgData.base}.convertPlink".split("/").last)
 
   }
 
