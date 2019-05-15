@@ -15,5 +15,7 @@ $plink --bfile ${preparedBase}.nofid --allow-no-sex --update-parents ${preparedB
 awk '{print $1, $2, "0"}' ${preparedBase}.nofid.noparents.fam > ${preparedBase}.nofid.noparents.updatesex
 $plink --bfile ${preparedBase}.nofid.noparents --allow-no-sex --update-sex ${preparedBase}.nofid.noparents.updatesex --keep-allele-order --make-bed --out ${preparedBase}.nofid.noparents.nosex
 rm ${preparedBase}.nofid.noparents.updatesex
-$plink --bfile ${preparedBase}.nofid.noparents.nosex --remove $imissRemove --exclude $dupRemove --merge-x no-fail --allow-no-sex --output-chr MT --make-bed --out $preparedBase --memory $mem
+awk '{print $1, $2, "-9"}' ${preparedBase}.nofid.noparents.nosex.fam > ${preparedBase}.nofid.noparents.nosex.updatepheno
+$plink --bfile ${preparedBase}.nofid.noparents.nosex --allow-no-sex --pheno ${preparedBase}.nofid.noparents.nosex.updatepheno --keep-allele-order --make-bed --out ${preparedBase}.nofid.noparents.nosex.nopheno
+$plink --bfile ${preparedBase}.nofid.noparents.nosex.nopheno --remove $imissRemove --exclude $dupRemove --merge-x no-fail --allow-no-sex --output-chr MT --make-bed --out $preparedBase --memory $mem
 rm ${preparedBase}.nofid.*
