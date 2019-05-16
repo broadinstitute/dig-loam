@@ -10,8 +10,6 @@ import ProjectStores._
 
 def SampleQc(array: ConfigArray): Unit = {
 
-  val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
-
   hailCloud match {
 
     case true =>
@@ -19,7 +17,6 @@ def SampleQc(array: ConfigArray): Unit = {
       local {
       
         googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle.get)
-        googleCopy(ProjectStores.sampleFile, ProjectStores.sampleFileGoogle.get)
       
       }
       
@@ -211,11 +208,11 @@ def SampleQc(array: ConfigArray): Unit = {
   drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyMakeSamplesRestoreTable
-      --ancestry-outliers-keep "${arrayCfg.ancestryOutliersKeep.mkString(",")}"
-      --duplicates-keep "${arrayCfg.duplicatesKeep.mkString(",")}"
-      --famsize-keep "${arrayCfg.famsizeKeep.mkString(",")}"
-      --sampleqc-keep "${arrayCfg.sampleqcKeep.mkString(",")}"
-      --sexcheck-keep "${arrayCfg.sexcheckKeep.mkString(",")}"
+      --ancestry-outliers-keep "${array.ancestryOutliersKeep.mkString(",")}"
+      --duplicates-keep "${array.duplicatesKeep.mkString(",")}"
+      --famsize-keep "${array.famsizeKeep.mkString(",")}"
+      --sampleqc-keep "${array.sampleqcKeep.mkString(",")}"
+      --sexcheck-keep "${array.sexcheckKeep.mkString(",")}"
       --out ${arrayStores(array).finalData.samplesRestore}"""
       .out(arrayStores(array).finalData.samplesRestore)
       .tag(s"${arrayStores(array).finalData.samplesRestore}".split("/").last)

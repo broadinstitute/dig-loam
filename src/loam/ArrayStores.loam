@@ -181,8 +181,7 @@ final case class VariantQcData(
   statsGoogle: Option[Store])
 
 final case class CleanData(
-  data: Seq[Store],
-  base: Path,
+  plink: Plink,
   hailLog: Store,
   hailLogGoogle: Option[Store],
   gds: Store,
@@ -523,8 +522,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     statsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${variantQcBaseString}.stats.tsv")); case false => None })
 
   val cleanData = CleanData(
-    data = bedBimFam(localOutDir / cleanBaseString),
-    base = localOutDir / cleanBaseString,
+    plink = Plink(base = localOutDir / cleanBaseString, data = bedBimFam(localOutDir / cleanBaseString)),
     hailLog = store(localOutDir / s"${cleanBaseString}.hail.log"),
     hailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${cleanBaseString}.hail.log")); case false => None },
     gds = store(localOutDir / s"${cleanBaseString}.gds"),

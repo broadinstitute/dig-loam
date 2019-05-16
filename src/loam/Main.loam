@@ -13,8 +13,8 @@ import FilterForQc._
 import Kinship._
 import Ancestry._
 import Pca._
-//import SampleQc._
-//import FilterFinal._
+import SampleQc._
+import FilterFinal._
 //import Impute._
 //import VariantAssoc._
 //import CrossCohort._
@@ -68,8 +68,8 @@ for {
 } yield { 
 
   Pca(array)
-  //SampleQc(array)
-  //FilterFinal(array)
+  SampleQc(array)
+  FilterFinal(array)
 
 }
 
