@@ -64,7 +64,6 @@ def QcReport(): Unit = {
       --id ${projectConfig.projectId}
       --authors "${projectConfig.authors.mkString(",")}"
       --organization "${projectConfig.organization}"
-      --contact "${projectConfig.contact}"
       --email "${projectConfig.email}"
       --out ${qcReportStores.texData.intro} 
       --array-data ${dataStrings.mkString(" ")}"""

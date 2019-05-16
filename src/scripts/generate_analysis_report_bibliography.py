@@ -5,19 +5,21 @@ def main(args=None):
 	## open latex file for writing
 	with open(args.out_tex,'w') as f:
 
-		print "writing acknowledgements section"
-		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
-		f.write("\n"); f.write(r"\section{Acknowledgements}"); f.write("\n")
-		
-		text = [r"We would like to acknowledge the following people for their significant contributions to this work.", "", r"\bigskip", ""]
-		i = 0
-		for name in args.acknowledgements.split(","):
-			i = i + 1
-			if i == 1:
-				text.extend([r"\noindent " + name.replace("_","\_") + r" \\"])
-			else:
-				text.extend([name.replace("_","\_") + r" \\"])
-		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		if args.acknowledgements != "":
+
+			print "writing acknowledgements section"
+			f.write("\n"); f.write(r"\clearpage"); f.write("\n")
+			f.write("\n"); f.write(r"\section{Acknowledgements}"); f.write("\n")
+			
+			text = [r"We would like to acknowledge the following people for their significant contributions to this work.", "", r"\bigskip", ""]
+			i = 0
+			for name in args.acknowledgements.split(","):
+				i = i + 1
+				if i == 1:
+					text.extend([r"\noindent " + name.replace("_","\_") + r" \\"])
+				else:
+					text.extend([name.replace("_","\_") + r" \\"])
+			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		print "writing bibliography section"
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
