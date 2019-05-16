@@ -28,14 +28,14 @@ def AncestryPca(array: ConfigArray): Unit = {
           --cloud
           --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
           .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
-          .out(arrayStores(array).ref1kgData.plink.data.google.get, arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.hailLogGoogle.get)
+          .out(arrayStores(array).ref1kgData.plink.data.google.get :+ arrayStores(array).ref1kgData.kgSamplesGoogle.get :+ arrayStores(array).ref1kgData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}.pyHailAncestryPcaMerge1kg".split("/").last)
       
       }
       
       local {
       
-        googleCopy(arrayStores(array).ref1kgData.vcfGoogle.get, arrayStores(array).ref1kgData.vcf)
+        googleCopy(arrayStores(array).ref1kgData.plink.data.google.get, arrayStores(array).ref1kgData.plink.data.local.get)
         googleCopy(arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.kgSamples)
         googleCopy(arrayStores(array).ref1kgData.hailLogGoogle.get, arrayStores(array).ref1kgData.hailLog)
       
@@ -48,13 +48,13 @@ def AncestryPca(array: ConfigArray): Unit = {
         cmd"""$binPython $pyHailAncestryPcaMerge1kg
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
-          --kg-vcf-in ${ProjectStores.kgPurcellVcf.get}
-          --kg-sample ${ProjectStores.kgSample.get}
+          --kg-vcf-in ${ProjectStores.kgPurcellVcf}
+          --kg-sample ${ProjectStores.kgSample}
           --plink-out ${arrayStores(array).ref1kgData.plink.base.local.get}
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
           --log ${arrayStores(array).ref1kgData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, ProjectStores.kgPurcellVcf.get, ProjectStores.kgSample.get)
-          .out(arrayStores(array).ref1kgData.plink.data.local.get, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ref1kgData.hailLog)
+          .in(arrayStores(array).refData.mt.get, ProjectStores.kgPurcellVcf, ProjectStores.kgSample)
+          .out(arrayStores(array).ref1kgData.plink.data.local.get :+ arrayStores(array).ref1kgData.kgSamples :+ arrayStores(array).ref1kgData.hailLog)
           .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}".split("/").last)
 
       }
@@ -157,7 +157,7 @@ def AncestryCluster(array: ConfigArray): Unit = {
 
 def MergeInferredAncestry(): Unit = {
 
-  val inferredList = projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred).map(_.path).mkString(",")
+  val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred).map(_.path).mkString(",")
 
   drmWith(imageName = s"$imgR34") {
   
@@ -166,7 +166,7 @@ def MergeInferredAncestry(): Unit = {
       --ancestry-in $inferredList
       --out-table ${ProjectStores.ancestryInferred}
       --out-outliers ${ProjectStores.ancestryOutliers}"""
-      .in(projectConfig.Arrays.map(_.id).map(arrayStores(_).ancestryData.inferred))
+      .in(projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred))
       .out(ProjectStores.ancestryInferred, ProjectStores.ancestryOutliers)
       .tag(s"${ProjectStores.ancestryInferred}".split("/").last)
   

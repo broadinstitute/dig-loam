@@ -68,8 +68,8 @@ for {
 } yield { 
 
   Pca(array)
-  SampleQc(array)
-  FilterFinal(array)
+  //SampleQc(array)
+  //FilterFinal(array)
 
 }
 
