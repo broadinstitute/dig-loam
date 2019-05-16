@@ -68,7 +68,8 @@ final case class RefData(
   variantMetricsGoogle: Option[Store],
   sitesVcf: Store,
   sitesVcfGoogle: Option[Store],
-  annotations: Store)
+  annotations: Store,
+  annotationWarnings: Store)
 
 final case class ImputeData(
   data: Seq[Store],
@@ -405,7 +406,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     variantMetricsGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.variant.metrics.tsv.bgz")); case false => None },
     sitesVcf = store(localOutDir / s"${refBaseString}.sites_only.vcf.bgz"),
     sitesVcfGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None },
-    annotations = store(localOutDir / s"${refBaseString}.annotations.bgz"))
+    annotations = store(localOutDir / s"${refBaseString}.annotations.bgz"),
+    annotationWarnings = store(localOutDir / s"${refBaseString}.annotations.warnings"))
 
   val imputeData = ImputeData(
     data = bedBimFam(localOutDir / imputeBaseString),

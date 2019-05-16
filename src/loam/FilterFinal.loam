@@ -7,7 +7,7 @@ import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 
-def FilterFinal(array: String): Unit = {
+def FilterFinal(array: ConfigArray): Unit = {
 
   hailCloud match {
 

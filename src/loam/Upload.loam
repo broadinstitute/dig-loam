@@ -38,11 +38,11 @@ def Upload(): Unit = {
           }
       }
       
-      checkURI(s"${ProjectStores.phenoFileGoogle.get.uri}") match {
+      checkURI(s"${ProjectStores.sampleFileGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle.get)
+            googleCopy(ProjectStores.sampleFile, ProjectStores.sampleFileGoogle.get)
           }
       }
 
