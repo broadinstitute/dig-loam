@@ -45,9 +45,6 @@ def main(args=None):
 	print("remove variants with single called allele")
 	mt = mt.filter_rows(mt.variant_qc.AN > 1, keep=True)
 
-	print("assign family ID to match sample ID and add POP and GROUP")
-	mt = mt.annotate_cols(famID = mt.s, POP = args.vcf_in[0], GROUP = args.vcf_in[0])
-
 	print("write matrix table to disk")
 	mt.write(args.mt_out, overwrite=True)
 

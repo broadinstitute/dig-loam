@@ -18,14 +18,18 @@ def main(args=None):
 	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]))
 	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
 	mt = mt.filter_rows(~ hl.is_complex(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(mt.variant_qc.AF[1] >= 0.01)
-	mt = mt.filter_rows(mt.variant_qc.AF[1] <= 0.99)
-	mt = mt.filter_rows(mt.variant_qc.call_rate >= 0.98)
+	mt = mt.filter_rows(mt.variant_qc.AF[1] >= args.filter_freq)
+	mt = mt.filter_rows(mt.variant_qc.AF[1] <= 1 - args.filter_freq)
+	mt = mt.filter_rows(mt.variant_qc.call_rate >= args.filter_callrate)
 
 	print("exclude regions with high LD")
 	with hl.hadoop_open(args.regions_exclude, 'r') as f:
 		hild = f.read().splitlines()
 	mt = hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in hild], keep=False)
+
+	if args.sample_p is not None:
+		print("downsampling variants by " + str(100*(1-args.sample_p)) + "%")
+		mt = mt.sample_rows(p = args.sample_p, seed = args.sample_seed)
 
 	print("write variant qc metrics to file")
 	mt.rows().flatten().export(args.variants_out, types_file=None)
@@ -40,11 +44,15 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--sample-p', type=float, help='a probability for downsampling the variants included in qc data set (0.01 => 1% of variants are extracted)')
+	parser.add_argument('--sample-seed', type=int, default=1, help='an integer used as a seed to allow for reproducibility in sampling variants')
+    parser.add_argument('--filter-callrate', type=float, default=0.98, help='exclude variants with callrate below this number')
+    parser.add_argument('--filter-freq', type=float, default=0.01, help='exclude variants with allele frequency lower than this number')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
 	requiredArgs.add_argument('--regions-exclude', help='a list of Tabix formatted regions to exclude from QC', required=True)
-	requiredArgs.add_argument('--variants-out', help='an output filename for pruned variant list', required=True)
+    requiredArgs.add_argument('--variants-out', help='an output filename for pruned variant list', required=True)
 	requiredArgs.add_argument('--plink-out', help='a pruned and filtered Plink dataset name', required=True)
 	args = parser.parse_args()
 	main(args)

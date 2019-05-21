@@ -10,11 +10,11 @@ import Harmonize._
 import Load._
 import Annotate._
 import FilterForQc._
-import Kinship._
-import Ancestry._
-import Pca._
-import SampleQc._
-import FilterFinal._
+//import Kinship._
+//import Ancestry._
+//import Pca._
+//import SampleQc._
+//import FilterFinal._
 //import Impute._
 //import VariantAssoc._
 //import CrossCohort._
@@ -53,26 +53,26 @@ for {
   Load(array)
   FilterForQc(array)
   Annotate(array)
-  Kinship(array)
-  AncestryPca(array)
-  AncestryCluster(array)
+  //Kinship(array)
+  //AncestryPca(array)
+  //AncestryCluster(array)
 
 }
 
-// Reconcile inferred ancestry
-MergeInferredAncestry()
-
-// Array specific QC steps post ancestry inference
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  Pca(array)
-  SampleQc(array)
-  FilterFinal(array)
-
-}
-
+//// Reconcile inferred ancestry
+//MergeInferredAncestry()
+//
+//// Array specific QC steps post ancestry inference
+//for {
+//  array <- projectConfig.Arrays
+//} yield { 
+//
+//  Pca(array)
+//  SampleQc(array)
+//  FilterFinal(array)
+//
+//}
+//
 //// QC Report
 //QcReport()
 //
