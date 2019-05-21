@@ -140,6 +140,11 @@ def AncestryCluster(array: String): Unit = {
       --project-id ${projectConfig.projectId}
       --sample-id ${projectConfig.sampleFileId}
       --sr-race ${projectConfig.sampleFileSrRace}
+      --afr-codes "${projectConfig.sampleFileAFRCodes.mkString(",")}"
+      --amr-codes "${projectConfig.sampleFileAMRCodes.mkString(",")}"
+      --eur-codes "${projectConfig.sampleFileEURCodes.mkString(",")}"
+      --eas-codes "${projectConfig.sampleFileEASCodes.mkString(",")}"
+      --sas-codes "${projectConfig.sampleFileSASCodes.mkString(",")}"
       --cluster-plots ${arrayStores(array).ancestryClusterData.plots}
       --xtabs ${arrayStores(array).ancestryClusterData.xtab}
       --plots-centers ${arrayStores(array).ancestryClusterData.centerPlots}
