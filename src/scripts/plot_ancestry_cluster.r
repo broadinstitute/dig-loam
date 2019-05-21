@@ -9,6 +9,11 @@ parser$add_argument("--sample-file", dest="sample_file", type="character", help=
 parser$add_argument("--project-id", dest="project_id", type="character", help="A project id")
 parser$add_argument("--sample-id", dest="sample_id", type="character", help="A sample file id column name")
 parser$add_argument("--sr-race", dest="sr_race", type="character", help="A sample file self reported race column name")
+parser$add_argument("--afr-codes", dest="afr_codes", type="character", help="A comma separated list of codes for AFR group in sr_race column")
+parser$add_argument("--amr-codes", dest="amr_codes", type="character", help="A comma separated list of codes for AMR group in sr_race column")
+parser$add_argument("--eur-codes", dest="eur_codes", type="character", help="A comma separated list of codes for EUR group in sr_race column")
+parser$add_argument("--eas-codes", dest="eas_codes", type="character", help="A comma separated list of codes for EAS group in sr_race column")
+parser$add_argument("--sas-codes", dest="sas_codes", type="character", help="A comma separated list of codes for SAS group in sr_race column")
 parser$add_argument("--cluster-plots", dest="cluster_plots", type="character", help="An output filename for cluster plots")
 parser$add_argument("--xtabs", dest="xtabs", type="character", help="An output filename for cross tabs")
 parser$add_argument("--plots-centers", dest="plots_centers", type="character", help="An output filename for cluster plots with centers")
@@ -129,8 +134,38 @@ for(i in 1:nrow(centers_unknown)) {
 		if(centers_unknown$ratio[i] >= 1.5) {
 			centers_unknown$ASSIGNED[i]<-centers_unknown$closest1[i]
 		} else {
-			c<-sort(centers_unknown[i,c("AMR","AFR","EAS","EUR","SAS")],decreasing=TRUE)
-			centers_unknown$ASSIGNED[i]<-names(c)[1]
+			c<-centers_unknown[i,c("AMR","AFR","EAS","EUR","SAS")]
+			if(args$afr_codes != "") {
+				for(afr_code in unlist(strsplit(args$afr_codes,split=","))) {
+					c$AFR <- c$AFR + centers_unknown[i,paste0("sr_",afr_code)]
+				}
+			}
+			if(args$amr_codes != "") {
+				for(amr_code in unlist(strsplit(args$amr_codes,split=","))) {
+					c$AMR <- c$AMR + centers_unknown[i,paste0("sr_",amr_code)]
+				}
+			}
+			if(args$eur_codes != "") {
+				for(eur_code in unlist(strsplit(args$eur_codes,split=","))) {
+					c$EUR <- c$EUR + centers_unknown[i,paste0("sr_",eur_code)]
+				}
+			}
+			if(args$eas_codes != "") {
+				for(eas_code in unlist(strsplit(args$eas_codes,split=","))) {
+					c$EAS <- c$EAS + centers_unknown[i,paste0("sr_",eas_code)]
+				}
+			}
+			if(args$sas_codes != "") {
+				for(sas_code in unlist(strsplit(args$sas_codes,split=","))) {
+					c$SAS <- c$SAS + centers_unknown[i,paste0("sr_",sas_code)]
+				}
+			}
+			c<-sort(c,decreasing=TRUE)
+			if(c[1] == 0) {
+				centers_unknown$ASSIGNED[i]<-centers_unknown$closest1[i]
+			} else {
+				centers_unknown$ASSIGNED[i]<-names(c)[1]
+			}
 		}
 	}
 }
