@@ -26,6 +26,7 @@ def SampleQc(array: String): Unit = {
       google {
       
         hail"""$pyHailSexcheck --
+          --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
           --sample-in ${ProjectStores.sampleFileGoogle.get}
           --id-col ${projectConfig.sampleFileId}
@@ -68,6 +69,7 @@ def SampleQc(array: String): Unit = {
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.sampleQcHail.cpus, mem = projectConfig.resources.sampleQcHail.mem, maxRunTime = projectConfig.resources.sampleQcHail.maxRunTime) {
 
         cmd"""$binPython $pyHailSexcheck
+          --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
           --sample-in ${ProjectStores.sampleFile}
           --id-col ${projectConfig.sampleFileId}
