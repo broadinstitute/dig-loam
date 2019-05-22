@@ -14,13 +14,14 @@ def main(args=None):
 	print("filter variants for QC")
 	non_autosomal = [hl.parse_locus_interval(x) for x in hl.get_reference(args.reference_genome).mt_contigs + hl.get_reference(args.reference_genome).x_contigs + hl.get_reference(args.reference_genome).y_contigs]
 	mt = hl.filter_intervals(mt, non_autosomal, keep=False)
-	mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(~ hl.is_complex(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(mt.variant_qc.AF[1] >= args.filter_freq)
-	mt = mt.filter_rows(mt.variant_qc.AF[1] <= 1 - args.filter_freq)
-	mt = mt.filter_rows(mt.variant_qc.call_rate >= args.filter_callrate)
+	mt = mt.filter_rows(mt.variant_qc_raw.AN > 1, keep=True)
+	mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]), keep=True)
+	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), keep=True)
+	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), keep=True)
+	mt = mt.filter_rows(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), keep=True)
+	mt = mt.filter_rows(mt.variant_qc_raw.AF[1] >= args.filter_freq, keep=True)
+	mt = mt.filter_rows(mt.variant_qc_raw.AF[1] <= 1 - args.filter_freq, keep=True)
+	mt = mt.filter_rows(mt.variant_qc_raw.call_rate >= args.filter_callrate, keep=True)
 
 	print("exclude regions with high LD")
 	with hl.hadoop_open(args.regions_exclude, 'r') as f:
@@ -31,7 +32,7 @@ def main(args=None):
 		print("downsampling variants by " + str(100*(1-args.sample_p)) + "%")
 		mt = mt.sample_rows(p = args.sample_p, seed = args.sample_seed)
 
-	print("write variant qc metrics to file")
+	print("write variant table to file")
 	mt.rows().flatten().export(args.variants_out, types_file=None)
 
 	print("write Plink files to disk")

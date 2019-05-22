@@ -12,7 +12,7 @@ def FilterForQc(array: ConfigArray): Unit = {
 
   val filterCallrate = array.filterCallrate.getOrElse("") match { case "" => ""; case _ => "--filter-callrate ${array.filterCallrate.get}" }
 
-  val filterfreq = array.filterFreq.getOrElse("") match { case "" => ""; case _ => "--filter-freq ${array.filterFreq.get}" }
+  val filterFreq = array.filterFreq.getOrElse("") match { case "" => ""; case _ => "--filter-freq ${array.filterFreq.get}" }
 
   val sampleP = array.sampleP.getOrElse("") match { case "" => ""; case _ => "--sample-p ${array.sampleP.get}" }
 

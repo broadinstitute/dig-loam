@@ -36,14 +36,14 @@ def main(args=None):
 	mt = mt_bi.union_rows(mt_multi)
 	mt.describe()
 
-	print("calculate variant qc metrics")
-	mt = hl.variant_qc(mt)
+	print("calculate raw variant qc metrics")
+	mt = hl.variant_qc(mt, name="variant_qc_raw")
 
-	print("write variant qc metrics to file")
+	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
 
-	print("remove variants with single called allele")
-	mt = mt.filter_rows(mt.variant_qc.AN > 1, keep=True)
+	#print("remove variants with single called allele")
+	#mt = mt.filter_rows(mt.variant_qc_raw.AN > 1, keep=True)
 
 	print("write matrix table to disk")
 	mt.write(args.mt_out, overwrite=True)
