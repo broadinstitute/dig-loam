@@ -29,9 +29,9 @@ def checkPlinkPath(s: String): String = {
 	case false => s + ".fam does not exist"
   }
   Seq(bed, bim, fam).contains(false) match {
-    case false => 
+    case true => 
 	  throw new CfgException("checkPlinkPath: files missing from Plink fileset " + s + "\n  " + s"${bedMessage}\n  ${bimMessage}\n  ${famMessage}")
-    case true  => s
+    case false => s
   }
 }
 
