@@ -388,8 +388,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     case "gwas" =>
       MultiPathVcf(
       base = MultiPath(local = Some(localOutDir / refBaseString), google = hailCloud match { case true => Some(googleOutDir.get / refBaseString); case false => None }),
-      data = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.bgz")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.bgz")); case false => None }),
-      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.bgz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.bgz.tbi")); case false => None }))
+      data = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz")); case false => None }),
+      tbi = MultiStore(local = Some(store(localOutDir / s"${refBaseString}.vcf.gz.tbi")), google = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.vcf.gz.tbi")); case false => None }))
     case _ =>
       rawData.vcf.get
   }
