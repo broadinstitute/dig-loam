@@ -28,9 +28,14 @@ def main(args=None):
 		hild = f.read().splitlines()
 	mt = hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in hild], keep=False)
 
-	if args.sample_p is not None:
-		print("downsampling variants by " + str(100*(1-args.sample_p)) + "%")
-		mt = mt.sample_rows(p = args.sample_p, seed = args.sample_seed)
+	n = mt.count()[0]
+	if args.sample_n is not None:
+		if n > args.sample_n:
+			prop = args.sample_n / n
+			print("downsampling variants by " + str(100*(1-prop)) + "%")
+			mt = mt.sample_rows(p = prop, seed = args.sample_seed)
+		else:
+			print("skipping downsampling because " + str(n) + " <= " + str(args.sample_n))
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variants_out, types_file=None)
@@ -45,7 +50,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--sample-p', type=float, help='a probability for downsampling the variants included in qc data set (0.01 => 1% of variants are extracted)')
+	parser.add_argument('--sample-n', type=int, help='a probability for downsampling the variants included in qc data set (0.01 => 1% of variants are extracted)')
 	parser.add_argument('--sample-seed', type=int, default=1, help='an integer used as a seed to allow for reproducibility in sampling variants')
 	parser.add_argument('--filter-callrate', type=float, default=0.98, help='exclude variants with callrate below this number')
 	parser.add_argument('--filter-freq', type=float, default=0.01, help='exclude variants with allele frequency lower than this number')

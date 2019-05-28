@@ -14,7 +14,7 @@ def FilterForQc(array: ConfigArray): Unit = {
 
   val filterFreq = array.filterFreq.getOrElse("") match { case "" => ""; case _ => s"--filter-freq ${array.filterFreq.get}" }
 
-  val sampleP = array.sampleP.getOrElse("") match { case "" => ""; case _ => s"--sample-p ${array.sampleP.get}" }
+  val sampleN = array.sampleN.getOrElse("") match { case "" => ""; case _ => s"--sample-n ${array.sampleN.get}" }
 
   val sampleSeed = array.sampleSeed.getOrElse("") match { case "" => ""; case _ => s"--sample-seed ${array.sampleSeed.get}" }
 
@@ -30,7 +30,7 @@ def FilterForQc(array: ConfigArray): Unit = {
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
           ${filterCallrate}
           ${filterFreq}
-          ${sampleP}
+          ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
           --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
@@ -60,7 +60,7 @@ def FilterForQc(array: ConfigArray): Unit = {
           --regions-exclude ${ProjectStores.regionsExclude}
           ${filterCallrate}
           ${filterFreq}
-          ${sampleP}
+          ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}
           --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
