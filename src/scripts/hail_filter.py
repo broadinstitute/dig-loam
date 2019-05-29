@@ -58,6 +58,8 @@ def main(args=None):
 		else:
 			print("skipping downsampling because the post-filter variant count " + str(n) + " <= " + str(args.sample_n))
 			mt = mt.annotate_rows(downsample_exclude = hl.cond(mt.qc_exclude == 0, 0, -1))
+	else:
+		mt = mt.annotate_rows(downsample_exclude = hl.cond(mt.qc_exclude == 0, 0, -1))
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variants_out, types_file=None)
