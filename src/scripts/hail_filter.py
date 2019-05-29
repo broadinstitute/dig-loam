@@ -10,35 +10,59 @@ def main(args=None):
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
-	
-	print("filter variants for QC")
-	non_autosomal = [hl.parse_locus_interval(x) for x in hl.get_reference(args.reference_genome).mt_contigs + hl.get_reference(args.reference_genome).x_contigs + hl.get_reference(args.reference_genome).y_contigs]
-	mt = hl.filter_intervals(mt, non_autosomal, keep=False)
-	mt = mt.filter_rows(mt.variant_qc_raw.AN > 1, keep=True)
-	mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]), keep=True)
-	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), keep=True)
-	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), keep=True)
-	mt = mt.filter_rows(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), keep=True)
-	mt = mt.filter_rows(mt.variant_qc_raw.AF[1] >= args.filter_freq, keep=True)
-	mt = mt.filter_rows(mt.variant_qc_raw.AF[1] <= 1 - args.filter_freq, keep=True)
-	mt = mt.filter_rows(mt.variant_qc_raw.call_rate >= args.filter_callrate, keep=True)
 
-	print("exclude regions with high LD")
+	print("make hild region variants table")
 	with hl.hadoop_open(args.regions_exclude, 'r') as f:
 		hild = f.read().splitlines()
-	mt = hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in hild], keep=False)
+	tbl_hild = hl.filter_intervals(mt.rows().select(), [hl.parse_locus_interval(x) for x in hild], keep=True)
+	
+	print("add variant filter out table for QC")
+	mt = mt.annotate_rows(
+		qc_filters = hl.struct(
+			in_autosome = hl.cond(mt.locus.in_autosome(), 0, 1),
+			AN = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
+			is_snp = hl.cond(hl.is_snp(mt.alleles[0], mt.alleles[1]), 0, 1),
+			is_mnp = hl.cond(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
+			is_indel = hl.cond(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
+			is_complex = hl.cond(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), 0, 1),
+			AF = hl.cond((mt.variant_qc_raw.AF[1] >= args.filter_freq) & (mt.variant_qc_raw.AF[1] <= 1 - args.filter_freq), 0, 1),
+			call_rate = hl.cond(mt.variant_qc_raw.call_rate >= args.filter_callrate, 0, 1),
+			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.locus]), 0, 1)
+		)
+	)
+	mt = mt.annotate_rows(
+		qc_exclude = hl.cond(
+			(mt.qc_filters.in_autosome == 1) |
+				(mt.qc_filters.AN == 1) |
+				(mt.qc_filters.is_snp == 1) |
+				(mt.qc_filters.is_mnp == 1) |
+				(mt.qc_filters.is_indel == 1) |
+				(mt.qc_filters.is_complex == 1) |
+				(mt.qc_filters.AF == 1) |
+				(mt.qc_filters.call_rate == 1) |
+				(mt.qc_filters.in_hild_region == 1), 
+			1, 
+			0
+		)
+	)
 
 	n = mt.count()[0]
 	if args.sample_n is not None:
 		if n > args.sample_n:
+			rows_filtered = mt.rows().select(qc_exclude).filter(qc_exclude == 0, keep=True)
 			prop = args.sample_n / n
 			print("downsampling variants by " + str(100*(1-prop)) + "%")
-			mt = mt.sample_rows(p = prop, seed = args.sample_seed)
+			rows_filtered = rows_filtered.sample(p = prop, seed = args.sample_seed)
+			mt = mt.annotate_rows(downsample_exclude = hl.cond(qc_exclude == 0, hl.cond(hl.is_defined(rows_filtered[mt.locus]), 0, 1), -1))
 		else:
 			print("skipping downsampling because " + str(n) + " <= " + str(args.sample_n))
+			mt = mt.annotate_rows(downsample_exclude = hl.cond(qc_exclude == 0, 0, -1))
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variants_out, types_file=None)
+
+	print("filtering matrix table for qc")
+	mt = mt.filter_rows((mt.qc_exclude != 1) & (mt.downsample_exclude != 1), keep=True)
 
 	print("write Plink files to disk")
 	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s)
