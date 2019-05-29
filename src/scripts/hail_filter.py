@@ -27,7 +27,7 @@ def main(args=None):
 			is_complex = hl.cond(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), 0, 1),
 			AF = hl.cond((mt.variant_qc_raw.AF[1] >= args.filter_freq) & (mt.variant_qc_raw.AF[1] <= 1 - args.filter_freq), 0, 1),
 			call_rate = hl.cond(mt.variant_qc_raw.call_rate >= args.filter_callrate, 0, 1),
-			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.locus]), 0, 1)
+			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1)
 		)
 	)
 	mt = mt.annotate_rows(
@@ -46,16 +46,17 @@ def main(args=None):
 		)
 	)
 
-	n = mt.count()[0]
+	rows_filtered = mt.rows().select('qc_exclude')
+	rows_filtered = rows_filtered.filter(rows_filtered.qc_exclude == 0, keep=True)
+	n = rows_filtered.count()
 	if args.sample_n is not None:
 		if n > args.sample_n:
-			rows_filtered = mt.rows().select(qc_exclude).filter(qc_exclude == 0, keep=True)
 			prop = args.sample_n / n
 			print("downsampling variants by " + str(100*(1-prop)) + "%")
 			rows_filtered = rows_filtered.sample(p = prop, seed = args.sample_seed)
-			mt = mt.annotate_rows(downsample_exclude = hl.cond(qc_exclude == 0, hl.cond(hl.is_defined(rows_filtered[mt.locus]), 0, 1), -1))
+			mt = mt.annotate_rows(downsample_exclude = hl.cond(mt.qc_exclude == 0, hl.cond(hl.is_defined(rows_filtered[mt.row_key]), 0, 1), -1))
 		else:
-			print("skipping downsampling because " + str(n) + " <= " + str(args.sample_n))
+			print("skipping downsampling because the post-filter variant count " + str(n) + " <= " + str(args.sample_n))
 			mt = mt.annotate_rows(downsample_exclude = hl.cond(qc_exclude == 0, 0, -1))
 
 	print("write variant table to file")
