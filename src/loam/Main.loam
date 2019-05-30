@@ -10,8 +10,8 @@ import Harmonize._
 import Load._
 import Annotate._
 import FilterForQc._
-//import Kinship._
-//import Ancestry._
+import Kinship._
+import Ancestry._
 //import Pca._
 //import SampleQc._
 //import FilterFinal._
@@ -53,9 +53,9 @@ for {
   Load(array)
   FilterForQc(array)
   Annotate(array)
-  //Kinship(array)
-  //AncestryPca(array)
-  //AncestryCluster(array)
+  Kinship(array)
+  AncestryPca(array)
+  AncestryCluster(array)
 
 }
 

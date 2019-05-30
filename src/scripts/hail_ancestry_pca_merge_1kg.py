@@ -17,29 +17,28 @@ def main(args=None):
 	hl.summarize_variants(kg)
 
 	print("split multiallelic variants in kg data")
-	kg = hl.split_multi(kg)
-
-	print("add 1KG sample annotations")
-	kg = kg.annotate_cols(famID = kg.s)
-	tbl = hl.import_table(args.kg_sample, delimiter=" ", impute=True)
-	tbl = tbl.select(tbl.ID, tbl.POP, tbl.GROUP)
-	tbl = tbl.key_by(tbl.ID)
-	kg = kg.annotate_cols(POP = tbl[kg.s].POP, GROUP = tbl[kg.s].GROUP)
+	kg = hl.split_multi_hts(kg)
 
 	print("rename sample IDs to avoid any possible overlap with test data")
 	kg_rename = [x for x in kg.s.collect()]
 	kg = kg.annotate_cols(col_ids = hl.literal(dict(zip(kg_rename, ["kg-" + x for x in kg_rename])))[kg.s])
 	kg = kg.key_cols_by(kg.col_ids)
 	kg = kg.drop('s')
-	kg = kg.annotate_cols(famID = kg.col_ids)
 	kg = kg.rename({'col_ids': 's'})
-	kg = kg.select_cols('famID', 'POP', 'GROUP')
 
 	mt = mt.select_entries(mt.GT)
 	kg = kg.select_entries(kg.GT)
 
+	print("convert kg genotypes to unphased")
+	kg = kg.annotate_entries(
+		GT=hl.case()
+			.when(kg.GT.is_diploid(), hl.call(kg.GT[0], kg.GT[1], phased=False))
+			.when(kg.GT.is_haploid(), hl.call(kg.GT[0], phased=False))
+			.default(hl.null(hl.tcall))
+	)
+
 	print("drop extraneous rows from both matrix tables")
-	row_fields_keep = ['locus', 'alleles', 'rsid', 'qual', 'filters', 'a_index', 'was_split', 'old_locus', 'old_alleles']
+	row_fields_keep = ['locus', 'alleles', 'rsid', 'qual', 'filters', 'a_index', 'was_split']
 	mt_remove = [x for x in list(mt.rows().row) if x not in row_fields_keep]
 	kg_remove = [x for x in list(kg.rows().row) if x not in row_fields_keep]
 	for f in mt_remove:
@@ -47,14 +46,17 @@ def main(args=None):
 	for f in kg_remove:
 		kg = kg.drop(f)
 
+	print("drop pheno struct from mt")
+	mt = mt.drop('pheno')
+
 	print('study data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
 	print('kg data: %d samples and %d variants' % (kg.count_cols(), kg.count_rows()))
-    
+
 	print("join matrix tables on columns with inner join on rows")
 	mt = mt.union_cols(kg)
 	hl.summarize_variants(mt)
 	print('merged data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
-    
+
 	print("write Plink files to disk")
 	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s)
 
