@@ -1,5 +1,8 @@
 val dataConfig = loadConfig("dataConfig", "")
 
+val defaultSampleMetricsGwas = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var")
+val defaultSampleMetricsSeq = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var","n_singleton","avg_ab","avg_ab_dist50")
+
 final case class ConfigMachine(
   cpus: Int,
   mem: Int,
@@ -48,6 +51,7 @@ final case class ConfigArray(
   liftOver: Option[String] = None,
   filterCallrate: Option[String],
   filterFreq: Option[String],
+  sampleQcMetrics: Seq[String],
   nSampleMetricPcs: Option[Int],
   sampleMetricCovars: Option[String],
   sampleN: Option[Int],
@@ -154,7 +158,6 @@ final case class ProjectConfig(
   acknowledgementsAnalysisReport: Seq[String],
   acknowledgementsQcReport: Seq[String],
   nAncestryInferenceFeatures: Int,
-  sampleQcMetrics: Seq[String],
   ancestryInferenceFeatures: String,
   minPCs: Int,
   maxPCs: Int,
@@ -163,7 +166,6 @@ final case class ProjectConfig(
   nArrays: Int,
   nCohorts: Int,
   nMetas: Int,
-  nMetrics: Int,
   maxSigRegions: Option[Int],
   Arrays: Seq[ConfigArray],
   Cohorts: Seq[ConfigCohort],
@@ -220,7 +222,6 @@ val projectConfig = ProjectConfig(
   minPCs = dataConfig.getInt("minPCs"),
   maxPCs = dataConfig.getInt("maxPCs"),
   nStddevs = dataConfig.getInt("nStddevs"),
-  sampleQcMetrics = dataConfig.getStrList("sampleQcMetrics"),
   maxSigRegions = if (dataConfig.isDefined("maxSigRegions")) { Some(dataConfig.getInt("maxSigRegions")) } else { None },
 
   // inferred global values
@@ -228,7 +229,6 @@ val projectConfig = ProjectConfig(
   nArrays = dataConfig.getObjList("arrays").size,
   nCohorts = dataConfig.getObjList("cohorts").size,
   nMetas = dataConfig.getObjList("metas").size,
-  nMetrics = dataConfig.getStrList("sampleQcMetrics").size,
 
   resources = ConfigResources(
     preparePlink = ConfigMachine( cpus = dataConfig.getObj("preparePlink").getInt("cpus"), mem = dataConfig.getObj("preparePlink").getInt("mem"), maxRunTime = dataConfig.getObj("preparePlink").getInt("maxRunTime") ),
@@ -281,6 +281,7 @@ val projectConfig = ProjectConfig(
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
         filterCallrate = if (array.isDefined("filterCallrate")) { Some(array.getStr("filterCallrate")) } else { None },
         filterFreq = if (array.isDefined("filterFreq")) { Some(array.getStr("filterFreq")) } else { None },
+        sampleQcMetrics = if (array.isDefined("sampleQcMetrics")) { dataConfig.getStrList("sampleQcMetrics") } else { array.getStr("technology") match { case "wes" | "wgs" => defaultSampleMetricsSeq; case _ => defaultSampleMetricsGwas } },
         nSampleMetricPcs = if (array.isDefined("nSampleMetricPcs")) { Some(array.getInt("nSampleMetricPcs")) } else { None },
         sampleMetricCovars = if (array.isDefined("sampleMetricCovars")) { Some(array.getStrList("sampleMetricCovars").mkString("+")) } else { None },
         sampleN = if (array.isDefined("sampleN")) { Some(array.getInt("sampleN")) } else { None },

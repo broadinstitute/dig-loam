@@ -44,7 +44,7 @@ def main(args=None):
 
 		text=[
 			r"\begin{figure}[H]",
-			r"	\caption{Comparison of " + args.compare_dist_metric.replace("_res","").replace("_","\_") + r" distributions before and after adjustment / normalization}",
+			r"	\caption{Comparison of " + args.compare_dist_metricreplace("_","\_") + r" distributions before and after adjustment / normalization}",
 			r"	\centering",
 			r"	\begin{subfigure}{\textwidth}",
 			r"		\centering",

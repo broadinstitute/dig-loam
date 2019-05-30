@@ -182,7 +182,7 @@ def QcReport(): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
       --sampleqc ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats}
-      --metric ${projectConfig.sampleQcMetrics.head.replace("_res","")}
+      --metric ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcMetrics.head}
       --out ${qcReportStores.figureData.metricDistUnadjPdf}
       """
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats)
@@ -192,7 +192,7 @@ def QcReport(): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
       --sampleqc ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj}
-      --metric ${projectConfig.sampleQcMetrics.head}
+      --metric ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcMetrics.head}_res
       --out ${qcReportStores.figureData.metricDistAdjPdf}
       """
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj)
@@ -246,7 +246,7 @@ def QcReport(): Unit = {
       --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
       --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
       --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
-      --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
+      --compare-dist-metric ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcMetrics.head}
       --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
       --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}

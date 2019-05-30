@@ -498,7 +498,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     plots = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.plots.pdf"),
     xtab = store(localOutDir / s"${sampleQcBaseString}.pca.cluster.xtab"))
 
-  val sampleQcMetricClusterData = projectConfig.sampleQcMetrics.map { metric =>
+  val sampleQcMetricClusterData = arrayCfg.sampleQcMetrics.map { metric =>
   
       metric -> SampleQcMetricClusterData(
         base = localOutDir / s"${sampleQcBaseString}.${metric}.cluster",
