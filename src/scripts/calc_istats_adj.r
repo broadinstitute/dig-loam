@@ -14,6 +14,7 @@ args<-parser$parse_args()
 print(args)
 
 data<-read.table(args$sampleqc_stats,header=T,as.is=T,stringsAsFactors=F)
+metrics <- names(data)[which(names(data) != "IID")]
 
 if(args$covars != "") {
 	cat("removing factor indicators from covariates\n")
@@ -61,7 +62,7 @@ if(failed) {
 }
 covars_analysis<-paste(c(covars_factors,"1",paste0("PC",seq(args$n_pcs))),collapse="+")
 
-for(x in names(out)[! names(out) %in% c(names(out)[grep("^PC", names(out))], "IID", unlist(strsplit(covars_analysis, split="\\+")))]) {
+for(x in metrics) {
 	print(paste("var(",x,") = ",var(out[,x])),sep="")
 	if(var(out[,x]) != 0) {
 		g <- glm(eval(parse(text=paste(x,"~",covars_analysis,sep=""))),data=out,family="gaussian")

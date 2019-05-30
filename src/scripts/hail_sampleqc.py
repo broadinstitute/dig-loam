@@ -21,9 +21,8 @@ def main(args=None):
 	print("remove outlier samples")
 	mt = mt.filter_cols(mt.GROUP == "OUTLIERS", keep=False)
 
-	print("filter variants for QC")
-	non_autosomal = [hl.parse_locus_interval(x) for x in hl.get_reference(args.reference_genome).mt_contigs + hl.get_reference(args.reference_genome).x_contigs + hl.get_reference(args.reference_genome).y_contigs]
-	mt = hl.filter_intervals(mt, non_autosomal, keep=False)
+	print("filter variants for sample qc")
+	mt = mt.filter_rows(mt.locus.in_autosome())
 	mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
 	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]))
 	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
@@ -35,12 +34,19 @@ def main(args=None):
 	print("calculate variant qc stats")
 	mt = hl.variant_qc(mt, name='variant_qc')
 
+	if 'AD' in list(mt.entry):
+		print("add allele balance to entries")
+		mt = mt.annotate_entries(AB = hl.cond(hl.is_defined(mt.AD), mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)))
+
 	print("annotate sample qc stats")
 	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
 		n_het_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & mt.GT.is_het()), 
 		n_het_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & mt.GT.is_het()), 
 		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
-		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT))))
+		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
+		avg_ab = hl.agg.mean(mt.AB),
+		avg_ab_dist_50 = hl.agg.mean(hl.abs(mt.AB-0.5)))
+	)
 
 	print("write sample qc stats results to file")
 	tbl = mt.cols()
@@ -56,7 +62,9 @@ def main(args=None):
 		het_low = tbl.sample_qc.n_het_low / tbl.sample_qc.n_called_low, 
 		het_high = tbl.sample_qc.n_het_high / tbl.sample_qc.n_called_high, 
 		n_hom_var = tbl.sample_qc.n_hom_var, 
-		r_het_hom_var = tbl.sample_qc.r_het_hom_var)
+		r_het_hom_var = tbl.sample_qc.r_het_hom_var,
+		avg_ab = tbl.sample_qc.avg_ab,
+		avg_ab_dist_50 = tbl.sample_qc.avg_ab_dist_50)
 	tbl.flatten().export(args.qc_out)
 
 	if args.cloud:

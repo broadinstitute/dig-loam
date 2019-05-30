@@ -26,15 +26,16 @@ def main(args=None):
 	mt = mt.annotate_cols(pheno = tbl[mt.s])
 
 	print("split multiallelic variants")
-	mt_multi = mt.filter_rows(hl.len(mt.alleles) > 2)
-	mt_multi = hl.split_multi_hts(mt_multi)
-	print("split multiallelic variants")
-	mt_multi.describe()
+	mt_multi_snp = mt.filter_rows((hl.len(mt.alleles) > 2) & ~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
+	mt_multi_indel = mt.filter_rows((hl.len(mt.alleles) > 2) & hl.is_indel(mt.alleles[0], mt.alleles[1]))
+	mt_multi_snp = hl.split_multi_hts(mt_multi_snp)
+	mt_multi_indel = hl.split_multi_hts(mt_multi_indel)
+	mt_multi = mt_multi_snp.union_rows(mt_multi_indel)
+
+	print("prepare biallelic variants")
 	mt_bi = mt.filter_rows(hl.len(mt.alleles) <= 2)
 	mt_bi = mt_bi.annotate_rows(a_index = 1, was_split = False)
-	mt_bi.describe()
 	mt = mt_bi.union_rows(mt_multi)
-	mt.describe()
 
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
