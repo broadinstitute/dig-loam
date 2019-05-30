@@ -103,8 +103,8 @@ def SampleQc(array: ConfigArray): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rCalcIstatsAdj
       --sampleqc-stats ${arrayStores(array).sampleQcData.stats}
-      --pheno ${ProjectStores.phenoFile.get}
-      --iid-col ${projectConfig.phenoFileId}
+      --sample-file ${ProjectStores.sampleFile}
+      --iid-col ${projectConfig.sampleFileId}
       ${nSampleMetricPcs}
       ${sampleMetricCovars}
       --pca-scores ${arrayStores(array).pcaData.scores}

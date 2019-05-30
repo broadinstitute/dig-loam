@@ -5,8 +5,8 @@ parser <- ArgumentParser()
 parser$add_argument("--sampleqc-stats", dest="sampleqc_stats", type="character", help="A sample qc stats file")
 parser$add_argument("--n-pcs", dest="n_pcs", type='integer', default = 10, help="number of PCs to adjust for in residual calculation")
 parser$add_argument("--covars", dest="covars", default = "", type="character", help="a '+' separated list of covariates to adjust for in residual calculation")
-parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
-parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
+parser$add_argument("--sample-file", dest="sample_file", type="character", help="a sample file")
+parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in sample file')
 parser$add_argument("--pca-scores", dest="pca_scores", type="character", help="A file containing PCA scores")
 parser$add_argument("--out", dest="out", type="character", help="an output file name")
 args<-parser$parse_args()
@@ -23,7 +23,7 @@ if(args$covars != "") {
 }
 
 cat("extracting model specific columns from phenotype file\n")
-pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+pheno<-read.table(args$sample_file,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, covars)]
 names(pheno)[1] <- "IID"
