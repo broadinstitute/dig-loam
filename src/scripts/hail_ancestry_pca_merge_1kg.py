@@ -19,12 +19,23 @@ def main(args=None):
 	print("split multiallelic variants in kg data")
 	kg = hl.split_multi_hts(kg)
 
+	print("add POP and GROUP to mt")
+	mt = mt.annotate_cols(POP = "NA", GROUP = "NA")
+
+	print("add 1KG sample annotations")
+	kg = kg.annotate_cols(famID = kg.s)
+	tbl = hl.import_table(args.kg_sample, delimiter=" ", impute=True)
+	tbl = tbl.select(tbl.ID, tbl.POP, tbl.GROUP)
+	tbl = tbl.key_by(tbl.ID)
+	kg = kg.annotate_cols(POP = tbl[kg.s].POP, GROUP = tbl[kg.s].GROUP)
+
 	print("rename sample IDs to avoid any possible overlap with test data")
 	kg_rename = [x for x in kg.s.collect()]
 	kg = kg.annotate_cols(col_ids = hl.literal(dict(zip(kg_rename, ["kg-" + x for x in kg_rename])))[kg.s])
 	kg = kg.key_cols_by(kg.col_ids)
 	kg = kg.drop('s')
 	kg = kg.rename({'col_ids': 's'})
+	kg = kg.select_cols('POP', 'GROUP')
 
 	mt = mt.select_entries(mt.GT)
 	kg = kg.select_entries(kg.GT)

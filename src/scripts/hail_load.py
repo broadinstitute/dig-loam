@@ -42,9 +42,6 @@ def main(args=None):
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
 
-	#print("remove variants with single called allele")
-	#mt = mt.filter_rows(mt.variant_qc_raw.AN > 1, keep=True)
-
 	print("write matrix table to disk")
 	mt.write(args.mt_out, overwrite=True)
 

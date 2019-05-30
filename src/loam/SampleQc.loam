@@ -93,12 +93,20 @@ def SampleQc(array: ConfigArray): Unit = {
       }
 
   }
+
+  val nSampleMetricPcs = array.nSampleMetricPcs.getOrElse("") match { case "" => ""; case _ => s"--n-pcs ${array.nSampleMetricPcs.get}" }
+
+  val sampleMetricCovars = array.sampleMetricCovars.getOrElse("") match { case "" => ""; case _ => s"""--covars "${array.sampleMetricCovars.get}"""" }
   
   drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcIstatsAdj
       --sampleqc-stats ${arrayStores(array).sampleQcData.stats}
+      --pheno ${ProjectStores.phenoFile.get}
+      --iid-col ${projectConfig.phenoFileId}
+      ${nSampleMetricPcs}
+      ${sampleMetricCovars}
       --pca-scores ${arrayStores(array).pcaData.scores}
       --out ${arrayStores(array).sampleQcData.statsAdj}"""
       .in(arrayStores(array).sampleQcData.stats, arrayStores(array).pcaData.scores)
