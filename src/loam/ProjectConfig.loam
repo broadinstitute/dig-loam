@@ -80,7 +80,7 @@ final case class ConfigMeta(
 final case class ConfigMerge(
   id: String,
   cohorts_metas: Seq[String],
-  minPartitions: Option[int])
+  minPartitions: Option[Int])
 
 final case class ConfigPheno(
   id: String,

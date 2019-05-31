@@ -34,7 +34,7 @@ metrics<-names(clust_files_list)
 stats_unadj<-read.table(args$stats_unadj,header=T,as.is=T,stringsAsFactors=F)
 stats_adj<-read.table(args$stats_adj,header=T,as.is=T,stringsAsFactors=F)
 stats_unadj<-stats_unadj[stats_unadj$IID %in% stats_adj$IID,]
-stats_adj_names<-names(stats_adj)[names(stats_adj) %in% metrics]
+stats_adj_names<-names(stats_adj)[names(stats_adj) %in% paste0(metrics,"_res")]
 oliers<-readLines(args$metric_pca_outliers)
 stats_adj$OUTLIER_PCA<-0
 if( length(oliers) > 0) {
@@ -64,8 +64,9 @@ for(f in ls(clust_files_list)) {
 
 pdf(args$boxplots,width=ceiling(length(stats_adj_names)/10)*7, height=7)
 for(m in metrics) {
+	m_res <- paste0(m,"_res")
     print(paste("boxplot",m,clust_files_list[[m]],sep=" "))
-	pl<-ggplot(stats_adj,aes_string(paste(m,"_CLUSTER",sep=""), y=m)) +
+	pl<-ggplot(stats_adj,aes_string(paste(m,"_CLUSTER",sep=""), y=m_res)) +
 		geom_boxplot(data=stats_adj[stats_adj[,c(paste(m,"_CLUSTER",sep=""))] != "X",],aes_string(colour=paste(m,"_CLUSTER",sep=""))) +
 		geom_point(aes_string(colour=paste(m,"_CLUSTER",sep=""))) +
 		geom_rug(sides="l") +
@@ -81,7 +82,7 @@ for(m in metrics) {
 		panel.background = element_blank(),
 		legend.key = element_blank())
 	plot(pl)
-	cat(file=args$discreteness,paste("   ",m,": ",nrow(stats_adj)," total, ",length(unique(stats_adj[,c(m)]))," unique, ",(length(unique(stats_adj[,c(m)])) / nrow(stats_adj))*100,"%\n",sep=""),append=T)
+	cat(file=args$discreteness,paste("   ",m,": ",nrow(stats_adj)," total, ",length(unique(stats_adj[,c(m_res)]))," unique, ",(length(unique(stats_adj[,c(m_res)])) / nrow(stats_adj))*100,"%\n",sep=""),append=T)
 }
 dev.off()
 
@@ -90,12 +91,13 @@ i<-0
 for(cl in names(stats_adj)[grep("_CLUSTER",names(stats_adj))]) {
 	i<-i+1
 	f<-gsub("_CLUSTER","",cl)
-	f_orig<-gsub("_res","",f)
-	temp<-stats_adj[,c(f,cl,f_orig,"OUTLIER_PCA","IID")]
+	f_res<-paste0(f,"_res")
+	#f_orig<-gsub("_res","",f)
+	temp<-stats_adj[,c(f_res,cl,f,"OUTLIER_PCA","IID")]
 	names(temp)[1]<-"VALUE"
 	names(temp)[2]<-"CLUSTER"
 	names(temp)[3]<-"VALUE_ORIG"
-	temp$METRIC<-f
+	temp$METRIC<-f_res
 	if(i == 1) {
 		sdata<-temp
 	} else {
@@ -105,8 +107,9 @@ for(cl in names(stats_adj)[grep("_CLUSTER",names(stats_adj))]) {
 sdata$METRIC_ORIG<-gsub("_res","",sdata$METRIC)
 
 # reset sample with cluster X and values above the mean to cluster 1 to account for unidirectional metric filters
-for(m in c("call_rate_res","n_called_res")) {
-	sdata$CLUSTER[sdata$METRIC == m & sdata$CLUSTER == "X" & sdata$VALUE >= mean(stats_adj[,m])] <- "1"
+for(m in c("call_rate","n_called")) {
+	m_res <- paste0(m,"_res")
+	sdata$CLUSTER[sdata$METRIC == m_res & sdata$CLUSTER == "X" & sdata$VALUE >= mean(stats_adj[,m_res])] <- "1"
 }
 
 sdata$DECISION<-"KEEP"
