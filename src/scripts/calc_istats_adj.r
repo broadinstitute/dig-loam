@@ -35,30 +35,23 @@ pcs$GROUP<-NULL
 out <- merge(data, pcs, all.y=T)
 out <- merge(out, pheno, all.x=T)
 
-failed <- FALSE
 covars_factors <- unlist(strsplit(args$covars,split="\\+"))
 for(cv in covars_factors) {
 	cvv <- unlist(strsplit(cv,split=""))
 	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
 		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		if(length(unique(pheno[,cvb])) == 1) {
-			cat(paste0("covariate ",cvb," has zero variance\n"))
-			failed <- TRUE
+		if(length(unique(out[,cvb])) == 1) {
+			cat(paste0("removing covariate ",cvb," with zero variance\n"))
 		} else {
-			pheno[,cvb] <- as.factor(pheno[,cvb])
+			out[,cvb] <- as.factor(out[,cvb])
 			covars_factors <- c(covars_factors,paste0("factor(",cvb,")"))
 		}
 		covars_factors <- covars_factors[covars_factors != cv]
 	} else {
-		if(length(unique(pheno[,cv])) == 1) {
-			cat(paste0("covariate ",cv," has zero variance\n"))
-			failed <- TRUE
+		if(length(unique(out[,cv])) == 1) {
+			cat(paste0("removing covariate ",cv," with zero variance\n"))
 		}
 	}
-}
-if(failed) {
-	cat("exiting due to invalid model\n")
-	quit(status=1)
 }
 covars_analysis<-paste(c(covars_factors,"1",paste0("PC",seq(args$n_pcs))),collapse="+")
 

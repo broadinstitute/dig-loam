@@ -32,7 +32,10 @@ def main(args=None):
 
 	if 'AD' in list(mt.entry):
 		print("add allele balance to entries")
-		mt = mt.annotate_entries(AB = hl.cond(hl.is_defined(mt.AD), mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)))
+		mt = mt.annotate_entries(
+			AB = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)),
+			AB_dist50 = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
+		)
 
 	print("annotate sample qc stats")
 	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
@@ -41,7 +44,7 @@ def main(args=None):
 		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
 		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
 		avg_ab = hl.agg.mean(mt.AB),
-		avg_ab_dist50 = hl.agg.mean(hl.abs(mt.AB-0.5)))
+		avg_ab_dist50 = hl.agg.mean(mt.AB_dist50))
 	)
 
 	print("write sample qc stats results to file")
