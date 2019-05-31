@@ -9,7 +9,7 @@ def main(args=None):
 		hl.init()
 
 	print("read vcf file")
-	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.partitions, array_elements_required=False)
+	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False)
 
 	print("replace any spaces in sample ids with an underscore")
 	mt = mt.annotate_cols(s_new = mt.s.replace("\s+","_"))
@@ -58,7 +58,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
-	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
+	parser.add_argument('--min-partitions', type=int, default=None, help='number of min partitions')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

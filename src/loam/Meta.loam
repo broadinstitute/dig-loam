@@ -11,6 +11,8 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   val meta = metaStores((configModel, configMeta))
 
+  val minPartitions =  ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
+
   hailCloud match {
 
     case true =>
@@ -43,7 +45,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       google {
       
         hail"""$pyHailMetaAnalysis --
-          --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
+          ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${meta.resultsGoogle.get}
           --cloud
@@ -91,7 +93,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
 
         cmd"""$binPython $pyHailMetaAnalysis
-          --partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.partitions.toString}
+          ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${meta.results}
           --log ${meta.hailLog}"""
@@ -117,6 +119,8 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, configKnown: ConfigKnown): Unit = {
 
   val known = knownMetaStores((configModel, configMeta, configKnown))
+
+  val minPartitions =  ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
 
   hailCloud match {
 
@@ -150,7 +154,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       google {
       
         hail"""$pyHailMetaAnalysis --
-          --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+          ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${known.resultsGoogle.get}
           --cloud
@@ -198,7 +202,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
 
         cmd"""$binPython $pyHailMetaAnalysis
-          --partitions ${projectConfig.Metas.filter(_.id == configMeta.id)(0).partitions.toString}
+          ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${known.results}
           --log ${known.hailLog}"""

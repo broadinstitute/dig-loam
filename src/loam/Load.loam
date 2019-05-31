@@ -10,6 +10,8 @@ import ProjectStores._
 
 def Load(array: ConfigArray): Unit = {
 
+  val minPartitions =  array.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${array.minPartitions.get}" }
+
   hailCloud match {
 
     case true =>
@@ -25,7 +27,7 @@ def Load(array: ConfigArray): Unit = {
       
         hail"""$pyHailLoad --
           --reference-genome ${projectConfig.referenceGenome}
-          --partitions ${array.partitions.toString}
+          ${minPartitions}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
           --sample-in ${ProjectStores.sampleFileGoogle.get}
           --id-col ${projectConfig.sampleFileId}
@@ -54,7 +56,7 @@ def Load(array: ConfigArray): Unit = {
 
         cmd"""$binPython $pyHailLoad
           --reference-genome ${projectConfig.referenceGenome}
-          --partitions ${array.partitions.toString}
+          ${minPartitions}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.local.get}
           --sample-in ${ProjectStores.sampleFile}
           --id-col ${projectConfig.sampleFileId}

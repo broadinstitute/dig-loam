@@ -47,7 +47,7 @@ final case class ConfigArray(
   format: String,
   technology: String,
   description: String,
-  partitions: Int,
+  minPartitions: Option[Int],
   liftOver: Option[String] = None,
   filterCallrate: Option[String],
   filterFreq: Option[String],
@@ -70,17 +70,17 @@ final case class ConfigCohort(
   id: String,
   array: String,
   ancestry: Seq[String],
-  partitions: Int)
+  minPartitions: Option[Int])
 
 final case class ConfigMeta(
   id: String,
   cohorts: Seq[String],
-  partitions: Int)
+  minPartitions: Option[Int])
 
 final case class ConfigMerge(
   id: String,
   cohorts_metas: Seq[String],
-  partitions: Int)
+  minPartitions: Option[int])
 
 final case class ConfigPheno(
   id: String,
@@ -277,7 +277,7 @@ val projectConfig = ProjectConfig(
         format = array.getStr("format"),
         technology = array.getStr("technology"),
         description = array.getStr("description"),
-        partitions = array.getInt("partitions"),
+        minPartitions = if (array.isDefined("minPartitions")) { Some(array.getInt("minPartitions")) } else { None },
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
         filterCallrate = if (array.isDefined("filterCallrate")) { Some(array.getStr("filterCallrate")) } else { None },
         filterFreq = if (array.isDefined("filterFreq")) { Some(array.getStr("filterFreq")) } else { None },
@@ -310,7 +310,7 @@ val projectConfig = ProjectConfig(
         id = cohort.getStr("id"),
         array = cohort.getStr("array"),
         ancestry = cohort.getStrList("ancestry"),
-        partitions = cohort.getInt("partitions"))
+        minPartitions = if (cohort.isDefined("minPartitions")) { Some(cohort.getInt("minPartitions")) } else { None })
 
     }
 
@@ -325,7 +325,7 @@ val projectConfig = ProjectConfig(
       ConfigMeta(
         id = meta.getStr("id"),
         cohorts = meta.getStrList("cohorts"),
-        partitions = meta.getInt("partitions"))
+        minPartitions = if (meta.isDefined("minPartitions")) { Some(meta.getInt("minPartitions")) } else { None })
 
     }
 
@@ -340,7 +340,7 @@ val projectConfig = ProjectConfig(
       ConfigMerge(
         id = merge.getStr("id"),
         cohorts_metas = merge.getStrList("cohorts_metas"),
-        partitions = merge.getInt("partitions"))
+        minPartitions = if (merge.isDefined("minPartitions")) { Some(merge.getInt("minPartitions")) } else { None })
 
     }
 
