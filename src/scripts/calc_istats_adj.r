@@ -57,8 +57,10 @@ for(cv in covars_factors) {
 covars_analysis<-paste(c(covars_factors,"1",paste0("PC",seq(args$n_pcs))),collapse="+")
 
 incomplete_obs <- out[! complete.cases(out[,c(gsub("\\]","",gsub("\\[","",covars)))]),c("IID",gsub("\\]","",gsub("\\[","",covars)))]
+
 if(nrow(incomplete_obs) > 0) {
 	print(paste0(nrow(incomplete_obs), " incomplete observations found"))
+}
 write.table(incomplete_obs,args$incomplete_obs,row.names=F,col.names=T,quote=F,sep="\t",append=F)
 
 out <- out[! out$IID %in% incomplete_obs$IID,]
