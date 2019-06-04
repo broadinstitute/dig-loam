@@ -242,7 +242,7 @@ def SampleQc(array: ConfigArray): Unit = {
       --kinship-related ${arrayStores(array).kinshipData.kin0Related}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
-      --sample-qc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
+      --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
       --restore ${arrayStores(array).finalData.samplesRestore}
       --out ${arrayStores(array).finalData.samplesExclude}"""
