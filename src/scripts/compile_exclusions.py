@@ -9,7 +9,7 @@ def main(args=None):
 
 	print "reading ancestry inferred file"
 	x=pd.read_table(args.ancestry_inferred,header=None)
-	n_samples = nrow(x)
+	n_samples = x.shape[0]
 	x[0] = x[0].astype(str)
 	exc=x[0][x[1] == "OUTLIERS"].tolist()
 	restore_temp = restore[restore['RestoreFrom'] == "ancestryOutliersKeep"]
