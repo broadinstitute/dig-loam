@@ -8,7 +8,8 @@ parser$add_argument("--covars", dest="covars", default = "", type="character", h
 parser$add_argument("--sample-file", dest="sample_file", type="character", help="a sample file")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in sample file')
 parser$add_argument("--pca-scores", dest="pca_scores", type="character", help="A file containing PCA scores")
-parser$add_argument("--out", dest="out", type="character", help="an output file name")
+parser$add_argument("--incomplete-obs", dest="incomplete_obs", type="character", help="an output file name for incomplete observations")
+parser$add_argument("--out", dest="out", type="character", help="an output file name for adjusted metrics")
 args<-parser$parse_args()
 
 print(args)
@@ -55,6 +56,12 @@ for(cv in covars_factors) {
 }
 covars_analysis<-paste(c(covars_factors,"1",paste0("PC",seq(args$n_pcs))),collapse="+")
 
+incomplete_obs <- out[! complete.cases(out[,c(gsub("\\]","",gsub("\\[","",covars)))]),c("IID",gsub("\\]","",gsub("\\[","",covars)))]
+if(nrow(incomplete_obs) > 0) {
+	print(paste0(nrow(incomplete_obs), " incomplete observations found"))
+write.table(incomplete_obs,args$incomplete_obs,row.names=F,col.names=T,quote=F,sep="\t",append=F)
+
+out <- out[! out$IID %in% incomplete_obs$IID,]
 for(x in metrics) {
 	print(paste("var(",x,") = ",var(out[,x])),sep="")
 	if(var(out[,x]) != 0) {

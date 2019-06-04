@@ -33,6 +33,6 @@ vep -i $sitesVcf \
 --pick_order tsl,biotype,appris,rank,ccds,canonical,length \
 --domains flags \
 --plugin LoFtool \
---plugin dbNSFP,${dirDbNSFP},ALL \
+--plugin dbNSFP,${dbNSFP},ALL \
 --output_file $results \
 --warning_file $warnings

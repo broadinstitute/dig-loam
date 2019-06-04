@@ -9,6 +9,7 @@ def main(args=None):
 
 	print "reading ancestry inferred file"
 	x=pd.read_table(args.ancestry_inferred,header=None)
+	n_samples = nrow(x)
 	x[0] = x[0].astype(str)
 	exc=x[0][x[1] == "OUTLIERS"].tolist()
 	restore_temp = restore[restore['RestoreFrom'] == "ancestryOutliersKeep"]
@@ -42,7 +43,7 @@ def main(args=None):
 		pass
 	else:
 		x[0] = x[0].astype(str)
-		exc=x[0][x[1] >= 10].tolist()
+		exc=x[0][x[1] >= 0.5 * n_samples].tolist()
 		if len(exc) > 0:
 			restore_temp = restore[restore['RestoreFrom'] == "famsizeKeep"]
 			if restore_temp.shape[0] > 0:
@@ -63,6 +64,17 @@ def main(args=None):
 			if restore_temp.shape[0] > 0:
 				print "restoring " + str(restore_temp.shape[0]) + " samples from sampleqcKeep list"
 				exc=[a for a in exc if a not in restore_temp['IID']]
+			final.extend(exc)
+
+	print "reading sampleqc incomplete observations file"
+	try:
+		x=pd.read_table(args.sampleqc_incomplete_obs)
+	except EmptyDataError:
+		pass
+	else:
+		x['IID'] = x['IID'].astype(str)
+		exc=x['IID'].tolist()
+		if len(exc) > 0:
 			final.extend(exc)
 
 	print "reading sexcheck problems file"
@@ -92,6 +104,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--kinship-related', help='file ending in .kinship.kin0.related', required=True)
 	requiredArgs.add_argument('--kinship-famsizes', help='file ending in .kinship.famsizes.tsv', required=True)
 	requiredArgs.add_argument('--sampleqc-outliers', help='file ending in .sampleqc.outliers.tsv', required=True)
+	requiredArgs.add_argument('--sampleqc-incomplete-obs', help='file ending in .sampleqc.incomplete_obs.tsv', required=True)
 	requiredArgs.add_argument('--sexcheck-problems', help='file ending in .sexcheck.problems.tsv', required=True)
 	requiredArgs.add_argument('--restore', help='a sample restore table', required=True)
 	requiredArgs.add_argument('--out', help='filename for final sample exclusions list', required=True)

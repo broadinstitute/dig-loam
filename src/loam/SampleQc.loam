@@ -108,9 +108,10 @@ def SampleQc(array: ConfigArray): Unit = {
       ${nSampleMetricPcs}
       ${sampleMetricCovars}
       --pca-scores ${arrayStores(array).pcaData.scores}
+      --incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --out ${arrayStores(array).sampleQcData.statsAdj}"""
       .in(arrayStores(array).sampleQcData.stats, arrayStores(array).pcaData.scores)
-      .out(arrayStores(array).sampleQcData.statsAdj)
+      .out(arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sampleQcData.statsAdj)
       .tag(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
@@ -241,10 +242,11 @@ def SampleQc(array: ConfigArray): Unit = {
       --kinship-related ${arrayStores(array).kinshipData.kin0Related}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
+      --sample-qc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
       --restore ${arrayStores(array).finalData.samplesRestore}
       --out ${arrayStores(array).finalData.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sexcheckData.problems, arrayStores(array).finalData.samplesRestore)
+      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).finalData.samplesRestore)
       .out(arrayStores(array).finalData.samplesExclude)
       .tag(s"${arrayStores(array).finalData.samplesExclude}".split("/").last)
   

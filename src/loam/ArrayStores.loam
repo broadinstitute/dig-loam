@@ -149,6 +149,7 @@ final case class SampleQcData(
   pcaPlots: Store,
   pcaScores: Store,
   outliers: Store,
+  incompleteObs: Store,
   metricPlots: Store)
 
 final case class SampleQcPcaClusterData(
@@ -486,6 +487,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     pcaPlots = store(localOutDir / s"${sampleQcBaseString}.pca.plots.pdf"),
     pcaScores = store(localOutDir / s"${sampleQcBaseString}.pca.scores.tsv"),
     outliers = store(localOutDir / s"${sampleQcBaseString}.outliers.tsv"),
+    incompleteObs = store(localOutDir / s"${sampleQcBaseString}.incomplete_obs.tsv"),
     metricPlots = store(localOutDir / s"${sampleQcBaseString}.metricplots.pdf"))
 
   val sampleQcPcaClusterData = SampleQcPcaClusterData(
