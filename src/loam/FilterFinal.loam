@@ -21,7 +21,7 @@ def FilterFinal(array: ConfigArray): Unit = {
       
       google {
       
-        hail"""$pyHailFilterFinal --
+        hail"""$pyHailFilterArray --
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --ancestry-in ${ProjectStores.ancestryInferredGoogle.get}
           --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
@@ -54,7 +54,7 @@ def FilterFinal(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailFilterFinal
+        cmd"""$binPython $pyHailFilterArray
           --mt-in ${arrayStores(array).refData.mt.get}
           --ancestry-in ${ProjectStores.ancestryInferred}
           --sexcheck-in ${arrayStores(array).sexcheckData.sexcheck}
