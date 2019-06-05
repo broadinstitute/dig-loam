@@ -9,7 +9,7 @@ import Prepare._
 import Harmonize._
 import Load._
 import Annotate._
-import FilterForQc._
+import ExportQcData._
 import Kinship._
 import Ancestry._
 import Pca._
@@ -51,7 +51,7 @@ for {
 } yield {
 
   Load(array)
-  FilterForQc(array)
+  ExportQcData(array)
   Annotate(array)
   Kinship(array)
   AncestryPca(array)

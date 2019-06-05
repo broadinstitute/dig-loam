@@ -34,7 +34,7 @@ val binRscript = path("/usr/local/bin/Rscript")
 // Scripts
 val pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py")
 val pyHailLoad = path(s"${scriptsDir}/hail_load.py")
-val pyHailExportQc = path(s"${scriptsDir}/hail_export_qc.py")
+val pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py")
 val pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py")
 val pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py")
 val pyHailSampleqc = path(s"${scriptsDir}/hail_sampleqc.py")
