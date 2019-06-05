@@ -12,39 +12,48 @@ def main(args=None):
 	mt = hl.read_matrix_table(args.mt_in)
 	hl.summarize_variants(mt)
 
-	print("add ancestry annotation")
-	tbl = hl.import_table(args.ancestry_in, delimiter="\t", no_header=True)
-	tbl = tbl.annotate(IID = tbl.f0)
-	tbl = tbl.key_by('IID')
-	mt = mt.annotate_cols(GROUP = tbl[mt.s].f1)
-
-	print("add imputed sex annotation")
-	tbl = hl.import_table(args.sexcheck_in, no_header=False, types={'is_female': hl.tbool})
-	tbl = tbl.key_by('IID')
-	mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
-
-	print("add case/control status annotation")
-	tbl = hl.import_table(args.sample_in, no_header=False, types={args.case_ctrl_col: hl.tint})
-	tbl = tbl.key_by(args.iid_col)
-	mt = mt.annotate_cols(is_case = tbl[mt.s][args.case_ctrl_col] == 1)
-	mt.describe()
-
-	print("calculate pre sampleqc genotype call rate")
-	pre_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
-	print('pre sampleqc call rate is %.3f' % pre_sampleqc_callrate)
+	#print("add ancestry annotation")
+	#tbl = hl.import_table(args.ancestry_in, delimiter="\t", no_header=True)
+	#tbl = tbl.annotate(IID = tbl.f0)
+	#tbl = tbl.key_by('IID')
+	#mt = mt.annotate_cols(GROUP = tbl[mt.s].f1)
+    #
+	#print("add imputed sex annotation")
+	#tbl = hl.import_table(args.sexcheck_in, no_header=False, types={'is_female': hl.tbool})
+	#tbl = tbl.key_by('IID')
+	#mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
+    #
+	#print("calculate pre sampleqc genotype call rate")
+	#pre_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
+	#print('pre sampleqc call rate is %.3f' % pre_sampleqc_callrate)
 
 	print("remove samples that failed QC")
 	tbl = hl.import_table(args.samples_remove, no_header=True).key_by('f0')
 	mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=False)
 
-	print("calculate post sampleqc genotype call rate")
-	post_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
-	print('post sampleqc call rate is %.3f' % post_sampleqc_callrate)
+	#remove the previous filter_cols() command and filter only for the calculation of the metrics. annotate_cols() with sampleqc failure indicator
+	#from paper: After	exclusion	of	samples,	we	calculate	an	additional	set	of	variant	metrics	and	
+	# excluded	any	variant	with	overall	call	rate	<0.3,	heterozygosity	of	1,	or	heterozygote allele	balance	of	0	or	1
+	#read in array level filters from the user
+	#  be sure to allow for variant metric filters, sample metric filters, and allow lists to be uploaded as well
+	#generate a failed samples by filters table and and write it to file, indicating which samples should be removed, adding in the samples that were removed from sample qc process
+	#generate a failed variants by filters table and and write it to file, indicating which variants should be removed
+	#change name of this file to hail_filter_array.py
 
-	samples_df = mt.cols().to_pandas()
-	samples_df['is_case'] = samples_df['is_case'].astype('bool')
-	samples_df['is_female'] = samples_df['is_female'].astype('bool')
-	group_counts = samples_df['GROUP'][~samples_df['is_case']].value_counts().to_dict()
+	#create a separate hail_filter_cohort.py that will be run for each cohort
+	#read in cohort level filters from the user and read in hail_filter_array.py tables
+	#calculate metrics within the cohort
+	#generate a failed samples by filters table, including any calculated metrics that were used in filtering, and adding in the array level filters
+	#also generate a failed variants by filters table, including any calculated metrics that were used in filtering, and adding in the array level filters
+
+	#print("calculate post sampleqc genotype call rate")
+	#post_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
+	#print('post sampleqc call rate is %.3f' % post_sampleqc_callrate)
+    #
+	#samples_df = mt.cols().to_pandas()
+	#samples_df['is_case'] = samples_df['is_case'].astype('bool')
+	#samples_df['is_female'] = samples_df['is_female'].astype('bool')
+	#group_counts = samples_df['GROUP'][~samples_df['is_case']].value_counts().to_dict()
 
 	mt = mt.annotate_rows(failed = 0)
     

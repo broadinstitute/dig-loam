@@ -24,7 +24,7 @@ def FilterForQc(array: ConfigArray): Unit = {
 
       google {
       
-        hail"""$pyHailFilter --
+        hail"""$pyHailExportQc --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
@@ -38,7 +38,7 @@ def FilterForQc(array: ConfigArray): Unit = {
           --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
           .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get)
           .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailFilter".split("/").last)
+          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQc".split("/").last)
       
       }
 
@@ -54,7 +54,7 @@ def FilterForQc(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
       
-        cmd"""$binPython $pyHailFilter
+        cmd"""$binPython $pyHailExportQc
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --regions-exclude ${ProjectStores.regionsExclude}
@@ -67,7 +67,7 @@ def FilterForQc(array: ConfigArray): Unit = {
           --log ${arrayStores(array).filteredData.hailLog}"""
           .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude)
           .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
-          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailFilter".split("/").last)
+          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQc".split("/").last)
       
       }
 

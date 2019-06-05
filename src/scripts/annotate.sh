@@ -36,3 +36,7 @@ vep -i $sitesVcf \
 --plugin dbNSFP,${dbNSFP},ALL \
 --output_file $results \
 --warning_file $warnings
+
+if [ ! -f "$warnings" ]; then
+	touch $warnings
+fi
