@@ -17,15 +17,11 @@ def main(args=None):
 	#tbl = tbl.annotate(IID = tbl.f0)
 	#tbl = tbl.key_by('IID')
 	#mt = mt.annotate_cols(GROUP = tbl[mt.s].f1)
-    #
-	#print("add imputed sex annotation")
-	#tbl = hl.import_table(args.sexcheck_in, no_header=False, types={'is_female': hl.tbool})
-	#tbl = tbl.key_by('IID')
-	#mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
-    #
-	#print("calculate pre sampleqc genotype call rate")
-	#pre_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
-	#print('pre sampleqc call rate is %.3f' % pre_sampleqc_callrate)
+
+	print("add imputed sex annotation")
+	tbl = hl.import_table(args.sexcheck_in, no_header=False, types={'is_female': hl.tbool})
+	tbl = tbl.key_by('IID')
+	mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
 
 	print("remove samples that failed QC")
 	tbl = hl.import_table(args.samples_remove, no_header=True).key_by('f0')
@@ -46,20 +42,19 @@ def main(args=None):
 	#generate a failed samples by filters table, including any calculated metrics that were used in filtering, and adding in the array level filters
 	#also generate a failed variants by filters table, including any calculated metrics that were used in filtering, and adding in the array level filters
 
-	#print("calculate post sampleqc genotype call rate")
-	#post_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
-	#print('post sampleqc call rate is %.3f' % post_sampleqc_callrate)
-    #
-	#samples_df = mt.cols().to_pandas()
-	#samples_df['is_case'] = samples_df['is_case'].astype('bool')
-	#samples_df['is_female'] = samples_df['is_female'].astype('bool')
-	#group_counts = samples_df['GROUP'][~samples_df['is_case']].value_counts().to_dict()
+	#?samples_df = mt.cols().to_pandas()
+	#?samples_df['is_case'] = samples_df['is_case'].astype('bool')
+	#?samples_df['is_female'] = samples_df['is_female'].astype('bool')
+	#?group_counts = samples_df['GROUP'][~samples_df['is_case']].value_counts().to_dict()
+	#?mt = mt.annotate_rows(failed = 0)
 
-	mt = mt.annotate_rows(failed = 0)
-    
+	print("calculate variant qc stats")
+	mt = hl.variant_qc(mt, name='variant_qc')
+
 	print("count males and females")
-	nMales = samples_df[~samples_df['is_female']].shape[0]
-	nFemales = samples_df[samples_df['is_female']].shape[0]
+	tbl = mt.cols()
+	nMales = tbl.aggregate(hl.agg.count_where(~ tbl.is_female))
+	nFemales = tbl.aggregate(hl.agg.count_where(tbl.is_female))
 
 	print("count male/female hets, homvars and called")
 	mt = mt.annotate_rows(
@@ -70,13 +65,31 @@ def main(args=None):
 		n_female_hom_var = hl.agg.count_where(mt.is_female & mt.GT.is_hom_var()),
 		n_female_called = hl.agg.count_where(mt.is_female & hl.is_defined(mt.GT)))
 
-	print("calculate callRate, MAC, and MAF (accounting appropriately for sex chromosomes)")
+	print("calculate callRate, AC, and AF (accounting appropriately for sex chromosomes)")
 	mt = mt.annotate_rows(
 		call_rate = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_called / nMales, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_called + 2*mt.n_female_called) / (nMales + 2*nFemales), (mt.n_male_called + mt.n_female_called) / (nMales + nFemales))),
-		mac = hl.cond(mt.locus.in_y_nonpar(),  mt.n_male_hom_var, hl.cond(mt.locus.in_x_nonpar(), mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var, mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var)),
-		maf = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_hom_var / mt.n_male_called, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (mt.n_male_called + 2*mt.n_female_called), (mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (2*mt.n_male_called + 2*mt.n_female_called))))
+		AC = hl.cond(mt.locus.in_y_nonpar(),  mt.n_male_hom_var, hl.cond(mt.locus.in_x_nonpar(), mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var, mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var)),
+		AF = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_hom_var / mt.n_male_called, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (mt.n_male_called + 2*mt.n_female_called), (mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (2*mt.n_male_called + 2*mt.n_female_called))))
 
 
+
+
+	if 'AD' in list(mt.entry):
+		print("add allele balance to entries")
+		mt = mt.annotate_entries(
+			AB = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)),
+			AB_dist50 = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
+		)
+
+	print("annotate sample qc stats")
+	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
+		n_het_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & mt.GT.is_het()), 
+		n_het_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & mt.GT.is_het()), 
+		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
+		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
+		avg_ab = hl.agg.mean(mt.AB),
+		avg_ab_dist50 = hl.agg.mean(mt.AB_dist50))
+	)
 
 
 
@@ -96,7 +109,7 @@ def main(args=None):
 			print("filter autosomal variants with pHWE <= 1e-6 in " + group + " male and female controls")
 			mt = mt.annotate_rows(**{
 				'p_hwe_ctrl_' + group: hl.cond(mt.locus.in_x_nonpar(), hl.agg.filter(mt.is_female & ~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.cond(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.agg.filter(~ mt.is_female & ~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.agg.filter(~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT))))})
-			mt = mt.annotate_rows(failed = hl.cond((mt.maf >= 0.01) & (mt['p_hwe_ctrl_' + group].p_value <= 1e-6), 1, mt.failed))
+			mt = mt.annotate_rows(failed = hl.cond(((mt.AF >= 0.01) & (mt.AF <= 0.9)) & (mt['p_hwe_ctrl_' + group].p_value <= 1e-6), 1, mt.failed))
 
 	print("write variant qc results to file")
 	mt = mt.annotate_rows(id = mt.locus.contig + ':' + hl.str(mt.locus.position) + ':' + hl.str(mt.alleles[0]) + ':' + hl.str(mt.alleles[1]))

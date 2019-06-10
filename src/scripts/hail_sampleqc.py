@@ -30,12 +30,11 @@ def main(args=None):
 	print("calculate variant qc stats")
 	mt = hl.variant_qc(mt, name='variant_qc')
 
-	if 'AD' in list(mt.entry):
-		print("add allele balance to entries")
-		mt = mt.annotate_entries(
-			AB = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)),
-			AB_dist50 = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
-		)
+	print("add allele balance to entries")
+	mt = mt.annotate_entries(
+		AB = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)), hl.null(hl.tfloat64)),
+		AB_dist50 = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
+	)
 
 	print("annotate sample qc stats")
 	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
@@ -43,8 +42,8 @@ def main(args=None):
 		n_het_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & mt.GT.is_het()), 
 		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
 		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
-		avg_ab = hl.agg.mean(mt.AB),
-		avg_ab_dist50 = hl.agg.mean(mt.AB_dist50))
+		avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
+		avg_ab_dist50 = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB_dist50), hl.null(hl.tfloat64))
 	)
 
 	print("write sample qc stats results to file")
@@ -64,6 +63,8 @@ def main(args=None):
 		r_het_hom_var = tbl.sample_qc.r_het_hom_var,
 		avg_ab = tbl.sample_qc.avg_ab,
 		avg_ab_dist50 = tbl.sample_qc.avg_ab_dist50)
+	if not 'AD' in list(mt.entry):
+		tbl = tbl.drop('avg_ab','avg_ab_dist50')
 	tbl.flatten().export(args.qc_out)
 
 	if args.cloud:
