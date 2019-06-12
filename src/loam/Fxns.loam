@@ -49,18 +49,30 @@ def intervalToExpression(s: String, i: String): String = {
       val lowerBound = interval(0)
       val upperBound = interval.takeRight(1)
       val min = interval.drop(1).dropRight(1).split(",")(0)
-      val max = interval.drop(1).dropRight(1).split(",")(1)
+      val max = interval.drop(1).dropRight(1).split(",").size match {
+        case 1 => ""
+        case _ => interval.drop(1).dropRight(1).split(",")(1)
+      }
+      (min, max) match {
+        case ("", _) | (_, "") => ()
+        case (v1, v2) if v2 <= v1 => throw new CfgException("intervalToExpression: user supplied interval for " + s + ", " + i + ", is invalid due to max <= min")
+        case _ => ()
+      }
       val lowerInequality = lowerBound match {
         case '[' => ">="
         case '(' => ">"
-        case _ => throw new CfgException("intervalToExpression: user supplied interval contains unsupported symbol " + lowerBound + s"... [, ], (, and ) are currently supported")
+        case _ => throw new CfgException("intervalToExpression: user supplied interval for " + s + " contains unsupported symbol " + lowerBound + s"... [, ], (, and ) are currently supported")
       }
       val upperInequality = upperBound match {
         case "]" => "<="
         case ")" => "<"
-        case _ => throw new CfgException("intervalToExpression: user supplied interval contains unsupported symbol " + upperBound+ s"... [, ], (, and ) are currently supported")
+        case _ => throw new CfgException("intervalToExpression: user supplied interval for " + s + " contains unsupported symbol " + upperBound + s"... [, ], (, and ) are currently supported")
       }
-      s + " " + lowerInequality + " " + min + " & " + s + " " + upperInequality + " " + max
+      (min, max) match {
+        case ("", v) => s + " " + upperInequality + " " + max
+        case (v, "") => s + " " + lowerInequality + " " + min
+        case _ => s + " " + lowerInequality + " " + min + " & " + s + " " + upperInequality + " " + max
+      }
     }
   }
   expressions.size match {

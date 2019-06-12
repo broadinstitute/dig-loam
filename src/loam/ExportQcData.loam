@@ -10,13 +10,68 @@ import ProjectStores._
 
 def ExportQcData(array: ConfigArray): Unit = {
 
-  val filterCallrate = array.filterCallrate.getOrElse("") match { case "" => ""; case _ => s"--filter-callrate ${array.filterCallrate.get}" }
+  val filterCallrate = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.call_rate.getOrElse("") match {
+        case "" => ""
+        case _ => s"--filter-call-rate ${array.qcVariantFilters.get.call_rate.get}"
+      }
+  }
 
-  val filterFreq = array.filterFreq.getOrElse("") match { case "" => ""; case _ => s"--filter-freq ${array.filterFreq.get}" }
+  val filterAC = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.ac.getOrElse("") match {
+        case "" => ""
+        case _ => s"--filter-ac ${array.qcVariantFilters.get.ac.get}"
+      }
+  }
 
-  val sampleN = array.sampleN.getOrElse("") match { case "" => ""; case _ => s"--sample-n ${array.sampleN.get}" }
+  val filterAF = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.af.getOrElse("") match {
+        case "" => ""
+        case _ => s"--filter-af ${array.qcVariantFilters.get.af.get}"
+      }
+  }
 
-  val sampleSeed = array.sampleSeed.getOrElse("") match { case "" => ""; case _ => s"--sample-seed ${array.sampleSeed.get}" }
+  val filterHet = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.het.getOrElse("") match {
+        case "" => ""
+        case _ => s"--filter-het ${array.qcVariantFilters.get.het.get}"
+      }
+  }
+
+  val filterAvgHetAb = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.avg_het_ab.getOrElse("") match {
+        case "" => ""
+        case _ => s"--filter-avg-het-ab ${array.qcVariantFilters.get.avg_het_ab.get}"
+      }
+  }
+
+  val sampleN = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.sample_n.getOrElse("") match {
+        case "" => ""
+        case _ => s"--sample-n ${array.qcVariantFilters.get.sample_n.get}"
+      }
+  }
+
+  val sampleSeed = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.sample_seed.getOrElse("") match {
+        case "" => ""
+        case _ => s"--sample-seed ${array.qcVariantFilters.get.sample_seed.get}"
+      }
+  }
 
   hailCloud match {
 
@@ -29,7 +84,10 @@ def ExportQcData(array: ConfigArray): Unit = {
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
           ${filterCallrate}
-          ${filterFreq}
+          ${filterAC}
+          ${filterAF}
+          ${filterHet}
+          ${filterAvgHetAb}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
@@ -59,7 +117,10 @@ def ExportQcData(array: ConfigArray): Unit = {
           --mt-in ${arrayStores(array).refData.mt.get}
           --regions-exclude ${ProjectStores.regionsExclude}
           ${filterCallrate}
-          ${filterFreq}
+          ${filterAC}
+          ${filterAF}
+          ${filterHet}
+          ${filterHetAb}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}

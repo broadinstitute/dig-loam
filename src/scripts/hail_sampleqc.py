@@ -30,12 +30,6 @@ def main(args=None):
 	print("calculate variant qc stats")
 	mt = hl.variant_qc(mt, name='variant_qc')
 
-	print("add allele balance to entries")
-	mt = mt.annotate_entries(
-		AB = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)), hl.null(hl.tfloat64)),
-		AB_dist50 = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
-	)
-
 	print("annotate sample qc stats")
 	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
 		n_het_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & mt.GT.is_het()), 

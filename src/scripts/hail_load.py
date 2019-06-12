@@ -37,8 +37,21 @@ def main(args=None):
 	mt_bi = mt_bi.annotate_rows(a_index = 1, was_split = False)
 	mt = mt_bi.union_rows(mt_multi)
 
+	print("add allele balance to entries if AD is defined")
+	mt = mt.annotate_entries(
+		AB = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)), hl.null(hl.tfloat64)),
+		AB_dist50 = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
+	)
+
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
+
+	print("add het, avg_ab, and avg_het_ab to raw variant qc metrics")
+	mt = mt.annotate_rows(variant_qc_raw = mt.variant_qc_raw.annotate(
+		het = mt.variant_qc_raw.n_het / mt.variant_qc_raw.n_called,
+		avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
+		avg_het_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(hl.agg.filter(mt.GT.is_het(), hl.agg.collect(mt.AB))), hl.null(hl.tfloat64))
+	)
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)

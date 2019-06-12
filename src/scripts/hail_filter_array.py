@@ -65,11 +65,11 @@ def main(args=None):
 		n_female_hom_var = hl.agg.count_where(mt.is_female & mt.GT.is_hom_var()),
 		n_female_called = hl.agg.count_where(mt.is_female & hl.is_defined(mt.GT)))
 
-	print("calculate callRate, AC, and AF (accounting appropriately for sex chromosomes)")
+	print("calculate call_rate, ac, and af (accounting appropriately for sex chromosomes)")
 	mt = mt.annotate_rows(
 		call_rate = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_called / nMales, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_called + 2*mt.n_female_called) / (nMales + 2*nFemales), (mt.n_male_called + mt.n_female_called) / (nMales + nFemales))),
-		AC = hl.cond(mt.locus.in_y_nonpar(),  mt.n_male_hom_var, hl.cond(mt.locus.in_x_nonpar(), mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var, mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var)),
-		AF = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_hom_var / mt.n_male_called, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (mt.n_male_called + 2*mt.n_female_called), (mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (2*mt.n_male_called + 2*mt.n_female_called))))
+		ac = hl.cond(mt.locus.in_y_nonpar(),  mt.n_male_hom_var, hl.cond(mt.locus.in_x_nonpar(), mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var, mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var)),
+		af = hl.cond(mt.locus.in_y_nonpar(), mt.n_male_hom_var / mt.n_male_called, hl.cond(mt.locus.in_x_nonpar(), (mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (mt.n_male_called + 2*mt.n_female_called), (mt.n_male_het + 2*mt.n_male_hom_var + mt.n_female_het + 2*mt.n_female_hom_var) / (2*mt.n_male_called + 2*mt.n_female_called))))
 
 
 
@@ -83,10 +83,10 @@ def main(args=None):
 
 	print("annotate sample qc stats")
 	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
-		n_het_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & mt.GT.is_het()), 
-		n_het_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & mt.GT.is_het()), 
-		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
-		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
+		n_het_low = hl.agg.count_where((mt.af < 0.03) & mt.GT.is_het()), 
+		n_het_high = hl.agg.count_where((mt.af >= 0.03) & mt.GT.is_het()), 
+		n_called_low = hl.agg.count_where((mt.af < 0.03) & ~hl.is_missing(mt.GT)), 
+		n_called_high = hl.agg.count_where((mt.af >= 0.03) & ~hl.is_missing(mt.GT)),
 		avg_ab = hl.agg.mean(mt.AB),
 		avg_ab_dist50 = hl.agg.mean(mt.AB_dist50))
 	)
@@ -109,7 +109,7 @@ def main(args=None):
 			print("filter autosomal variants with pHWE <= 1e-6 in " + group + " male and female controls")
 			mt = mt.annotate_rows(**{
 				'p_hwe_ctrl_' + group: hl.cond(mt.locus.in_x_nonpar(), hl.agg.filter(mt.is_female & ~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.cond(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.agg.filter(~ mt.is_female & ~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.agg.filter(~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT))))})
-			mt = mt.annotate_rows(failed = hl.cond(((mt.AF >= 0.01) & (mt.AF <= 0.9)) & (mt['p_hwe_ctrl_' + group].p_value <= 1e-6), 1, mt.failed))
+			mt = mt.annotate_rows(failed = hl.cond(((mt.af >= 0.01) & (mt.af <= 0.9)) & (mt['p_hwe_ctrl_' + group].p_value <= 1e-6), 1, mt.failed))
 
 	print("write variant qc results to file")
 	mt = mt.annotate_rows(id = mt.locus.contig + ':' + hl.str(mt.locus.position) + ':' + hl.str(mt.alleles[0]) + ':' + hl.str(mt.alleles[1]))

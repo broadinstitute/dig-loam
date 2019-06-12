@@ -8,6 +8,15 @@ final case class ConfigMachine(
   mem: Int,
   maxRunTime: Int)
 
+final case class ConfigVariantFilters(
+  call_rate: Option[String],
+  ac: Option[String],
+  af: Option[String],
+  het: Option[String],
+  avg_het_ab: Option[String],
+  downsample_n: Option[Int],
+  downsample_seed: Option[Int])
+
 final case class ConfigResources(
   preparePlink: ConfigMachine,
   prepareFindBestDuplicateVariants: ConfigMachine,
@@ -49,17 +58,14 @@ final case class ConfigArray(
   description: String,
   minPartitions: Option[Int],
   liftOver: Option[String] = None,
-  filterCallrate: Option[String],
-  filterFreq: Option[String],
   sampleQcMetrics: Seq[String],
   nSampleMetricPcs: Option[Int],
   sampleMetricCovars: Option[String],
-  sampleN: Option[Int],
-  sampleSeed: Option[Int],
   xChr: Boolean,
   yChr: Boolean,
   mtChr: Boolean,
   skipGh: Seq[String],
+  qcVariantFilters: Option[ConfigVariantFilters],
   ancestryOutliersKeep: Seq[String],
   duplicatesKeep: Seq[String],
   famsizeKeep: Seq[String],
@@ -279,17 +285,25 @@ val projectConfig = ProjectConfig(
         description = array.getStr("description"),
         minPartitions = if (array.isDefined("minPartitions")) { Some(array.getInt("minPartitions")) } else { None },
         liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
-        filterCallrate = if (array.isDefined("filterCallrate")) { Some(array.getStr("filterCallrate")) } else { None },
-        filterFreq = if (array.isDefined("filterFreq")) { Some(array.getStr("filterFreq")) } else { None },
         sampleQcMetrics = if (array.isDefined("sampleQcMetrics")) { dataConfig.getStrList("sampleQcMetrics") } else { array.getStr("technology") match { case "wes" | "wgs" => defaultSampleMetricsSeq; case _ => defaultSampleMetricsGwas } },
         nSampleMetricPcs = if (array.isDefined("nSampleMetricPcs")) { Some(array.getInt("nSampleMetricPcs")) } else { None },
         sampleMetricCovars = if (array.isDefined("sampleMetricCovars")) { Some(array.getStrList("sampleMetricCovars").mkString("+")) } else { None },
-        sampleN = if (array.isDefined("sampleN")) { Some(array.getInt("sampleN")) } else { None },
-        sampleSeed = if (array.isDefined("sampleSeed")) { Some(array.getInt("sampleSeed")) } else { None },
         xChr = array.getBool("xChr"),
         yChr = array.getBool("yChr"),
         mtChr = array.getBool("mtChr"),
         skipGh = array.getStrList("skipGh"),
+        qcVariantFilters = if(array.isDefined("qcVariantFilters")) {
+          Some(ConfigVariantFilters(
+            call_rate = if (array.getObj("qcVariantFilters").isDefined("call_rate")) { Some(array.getObj("qcVariantFilters").getStr("call_rate")) } else { None },
+            ac = if (array.getObj("qcVariantFilters").isDefined("ac")) { Some(array.getObj("qcVariantFilters").getStr("ac")) } else { None },
+            af = if (array.getObj("qcVariantFilters").isDefined("af")) { Some(array.getObj("qcVariantFilters").getStr("af")) } else { None },
+            het = if (array.getObj("qcVariantFilters").isDefined("het")) { Some(array.getObj("qcVariantFilters").getStr("het")) } else { None },
+            avg_het_ab = if (array.getObj("qcVariantFilters").isDefined("avg_het_ab")) { Some(array.getObj("qcVariantFilters").getStr("avg_het_ab")) } else { None },
+            downsample_n = if (array.getObj("qcVariantFilters").isDefined("downsample_n")) { Some(array.getObj("qcVariantFilters").getInt("downsample_n")) } else { None },
+            downsample_seed = if (array.getObj("qcVariantFilters").isDefined("downsample_seed")) { Some(array.getObj("qcVariantFilters").getInt("downsample_seed")) } else { None }))
+        } else {
+          None
+        },
         ancestryOutliersKeep = array.getStrList("ancestryOutliersKeep"),
         duplicatesKeep = array.getStrList("duplicatesKeep"),
         famsizeKeep = array.getStrList("famsizeKeep"),

@@ -15,32 +15,41 @@ def main(args=None):
 	with hl.hadoop_open(args.regions_exclude, 'r') as f:
 		hild = f.read().splitlines()
 	tbl_hild = hl.filter_intervals(mt.rows().select(), [hl.parse_locus_interval(x) for x in hild], keep=True)
-	
+
 	print("add variant filter out table for QC")
 	mt = mt.annotate_rows(
 		qc_filters = hl.struct(
 			in_autosome = hl.cond(mt.locus.in_autosome(), 0, 1),
-			AN = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
+			an = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
 			is_snp = hl.cond(hl.is_snp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_mnp = hl.cond(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_indel = hl.cond(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_complex = hl.cond(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), 0, 1),
-			AF = hl.cond((mt.variant_qc_raw.AF[1] >= args.filter_freq) & (mt.variant_qc_raw.AF[1] <= 1 - args.filter_freq), 0, 1),
-			call_rate = hl.cond(mt.variant_qc_raw.call_rate >= args.filter_callrate, 0, 1),
-			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1)
+			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1),
+			call_rate = hl.cond(args.filter_call_rate is None, 0, hl.cond(eval(args.filter_call_rate.replace("call_rate","mt.variant_qc_raw.call_rate")), 0, 1)),
+			ac = hl.cond(args.filter_ac is None, 0, hl.cond(eval(args.filter_ac.replace("ac","mt.variant_qc_raw.AC[1]")), 0, 1)),
+			af = hl.cond(args.filter_af is None, 0, hl.cond(eval(args.filter_af.replace("af","mt.variant_qc_raw.AF[1]")), 0, 1)),
+			het = hl.cond(args.filter_het is None, 0, hl.cond(eval(args.filter_het.replace("het","mt.variant_qc_raw.het")), 0, 1)),
+			avg_het_ab = hl.cond(args.filter_avg_het_ab is None, 0, hl.cond(eval(args.filter_avg_het_ab.replace("avg_het_ab","mt.variant_qc_raw.avg_het_ab")), 0, 1))
 		)
 	)
+
 	mt = mt.annotate_rows(
 		qc_exclude = hl.cond(
 			(mt.qc_filters.in_autosome == 1) |
-				(mt.qc_filters.AN == 1) |
+				(mt.qc_filters.an == 1) |
 				(mt.qc_filters.is_snp == 1) |
 				(mt.qc_filters.is_mnp == 1) |
 				(mt.qc_filters.is_indel == 1) |
 				(mt.qc_filters.is_complex == 1) |
-				(mt.qc_filters.AF == 1) |
+				(mt.qc_filters.af == 1) |
 				(mt.qc_filters.call_rate == 1) |
-				(mt.qc_filters.in_hild_region == 1), 
+				(mt.qc_filters.in_hild_region == 1) |
+				(mt.qc_filters.call_rate == 1) |
+				(mt.qc_filters.ac == 1) |
+				(mt.qc_filters.af == 1) |
+				(mt.qc_filters.het == 1) |
+				(mt.qc_filters.avg_het_ab == 1), 
 			1, 
 			0
 		)
@@ -77,10 +86,13 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--sample-n', type=int, help='a probability for downsampling the variants included in qc data set (0.01 => 1% of variants are extracted)')
+	parser.add_argument('--filter-call-rate', help='include variants satisfying this expression')
+	parser.add_argument('--filter-ac', help='include variants satisfying this expression')
+	parser.add_argument('--filter-af', help='include variants satisfying this expression')
+	parser.add_argument('--filter-het', help='include variants satisfying this expression')
+	parser.add_argument('--filter-avg-het-ab', help='include variants satisfying this expression')
+	parser.add_argument('--sample-n', type=int, help='an integer indicating the number of desired variants in the final QC data set (will be ignored if remaining variant count is less than this number)')
 	parser.add_argument('--sample-seed', type=int, default=1, help='an integer used as a seed to allow for reproducibility in sampling variants')
-	parser.add_argument('--filter-callrate', type=float, default=0.98, help='exclude variants with callrate below this number')
-	parser.add_argument('--filter-freq', type=float, default=0.01, help='exclude variants with allele frequency lower than this number')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)
