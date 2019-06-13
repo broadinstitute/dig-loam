@@ -38,7 +38,7 @@ def main(args=None):
 		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
 		avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
 		avg_ab_dist50 = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB_dist50), hl.null(hl.tfloat64))
-	)
+	))
 
 	print("write sample qc stats results to file")
 	tbl = mt.cols()

@@ -1,3 +1,5 @@
+import Fxns._
+
 val dataConfig = loadConfig("dataConfig", "")
 
 val defaultSampleMetricsGwas = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var")
@@ -14,8 +16,8 @@ final case class ConfigVariantFilters(
   af: Option[String],
   het: Option[String],
   avg_het_ab: Option[String],
-  downsample_n: Option[Int],
-  downsample_seed: Option[Int])
+  sample_n: Option[Int],
+  sample_seed: Option[Int])
 
 final case class ConfigResources(
   preparePlink: ConfigMachine,
@@ -294,13 +296,13 @@ val projectConfig = ProjectConfig(
         skipGh = array.getStrList("skipGh"),
         qcVariantFilters = if(array.isDefined("qcVariantFilters")) {
           Some(ConfigVariantFilters(
-            call_rate = if (array.getObj("qcVariantFilters").isDefined("call_rate")) { Some(array.getObj("qcVariantFilters").getStr("call_rate")) } else { None },
-            ac = if (array.getObj("qcVariantFilters").isDefined("ac")) { Some(array.getObj("qcVariantFilters").getStr("ac")) } else { None },
-            af = if (array.getObj("qcVariantFilters").isDefined("af")) { Some(array.getObj("qcVariantFilters").getStr("af")) } else { None },
-            het = if (array.getObj("qcVariantFilters").isDefined("het")) { Some(array.getObj("qcVariantFilters").getStr("het")) } else { None },
-            avg_het_ab = if (array.getObj("qcVariantFilters").isDefined("avg_het_ab")) { Some(array.getObj("qcVariantFilters").getStr("avg_het_ab")) } else { None },
-            downsample_n = if (array.getObj("qcVariantFilters").isDefined("downsample_n")) { Some(array.getObj("qcVariantFilters").getInt("downsample_n")) } else { None },
-            downsample_seed = if (array.getObj("qcVariantFilters").isDefined("downsample_seed")) { Some(array.getObj("qcVariantFilters").getInt("downsample_seed")) } else { None }))
+            call_rate = if (array.getObj("qcVariantFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("qcVariantFilters").getStr("call_rate"))) } else { None },
+            ac = if (array.getObj("qcVariantFilters").isDefined("ac")) { Some(intervalToExpression("ac", array.getObj("qcVariantFilters").getStr("ac"))) } else { None },
+            af = if (array.getObj("qcVariantFilters").isDefined("af")) { Some(intervalToExpression("af", array.getObj("qcVariantFilters").getStr("af"))) } else { None },
+            het = if (array.getObj("qcVariantFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("qcVariantFilters").getStr("het"))) } else { None },
+            avg_het_ab = if (array.getObj("qcVariantFilters").isDefined("avg_het_ab")) { Some(intervalToExpression("avg_het_ab", array.getObj("qcVariantFilters").getStr("avg_het_ab"))) } else { None },
+            sample_n = if (array.getObj("qcVariantFilters").isDefined("sample_n")) { Some(array.getObj("qcVariantFilters").getInt("sample_n")) } else { None },
+            sample_seed = if (array.getObj("qcVariantFilters").isDefined("sample_seed")) { Some(array.getObj("qcVariantFilters").getInt("sample_seed")) } else { None }))
         } else {
           None
         },

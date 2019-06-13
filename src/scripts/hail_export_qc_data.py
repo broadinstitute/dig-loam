@@ -25,14 +25,79 @@ def main(args=None):
 			is_mnp = hl.cond(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_indel = hl.cond(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_complex = hl.cond(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), 0, 1),
-			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1),
-			call_rate = hl.cond(args.filter_call_rate is None, 0, hl.cond(eval(args.filter_call_rate.replace("call_rate","mt.variant_qc_raw.call_rate")), 0, 1)),
-			ac = hl.cond(args.filter_ac is None, 0, hl.cond(eval(args.filter_ac.replace("ac","mt.variant_qc_raw.AC[1]")), 0, 1)),
-			af = hl.cond(args.filter_af is None, 0, hl.cond(eval(args.filter_af.replace("af","mt.variant_qc_raw.AF[1]")), 0, 1)),
-			het = hl.cond(args.filter_het is None, 0, hl.cond(eval(args.filter_het.replace("het","mt.variant_qc_raw.het")), 0, 1)),
-			avg_het_ab = hl.cond(args.filter_avg_het_ab is None, 0, hl.cond(eval(args.filter_avg_het_ab.replace("avg_het_ab","mt.variant_qc_raw.avg_het_ab")), 0, 1))
+			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1)
 		)
 	)
+
+	print("filter call_rate")
+	if args.filter_call_rate is not None:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				call_rate = hl.cond(eval(hl.eval(args.filter_call_rate.replace("call_rate","mt.variant_qc_raw.call_rate"))), 0, 1)
+			)
+		)
+	else:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				call_rate = 0
+			)
+		)
+
+	print("filter ac")
+	if args.filter_ac is not None:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				ac = hl.cond(eval(hl.eval(args.filter_ac.replace("ac","mt.variant_qc_raw.AC[1]"))), 0, 1)
+			)
+		)
+	else:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				ac = 0
+			)
+		)
+
+	print("filter af")
+	if args.filter_af is not None:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				af = hl.cond(eval(hl.eval(args.filter_af.replace("af","mt.variant_qc_raw.AF[1]"))), 0, 1)
+			)
+		)
+	else:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				af = 0
+			)
+		)
+
+	print("filter het")
+	if args.filter_het is not None:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				het = hl.cond(eval(hl.eval(args.filter_het.replace("het","mt.variant_qc_raw.het"))), 0, 1)
+			)
+		)
+	else:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				het = 0
+			)
+		)
+
+	print("filter avg_het_ab")
+	if args.filter_avg_het_ab is not None:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				avg_het_ab = hl.cond(eval(hl.eval(args.filter_avg_het_ab.replace("avg_het_ab","mt.variant_qc_raw.avg_het_ab"))), 0, 1)
+			)
+		)
+	else:
+		mt = mt.annotate_rows(
+			qc_filters = mt.qc_filters.annotate(
+				avg_het_ab = 0
+			)
+		)
 
 	mt = mt.annotate_rows(
 		qc_exclude = hl.cond(

@@ -47,10 +47,12 @@ def main(args=None):
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
 
 	print("add het, avg_ab, and avg_het_ab to raw variant qc metrics")
-	mt = mt.annotate_rows(variant_qc_raw = mt.variant_qc_raw.annotate(
-		het = mt.variant_qc_raw.n_het / mt.variant_qc_raw.n_called,
-		avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
-		avg_het_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(hl.agg.filter(mt.GT.is_het(), hl.agg.collect(mt.AB))), hl.null(hl.tfloat64))
+	mt = mt.annotate_rows(
+		variant_qc_raw = mt.variant_qc_raw.annotate(
+			het = mt.variant_qc_raw.n_het / mt.variant_qc_raw.n_called,
+			avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
+			avg_het_ab = hl.cond('AD' in list(mt.entry), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)), hl.null(hl.tfloat64))
+		)
 	)
 
 	print("write variant table to file")

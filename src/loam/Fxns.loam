@@ -71,7 +71,7 @@ def intervalToExpression(s: String, i: String): String = {
       (min, max) match {
         case ("", v) => s + " " + upperInequality + " " + max
         case (v, "") => s + " " + lowerInequality + " " + min
-        case _ => s + " " + lowerInequality + " " + min + " & " + s + " " + upperInequality + " " + max
+        case _ => "(" + s + " " + lowerInequality + " " + min + ") & (" + s + " " + upperInequality + " " + max + ")"
       }
     }
   }

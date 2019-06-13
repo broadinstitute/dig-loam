@@ -15,7 +15,7 @@ def ExportQcData(array: ConfigArray): Unit = {
     case _ =>
       array.qcVariantFilters.get.call_rate.getOrElse("") match {
         case "" => ""
-        case _ => s"--filter-call-rate ${array.qcVariantFilters.get.call_rate.get}"
+        case _ => "--filter-call-rate \"" + s"${array.qcVariantFilters.get.call_rate.get}" + "\""
       }
   }
 
@@ -24,7 +24,7 @@ def ExportQcData(array: ConfigArray): Unit = {
     case _ =>
       array.qcVariantFilters.get.ac.getOrElse("") match {
         case "" => ""
-        case _ => s"--filter-ac ${array.qcVariantFilters.get.ac.get}"
+        case _ => "--filter-ac \"" + s"${array.qcVariantFilters.get.ac.get}" + "\""
       }
   }
 
@@ -33,7 +33,7 @@ def ExportQcData(array: ConfigArray): Unit = {
     case _ =>
       array.qcVariantFilters.get.af.getOrElse("") match {
         case "" => ""
-        case _ => s"--filter-af ${array.qcVariantFilters.get.af.get}"
+        case _ => "--filter-af \"" + s"${array.qcVariantFilters.get.af.get}" + "\""
       }
   }
 
@@ -42,7 +42,7 @@ def ExportQcData(array: ConfigArray): Unit = {
     case _ =>
       array.qcVariantFilters.get.het.getOrElse("") match {
         case "" => ""
-        case _ => s"--filter-het ${array.qcVariantFilters.get.het.get}"
+        case _ => "--filter-het \"" + s"${array.qcVariantFilters.get.het.get}" + "\""
       }
   }
 
@@ -51,7 +51,7 @@ def ExportQcData(array: ConfigArray): Unit = {
     case _ =>
       array.qcVariantFilters.get.avg_het_ab.getOrElse("") match {
         case "" => ""
-        case _ => s"--filter-avg-het-ab ${array.qcVariantFilters.get.avg_het_ab.get}"
+        case _ => "--filter-avg-het-ab \"" + s"${array.qcVariantFilters.get.avg_het_ab.get}" + "\""
       }
   }
 
@@ -120,7 +120,7 @@ def ExportQcData(array: ConfigArray): Unit = {
           ${filterAC}
           ${filterAF}
           ${filterHet}
-          ${filterHetAb}
+          ${filterAvgHetAb}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}
