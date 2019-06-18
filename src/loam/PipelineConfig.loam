@@ -1,11 +1,13 @@
 val dataConfig = loadConfig("dataConfig", "")
 
+val hailCloud = dataConfig.getBool("hailCloud")
+
 val imagesDir = dataConfig.getStr("imagesDir")
 val scriptsDir = dataConfig.getStr("scriptsDir")
+val googleInput = hailCloud match { case true => Some(uri(dataConfig.getStr("googleInput"))); case false => None }
 
-val hailCloud = dataConfig.getBool("hailCloud")
 val localOutDir = if (dataConfig.isDefined("localOutDir")) { path(dataConfig.getStr("localOutDir")) } else { path("loam_out") }
-val googleOutDir = if (dataConfig.isDefined("googleOutDir")) { Some(uri(dataConfig.getStr("googleOutDir"))) } else { None }
+val googleOutDir = hailCloud match { case true => Some(uri(dataConfig.getStr("googleOutDir"))); case false => None }
 
 // Images
 val imgHail = path(s"${imagesDir}/data_processing_v2.2_hailv02.simg")
@@ -14,6 +16,7 @@ val imgPython27 = path(s"${imagesDir}/data_processing_v2.2_python27.simg")
 val imgR34 = path(s"${imagesDir}/data_processing_v2.2_r34.simg")
 val imgTools = path(s"${imagesDir}/data_processing_v2.2_tools.simg")
 val imgTex = path(s"${imagesDir}/tex.simg")
+val imgEnsemblVep = path(s"${imagesDir}/ensembl_vep.simg")
 
 // Binaries
 val binLiftOver = path("/usr/local/bin/liftOver")
@@ -31,13 +34,12 @@ val binRscript = path("/usr/local/bin/Rscript")
 // Scripts
 val pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py")
 val pyHailLoad = path(s"${scriptsDir}/hail_load.py")
-val pyHailFilter = path(s"${scriptsDir}/hail_filter.py")
+val pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py")
 val pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py")
 val pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py")
 val pyHailSampleqc = path(s"${scriptsDir}/hail_sampleqc.py")
 val pyHailSexcheck = path(s"${scriptsDir}/hail_sexcheck.py")
-val pyHailFilterFinal = path(s"${scriptsDir}/hail_filter_final.py")
-val pyHailListSamples = path(s"${scriptsDir}/hail_list_samples.py")
+val pyHailFilter = path(s"${scriptsDir}/hail_filter.py")
 val pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py")
 val pyHailMerge = path(s"${scriptsDir}/hail_merge.py")
 val pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py")
@@ -67,7 +69,10 @@ val pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py")
 val pyTop1000 = path(s"${scriptsDir}/top1000.py")
 val pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
 val pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
+val shAnnotate = path(s"${scriptsDir}/annotate.sh")
 val shKing = path(s"${scriptsDir}/king.sh")
+val shPlinkPrepare = path(s"${scriptsDir}/plink_prepare.sh")
+val shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh")
 val shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh")
 val shMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.sh")
 val shKlustakwikPca = path(s"${scriptsDir}/klustakwik.pca.sh")

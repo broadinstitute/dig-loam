@@ -1,0 +1,139 @@
+/**
+ * Filter Array Step
+ * filter samples and variants to generate array-level exclusions for analysis
+ */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+def FilterArray(array: ConfigArray): Unit = {
+
+  val vfilters = {
+    array.analysisVariantFilters match {
+      case Some(a) =>
+        for {
+          f <- a.tupelize_metrics
+        } yield {
+          f._2 match {
+            case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
+            case _ => ""
+          }
+        }
+      case _ => List("")
+    }
+  }.mkString(" ")
+
+  val sfilters = {
+    array.analysisSampleFilters match {
+      case Some(a) =>
+        for {
+          f <- a.tupelize_metrics
+        } yield {
+          f._2 match {
+            case Some(s) => "--sfilter " + f._1 + " \"" + s + "\""
+            case _ => ""
+          }
+        }
+      case _ => List("")
+    }
+  }.mkString(" ")
+
+  hailCloud match {
+
+    case true =>
+ 
+      local {
+      
+        googleCopy(arrayStores(array).qcData.samplesExclude, arrayStores(array).qcData.samplesExcludeGoogle.get)
+      
+      }
+
+      google {
+      
+        hail"""$pyHailFilter --
+          --cloud
+          ${sfilters}
+          ${vfilters}
+          --log ${arrayStores(array).analysisData.hailLogGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
+          --samples-remove ${arrayStores(array).qcData.samplesExcludeGoogle.get}
+          --samples-stats-out ${arrayStores(array).analysisData.samplesStatsGoogle.get}
+          --samples-exclude-out ${arrayStores(array).analysisData.samplesExcludeGoogle.get}
+          --variants-stats-out ${arrayStores(array).analysisData.variantsStatsGoogle.get}
+          --variants-exclude-out ${arrayStores(array).analysisData.variantsExcludeGoogle.get}"""
+          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).qcData.samplesExcludeGoogle.get)
+          .out(arrayStores(array).analysisData.samplesStatsGoogle.get, arrayStores(array).analysisData.samplesExcludeGoogle.get, arrayStores(array).analysisData.variantsStatsGoogle.get, arrayStores(array).analysisData.variantsExcludeGoogle.get, arrayStores(array).analysisData.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).analysisData.hailLog}.pyHailFilter.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(arrayStores(array).analysisData.samplesStatsGoogle.get, arrayStores(array).analysisData.samplesStats)
+        googleCopy(arrayStores(array).analysisData.samplesExcludeGoogle.get, arrayStores(array).analysisData.samplesExclude)
+        googleCopy(arrayStores(array).analysisData.variantsStatsGoogle.get, arrayStores(array).analysisData.variantsStats)
+        googleCopy(arrayStores(array).analysisData.variantsExcludeGoogle.get, arrayStores(array).analysisData.variantsExclude)
+        googleCopy(arrayStores(array).analysisData.hailLogGoogle.get, arrayStores(array).analysisData.hailLog)
+      
+      }
+
+    case false =>
+
+      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
+
+        cmd"""$binPython $pyHailFilter
+          ${sfilters}
+          ${vfilters}
+          --log ${arrayStores(array).analysisData.hailLog}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --sexcheck-in ${arrayStores(array).sexcheckData.sexcheck}
+          --samples-remove ${arrayStores(array).qcData.samplesExclude}
+          --samples-stats-out ${arrayStores(array).analysisData.samplesStats}
+          --samples-exclude-out ${arrayStores(array).analysisData.samplesExclude}
+          --variants-stats-out ${arrayStores(array).analysisData.variantsStats}
+          --variants-exclude-out ${arrayStores(array).analysisData.variantsExclude}"""
+          .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).qcData.samplesExclude)
+          .out(arrayStores(array).analysisData.samplesStats, arrayStores(array).analysisData.samplesExclude, arrayStores(array).analysisData.variantsStats, arrayStores(array).analysisData.variantsExclude, arrayStores(array).analysisData.hailLog)
+          .tag(s"${arrayStores(array).analysisData.hailLog}.pyHailFilter".split("/").last)
+
+      }
+
+  }
+  
+  //drmWith(imageName = s"$imgTools") {
+  //
+  //  cmd"""$binTabix -f -p vcf ${arrayStores(array).cleanData.vcf}"""
+  //    .in(arrayStores(array).cleanData.vcf)
+  //    .out(arrayStores(array).cleanData.tbi)
+  //    .tag(s"${arrayStores(array).cleanData.tbi}".split("/").last)
+  //
+  //}
+  //
+  //drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterFinalPlink.cpus, mem = projectConfig.resources.filterFinalPlink.mem, maxRunTime = projectConfig.resources.filterFinalPlink.maxRunTime) {
+  //
+  //  cmd"""$binPlink --vcf ${arrayStores(array).cleanData.vcf} --allow-no-sex --output-chr MT --keep-allele-order --make-bed --out ${arrayStores(array).cleanData.plink.base} --memory ${projectConfig.resources.filterFinalPlink.mem * 0.9 * 1000}"""
+  //    .in(arrayStores(array).cleanData.vcf)
+  //    .out(arrayStores(array).cleanData.plink.data)
+  //    .tag(s"${arrayStores(array).cleanData.plink.base}".split("/").last)
+  //
+  //}
+  //
+  //drmWith(imageName = s"$imgR34", cores = projectConfig.resources.filterFinalPcair.cpus, mem = projectConfig.resources.filterFinalPcair.mem, maxRunTime = projectConfig.resources.filterFinalPcair.maxRunTime) {
+  //
+  //  cmd"""$binRscript --vanilla --verbose
+  //    $rPcair
+  //    --cpus ${projectConfig.resources.filterFinalPcair.cpus}
+  //    --plink-in ${arrayStores(array).prunedData.base}
+  //    --gds-out ${arrayStores(array).cleanData.gds}
+  //    --exclude ${arrayStores(array).finalData.samplesExclude}
+  //    --scores ${arrayStores(array).cleanData.pcaScores}
+  //    > ${arrayStores(array).cleanData.pcaLog}"""
+  //    .in(arrayStores(array).prunedData.data :+ arrayStores(array).finalData.samplesExclude)
+  //    .out(arrayStores(array).cleanData.gds, arrayStores(array).cleanData.pcaScores, arrayStores(array).cleanData.pcaLog)
+  //    .tag(s"${arrayStores(array).cleanData.pcaScores}".split("/").last)
+  //
+  //}
+
+}

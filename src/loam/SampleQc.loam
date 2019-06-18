@@ -8,9 +8,7 @@ import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 
-def SampleQc(array: String): Unit = {
-
-  val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
+def SampleQc(array: ConfigArray): Unit = {
 
   hailCloud match {
 
@@ -19,35 +17,35 @@ def SampleQc(array: String): Unit = {
       local {
       
         googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle.get)
-        googleCopy(ProjectStores.phenoFile, ProjectStores.phenoFileGoogle.get)
       
       }
       
       google {
       
         hail"""$pyHailSexcheck --
-          --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
-          --pheno-in ${ProjectStores.phenoFileGoogle.get}
-          --id-col ${projectConfig.phenoFileId}
-          --sex-col ${projectConfig.phenoFileSrSex}
-          --male-code ${projectConfig.phenoFileMaleCode}
-          --female-code ${projectConfig.phenoFileFemaleCode}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --sample-in ${ProjectStores.sampleFileGoogle.get}
+          --id-col ${projectConfig.sampleFileId}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
           --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}
           --cloud
           --log ${arrayStores(array).sexcheckData.hailLogGoogle.get}"""
-          .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).harmonizedData.mtGoogle.get)
+          .in(ProjectStores.sampleFileGoogle.get, arrayStores(array).refData.mtGoogle.get)
           .out(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}.google".split("/").last)
       
         hail"""$pyHailSampleqc --
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
           --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}
           --cloud
           --log ${arrayStores(array).sampleQcData.hailLogGoogle.get}"""
-          .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
           .out(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
       
@@ -68,42 +66,52 @@ def SampleQc(array: String): Unit = {
       drmWith(imageName = s"$imgHail", cores = projectConfig.resources.sampleQcHail.cpus, mem = projectConfig.resources.sampleQcHail.mem, maxRunTime = projectConfig.resources.sampleQcHail.maxRunTime) {
 
         cmd"""$binPython $pyHailSexcheck
-          --mt-in ${arrayStores(array).harmonizedData.mt.get}
-          --pheno-in ${ProjectStores.phenoFile}
-          --id-col ${projectConfig.phenoFileId}
-          --sex-col ${projectConfig.phenoFileSrSex}
-          --male-code ${projectConfig.phenoFileMaleCode}
-          --female-code ${projectConfig.phenoFileFemaleCode}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --sample-in ${ProjectStores.sampleFile}
+          --id-col ${projectConfig.sampleFileId}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
           --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
           --log ${arrayStores(array).sexcheckData.hailLog}"""
-          .in(ProjectStores.phenoFile, arrayStores(array).harmonizedData.mt.get)
+          .in(ProjectStores.sampleFile, arrayStores(array).refData.mt.get)
           .out(arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).sexcheckData.hailLog)
           .tag(s"${arrayStores(array).sexcheckData.sexcheck}".split("/").last)
 
       cmd"""$binPython $pyHailSampleqc
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).harmonizedData.mt.get}
+          --mt-in ${arrayStores(array).refData.mt.get}
           --clusters-in ${ProjectStores.ancestryInferred}
           --qc-out ${arrayStores(array).sampleQcData.stats}
           --log ${arrayStores(array).sampleQcData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred)
+          .in(arrayStores(array).refData.mt.get, ProjectStores.ancestryInferred)
           .out(arrayStores(array).sampleQcData.stats, arrayStores(array).sampleQcData.hailLog)
           .tag(s"${arrayStores(array).sampleQcData.stats}".split("/").last)
 
       }
 
   }
+
+  val nSampleMetricPcs = array.nSampleMetricPcs.getOrElse("") match { case "" => ""; case _ => s"--n-pcs ${array.nSampleMetricPcs.get}" }
+
+  val sampleMetricCovars = array.sampleMetricCovars.getOrElse("") match { case "" => ""; case _ => s"""--covars "${array.sampleMetricCovars.get}"""" }
   
   drmWith(imageName = s"$imgR34") {
 
     cmd"""$binRscript --vanilla --verbose
       $rCalcIstatsAdj
       --sampleqc-stats ${arrayStores(array).sampleQcData.stats}
+      --sample-file ${ProjectStores.sampleFile}
+      --iid-col ${projectConfig.sampleFileId}
+      ${nSampleMetricPcs}
+      ${sampleMetricCovars}
       --pca-scores ${arrayStores(array).pcaData.scores}
+      --incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --out ${arrayStores(array).sampleQcData.statsAdj}"""
       .in(arrayStores(array).sampleQcData.stats, arrayStores(array).pcaData.scores)
-      .out(arrayStores(array).sampleQcData.statsAdj)
+      .out(arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sampleQcData.statsAdj)
       .tag(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose
@@ -211,14 +219,14 @@ def SampleQc(array: String): Unit = {
   drmWith(imageName = s"$imgPython27") {
   
     cmd"""$binPython $pyMakeSamplesRestoreTable
-      --ancestry-outliers-keep "${arrayCfg.ancestryOutliersKeep.mkString(",")}"
-      --duplicates-keep "${arrayCfg.duplicatesKeep.mkString(",")}"
-      --famsize-keep "${arrayCfg.famsizeKeep.mkString(",")}"
-      --sampleqc-keep "${arrayCfg.sampleqcKeep.mkString(",")}"
-      --sexcheck-keep "${arrayCfg.sexcheckKeep.mkString(",")}"
-      --out ${arrayStores(array).finalData.samplesRestore}"""
-      .out(arrayStores(array).finalData.samplesRestore)
-      .tag(s"${arrayStores(array).finalData.samplesRestore}".split("/").last)
+      --ancestry-outliers-keep "${array.ancestryOutliersKeep.mkString(",")}"
+      --duplicates-keep "${array.duplicatesKeep.mkString(",")}"
+      --famsize-keep "${array.famsizeKeep.mkString(",")}"
+      --sampleqc-keep "${array.sampleqcKeep.mkString(",")}"
+      --sexcheck-keep "${array.sexcheckKeep.mkString(",")}"
+      --out ${arrayStores(array).qcData.samplesRestore}"""
+      .out(arrayStores(array).qcData.samplesRestore)
+      .tag(s"${arrayStores(array).qcData.samplesRestore}".split("/").last)
 
   }
   
@@ -234,12 +242,13 @@ def SampleQc(array: String): Unit = {
       --kinship-related ${arrayStores(array).kinshipData.kin0Related}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
+      --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
-      --restore ${arrayStores(array).finalData.samplesRestore}
-      --out ${arrayStores(array).finalData.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sexcheckData.problems, arrayStores(array).finalData.samplesRestore)
-      .out(arrayStores(array).finalData.samplesExclude)
-      .tag(s"${arrayStores(array).finalData.samplesExclude}".split("/").last)
+      --restore ${arrayStores(array).qcData.samplesRestore}
+      --out ${arrayStores(array).qcData.samplesExclude}"""
+      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).qcData.samplesRestore)
+      .out(arrayStores(array).qcData.samplesExclude)
+      .tag(s"${arrayStores(array).qcData.samplesExclude}".split("/").last)
   
   }
 

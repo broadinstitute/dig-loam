@@ -80,7 +80,7 @@ def main(args=None):
 		elif len(text_dict2) > 2:
 			text2 = ", ".join([str(text_dict2[x]) + " " + x.replace("_","\_") for x in text_dict2.keys()[0:(len(text_dict2.keys())-1)]]) + " and " + str(text_dict2[text_dict2.keys()[len(text_dict2.keys())-1]]) + " " + text_dict2.keys()[len(text_dict2.keys())-1].replace("_","\_")
 
-		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data. Upon manual inspection, If the clinical data for any of the duplicate pairs was nearly identical (same date of birth, etc.), then the sample with the higher call rate was reinstated. If the clinical data did not match, both samples were removed. In this case, {1} samples have been reinstated. More information is available upon request".format(text1, text2)
+		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data. Upon manual inspection, If the clinical data for any of the duplicate pairs was nearly identical (same date of birth, etc.), then the sample with the higher call rate was reinstated. If the clinical data did not match or a manual inspection was not performed, both samples were removed. In this case, {1} samples have been reinstated. More information is available upon request".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 

@@ -6,8 +6,12 @@
 import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
+import ProjectStores._
 
-def Load(array: String): Unit = {
+def Load(array: ConfigArray): Unit = {
+
+  val minPartitions =  array.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${array.minPartitions.get}" }
+  val gqThreshold =  array.gqThreshold.getOrElse("") match { case "" => ""; case _ => s"--gq-threshold ${array.gqThreshold.get}" }
 
   hailCloud match {
 
@@ -15,8 +19,8 @@ def Load(array: String): Unit = {
 
       local {
       
-        googleCopy(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.vcfGoogle.get)
-        googleCopy(arrayStores(array).harmonizedData.tbi, arrayStores(array).harmonizedData.tbiGoogle.get)
+        googleCopy(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.data.google.get)
+        googleCopy(arrayStores(array).refData.vcf.tbi.local.get, arrayStores(array).refData.vcf.tbi.google.get)
       
       }
       
@@ -24,20 +28,27 @@ def Load(array: String): Unit = {
       
         hail"""$pyHailLoad --
           --reference-genome ${projectConfig.referenceGenome}
-          --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcfGoogle.get}
-          --mt-out ${arrayStores(array).harmonizedData.mtGoogle.get}
+          ${minPartitions}
+          ${gqThreshold}
+          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
+          --sample-in ${ProjectStores.sampleFileGoogle.get}
+          --id-col ${projectConfig.sampleFileId}
+          --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
+          --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
+          --mt-out ${arrayStores(array).refData.mtGoogle.get}
           --cloud
-          --log ${arrayStores(array).harmonizedData.hailLogGoogle.get}"""
-          .in(arrayStores(array).harmonizedData.vcfGoogle.get, arrayStores(array).harmonizedData.tbiGoogle.get)
-          .out(arrayStores(array).harmonizedData.mtGoogle.get, arrayStores(array).harmonizedData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad".split("/").last)
+          --log ${arrayStores(array).refData.hailLogGoogle.get}"""
+          .in(arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, ProjectStores.sampleFileGoogle.get)
+          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
+          .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
       
       }
 
       local {
 
-        googleCopy(arrayStores(array).harmonizedData.hailLogGoogle.get, arrayStores(array).harmonizedData.hailLog)
+        googleCopy(arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.hailLog)
+        googleCopy(arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.variantMetrics)
+        googleCopy(arrayStores(array).refData.sitesVcfGoogle.get, arrayStores(array).refData.sitesVcf)
 
       }
 
@@ -47,13 +58,18 @@ def Load(array: String): Unit = {
 
         cmd"""$binPython $pyHailLoad
           --reference-genome ${projectConfig.referenceGenome}
-          --partitions ${projectConfig.Arrays.filter(_.id == array)(0).partitions.toString}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).harmonizedData.vcf}
-          --mt-out ${arrayStores(array).harmonizedData.mt.get}
-          --log ${arrayStores(array).harmonizedData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.vcf, arrayStores(array).harmonizedData.tbi)
-          .out(arrayStores(array).harmonizedData.mt.get, arrayStores(array).harmonizedData.hailLog)
-          .tag(s"${arrayStores(array).harmonizedData.vcf}.pyHailLoad".split("/").last)
+          ${minPartitions}
+          ${gqThreshold}
+          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.local.get}
+          --sample-in ${ProjectStores.sampleFile}
+          --id-col ${projectConfig.sampleFileId}
+          --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
+          --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
+          --mt-out ${arrayStores(array).refData.mt.get}
+          --log ${arrayStores(array).refData.hailLog}"""
+          .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get, ProjectStores.sampleFile)
+          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).refData.sitesVcf)
+          .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
 
       }
 

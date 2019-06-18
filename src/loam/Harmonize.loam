@@ -13,22 +13,20 @@ import ProjectStores._
 
 import scala.collection.immutable.ListMap
 
-def Harmonize(array: String): Unit = {
-
-  val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
+def Harmonize(arrayCfg: ConfigArray): Unit = {
 
   for {
 
-    (chr, chrData) <- arrayStores(array).annotatedChrData
+    (chr, chrData) <- arrayStores(arrayCfg).annotatedChrData.get
 
   } yield { 
 
     drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
 
-	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
-        .in(arrayStores(array).annotatedData.data)
-        .out(chrData.data)
-        .tag(s"${chrData.base}".split("/").last)
+	  cmd"""$binPlink --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --chr $chr --keep-allele-order --make-bed --out ${chrData.plink.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+        .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
+        .out(chrData.plink.data)
+        .tag(s"${chrData.plink.base}".split("/").last)
 
     }
 
@@ -37,9 +35,9 @@ def Harmonize(array: String): Unit = {
       drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
       
         cmd"""$binGenotypeHarmonizer
-        --input ${chrData.base}
+        --input ${chrData.plink.base}
         --inputType PLINK_BED
-        --output ${chrData.mergedKgBase}
+        --output ${chrData.mergedKgPlink.base}
         --outputType PLINK_BED
         --ref ${ProjectStores.kgVcf(chr)}
         --refType VCF
@@ -50,9 +48,9 @@ def Harmonize(array: String): Unit = {
         --update-id
         --update-reference-allele
         --debug"""
-          .in(chrData.data :+ ProjectStores.kgVcf(chr))
-          .out(chrData.mergedKg :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
-          .tag(s"${chrData.mergedKgBase}".split("/").last)
+          .in(chrData.plink.data :+ ProjectStores.kgVcf(chr))
+          .out(chrData.mergedKgPlink.data :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
+          .tag(s"${chrData.mergedKgPlink.base}".split("/").last)
       
       }
 
@@ -61,9 +59,9 @@ def Harmonize(array: String): Unit = {
       local {
 
         cmd"""echo -e "chr\tpos\toriginalId\tnewId" > ${chrData.mergedKgVarIdUpdate}; echo -e "chr\tpos\tid\talleles\taction\tmessage" > ${chrData.mergedKgVarSnpLog}"""
-          .in(chrData.data)
+          .in(chrData.plink.data)
           .out(chrData.mergedKgVarIdUpdate, chrData.mergedKgVarSnpLog)
-          .tag(s"${chrData.mergedKgBase}.skipGh".split("/").last)
+          .tag(s"${chrData.mergedKgPlink.base}.skipGh".split("/").last)
 
       }
 
@@ -73,7 +71,7 @@ def Harmonize(array: String): Unit = {
       
       cmd"""$binPython $pyAlignNon1kgVariants
       --kg-ids ${ProjectStores.kgIds(chr)}
-      --bim ${chrData.mergedKgBase}.bim
+      --bim ${chrData.mergedKgPlink.base}.bim
       --ref ${ProjectStores.humanReference(chr)}
       --out-remove ${chrData.nonKgRemove}
       --out-ignore ${chrData.nonKgIgnore}
@@ -81,7 +79,7 @@ def Harmonize(array: String): Unit = {
       --out-nomatch ${chrData.nonKgNomatch}
       --out-flip ${chrData.nonKgFlip}
       --out-force-a1 ${chrData.nonKgForceA1}"""
-        .in(chrData.mergedKg :+ ProjectStores.kgIds(chr) :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
+        .in(chrData.mergedKgPlink.data :+ ProjectStores.kgIds(chr) :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
         .out(chrData.nonKgRemove, chrData.nonKgIgnore, chrData.nonKgMono,chrData.nonKgNomatch, chrData.nonKgFlip, chrData.nonKgForceA1)
         .tag(s"${chrData.mergedKgNonKgBase}".split("/").last)
 
@@ -89,10 +87,10 @@ def Harmonize(array: String): Unit = {
 
     drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkChr.cpus, mem = projectConfig.resources.harmonizePlinkChr.mem, maxRunTime = projectConfig.resources.harmonizePlinkChr.maxRunTime) {
       
-      cmd"""$binPlink --bfile ${chrData.mergedKgBase} --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000}"""
-        .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
-        .out(chrData.mergedKgHuRef)
-        .tag(s"${chrData.mergedKgHuRefBase}".split("/").last)
+      cmd"""$binPlink --bfile ${chrData.mergedKgPlink.base} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000}"""
+        .in(chrData.mergedKgPlink.data :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
+        .out(chrData.mergedKgHuRefPlink.data)
+        .tag(s"${chrData.mergedKgHuRefPlink.base}".split("/").last)
     
     }
   
@@ -101,10 +99,10 @@ def Harmonize(array: String): Unit = {
   val mergedKgHuRefLines = {
 
     for {
-      chr <- arrayStores(array).annotatedChrData.map(e => e._1).toSeq.sortWith(_ < _)
+      chr <- arrayStores(arrayCfg).annotatedChrData.get.map(e => e._1).toSeq.sortWith(_ < _)
     } yield {
 
-      s"${arrayStores(array).annotatedChrData(chr).mergedKgHuRefBase}"
+      s"${arrayStores(arrayCfg).annotatedChrData.get(chr).mergedKgHuRefPlink.base}"
 
     }
 
@@ -112,61 +110,61 @@ def Harmonize(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools") {
   
-    cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(array).harmonizedData.mergeList}"""
-      .out(arrayStores(array).harmonizedData.mergeList)
-      .tag(s"${arrayStores(array).harmonizedData.mergeList}".split("/").last)
+    cmd"""echo "${mergedKgHuRefLines.drop(1).mkString("\n")}" > ${arrayStores(arrayCfg).harmonizedData.get.mergeList}"""
+      .out(arrayStores(arrayCfg).harmonizedData.get.mergeList)
+      .tag(s"${arrayStores(arrayCfg).harmonizedData.get.mergeList}".split("/").last)
 
   }
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --merge-list ${arrayStores(array).harmonizedData.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).annotatedChrData.map(e => e._2).flatMap(e => e.mergedKgHuRef).toSeq :+ arrayStores(array).harmonizedData.mergeList)
-      .out(arrayStores(array).harmonizedData.data)
-      .tag(s"${arrayStores(array).harmonizedData.base}".split("/").last)
+    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --allow-no-sex --merge-list ${arrayStores(arrayCfg).harmonizedData.get.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+      .in(arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).flatMap(e => e.mergedKgHuRefPlink.data).toSeq :+ arrayStores(arrayCfg).harmonizedData.get.mergeList)
+      .out(arrayStores(arrayCfg).harmonizedData.get.plink.data)
+      .tag(s"${arrayStores(arrayCfg).harmonizedData.get.plink.base}".split("/").last)
 
   }
 
   drmWith(imageName = s"$imgTools") {
   
-    cmd"""awk '{print $$2,$$5}' ${arrayStores(array).harmonizedData.base}.bim > ${arrayStores(array).harmonizedData.forceA2}"""
-      .in(arrayStores(array).harmonizedData.data)
-      .out(arrayStores(array).harmonizedData.forceA2)
-      .tag(s"${arrayStores(array).harmonizedData.forceA2}".split("/").last)
+    cmd"""awk '{print $$2,$$5}' ${arrayStores(arrayCfg).harmonizedData.get.plink.base}.bim > ${arrayStores(arrayCfg).harmonizedData.get.forceA2}"""
+      .in(arrayStores(arrayCfg).harmonizedData.get.plink.data)
+      .out(arrayStores(arrayCfg).harmonizedData.get.forceA2)
+      .tag(s"${arrayStores(arrayCfg).harmonizedData.get.forceA2}".split("/").last)
 
   }
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --output-chr MT --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
-      .out(arrayStores(array).harmonizedData.refData)
-      .tag(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
-    
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
-      .out(arrayStores(array).harmonizedData.vcf)
-      .tag(s"${arrayStores(array).harmonizedData.vcf}".split("/").last)
+    cmd"""$binPlink --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+      .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
+      .out(arrayStores(arrayCfg).refData.plink.get.data)
+      .tag(s"${arrayStores(arrayCfg).refData.plink.get.base}".split("/").last)
+
+    cmd"""$shPlinkToVcfNoHalfCalls $binPlink ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} ${arrayStores(arrayCfg).refData.vcf.data.local.get}"""
+      .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
+      .out(arrayStores(arrayCfg).refData.vcf.data.local.get)
+      .tag(s"${arrayStores(arrayCfg).refData.vcf.data.local.get}".split("/").last)
 
   }
 
   drmWith(imageName = s"$imgTools") {
     
-    cmd"""$binTabix -f -p vcf ${arrayStores(array).harmonizedData.vcf}"""
-      .in(arrayStores(array).harmonizedData.vcf)
-      .out(arrayStores(array).harmonizedData.tbi)
-      .tag(s"${arrayStores(array).harmonizedData.tbi}".split("/").last)
+    cmd"""$binTabix -f -p vcf ${arrayStores(arrayCfg).refData.vcf.data.local.get}"""
+      .in(arrayStores(arrayCfg).refData.vcf.data.local.get)
+      .out(arrayStores(arrayCfg).refData.vcf.tbi.local.get)
+      .tag(s"${arrayStores(arrayCfg).refData.vcf.tbi.local.get}".split("/").last)
   
   }
 
-  val nonKgRemoveString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgMonoString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgNomatchString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgNomatch.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgIgnoreString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgIgnore.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgFlipString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgFlip.toString.split("@")(1)}"""}.mkString(",")
-  val nonKgForceA1String = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgForceA1.toString.split("@")(1)}"""}.mkString(",")
-  val mergedKgVarIdUpdateString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
-  val mergedKgVarSnpLogString = ListMap(arrayStores(array).annotatedChrData.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgRemoveString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgMonoString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgNomatchString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgNomatch.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgIgnoreString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgIgnore.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgFlipString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgFlip.toString.split("@")(1)}"""}.mkString(",")
+  val nonKgForceA1String = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgForceA1.toString.split("@")(1)}"""}.mkString(",")
+  val mergedKgVarIdUpdateString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
+  val mergedKgVarSnpLogString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
   
   drmWith(imageName = s"$imgPython27") {
   
@@ -179,18 +177,18 @@ def Harmonize(array: String): Unit = {
       --force-a1-in "$nonKgForceA1String"
       --id-updates-in "$mergedKgVarIdUpdateString"
       --snp-log-in "$mergedKgVarSnpLogString"
-      --remove-out ${arrayStores(array).harmonizedData.nonKgRemove}
-      --remove-mono-out ${arrayStores(array).harmonizedData.nonKgMono}
-      --remove-nomatch-out ${arrayStores(array).harmonizedData.nonKgNomatch}
-      --ignore-out ${arrayStores(array).harmonizedData.nonKgIgnore}
-      --flip-out ${arrayStores(array).harmonizedData.nonKgFlip}
-      --force-a1-out ${arrayStores(array).harmonizedData.nonKgForceA1}
-      --id-updates-out ${arrayStores(array).harmonizedData.mergedKgVarIdUpdate}
-      --snp-log-out ${arrayStores(array).harmonizedData.mergedKgVarSnpLog}
+      --remove-out ${arrayStores(arrayCfg).harmonizedData.get.nonKgRemove}
+      --remove-mono-out ${arrayStores(arrayCfg).harmonizedData.get.nonKgMono}
+      --remove-nomatch-out ${arrayStores(arrayCfg).harmonizedData.get.nonKgNomatch}
+      --ignore-out ${arrayStores(arrayCfg).harmonizedData.get.nonKgIgnore}
+      --flip-out ${arrayStores(arrayCfg).harmonizedData.get.nonKgFlip}
+      --force-a1-out ${arrayStores(arrayCfg).harmonizedData.get.nonKgForceA1}
+      --id-updates-out ${arrayStores(arrayCfg).harmonizedData.get.mergedKgVarIdUpdate}
+      --snp-log-out ${arrayStores(arrayCfg).harmonizedData.get.mergedKgVarSnpLog}
       """
-      .in(arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgRemove).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgMono).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgNomatch).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgIgnore).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgFlip).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.nonKgForceA1).toSeq ++arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.mergedKgVarIdUpdate).toSeq ++ arrayStores(array).annotatedChrData.map(e => e._2).map(e => e.mergedKgVarSnpLog).toSeq)
-      .out(arrayStores(array).harmonizedData.nonKgRemove, arrayStores(array).harmonizedData.nonKgNomatch, arrayStores(array).harmonizedData.nonKgMono, arrayStores(array).harmonizedData.nonKgIgnore, arrayStores(array).harmonizedData.nonKgFlip, arrayStores(array).harmonizedData.nonKgForceA1, arrayStores(array).harmonizedData.mergedKgVarIdUpdate, arrayStores(array).harmonizedData.mergedKgVarSnpLog)
-      .tag(s"${arrayStores(array).harmonizedData.base}.pyMergeVariantLists".split("/").last)
+      .in(arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.nonKgRemove).toSeq ++ arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.nonKgMono).toSeq ++ arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.nonKgNomatch).toSeq ++ arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.nonKgIgnore).toSeq ++ arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.nonKgFlip).toSeq ++ arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.nonKgForceA1).toSeq ++arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.mergedKgVarIdUpdate).toSeq ++ arrayStores(arrayCfg).annotatedChrData.get.map(e => e._2).map(e => e.mergedKgVarSnpLog).toSeq)
+      .out(arrayStores(arrayCfg).harmonizedData.get.nonKgRemove, arrayStores(arrayCfg).harmonizedData.get.nonKgNomatch, arrayStores(arrayCfg).harmonizedData.get.nonKgMono, arrayStores(arrayCfg).harmonizedData.get.nonKgIgnore, arrayStores(arrayCfg).harmonizedData.get.nonKgFlip, arrayStores(arrayCfg).harmonizedData.get.nonKgForceA1, arrayStores(arrayCfg).harmonizedData.get.mergedKgVarIdUpdate, arrayStores(arrayCfg).harmonizedData.get.mergedKgVarSnpLog)
+      .tag(s"${arrayStores(arrayCfg).harmonizedData.get.plink.base}.pyMergeVariantLists".split("/").last)
   
   }
 

@@ -1,0 +1,125 @@
+/**
+  * Export Qc Data Step
+  *  Description: Generate filtered and filtered/pruned filesets for QC
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ArrayStores._
+import ProjectStores._
+
+def ExportQcData(array: ConfigArray): Unit = {
+
+  val vfilters = {
+    array.qcVariantFilters match {
+      case Some(a) =>
+        for {
+          f <- a.tupelize_metrics
+        } yield {
+          f._2 match {
+            case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
+            case _ => ""
+          }
+        }
+      case _ => List("")
+    }
+  }.mkString(" ")
+
+  val sampleN = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.sample_n.getOrElse("") match {
+        case "" => ""
+        case _ => s"--sample-n ${array.qcVariantFilters.get.sample_n.get}"
+      }
+  }
+
+  val sampleSeed = array.qcVariantFilters.getOrElse("") match {
+    case "" => ""
+    case _ =>
+      array.qcVariantFilters.get.sample_seed.getOrElse("") match {
+        case "" => ""
+        case _ => s"--sample-seed ${array.qcVariantFilters.get.sample_seed.get}"
+      }
+  }
+
+  hailCloud match {
+
+    case true =>
+
+      google {
+      
+        hail"""$pyHailExportQcData --
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
+          ${vfilters}
+          ${sampleN}
+          ${sampleSeed}
+          --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
+          --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
+          --cloud
+          --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get)
+          .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
+      
+      }
+
+      local {
+
+        googleCopy(arrayStores(array).filteredData.plink.data.google.get, arrayStores(array).filteredData.plink.data.local.get)
+        googleCopy(arrayStores(array).filteredData.variantMetricsGoogle.get, arrayStores(array).filteredData.variantMetrics)
+        googleCopy(arrayStores(array).filteredData.hailLogGoogle.get, arrayStores(array).filteredData.hailLog)
+
+      }
+
+    case false =>
+
+      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
+      
+        cmd"""$binPython $pyHailExportQcData
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --regions-exclude ${ProjectStores.regionsExclude}
+          ${vfilters}
+          ${sampleN}
+          ${sampleSeed}
+          --variants-out ${arrayStores(array).filteredData.variantMetrics}
+          --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
+          --log ${arrayStores(array).filteredData.hailLog}"""
+          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude)
+          .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
+          .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
+      
+      }
+
+  }
+
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.prunePlink.cpus, mem = projectConfig.resources.prunePlink.mem, maxRunTime = projectConfig.resources.prunePlink.maxRunTime) {
+
+    cmd"""$binPlink
+      --bfile ${arrayStores(array).filteredData.plink.base.local.get}
+      --allow-no-sex 
+      --indep-pairwise 1000kb 1 0.2
+      --out ${arrayStores(array).filteredData.plink.base.local.get}
+      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(array).filteredData.plink.data.local.get)
+      .out(arrayStores(array).filteredData.pruneIn)
+      .tag(s"${arrayStores(array).filteredData.pruneIn}".split("/").last)
+
+    cmd"""$binPlink
+      --bfile ${arrayStores(array).filteredData.plink.base.local.get}
+      --allow-no-sex 
+      --extract ${arrayStores(array).filteredData.pruneIn}
+      --keep-allele-order
+      --make-bed
+      --out ${arrayStores(array).prunedData.plink.base}
+      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.pruneIn)
+      .out(arrayStores(array).prunedData.plink.data)
+      .tag(s"${arrayStores(array).prunedData.plink.base}".split("/").last)
+
+  }
+
+}

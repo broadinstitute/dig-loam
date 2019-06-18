@@ -15,7 +15,7 @@ def QcReport(): Unit = {
 
   val freqStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.freq.path}""").mkString(",") } }
   val indelStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.indel.path}""").mkString(",") } }
-  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.multiallelic.path}""").mkString(",") } }
+  val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
   val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
   drmWith(imageName = s"$imgR34") {
@@ -27,7 +27,7 @@ def QcReport(): Unit = {
       --multi-in ${multiStrings.mkString(" ")}
       --dupl-in ${dupRemoveStrings.mkString(" ")}
       --out ${qcReportStores.tablesData.variantsSummary}"""
-      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.get.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove).toSeq)
       .out(qcReportStores.tablesData.variantsSummary)
       .tag(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
 
@@ -64,7 +64,6 @@ def QcReport(): Unit = {
       --id ${projectConfig.projectId}
       --authors "${projectConfig.authors.mkString(",")}"
       --organization "${projectConfig.organization}"
-      --contact "${projectConfig.contact}"
       --email "${projectConfig.email}"
       --out ${qcReportStores.texData.intro} 
       --array-data ${dataStrings.mkString(" ")}"""
@@ -74,8 +73,8 @@ def QcReport(): Unit = {
 
   }
 
-  val famStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.fam").mkString(",") } }
-  val bimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).harmonizedData.refBase}.bim").mkString(",") } }
+  val famStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).refData.base}.fam").mkString(",") } }
+  val bimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).refData.base}.bim").mkString(",") } }
   val imissRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.imissRemove.path}""").mkString(",") } }
   
   if (projectConfig.nArrays > 1) {
@@ -87,7 +86,7 @@ def QcReport(): Unit = {
         --input ${famStrings.mkString(" ")}
         --type fam
         --out ${qcReportStores.figureData.samplesUpsetPlotPdf.get}"""
-        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.refData.data).toSeq)
         .out(qcReportStores.figureData.samplesUpsetPlotPdf.get)
         .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf.get}".split("/").last)
       
@@ -96,7 +95,7 @@ def QcReport(): Unit = {
         --input ${bimStrings.mkString(" ")}
         --type bim
         --out ${qcReportStores.figureData.variantsUpsetPlotPdf.get}"""
-        .in(arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.refData.data).toSeq)
         .out(qcReportStores.figureData.variantsUpsetPlotPdf.get)
         .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf.get}".split("/").last)
 
@@ -128,7 +127,7 @@ def QcReport(): Unit = {
       --variants-summary-table ${qcReportStores.tablesData.variantsSummary} 
       --bim ${bimStrings(0)}
       --out ${qcReportStores.texData.data}"""
-      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.harmonizedData.refData).toSeq :+ qcReportStores.tablesData.variantsSummary)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).flatMap(e => e.refData.data).toSeq :+ qcReportStores.tablesData.variantsSummary)
       .out(qcReportStores.texData.data)
       .tag(s"${qcReportStores.texData.data}".split("/").last)
 
@@ -183,7 +182,7 @@ def QcReport(): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
       --sampleqc ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats}
-      --metric ${projectConfig.sampleQcMetrics.head.replace("_res","")}
+      --metric ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcMetrics.head}
       --out ${qcReportStores.figureData.metricDistUnadjPdf}
       """
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.stats)
@@ -193,7 +192,7 @@ def QcReport(): Unit = {
     cmd"""$binRscript --vanilla --verbose
       $rMakeMetricDistPlot
       --sampleqc ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj}
-      --metric ${projectConfig.sampleQcMetrics.head}
+      --metric ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcMetrics.head}_res
       --out ${qcReportStores.figureData.metricDistAdjPdf}
       """
       .in(arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcData.statsAdj)
@@ -247,7 +246,7 @@ def QcReport(): Unit = {
       --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
       --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
       --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
-      --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
+      --compare-dist-metric ${arrayStores(projectConfig.Arrays.map(e => e.id).head).sampleQcMetrics.head}
       --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
       --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
       --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}

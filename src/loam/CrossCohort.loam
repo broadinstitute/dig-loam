@@ -15,7 +15,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     for {
       cohort <- configMeta.cohorts
     } yield {
-      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).harmonizedData.refBase.toString + ".bim"
+      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).refData.base.toString + ".bim"
     }
   }.distinct
 
@@ -23,7 +23,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     for {
       cohort <- configMeta.cohorts
     } yield {
-      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).harmonizedData.refData.toSeq
+      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).refData.data.toSeq
     }
   }.flatten.distinct
 
@@ -42,8 +42,8 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   drmWith(imageName = s"$imgTools") {
 
-    cmd"""$shMetaCohortSamples ${arrayStores(configCohort.array).harmonizedData.refBase}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(arrayStores(configCohort.array).harmonizedData.refData :+ ProjectStores.ancestryInferred)
+    cmd"""$shMetaCohortSamples ${arrayStores(configCohort.array).refData.base}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
+    .in(arrayStores(configCohort.array).refData.data :+ ProjectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 
@@ -51,8 +51,8 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortPrepPlink.cpus, mem = projectConfig.resources.crossCohortPrepPlink.mem, maxRunTime = projectConfig.resources.crossCohortPrepPlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
-    .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
+    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).refData.base} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
+    .in(arrayStores(configCohort.array).refData.data :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
 
@@ -83,7 +83,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortKinshipPlink.cpus, mem = projectConfig.resources.crossCohortKinshipPlink.mem, maxRunTime = projectConfig.resources.crossCohortKinshipPlink.maxRunTime) {
 
-    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --allow-no-sex --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000}"""
     .in((metaKinshipStores(configMeta).metaCohort.map(e => e._2).flatMap(e => e.data).toSeq ++ metaKinshipStores(configMeta).metaCohort.map(e => e._2.famMerge).toSeq) :+ metaKinshipStores(configMeta).mergeList)
     .out(metaKinshipStores(configMeta).dataFiltered)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}".split("/").last)

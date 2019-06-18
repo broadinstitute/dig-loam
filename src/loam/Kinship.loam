@@ -10,14 +10,14 @@ import ProjectConfig._
 import PipelineConfig._
 import ArrayStores._
 
-def Kinship(array: String): Unit = {
+def Kinship(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.kinshipKing.cpus, mem = projectConfig.resources.kinshipKing.mem, maxRunTime = projectConfig.resources.kinshipKing.maxRunTime) {
 
-    cmd"""$shKing $binKing ${arrayStores(array).prunedData.base}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.resources.kinshipKing.cpus}"""
-    .in(arrayStores(array).prunedData.data)
+    cmd"""$shKing $binKing ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.resources.kinshipKing.cpus}"""
+    .in(arrayStores(array).filteredData.plink.data.local.get)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.kin0Related)
-    .tag(s"${arrayStores(array).prunedData.base}.shKing".split("/").last)
+    .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.shKing".split("/").last)
 
   }
 

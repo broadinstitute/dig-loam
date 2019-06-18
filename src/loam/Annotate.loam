@@ -1,0 +1,23 @@
+/**
+  * Annotation Step
+  *  Description: Annotate sites vcf with VEP
+  *  Requires: Perl, VEP perl script
+  *  Notes:
+  */
+import ProjectConfig._
+import PipelineConfig._
+import ProjectStores._
+import ArrayStores._
+
+def Annotate(array: ConfigArray): Unit = {
+
+  drmWith(imageName = s"$imgEnsemblVep", cores = projectConfig.resources.annotate.cpus, mem = projectConfig.resources.annotate.mem, maxRunTime = projectConfig.resources.annotate.maxRunTime) {
+
+    cmd"""$shAnnotate ${arrayStores(array).refData.sitesVcf} ${projectConfig.resources.annotate.cpus} ${ProjectStores.fasta} ${ProjectStores.vepCacheDir} ${ProjectStores.vepPluginsDir} ${ProjectStores.dbNSFP} ${arrayStores(array).refData.annotations} ${arrayStores(array).refData.annotationWarnings}"""
+    .in(arrayStores(array).refData.sitesVcf, ProjectStores.fasta, ProjectStores.vepCacheDir, ProjectStores.vepPluginsDir, ProjectStores.dbNSFP)
+    .out(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationWarnings)
+    .tag(s"${arrayStores(array).refData.annotations}".split("/").last)
+
+  }
+
+}

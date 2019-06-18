@@ -7,7 +7,7 @@ base=$4
 fet=$5
 log=$6
 
-metricIdx=`head -1 $statsAdj | tr '\t' '\n' | awk '{print NR, $0}' | grep -w $metric | awk '{print $1}'`
+metricIdx=`head -1 $statsAdj | tr '\t' '\n' | awk '{print NR, $0}' | grep -w ${metric}_res | awk '{print $1}'`
 
 echo 1 > $fet
 exitCode=$?

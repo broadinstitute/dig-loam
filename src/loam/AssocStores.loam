@@ -3,12 +3,7 @@ import PipelineConfig._
 import StoreHelpers._
 
 final case class Assoc(
-  phenoPrelim: Store,
-  phenoPrelimGoogle: Option[Store],
-  samplesInclude: Store,
-  samplesIncludeGoogle: Option[Store],
-  listSamplesHailLog: Store,
-  listSamplesHailLogGoogle: Option[Store],
+  idMap: Store,
   phenoLog: Store,
   pheno: Store,
   phenoGoogle: Option[Store],
@@ -79,12 +74,7 @@ val assocStores = (
     }
 
     assoc -> Assoc(
-      phenoPrelim = store(localOutDir / s"${prefix}.prelim_pheno.tsv"),
-      phenoPrelimGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.prelim_pheno.tsv")); case false => None },
-      samplesInclude = store(localOutDir / s"${prefix}.samples.include"),
-      samplesIncludeGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.samples.include")); case false => None },
-      listSamplesHailLog = store(localOutDir / s"${prefix}.samples.include.hail.log"),
-      listSamplesHailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.samples.include.hail.log")); case false => None },
+      idMap = store(localOutDir / s"${prefix}.samples_exclude.map.tsv"),
       phenoLog = store(localOutDir / s"${prefix}.pheno.log"),
       pheno = store(localOutDir / s"${prefix}.pheno.tsv"),
       phenoGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.pheno.tsv")); case false => None },
@@ -127,12 +117,7 @@ val knownLociStores = (
     }
     
     knownLoci -> Assoc(
-        phenoPrelim = store(localOutDir / s"${prefix}.prelim_pheno.tsv"),
-        phenoPrelimGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.prelim_pheno.tsv")); case false => None },
-        samplesInclude = store(localOutDir / s"${prefix}.samples.include"),
-        samplesIncludeGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.samples.include")); case false => None },
-        listSamplesHailLog = store(localOutDir / s"${prefix}.samples.include.hail.log"),
-        listSamplesHailLogGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.samples.include.hail.log")); case false => None },
+        idMap = store(localOutDir / s"${prefix}.samples_exclude.map.tsv"),
         phenoLog = store(localOutDir / s"${prefix}.pheno.log"),
         pheno = store(localOutDir / s"${prefix}.pheno.tsv"),
         phenoGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${prefix}.pheno.tsv")); case false => None },

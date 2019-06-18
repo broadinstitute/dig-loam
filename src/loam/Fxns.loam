@@ -1,0 +1,82 @@
+import scala.util.{Try, Success, Failure}
+import scala.util.control.NonFatal
+import java.nio.file.{Paths, Files}
+import scala.sys.process._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def checkPath(s: String): String = {
+  Files.exists(Paths.get(s)) match {
+    case false => throw new CfgException("checkPath: " + s + " not found")
+    case true  => s
+  }
+}
+
+def checkPlinkPath(s: String): String = {
+  val bed = Files.exists(Paths.get(s + ".bed")) 
+  val bim = Files.exists(Paths.get(s + ".bim")) 
+  val fam = Files.exists(Paths.get(s + ".fam"))
+  val bedMessage = bed match {
+    case true => s + ".bed exists"
+	case false => s + ".bed does not exist"
+  }
+  val bimMessage = bim match {
+    case true => s + ".bim exists"
+	case false => s + ".bim does not exist"
+  }
+  val famMessage = fam match {
+    case true => s + ".fam exists"
+	case false => s + ".fam does not exist"
+  }
+  Seq(bed, bim, fam).contains(false) match {
+    case true => 
+	  throw new CfgException("checkPlinkPath: files missing from Plink fileset " + s + "\n  " + s"${bedMessage}\n  ${bimMessage}\n  ${famMessage}")
+    case false => s
+  }
+}
+
+def checkURI(s: String): Int = {
+  val cmd = s"gsutil -m ls ${s}"
+  cmd.!
+}
+
+def intervalToExpression(s: String, i: String): String = {
+  val intervals = i.replace(" ","").split("\\+")
+  val expressions = {
+    for {
+      interval <- intervals
+    } yield {
+      val lowerBound = interval(0)
+      val upperBound = interval.takeRight(1)
+      val min = interval.drop(1).dropRight(1).split(",")(0)
+      val max = interval.drop(1).dropRight(1).split(",").size match {
+        case 1 => ""
+        case _ => interval.drop(1).dropRight(1).split(",")(1)
+      }
+      (min, max) match {
+        case ("", _) | (_, "") => ()
+        case (v1, v2) if v2 <= v1 => throw new CfgException("intervalToExpression: user supplied interval for " + s + ", " + i + ", is invalid due to max <= min")
+        case _ => ()
+      }
+      val lowerInequality = lowerBound match {
+        case '[' => ">="
+        case '(' => ">"
+        case _ => throw new CfgException("intervalToExpression: user supplied interval for " + s + " contains unsupported symbol " + lowerBound + s"... [, ], (, and ) are currently supported")
+      }
+      val upperInequality = upperBound match {
+        case "]" => "<="
+        case ")" => "<"
+        case _ => throw new CfgException("intervalToExpression: user supplied interval for " + s + " contains unsupported symbol " + upperBound + s"... [, ], (, and ) are currently supported")
+      }
+      (min, max) match {
+        case ("", v) => s + " " + upperInequality + " " + max
+        case (v, "") => s + " " + lowerInequality + " " + min
+        case _ => "(" + s + " " + lowerInequality + " " + min + ") & (" + s + " " + upperInequality + " " + max + ")"
+      }
+    }
+  }
+  expressions.size match {
+    case x if x > 1 => expressions.map(e => "(" + e + ")").mkString(" | ")
+    case _ => expressions.mkString("")
+  }
+}

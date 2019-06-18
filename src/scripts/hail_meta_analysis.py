@@ -24,7 +24,7 @@ def main(args=None):
 	for c in cohorts:
 		i = i + 1
 		print("importing hail table for cohort " + c)
-		tbl_temp = hl.import_table(files[c], impute=True, min_partitions=args.partitions)
+		tbl_temp = hl.import_table(files[c], impute=True, min_partitions=args.min_partitions)
 		tbl_temp = tbl_temp.rename({'#chr': 'chr'})
 		tbl_temp = tbl_temp.annotate(locus = hl.parse_locus(hl.str(tbl_temp.chr) + ":" + hl.str(tbl_temp.pos)), alleles =  [tbl_temp.ref, tbl_temp.alt])
 		tbl_temp = tbl_temp.key_by('locus', 'alleles')
@@ -151,7 +151,7 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--partitions', type=int, default=100, help='number of partitions')
+	parser.add_argument('--min-partitions', type=int, default=None, help='number of partitions')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
