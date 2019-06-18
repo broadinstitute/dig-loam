@@ -3,21 +3,84 @@ import Fxns._
 val dataConfig = loadConfig("dataConfig", "")
 
 val defaultSampleMetricsGwas = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var")
-val defaultSampleMetricsSeq = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var","n_singleton","avg_ab","avg_ab_dist50")
+val defaultSampleMetricsSeq = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var","n_singleton","avg_ab","avg_ab50")
 
 final case class ConfigMachine(
   cpus: Int,
   mem: Int,
   maxRunTime: Int)
 
+final case class ConfigSampleFilters(
+  n_non_ref: Option[String],
+  n_het: Option[String],
+  n_called: Option[String],
+  call_rate: Option[String],
+  n_singleton: Option[String],
+  r_ti_tv: Option[String],
+  het: Option[String],
+  het_low: Option[String],
+  het_high: Option[String],
+  n_hom_var: Option[String],
+  r_het_hom_var: Option[String],
+  avg_ab: Option[String],
+  avg_ab50: Option[String]
+) {
+  def tupelize_metrics: List[(String,Option[String])] = {
+    List(
+      ("n_non_ref",n_non_ref),
+      ("n_het",n_het),
+      ("n_called",n_called),
+      ("call_rate",call_rate),
+      ("n_singleton",n_singleton),
+      ("r_ti_tv",r_ti_tv),
+      ("het",het),
+      ("het_low",het_low),
+      ("het_high",het_high),
+      ("n_hom_var",n_hom_var),
+      ("r_het_hom_var",r_het_hom_var),
+      ("avg_ab",avg_ab),
+      ("avg_ab50",avg_ab50)
+   )
+  }
+}
+
 final case class ConfigVariantFilters(
   call_rate: Option[String],
-  ac: Option[String],
-  af: Option[String],
+  AC: Option[String],
+  AF: Option[String],
+  AN: Option[String],
+  n_called: Option[String],
+  n_not_called: Option[String],
+  homozygote_count: Option[String],
+  n_het: Option[String],
   het: Option[String],
+  n_non_ref: Option[String],
+  avg_ab: Option[String],
   avg_het_ab: Option[String],
+  het_freq_hwe: Option[String],
+  p_value_hwe: Option[String],
   sample_n: Option[Int],
-  sample_seed: Option[Int])
+  sample_seed: Option[Int]
+) {
+  def tupelize_metrics: List[(String,Option[String])] = {
+    List(
+      ("call_rate",call_rate),
+      ("AC",AC),
+      ("AF",AF),
+      ("AN",AN),
+      ("n_called",n_called),
+      ("n_not_called",n_not_called),
+      ("homozygote_count",homozygote_count),
+      ("n_het",n_het),
+      ("het",het),
+      ("n_non_ref",n_non_ref),
+      ("avg_ab",avg_ab),
+      ("avg_het_ab",avg_het_ab),
+      ("het_freq_hwe",het_freq_hwe),
+      ("p_value_hwe",p_value_hwe)
+   )
+  }
+}
 
 final case class ConfigResources(
   preparePlink: ConfigMachine,
@@ -67,12 +130,15 @@ final case class ConfigArray(
   yChr: Boolean,
   mtChr: Boolean,
   skipGh: Seq[String],
+  gqThreshold: Option[Int],
   qcVariantFilters: Option[ConfigVariantFilters],
   ancestryOutliersKeep: Seq[String],
   duplicatesKeep: Seq[String],
   famsizeKeep: Seq[String],
   sampleqcKeep: Seq[String],
-  sexcheckKeep: Seq[String])
+  sexcheckKeep: Seq[String],
+  analysisSampleFilters: Option[ConfigSampleFilters],
+  analysisVariantFilters: Option[ConfigVariantFilters])
 
 final case class ConfigCohort(
   id: String,
@@ -294,15 +360,25 @@ val projectConfig = ProjectConfig(
         yChr = array.getBool("yChr"),
         mtChr = array.getBool("mtChr"),
         skipGh = array.getStrList("skipGh"),
+        gqThreshold = if (array.isDefined("gqThreshold")) { Some(array.getInt("gqThreshold")) } else { None },
         qcVariantFilters = if(array.isDefined("qcVariantFilters")) {
-          Some(ConfigVariantFilters(
+          Some(ConfigVariantFilters(	
             call_rate = if (array.getObj("qcVariantFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("qcVariantFilters").getStr("call_rate"))) } else { None },
-            ac = if (array.getObj("qcVariantFilters").isDefined("ac")) { Some(intervalToExpression("ac", array.getObj("qcVariantFilters").getStr("ac"))) } else { None },
-            af = if (array.getObj("qcVariantFilters").isDefined("af")) { Some(intervalToExpression("af", array.getObj("qcVariantFilters").getStr("af"))) } else { None },
+            AC = if (array.getObj("qcVariantFilters").isDefined("AC")) { Some(intervalToExpression("AC", array.getObj("qcVariantFilters").getStr("AC"))) } else { None },
+            AF = if (array.getObj("qcVariantFilters").isDefined("AF")) { Some(intervalToExpression("AF", array.getObj("qcVariantFilters").getStr("AF"))) } else { None },
             het = if (array.getObj("qcVariantFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("qcVariantFilters").getStr("het"))) } else { None },
             avg_het_ab = if (array.getObj("qcVariantFilters").isDefined("avg_het_ab")) { Some(intervalToExpression("avg_het_ab", array.getObj("qcVariantFilters").getStr("avg_het_ab"))) } else { None },
             sample_n = if (array.getObj("qcVariantFilters").isDefined("sample_n")) { Some(array.getObj("qcVariantFilters").getInt("sample_n")) } else { None },
-            sample_seed = if (array.getObj("qcVariantFilters").isDefined("sample_seed")) { Some(array.getObj("qcVariantFilters").getInt("sample_seed")) } else { None }))
+            sample_seed = if (array.getObj("qcVariantFilters").isDefined("sample_seed")) { Some(array.getObj("qcVariantFilters").getInt("sample_seed")) } else { None },
+            AN = None,
+            n_called = None,
+            n_not_called = None,
+            homozygote_count = None,
+            n_het = None,
+            n_non_ref = None,
+            avg_ab = None,
+            het_freq_hwe = None,
+            p_value_hwe = None))
         } else {
           None
         },
@@ -310,7 +386,46 @@ val projectConfig = ProjectConfig(
         duplicatesKeep = array.getStrList("duplicatesKeep"),
         famsizeKeep = array.getStrList("famsizeKeep"),
         sampleqcKeep = array.getStrList("sampleqcKeep"),
-        sexcheckKeep = array.getStrList("sexcheckKeep"))
+        sexcheckKeep = array.getStrList("sexcheckKeep"),
+        analysisSampleFilters = if(array.isDefined("analysisSampleFilters")) {
+          Some(ConfigSampleFilters(
+            n_non_ref = if (array.getObj("analysisSampleFilters").isDefined("n_non_ref")) { Some(intervalToExpression("n_non_ref", array.getObj("analysisSampleFilters").getStr("n_non_ref"))) } else { None },
+            n_het = if (array.getObj("analysisSampleFilters").isDefined("n_het")) { Some(intervalToExpression("n_het", array.getObj("analysisSampleFilters").getStr("n_het"))) } else { None },
+            n_called = if (array.getObj("analysisSampleFilters").isDefined("n_called")) { Some(intervalToExpression("n_called", array.getObj("analysisSampleFilters").getStr("n_called"))) } else { None },
+            call_rate = if (array.getObj("analysisSampleFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("analysisSampleFilters").getStr("call_rate"))) } else { None },
+            n_singleton = if (array.getObj("analysisSampleFilters").isDefined("n_singleton")) { Some(intervalToExpression("n_singleton", array.getObj("analysisSampleFilters").getStr("n_singleton"))) } else { None },
+            r_ti_tv = if (array.getObj("analysisSampleFilters").isDefined("r_ti_tv")) { Some(intervalToExpression("r_ti_tv", array.getObj("analysisSampleFilters").getStr("r_ti_tv"))) } else { None },
+            het = if (array.getObj("analysisSampleFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("analysisSampleFilters").getStr("het"))) } else { None },
+            het_low = if (array.getObj("analysisSampleFilters").isDefined("het_low")) { Some(intervalToExpression("het_low", array.getObj("analysisSampleFilters").getStr("het_low"))) } else { None },
+            het_high = if (array.getObj("analysisSampleFilters").isDefined("het_high")) { Some(intervalToExpression("het_high", array.getObj("analysisSampleFilters").getStr("het_high"))) } else { None },
+            n_hom_var = if (array.getObj("analysisSampleFilters").isDefined("n_hom_var")) { Some(intervalToExpression("n_hom_var", array.getObj("analysisSampleFilters").getStr("n_hom_var"))) } else { None },
+            r_het_hom_var = if (array.getObj("analysisSampleFilters").isDefined("r_het_hom_var")) { Some(intervalToExpression("r_het_hom_var", array.getObj("analysisSampleFilters").getStr("r_het_hom_var"))) } else { None },
+            avg_ab = if (array.getObj("analysisSampleFilters").isDefined("avg_ab")) { Some(intervalToExpression("avg_ab", array.getObj("analysisSampleFilters").getStr("avg_ab"))) } else { None },
+            avg_ab50 = if (array.getObj("analysisSampleFilters").isDefined("avg_ab50")) { Some(intervalToExpression("avg_ab50", array.getObj("analysisSampleFilters").getStr("avg_ab50"))) } else { None }))
+        } else {
+          None
+        },
+        analysisVariantFilters = if(array.isDefined("analysisVariantFilters")) {
+          Some(ConfigVariantFilters(
+            call_rate = if (array.getObj("analysisVariantFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("analysisVariantFilters").getStr("call_rate"))) } else { None },
+            AC = if (array.getObj("analysisVariantFilters").isDefined("AC")) { Some(intervalToExpression("AC", array.getObj("analysisVariantFilters").getStr("AC"))) } else { None },
+            AF = if (array.getObj("analysisVariantFilters").isDefined("AF")) { Some(intervalToExpression("AF", array.getObj("analysisVariantFilters").getStr("AF"))) } else { None },
+            AN = if (array.getObj("analysisVariantFilters").isDefined("AN")) { Some(intervalToExpression("AN", array.getObj("analysisVariantFilters").getStr("AN"))) } else { None },
+            n_called = if (array.getObj("analysisVariantFilters").isDefined("n_called")) { Some(intervalToExpression("n_called", array.getObj("analysisVariantFilters").getStr("n_called"))) } else { None },
+            n_not_called = if (array.getObj("analysisVariantFilters").isDefined("n_not_called")) { Some(intervalToExpression("n_not_called", array.getObj("analysisVariantFilters").getStr("n_not_called"))) } else { None },
+            homozygote_count = if (array.getObj("analysisVariantFilters").isDefined("homozygote_count")) { Some(intervalToExpression("homozygote_count", array.getObj("analysisVariantFilters").getStr("homozygote_count"))) } else { None },
+            n_het = if (array.getObj("analysisVariantFilters").isDefined("n_het")) { Some(intervalToExpression("n_het", array.getObj("analysisVariantFilters").getStr("n_het"))) } else { None },
+            n_non_ref = if (array.getObj("analysisVariantFilters").isDefined("n_non_ref")) { Some(intervalToExpression("n_non_ref", array.getObj("analysisVariantFilters").getStr("n_non_ref"))) } else { None },
+            avg_ab = if (array.getObj("analysisVariantFilters").isDefined("avg_ab")) { Some(intervalToExpression("avg_ab", array.getObj("analysisVariantFilters").getStr("avg_ab"))) } else { None },
+            het_freq_hwe = if (array.getObj("analysisVariantFilters").isDefined("het_freq_hwe")) { Some(intervalToExpression("het_freq_hwe", array.getObj("analysisVariantFilters").getStr("het_freq_hwe"))) } else { None },
+            p_value_hwe = if (array.getObj("analysisVariantFilters").isDefined("p_value_hwe")) { Some(intervalToExpression("p_value_hwe", array.getObj("analysisVariantFilters").getStr("p_value_hwe"))) } else { None },
+            het = if (array.getObj("analysisVariantFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("analysisVariantFilters").getStr("het"))) } else { None },
+            avg_het_ab = if (array.getObj("analysisVariantFilters").isDefined("avg_het_ab")) { Some(intervalToExpression("avg_het_ab", array.getObj("analysisVariantFilters").getStr("avg_het_ab"))) } else { None },
+            sample_n = if (array.getObj("analysisVariantFilters").isDefined("sample_n")) { Some(array.getObj("analysisVariantFilters").getInt("sample_n")) } else { None },
+            sample_seed = if (array.getObj("analysisVariantFilters").isDefined("sample_seed")) { Some(array.getObj("analysisVariantFilters").getInt("sample_seed")) } else { None }))
+        } else {
+          None
+        })
 
     }
 

@@ -37,11 +37,42 @@ def main(args=None):
 	mt_bi = mt_bi.annotate_rows(a_index = 1, was_split = False)
 	mt = mt_bi.union_rows(mt_multi)
 
-	print("add allele balance to entries if AD is defined")
-	mt = mt.annotate_entries(
-		AB = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)), hl.null(hl.tfloat64)),
-		AB_dist50 = hl.cond('AD' in list(mt.entry), hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)), hl.null(hl.tfloat64)), hl.null(hl.tfloat64))
-	)
+	gt_codes = list(mt.entry)
+
+	if 'AB' not in gt_codes:
+		print("add AB")
+		if 'AD' in gt_codes:
+			mt = mt.annotate_entries(AB = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
+		else:
+			mt = mt.annotate_entries(AB = hl.null(hl.tfloat64))
+		gt_codes = gt_codes + ['AB']
+
+	if 'AB50' not in gt_codes:
+		print("add AB50")
+		if 'AD' in gt_codes:
+			mt = mt.annotate_entries(AB50 = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
+		else:
+			mt = mt.annotate_entries(AB50 = hl.null(hl.tfloat64))
+		gt_codes = gt_codes + ['AB50']
+
+	if args.gq_threshold is not None:
+		if 'GTT' not in gt_codes:
+			print("add GTT")
+			mt = mt.annotate_entries(GTT = hl.cond(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.cond(mt.GQ >= args.gq_threshold, mt.GT, hl.null(hl.tcall)), hl.null(hl.tcall)))
+		if 'NALTT' not in gt_codes:
+			print("add NALTT")
+			mt = mt.annotate_entries(NALTT = hl.cond(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.cond(mt.GQ >= args.gq_threshold, mt.GT.n_alt_alleles(), hl.null(hl.tint32)), hl.null(hl.tint32)))
+		if 'DS' not in gt_codes:
+			print("add DS")
+			if 'PL' in gt_codes:
+				print("adding DS from PL")
+				mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.null(hl.tfloat64)))
+			elif 'GP' in gt_codes:
+				print("adding DS from GP")
+				mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.null(hl.tfloat64)))
+			else:
+				print("DS entry field not found and unable to calculate it due to missing PL and GP fields!")
+				return 1
 
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
@@ -50,8 +81,8 @@ def main(args=None):
 	mt = mt.annotate_rows(
 		variant_qc_raw = mt.variant_qc_raw.annotate(
 			het = mt.variant_qc_raw.n_het / mt.variant_qc_raw.n_called,
-			avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
-			avg_het_ab = hl.cond('AD' in list(mt.entry), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)), hl.null(hl.tfloat64))
+			avg_ab = hl.cond('AD' in gt_codes, hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
+			avg_het_ab = hl.cond('AD' in gt_codes, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)), hl.null(hl.tfloat64))
 		)
 	)
 
@@ -74,6 +105,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--min-partitions', type=int, default=None, help='number of min partitions')
+	parser.add_argument('--gq-threshold', type=int, help='add filtered entry fields set to missing where GQ is below threshold')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

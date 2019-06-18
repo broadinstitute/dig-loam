@@ -21,8 +21,8 @@ def main(args=None):
 	print("remove outlier samples")
 	mt = mt.filter_cols(mt.GROUP == "OUTLIERS", keep=False)
 
-	print("filter to only autosomal variants for sample qc")
-	mt = mt.filter_rows(mt.locus.in_autosome())
+	print("filter to only non-vcf-filtered, well-called, non-monomorphic, autosomal variants for sample qc")
+	mt = mt.filter_rows((hl.len(mt.filters) == 0) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), keep=True)
 
 	print("calculate sample qc stats")
 	mt = hl.sample_qc(mt, name='sample_qc')
@@ -37,7 +37,7 @@ def main(args=None):
 		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
 		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
 		avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
-		avg_ab_dist50 = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB_dist50), hl.null(hl.tfloat64))
+		avg_ab50 = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB50), hl.null(hl.tfloat64))
 	))
 
 	print("write sample qc stats results to file")
@@ -56,9 +56,9 @@ def main(args=None):
 		n_hom_var = tbl.sample_qc.n_hom_var, 
 		r_het_hom_var = tbl.sample_qc.r_het_hom_var,
 		avg_ab = tbl.sample_qc.avg_ab,
-		avg_ab_dist50 = tbl.sample_qc.avg_ab_dist50)
+		avg_ab50 = tbl.sample_qc.avg_ab50)
 	if not 'AD' in list(mt.entry):
-		tbl = tbl.drop('avg_ab','avg_ab_dist50')
+		tbl = tbl.drop('avg_ab','avg_ab50')
 	tbl.flatten().export(args.qc_out)
 
 	if args.cloud:

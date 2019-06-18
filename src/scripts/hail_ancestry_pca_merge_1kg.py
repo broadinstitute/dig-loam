@@ -10,11 +10,12 @@ def main(args=None):
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
-	hl.summarize_variants(mt)
+
+	print("filter to only non-vcf-filtered, well-called, non-monomorphic variants")
+	mt = mt.filter_rows((hl.len(mt.filters) == 0) & (hl.len(mt.filters) == 0) & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), keep=True)
 
 	print("read kg vcf file")
 	kg = hl.import_vcf(args.kg_vcf_in, force_bgz=True, reference_genome=args.reference_genome)
-	hl.summarize_variants(kg)
 
 	print("split multiallelic variants in kg data")
 	kg = hl.split_multi_hts(kg)

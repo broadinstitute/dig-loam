@@ -10,50 +10,20 @@ import ProjectStores._
 
 def ExportQcData(array: ConfigArray): Unit = {
 
-  val filterCallrate = array.qcVariantFilters.getOrElse("") match {
-    case "" => ""
-    case _ =>
-      array.qcVariantFilters.get.call_rate.getOrElse("") match {
-        case "" => ""
-        case _ => "--filter-call-rate \"" + s"${array.qcVariantFilters.get.call_rate.get}" + "\""
-      }
-  }
-
-  val filterAC = array.qcVariantFilters.getOrElse("") match {
-    case "" => ""
-    case _ =>
-      array.qcVariantFilters.get.ac.getOrElse("") match {
-        case "" => ""
-        case _ => "--filter-ac \"" + s"${array.qcVariantFilters.get.ac.get}" + "\""
-      }
-  }
-
-  val filterAF = array.qcVariantFilters.getOrElse("") match {
-    case "" => ""
-    case _ =>
-      array.qcVariantFilters.get.af.getOrElse("") match {
-        case "" => ""
-        case _ => "--filter-af \"" + s"${array.qcVariantFilters.get.af.get}" + "\""
-      }
-  }
-
-  val filterHet = array.qcVariantFilters.getOrElse("") match {
-    case "" => ""
-    case _ =>
-      array.qcVariantFilters.get.het.getOrElse("") match {
-        case "" => ""
-        case _ => "--filter-het \"" + s"${array.qcVariantFilters.get.het.get}" + "\""
-      }
-  }
-
-  val filterAvgHetAb = array.qcVariantFilters.getOrElse("") match {
-    case "" => ""
-    case _ =>
-      array.qcVariantFilters.get.avg_het_ab.getOrElse("") match {
-        case "" => ""
-        case _ => "--filter-avg-het-ab \"" + s"${array.qcVariantFilters.get.avg_het_ab.get}" + "\""
-      }
-  }
+  val vfilters = {
+    array.qcVariantFilters match {
+      case Some(a) =>
+        for {
+          f <- a.tupelize_metrics
+        } yield {
+          f._2 match {
+            case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
+            case _ => ""
+          }
+        }
+      case _ => List("")
+    }
+  }.mkString(" ")
 
   val sampleN = array.qcVariantFilters.getOrElse("") match {
     case "" => ""
@@ -83,11 +53,7 @@ def ExportQcData(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
-          ${filterCallrate}
-          ${filterAC}
-          ${filterAF}
-          ${filterHet}
-          ${filterAvgHetAb}
+          ${vfilters}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
@@ -116,11 +82,7 @@ def ExportQcData(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --regions-exclude ${ProjectStores.regionsExclude}
-          ${filterCallrate}
-          ${filterAC}
-          ${filterAF}
-          ${filterHet}
-          ${filterAvgHetAb}
+          ${vfilters}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}

@@ -14,7 +14,7 @@ import Kinship._
 import Ancestry._
 import Pca._
 import SampleQc._
-//import FilterArray._
+import FilterArray._
 //import Impute._
 //import VariantAssoc._
 //import CrossCohort._
@@ -69,7 +69,7 @@ for {
 
   Pca(array)
   SampleQc(array)
-  //FilterArray(array)
+  FilterArray(array)
 
 }
 

@@ -19,8 +19,10 @@ def main(args=None):
 	print("add variant filter out table for QC")
 	mt = mt.annotate_rows(
 		qc_filters = hl.struct(
+			vcf_filter = hl.cond(hl.len(mt.filters) == 0, 0, 1),
 			in_autosome = hl.cond(mt.locus.in_autosome(), 0, 1),
-			an = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
+			AN = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
+			is_monomorphic = hl.cond((mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), 0, 1),
 			is_snp = hl.cond(hl.is_snp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_mnp = hl.cond(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_indel = hl.cond(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
@@ -29,96 +31,24 @@ def main(args=None):
 		)
 	)
 
-	print("filter call_rate")
-	if args.filter_call_rate is not None:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				call_rate = hl.cond(eval(hl.eval(args.filter_call_rate.replace("call_rate","mt.variant_qc_raw.call_rate"))), 0, 1)
+	for f in args.vfilter:
+		if f is not None:
+			print("filter variants based on " + f[0])
+			mt = mt.annotate_rows(
+				qc_filters = mt.qc_filters.annotate(
+					**{f[0]: hl.cond(eval(hl.eval(f[1].replace(f[0],"mt.variant_qc_raw." + f[0]))), 0, 1)}
+				)
 			)
-		)
-	else:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				call_rate = 0
+		else:
+			mt = mt.annotate_rows(
+				qc_filters = mt.qc_filters.annotate(
+					**{f[0]: 0}
+				)
 			)
-		)
-
-	print("filter ac")
-	if args.filter_ac is not None:
+		print("update exclusion column based on " + f[0])
 		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				ac = hl.cond(eval(hl.eval(args.filter_ac.replace("ac","mt.variant_qc_raw.AC[1]"))), 0, 1)
-			)
+			qc_exclude = hl.cond(mt.qc_filters[f[0]] == 1, 1, 0)
 		)
-	else:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				ac = 0
-			)
-		)
-
-	print("filter af")
-	if args.filter_af is not None:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				af = hl.cond(eval(hl.eval(args.filter_af.replace("af","mt.variant_qc_raw.AF[1]"))), 0, 1)
-			)
-		)
-	else:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				af = 0
-			)
-		)
-
-	print("filter het")
-	if args.filter_het is not None:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				het = hl.cond(eval(hl.eval(args.filter_het.replace("het","mt.variant_qc_raw.het"))), 0, 1)
-			)
-		)
-	else:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				het = 0
-			)
-		)
-
-	print("filter avg_het_ab")
-	if args.filter_avg_het_ab is not None:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				avg_het_ab = hl.cond(eval(hl.eval(args.filter_avg_het_ab.replace("avg_het_ab","mt.variant_qc_raw.avg_het_ab"))), 0, 1)
-			)
-		)
-	else:
-		mt = mt.annotate_rows(
-			qc_filters = mt.qc_filters.annotate(
-				avg_het_ab = 0
-			)
-		)
-
-	mt = mt.annotate_rows(
-		qc_exclude = hl.cond(
-			(mt.qc_filters.in_autosome == 1) |
-				(mt.qc_filters.an == 1) |
-				(mt.qc_filters.is_snp == 1) |
-				(mt.qc_filters.is_mnp == 1) |
-				(mt.qc_filters.is_indel == 1) |
-				(mt.qc_filters.is_complex == 1) |
-				(mt.qc_filters.af == 1) |
-				(mt.qc_filters.call_rate == 1) |
-				(mt.qc_filters.in_hild_region == 1) |
-				(mt.qc_filters.call_rate == 1) |
-				(mt.qc_filters.ac == 1) |
-				(mt.qc_filters.af == 1) |
-				(mt.qc_filters.het == 1) |
-				(mt.qc_filters.avg_het_ab == 1), 
-			1, 
-			0
-		)
-	)
 
 	rows_filtered = mt.rows().select('qc_exclude')
 	rows_filtered = rows_filtered.filter(rows_filtered.qc_exclude == 0, keep=True)
@@ -151,11 +81,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--filter-call-rate', help='include variants satisfying this expression')
-	parser.add_argument('--filter-ac', help='include variants satisfying this expression')
-	parser.add_argument('--filter-af', help='include variants satisfying this expression')
-	parser.add_argument('--filter-het', help='include variants satisfying this expression')
-	parser.add_argument('--filter-avg-het-ab', help='include variants satisfying this expression')
+	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
 	parser.add_argument('--sample-n', type=int, help='an integer indicating the number of desired variants in the final QC data set (will be ignored if remaining variant count is less than this number)')
 	parser.add_argument('--sample-seed', type=int, default=1, help='an integer used as a seed to allow for reproducibility in sampling variants')
 	requiredArgs = parser.add_argument_group('required arguments')

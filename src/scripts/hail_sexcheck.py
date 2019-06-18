@@ -10,30 +10,32 @@ def main(args=None):
 
 	print("reading matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
-	hl.summarize_variants(mt)
+
+	print("filter to only non-vcf-filtered, well-called, non-monomorphic variants for sexcheck")
+	mt = mt.filter_rows(
+		(hl.len(mt.filters) == 0) & 
+		(mt.variant_qc_raw.AN > 1) & 
+		(mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1) & 
+		(hl.is_snp(mt.alleles[0], mt.alleles[1])) & 
+		(~ hl.is_mnp(mt.alleles[0], mt.alleles[1])) & 
+		(~ hl.is_indel(mt.alleles[0], mt.alleles[1])) & 
+		(~ hl.is_complex(mt.alleles[0], mt.alleles[1])),
+		keep=True
+	)
 
 	print("add pheno annotations")
 	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types={args.sex_col: hl.tstr})
 	tbl = tbl.key_by(args.id_col)
 	mt = mt.annotate_cols(pheno = tbl[mt.s])
 
-	print("filter variants for QC")
-	mt = mt.filter_rows(hl.is_snp(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
-	mt = mt.filter_rows(~ hl.is_complex(mt.alleles[0], mt.alleles[1]))
-
 	print("annotate samples with pheno male and female indicators")
 	mt = mt.annotate_cols(pheno_female = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'female') | (mt.pheno[args.sex_col] == 'Female') | (mt.pheno[args.sex_col] == 'f') | (mt.pheno[args.sex_col] == 'F') | (mt.pheno[args.sex_col] == args.female_code), False))
 	mt = mt.annotate_cols(pheno_male = hl.cond(~ hl.is_missing(mt.pheno[args.sex_col]), (mt.pheno[args.sex_col] == 'male') | (mt.pheno[args.sex_col] == 'Male') | (mt.pheno[args.sex_col] == 'm') | (mt.pheno[args.sex_col] == 'M') | (mt.pheno[args.sex_col] == args.male_code), False))
 
 	if hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in hl.get_reference(args.reference_genome).x_contigs], keep=True).count()[0] > 0:
-
 		print("impute sex")
 		tbl = hl.impute_sex(mt.GT)
-
 	else:
-
 		print("skipping impute_sex due to missing X chromosome data")
 		tbl = mt.cols().select()
 		tbl = tbl.annotate(is_female = hl.null(hl.tbool), f_stat = hl.null(hl.tfloat64), n_called = hl.null(hl.tint64),	expected_homs = hl.null(hl.tfloat64), observed_homs = hl.null(hl.tint64))
