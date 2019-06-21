@@ -1,5 +1,6 @@
 import hail as hl
 import argparse
+import hail_utils
 
 def main(args=None):
 
@@ -12,7 +13,7 @@ def main(args=None):
 	mt = hl.read_matrix_table(args.mt_in)
 
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic variants")
-	mt = mt.filter_rows((hl.len(mt.filters) == 0) & (hl.len(mt.filters) == 0) & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), keep=True)
+	mt = mt.filter_rows((hl.len(mt.filters) == 0) & (hl.len(mt.filters) == 0) & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
 
 	print("read kg vcf file")
 	kg = hl.import_vcf(args.kg_vcf_in, force_bgz=True, reference_genome=args.reference_genome)
@@ -42,24 +43,25 @@ def main(args=None):
 	kg = kg.select_entries(kg.GT)
 
 	print("convert kg genotypes to unphased")
-	kg = kg.annotate_entries(
-		GT=hl.case()
-			.when(kg.GT.is_diploid(), hl.call(kg.GT[0], kg.GT[1], phased=False))
-			.when(kg.GT.is_haploid(), hl.call(kg.GT[0], phased=False))
-			.default(hl.null(hl.tcall))
-	)
+	kg = hail_utils.unphase_genotypes(kg)
 
 	print("drop extraneous rows from both matrix tables")
 	row_fields_keep = ['locus', 'alleles', 'rsid', 'qual', 'filters', 'a_index', 'was_split']
-	mt_remove = [x for x in list(mt.rows().row) if x not in row_fields_keep]
-	kg_remove = [x for x in list(kg.rows().row) if x not in row_fields_keep]
+	mt_remove = [x for x in list(mt.row) if x not in row_fields_keep]
+	kg_remove = [x for x in list(kg.row) if x not in row_fields_keep]
 	for f in mt_remove:
 		mt = mt.drop(f)
 	for f in kg_remove:
 		kg = kg.drop(f)
 
-	print("drop pheno struct from mt")
-	mt = mt.drop('pheno')
+	print("drop extraneous columns from both matrix tables")
+	col_fields_keep = ['s', 'POP', 'GROUP']
+	mt_remove = [x for x in list(mt.col) if x not in col_fields_keep]
+	kg_remove = [x for x in list(kg.col) if x not in col_fields_keep]
+	for f in mt_remove:
+		mt = mt.drop(f)
+	for f in kg_remove:
+		kg = kg.drop(f)
 
 	print('study data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
 	print('kg data: %d samples and %d variants' % (kg.count_cols(), kg.count_rows()))

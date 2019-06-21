@@ -1,5 +1,6 @@
 import hail as hl
 import argparse
+import hail_utils
 
 def main(args=None):
 
@@ -22,7 +23,7 @@ def main(args=None):
 	mt = mt.filter_cols(mt.GROUP == "OUTLIERS", keep=False)
 
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic, autosomal variants for sample qc")
-	mt = mt.filter_rows((hl.len(mt.filters) == 0) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), keep=True)
+	mt = mt.filter_rows((hl.len(mt.filters) == 0) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
 
 	print("calculate sample qc stats")
 	mt = hl.sample_qc(mt, name='sample_qc')
@@ -30,15 +31,8 @@ def main(args=None):
 	print("calculate variant qc stats")
 	mt = hl.variant_qc(mt, name='variant_qc')
 
-	print("annotate sample qc stats")
-	mt = mt.annotate_cols(sample_qc = mt.sample_qc.annotate(
-		n_het_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & mt.GT.is_het()), 
-		n_het_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & mt.GT.is_het()), 
-		n_called_low = hl.agg.count_where((mt.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt.GT)), 
-		n_called_high = hl.agg.count_where((mt.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt.GT)),
-		avg_ab = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
-		avg_ab50 = hl.cond('AD' in list(mt.entry), hl.agg.mean(mt.AB50), hl.null(hl.tfloat64))
-	))
+	print("add additional sample qc stats")
+	mt = hail_utils.add_sample_qc_stats(mt = mt, sample_qc = 'sample_qc', variant_qc = 'variant_qc')
 
 	print("write sample qc stats results to file")
 	tbl = mt.cols()
@@ -50,9 +44,9 @@ def main(args=None):
 		call_rate = tbl.sample_qc.call_rate, 
 		n_singleton = tbl.sample_qc.n_singleton, 
 		r_ti_tv = tbl.sample_qc.r_ti_tv, 
-		het = tbl.sample_qc.n_het / tbl.sample_qc.n_called, 
-		het_low = tbl.sample_qc.n_het_low / tbl.sample_qc.n_called_low, 
-		het_high = tbl.sample_qc.n_het_high / tbl.sample_qc.n_called_high, 
+		het = tbl.sample_qc.het, 
+		het_low = tbl.sample_qc.het_low, 
+		het_high = tbl.sample_qc.het_high, 
 		n_hom_var = tbl.sample_qc.n_hom_var, 
 		r_het_hom_var = tbl.sample_qc.r_het_hom_var,
 		avg_ab = tbl.sample_qc.avg_ab,

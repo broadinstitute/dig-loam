@@ -50,14 +50,13 @@ def FilterArray(array: ConfigArray): Unit = {
       }
 
       google {
-      
+
         hail"""$pyHailFilter --
           --cloud
           ${sfilters}
           ${vfilters}
           --log ${arrayStores(array).analysisData.hailLogGoogle.get}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
           --samples-remove ${arrayStores(array).qcData.samplesExcludeGoogle.get}
           --samples-stats-out ${arrayStores(array).analysisData.samplesStatsGoogle.get}
           --samples-exclude-out ${arrayStores(array).analysisData.samplesExcludeGoogle.get}
@@ -88,7 +87,6 @@ def FilterArray(array: ConfigArray): Unit = {
           ${vfilters}
           --log ${arrayStores(array).analysisData.hailLog}
           --mt-in ${arrayStores(array).refData.mt.get}
-          --sexcheck-in ${arrayStores(array).sexcheckData.sexcheck}
           --samples-remove ${arrayStores(array).qcData.samplesExclude}
           --samples-stats-out ${arrayStores(array).analysisData.samplesStats}
           --samples-exclude-out ${arrayStores(array).analysisData.samplesExclude}
