@@ -79,10 +79,10 @@ def Load(array: ConfigArray): Unit = {
           --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
           --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
           --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
-          --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint}
+          --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.get}
           --mt-out ${arrayStores(array).refData.mt.get}"""
           .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get, ProjectStores.sampleFile)
-          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.mtCheckpoint, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).refData.sitesVcf)
+          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.mtCheckpoint.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).refData.sitesVcf)
           .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
 
       }

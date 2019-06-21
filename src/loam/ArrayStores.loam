@@ -60,6 +60,8 @@ final case class HarmonizedData(
 final case class RefData(
   plink: Option[Plink],
   vcf: MultiPathVcf,
+  mtCheckpoint: Option[Store],
+  mtCheckpointGoogle: Option[Store],
   mt: Option[Store],
   mtGoogle: Option[Store],
   hailLog: Store,
@@ -401,6 +403,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val refData = RefData(
     plink = arrayCfg.technology match { case "gwas" => Some(Plink(base = localOutDir / refBaseString, data = bedBimFam(localOutDir / refBaseString))); case _ => None },
     vcf = refVcf,
+    mtCheckpoint = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt.checkpoint")); case true => None },
+    mtCheckpointGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt.checkpoint")); case false => None },
     mt = hailCloud match { case false => Some(store(localOutDir / s"${refBaseString}.mt")); case true => None },
     mtGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${refBaseString}.mt")); case false => None },
     hailLog = store(localOutDir / s"${refBaseString}.hail.log"),
