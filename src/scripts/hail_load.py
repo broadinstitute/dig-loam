@@ -1,5 +1,6 @@
 import hail as hl
 import argparse
+import hail_utils
 
 def main(args=None):
 
@@ -18,7 +19,7 @@ def main(args=None):
 	mt = mt.rename({'s_new': 's'})
 
 	print("add pheno annotations, replacing any spaces in sample ids with an underscore")
-	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types={args.id_col: hl.tstr})
+	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types={args.id_col: hl.tstr, args.sex_col: hl.tstr})
 	tbl = tbl.annotate(**{args.id_col + '_new': tbl[args.id_col].replace("\s+","_")})
 	tbl = tbl.key_by(args.id_col + '_new')
 	tbl = tbl.drop(args.id_col)
@@ -36,6 +37,41 @@ def main(args=None):
 	mt_bi = mt.filter_rows(hl.len(mt.alleles) <= 2)
 	mt_bi = mt_bi.annotate_rows(a_index = 1, was_split = False)
 	mt = mt_bi.union_rows(mt_multi)
+
+	print("write checkpoint matrix table to disk")
+	mt.write(args.mt_checkpoint, overwrite=True)
+
+	print("read checkpoint matrix table")
+	mt = hl.read_matrix_table(args.mt_checkpoint)
+
+	print("calculate raw variant qc metrics")
+	mt = hl.variant_qc(mt, name="variant_qc_raw")
+
+	print("impute sex on appropriate variants, compare to sample file and add annotations")
+	mt = hail_utils.annotate_sex(
+		mt = mt, 
+		ref_genome = hl.get_reference(args.reference_genome), 
+		pheno_struct = 'pheno', 
+		pheno_sex = args.sex_col, 
+		male_code = args.male_code, 
+		female_code = args.female_code
+	)
+
+	print("write sexcheck results to file")
+	tbl = mt.cols()
+	tbl = tbl.rename({'s': 'IID'})
+	tbl_out = tbl.select(pheno_sex = tbl.pheno[args.sex_col], sexcheck = tbl.sexcheck, is_female = tbl.is_female, f_stat = tbl.impute_sex.f_stat, n_called = tbl.impute_sex.n_called, expected_homs = tbl.impute_sex.expected_homs, observed_homs = tbl.impute_sex.observed_homs)
+	tbl_out.export(args.sexcheck_out)
+
+	print("write sexcheck problems to file")
+	tbl_out = tbl_out.filter(tbl_out.sexcheck == "PROBLEM", keep=True)
+	tbl_out.flatten().export(args.sexcheck_problems_out)
+
+	print("convert genotypes to unphased")
+	mt = hail_utils.unphase_genotypes(mt = mt)
+
+	print("convert males to haploid on non-PAR X/Y chromosomes and set females to missing on Y")
+	mt = hail_utils.adjust_sex_chromosomes(mt = mt, is_female = 'is_female')
 
 	gt_codes = list(mt.entry)
 
@@ -74,17 +110,8 @@ def main(args=None):
 				print("DS entry field not found and unable to calculate it due to missing PL and GP fields!")
 				return 1
 
-	print("calculate raw variant qc metrics")
-	mt = hl.variant_qc(mt, name="variant_qc_raw")
-
-	print("add het, avg_ab, and avg_het_ab to raw variant qc metrics")
-	mt = mt.annotate_rows(
-		variant_qc_raw = mt.variant_qc_raw.annotate(
-			het = mt.variant_qc_raw.n_het / mt.variant_qc_raw.n_called,
-			avg_ab = hl.cond('AD' in gt_codes, hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
-			avg_het_ab = hl.cond('AD' in gt_codes, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)), hl.null(hl.tfloat64))
-		)
-	)
+	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
+	mt = hail_utils.adjust_variant_qc_sex(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
@@ -113,7 +140,13 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--sample-in', help='a tab delimited sample file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the sample file', required=True)
 	requiredArgs.add_argument('--variant-metrics-out', help='an output filename for variant qc metrics', required=True)
+	requiredArgs.add_argument('--sex-col', help='a column name for sex in the sample file', required=True)
+	requiredArgs.add_argument('--male-code', help='a code for male', required=True)
+	requiredArgs.add_argument('--female-code', help='a code for female', required=True)
+	requiredArgs.add_argument('--sexcheck-out', help='an output filename for sexcheck results', required=True)
+	requiredArgs.add_argument('--sexcheck-problems-out', help='an output filename for sexcheck results that were problems', required=True)
 	requiredArgs.add_argument('--sites-vcf-out', help='an output filename for a sites only VCF file (must end in .vcf)', required=True)
+	requiredArgs.add_argument('--mt-checkpoint', help='a hail mt directory name for temporary checkpoint', required=True)
 	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)
 	args = parser.parse_args()
 	main(args)

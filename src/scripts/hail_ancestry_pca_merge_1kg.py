@@ -1,5 +1,6 @@
 import hail as hl
 import argparse
+import hail_utils
 
 def main(args=None):
 
@@ -42,12 +43,7 @@ def main(args=None):
 	kg = kg.select_entries(kg.GT)
 
 	print("convert kg genotypes to unphased")
-	kg = kg.annotate_entries(
-		GT=hl.case()
-			.when(kg.GT.is_diploid(), hl.call(kg.GT[0], kg.GT[1], phased=False))
-			.when(kg.GT.is_haploid(), hl.call(kg.GT[0], phased=False))
-			.default(hl.null(hl.tcall))
-	)
+	kg = hail_utils.unphase_genotypes(kg)
 
 	print("drop extraneous rows from both matrix tables")
 	row_fields_keep = ['locus', 'alleles', 'rsid', 'qual', 'filters', 'a_index', 'was_split']

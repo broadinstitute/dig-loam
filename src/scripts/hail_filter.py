@@ -1,5 +1,6 @@
 import hail as hl
 import argparse
+import hail_utils
 
 def main(args=None):
 
@@ -10,11 +11,6 @@ def main(args=None):
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
-
-	print("add imputed sex annotation")
-	tbl = hl.import_table(args.sexcheck_in, no_header=False, types={'is_female': hl.tbool})
-	tbl = tbl.key_by('IID')
-	mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
 
 	if args.samples_remove is not None:
 		print("remove samples (ie samples that failed previous qc steps)")
@@ -40,7 +36,7 @@ def main(args=None):
 
 	print("begin sample filtering")
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic, autosomal variants for sample qc")
-	mt_sample_qc = mt.filter_rows((hl.len(mt.filters) == 0) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), keep=True)
+	mt_sample_qc = mt.filter_rows((hl.len(mt.filters) == 0) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
 
 	print("calculate sample qc stats")
 	mt_sample_qc = hl.sample_qc(mt_sample_qc, name='sample_qc')
@@ -48,29 +44,11 @@ def main(args=None):
 	print("calculate variant qc stats")
 	mt_sample_qc = hl.variant_qc(mt_sample_qc, name='variant_qc')
 
-	print("annotate sample qc stats")
-	mt_sample_qc = mt_sample_qc.annotate_cols(
-		sample_qc = mt_sample_qc.sample_qc.annotate(
-			n_het_low = hl.agg.count_where((mt_sample_qc.variant_qc.AF[1] < 0.03) & mt_sample_qc.GT.is_het()), 
-			n_het_high = hl.agg.count_where((mt_sample_qc.variant_qc.AF[1] >= 0.03) & mt_sample_qc.GT.is_het()), 
-			n_called_low = hl.agg.count_where((mt_sample_qc.variant_qc.AF[1] < 0.03) & ~hl.is_missing(mt_sample_qc.GT)), 
-			n_called_high = hl.agg.count_where((mt_sample_qc.variant_qc.AF[1] >= 0.03) & ~hl.is_missing(mt_sample_qc.GT)),
-			avg_ab = hl.cond('AD' in list(mt_sample_qc.entry), hl.agg.mean(mt_sample_qc.AB), hl.null(hl.tfloat64)),
-			avg_ab50 = hl.cond('AD' in list(mt_sample_qc.entry), hl.agg.mean(mt_sample_qc.AB50), hl.null(hl.tfloat64))
-		)
-	)
-
-	print("extract sample qc stats table")
-	tbl = mt_sample_qc.cols()
-	tbl = tbl.annotate(
-		sample_qc = tbl.sample_qc.annotate(
-			het = tbl.sample_qc.n_het / tbl.sample_qc.n_called,
-			het_low = tbl.sample_qc.n_het_low / tbl.sample_qc.n_called_low,
-			het_high = tbl.sample_qc.n_het_high / tbl.sample_qc.n_called_high
-		)
-	)
+	print("add additional sample qc stats")
+	mt_sample_qc = hail_utils.add_sample_qc_stats(mt = mt_sample_qc, sample_qc = 'sample_qc', variant_qc = 'variant_qc')
 
 	print("initialize sample qc filter table")
+	tbl = mt_sample_qc.cols()
 	tbl = tbl.annotate(
 		sample_qc_filters = hl.struct(
 			exclude = 0
@@ -113,38 +91,8 @@ def main(args=None):
 	print("calculate variant qc stats")
 	mt = hl.variant_qc(mt, name='variant_qc')
 
-	print("count males and females")
-	tbl = mt.cols()
-	nMales = tbl.aggregate(hl.agg.count_where(~ tbl.is_female))
-	nFemales = tbl.aggregate(hl.agg.count_where(tbl.is_female))
-
-	gt_codes = list(mt.entry)
-
-	print("count male/female hets, homvars and called")
-	mt = mt.annotate_rows(
-		variant_qc = mt.variant_qc.annotate(
-			n_male_het = hl.agg.count_where(~ mt.is_female & mt.GT.is_het()),
-			n_male_hom_var = hl.agg.count_where(~ mt.is_female & mt.GT.is_hom_var()),
-			n_male_called = hl.agg.count_where(~ mt.is_female & hl.is_defined(mt.GT)),
-			n_female_het = hl.agg.count_where(mt.is_female & mt.GT.is_het()),
-			n_female_hom_var = hl.agg.count_where(mt.is_female & mt.GT.is_hom_var()),
-			n_female_called = hl.agg.count_where(mt.is_female & hl.is_defined(mt.GT)),
-			het = mt.variant_qc.n_het / mt.variant_qc.n_called,
-			avg_ab = hl.cond('AD' in gt_codes, hl.agg.mean(mt.AB), hl.null(hl.tfloat64)),
-			avg_het_ab = hl.cond('AD' in gt_codes, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)), hl.null(hl.tfloat64))
-		)
-	)
-
-	print("calculate call_rate, AC, and AF (accounting appropriately for sex chromosomes)")
-	mt = mt.annotate_rows(
-		variant_qc = mt.variant_qc.annotate(
-			call_rate = hl.cond(mt.locus.in_y_nonpar(), mt.variant_qc.n_male_called / nMales, hl.cond(mt.locus.in_x_nonpar(), (mt.variant_qc.n_male_called + 2*mt.variant_qc.n_female_called) / (nMales + 2*nFemales), (mt.variant_qc.n_male_called + mt.variant_qc.n_female_called) / (nMales + nFemales))),
-			AC = hl.cond(mt.locus.in_y_nonpar(),  mt.variant_qc.n_male_hom_var, hl.cond(mt.locus.in_x_nonpar(), mt.variant_qc.n_male_hom_var + mt.variant_qc.n_female_het + 2*mt.variant_qc.n_female_hom_var, mt.variant_qc.n_male_het + 2*mt.variant_qc.n_male_hom_var + mt.variant_qc.n_female_het + 2*mt.variant_qc.n_female_hom_var)),
-			AF = hl.cond(mt.locus.in_y_nonpar(), mt.variant_qc.n_male_hom_var / mt.variant_qc.n_male_called, hl.cond(mt.locus.in_x_nonpar(), (mt.variant_qc.n_male_hom_var + mt.variant_qc.n_female_het + 2*mt.variant_qc.n_female_hom_var) / (mt.variant_qc.n_male_called + 2*mt.variant_qc.n_female_called), (mt.variant_qc.n_male_het + 2*mt.variant_qc.n_male_hom_var + mt.variant_qc.n_female_het + 2*mt.variant_qc.n_female_hom_var) / (2*mt.variant_qc.n_male_called + 2*mt.variant_qc.n_female_called))),
-			het_freq_hwe = hl.cond(mt.locus.in_x_nonpar(), hl.agg.filter(mt.is_female, hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe, hl.cond(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.agg.filter(~ mt.is_female, hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe, hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe)),
-			p_value_hwe = hl.cond(mt.locus.in_x_nonpar(), hl.agg.filter(mt.is_female, hl.agg.hardy_weinberg_test(mt.GT)).p_value, hl.cond(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.agg.filter(~ mt.is_female, hl.agg.hardy_weinberg_test(mt.GT)).p_value, hl.agg.hardy_weinberg_test(mt.GT).p_value))
-		)
-	)
+	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
+	mt = hail_utils.adjust_variant_qc_sex(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc')
 
 	print("extract variant qc stats table")
 	tbl = mt.rows()
@@ -198,14 +146,13 @@ if __name__ == "__main__":
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--sfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
 	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
-	parser.add_argument('--samples-remove', help='a list of samples to remove before calculations')
-	parser.add_argument('--samples-extract', help='a list of samples to extract before calculations')
-	parser.add_argument('--variants-remove', help='a list of variants to remove before calculations')
-	parser.add_argument('--variants-extract', help='a list of variants to extract before calculations')
+	parser.add_argument('--samples-remove', help='a comma separated list of files containing samples to remove before calculations')
+	parser.add_argument('--samples-extract', help='a comma separated list of files containing samples to extract before calculations')
+	parser.add_argument('--variants-remove', help='a comma separated list of files containing variants to remove before calculations')
+	parser.add_argument('--variants-extract', help='a comma separated list of files containing variants to extract before calculations')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)
-	requiredArgs.add_argument('--sexcheck-in', help='an imputed sexcheck output file from Hail', required=True)
 	requiredArgs.add_argument('--samples-stats-out', help='a base filename for sample qc', required=True)
 	requiredArgs.add_argument('--samples-exclude-out', help='a base filename for failed samples', required=True)
 	requiredArgs.add_argument('--variants-stats-out', help='a base filename for variant qc', required=True)

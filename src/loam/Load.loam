@@ -23,23 +23,29 @@ def Load(array: ConfigArray): Unit = {
         googleCopy(arrayStores(array).refData.vcf.tbi.local.get, arrayStores(array).refData.vcf.tbi.google.get)
       
       }
-      
+
       google {
       
         hail"""$pyHailLoad --
           --reference-genome ${projectConfig.referenceGenome}
           ${minPartitions}
           ${gqThreshold}
+          --cloud
+          --log ${arrayStores(array).refData.hailLogGoogle.get}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
           --sample-in ${ProjectStores.sampleFileGoogle.get}
           --id-col ${projectConfig.sampleFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
+          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}
           --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
-          --mt-out ${arrayStores(array).refData.mtGoogle.get}
-          --cloud
-          --log ${arrayStores(array).refData.hailLogGoogle.get}"""
+          --mt-checkpoint ${arrayStores(array).refData.mtCheckpointGoogle.get}
+          --mt-out ${arrayStores(array).refData.mtGoogle.get}"""
           .in(arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, ProjectStores.sampleFileGoogle.get)
-          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
+          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.mtCheckpointGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
           .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
       
       }
@@ -49,6 +55,8 @@ def Load(array: ConfigArray): Unit = {
         googleCopy(arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.hailLog)
         googleCopy(arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.variantMetrics)
         googleCopy(arrayStores(array).refData.sitesVcfGoogle.get, arrayStores(array).refData.sitesVcf)
+        googleCopy(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.sexcheck)
+        googleCopy(arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.problems)
 
       }
 
@@ -60,15 +68,21 @@ def Load(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           ${minPartitions}
           ${gqThreshold}
+          --log ${arrayStores(array).refData.hailLog}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.local.get}
           --sample-in ${ProjectStores.sampleFile}
           --id-col ${projectConfig.sampleFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
+          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
           --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
-          --mt-out ${arrayStores(array).refData.mt.get}
-          --log ${arrayStores(array).refData.hailLog}"""
+          --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint}
+          --mt-out ${arrayStores(array).refData.mt.get}"""
           .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get, ProjectStores.sampleFile)
-          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).refData.sitesVcf)
+          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.mtCheckpoint, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).refData.sitesVcf)
           .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
 
       }
