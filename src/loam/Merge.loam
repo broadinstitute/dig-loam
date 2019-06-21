@@ -11,7 +11,7 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
 
   val merge = mergeStores((configModel, configMerge))
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -42,7 +42,7 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
       
       google {
       
-        hail"""$pyHailMerge --
+        hail"""${utils.python.pyHailMerge} --
           --results ${resultsListStrings.mkString(",")}
           --out ${merge.resultsGoogle.get}
           --cloud
@@ -87,9 +87,9 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.mergeAssocHail.cpus, mem = projectConfig.resources.mergeAssocHail.mem, maxRunTime = projectConfig.resources.mergeAssocHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.mergeAssocHail.cpus, mem = projectConfig.resources.mergeAssocHail.mem, maxRunTime = projectConfig.resources.mergeAssocHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailMerge
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailMerge}
           --results ${resultsListStrings.mkString(",")}
           --out ${merge.results}
           --log ${merge.hailLog}"""
@@ -101,9 +101,9 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
   
-    cmd"""$binTabix -f -b 2 -e 2 ${merge.results}"""
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${merge.results}"""
       .in(merge.results)
       .out(merge.tbi)
       .tag(s"${merge.tbi}".split("/").last)
@@ -116,7 +116,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
 
   val known = knownMergeStores((configModel, configMerge, configKnown))
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -147,7 +147,7 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
       
       google {
       
-        hail"""$pyHailMerge --
+        hail"""${utils.python.pyHailMerge} --
           --results ${resultsListStrings.mkString(",")}
           --out ${known.resultsGoogle.get}
           --cloud
@@ -192,9 +192,9 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.mergeAssocHail.cpus, mem = projectConfig.resources.mergeAssocHail.mem, maxRunTime = projectConfig.resources.mergeAssocHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.mergeAssocHail.cpus, mem = projectConfig.resources.mergeAssocHail.mem, maxRunTime = projectConfig.resources.mergeAssocHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailMerge
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailMerge}
           --results ${resultsListStrings.mkString(",")}
           --out ${known.results}
           --log ${known.hailLog}"""
@@ -206,9 +206,9 @@ def MergeKnownAssoc(configModel: ConfigModel, configMerge: ConfigMerge, configKn
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
   
-    cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${known.results}"""
       .in(known.results)
       .out(known.tbi)
       .tag(s"${known.tbi}".split("/").last)

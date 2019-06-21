@@ -10,7 +10,7 @@ import Fxns._
 
 def Upload(): Unit = {
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
     

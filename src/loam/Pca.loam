@@ -10,10 +10,10 @@ import ProjectStores._
 
 def Pca(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.resources.pca.cpus, mem = projectConfig.resources.pca.mem, maxRunTime = projectConfig.resources.pca.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.pca.cpus, mem = projectConfig.resources.pca.mem, maxRunTime = projectConfig.resources.pca.maxRunTime) {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rPcair
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rPcair}
       --cpus ${projectConfig.resources.pca.cpus}
       --plink-in ${arrayStores(array).prunedData.plink.base}
       --gds-out ${arrayStores(array).pcaData.gds}

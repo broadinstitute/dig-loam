@@ -1,14 +1,12 @@
 import Fxns._
 
-val dataConfig = loadConfig("dataConfig", "")
-
 val defaultSampleMetricsGwas = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var")
 val defaultSampleMetricsSeq = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var","n_singleton","avg_ab","avg_ab50")
 
 final case class ConfigMachine(
   cpus: Int,
   mem: Int,
-  maxRunTime: Int)
+  maxRunTime: Int) extends Debug
 
 final case class ConfigSampleFilters(
   n_non_ref: Option[String],
@@ -24,7 +22,7 @@ final case class ConfigSampleFilters(
   r_het_hom_var: Option[String],
   avg_ab: Option[String],
   avg_ab50: Option[String]
-) {
+) extends Debug {
   def tupelize_metrics: List[(String,Option[String])] = {
     List(
       ("n_non_ref",n_non_ref),
@@ -61,7 +59,7 @@ final case class ConfigVariantFilters(
   p_value_hwe: Option[String],
   sample_n: Option[Int],
   sample_seed: Option[Int]
-) {
+) extends Debug {
   def tupelize_metrics: List[(String,Option[String])] = {
     List(
       ("call_rate",call_rate),
@@ -113,7 +111,7 @@ final case class ConfigResources(
   crossCohortKinshipPlink: ConfigMachine,
   crossCohortKinshipKing: ConfigMachine,
   metaAnalysisHail: ConfigMachine,
-  mergeAssocHail: ConfigMachine)
+  mergeAssocHail: ConfigMachine) extends Debug
 
 final case class ConfigArray(
   id: String,
@@ -138,34 +136,34 @@ final case class ConfigArray(
   sampleqcKeep: Seq[String],
   sexcheckKeep: Seq[String],
   analysisSampleFilters: Option[ConfigSampleFilters],
-  analysisVariantFilters: Option[ConfigVariantFilters])
+  analysisVariantFilters: Option[ConfigVariantFilters]) extends Debug
 
 final case class ConfigCohort(
   id: String,
   array: String,
   ancestry: Seq[String],
-  minPartitions: Option[Int])
+  minPartitions: Option[Int]) extends Debug
 
 final case class ConfigMeta(
   id: String,
   cohorts: Seq[String],
-  minPartitions: Option[Int])
+  minPartitions: Option[Int]) extends Debug
 
 final case class ConfigMerge(
   id: String,
   cohorts_metas: Seq[String],
-  minPartitions: Option[Int])
+  minPartitions: Option[Int]) extends Debug
 
 final case class ConfigPheno(
   id: String,
-  name: String)
+  name: String) extends Debug
 
 final case class ConfigModel(
   id: String,
   pheno: String,
   trans: String,
   test: String,
-  covars: String)
+  covars: String) extends Debug
 
 final case class ConfigKnown(
   id: String,
@@ -175,7 +173,7 @@ final case class ConfigKnown(
   nCase: String,
   nCtrl: String,
   desc: String,
-  citation: String)
+  citation: String) extends Debug
 
 final case class ConfigSection(
   id: String,
@@ -184,25 +182,26 @@ final case class ConfigSection(
   cohorts: Option[Seq[String]],
   metas: Option[Seq[String]],
   merges: Option[Seq[String]],
-  knowns: Option[Seq[String]])
+  knowns: Option[Seq[String]]) extends Debug
 
 final case class ConfigReport(
   id: String,
   name: String,
-  sections: Seq[ConfigSection])
+  sections: Seq[ConfigSection]) extends Debug
 
 final case class ProjectConfig(
   loamstreamVersion: String,
   pipelineVersion: String,
+  home: Path,
+  hailCloud: Boolean,
+  cloudShare: Option[URI],
+  cloudHome: Option[URI],
   projectId: String,
   referenceGenome: String,
   regionsExclude: String,
-  regionsExcludeGoogle: Option[String],
   genePositions: String,
   kgPurcellVcf: String,
-  kgPurcellVcfGoogle: Option[String],
   kgSample: String,
-  kgSampleGoogle: Option[String],
   kgSampleId: String,
   kgSamplePop: String,
   kgSampleGroup: String,
@@ -248,1117 +247,733 @@ final case class ProjectConfig(
   Phenos: Seq[ConfigPheno],
   Models: Seq[ConfigModel],
   Knowns: Seq[ConfigKnown],
-  Reports: Seq[ConfigReport])
+  Reports: Seq[ConfigReport]) extends Debug
 
-val projectConfig = ProjectConfig(
+final case class Image(
+  imgHail: Path,
+  imgLocuszoom: Path,
+  imgPython27: Path,
+  imgR34: Path,
+  imgTools: Path,
+  imgTex: Path,
+  imgEnsemblVep: Path) extends Debug
 
-  // required global values in conf file
-  loamstreamVersion = dataConfig.getStr("loamstreamVersion"),
-  pipelineVersion = dataConfig.getStr("pipelineVersion"),
-  projectId = dataConfig.getStr("projectId"),
-  referenceGenome = dataConfig.getStr("referenceGenome"),
-  regionsExclude = dataConfig.getStr("regionsExclude"),
-  regionsExcludeGoogle = if(dataConfig.isDefined("regionsExcludeGoogle")) { Some(dataConfig.getStr("regionsExcludeGoogle")) } else { None },
-  genePositions = dataConfig.getStr("genePositions"),
-  kgPurcellVcf = dataConfig.getStr("kgPurcellVcf"),
-  kgPurcellVcfGoogle = if(dataConfig.isDefined("kgPurcellVcfGoogle")) { Some(dataConfig.getStr("kgPurcellVcfGoogle")) } else { None },
-  kgSample = dataConfig.getStr("kgSample"),
-  kgSampleGoogle = if(dataConfig.isDefined("kgSampleGoogle")) { Some(dataConfig.getStr("kgSampleGoogle")) } else { None },
-  kgSampleId = dataConfig.getStr("kgSampleId"),
-  kgSamplePop = dataConfig.getStr("kgSamplePop"),
-  kgSampleGroup = dataConfig.getStr("kgSampleGroup"),
-  kgVcf = dataConfig.getStr("kgVcf"),
-  kgIds = dataConfig.getStr("kgIds"),
-  humanReferenceWild = dataConfig.getStr("humanReferenceWild"),
-  fasta = dataConfig.getStr("fasta"),
-  vepCacheDir = dataConfig.getStr("vepCacheDir"),
-  vepPluginsDir = dataConfig.getStr("vepPluginsDir"),
-  dbNSFP = dataConfig.getStr("dbNSFP"),
-  sampleFile = dataConfig.getStr("sampleFile"),
-  sampleFileId = dataConfig.getStr("sampleFileId"),
-  sampleFileSrSex = dataConfig.getStr("sampleFileSrSex"),
-  sampleFileMaleCode = dataConfig.getStr("sampleFileMaleCode"),
-  sampleFileFemaleCode = dataConfig.getStr("sampleFileFemaleCode"),
-  sampleFileSrRace = dataConfig.getStr("sampleFileSrRace"),
-  sampleFileAFRCodes = dataConfig.getStrList("sampleFileAFRCodes"),
-  sampleFileAMRCodes = dataConfig.getStrList("sampleFileAMRCodes"),
-  sampleFileEURCodes = dataConfig.getStrList("sampleFileEURCodes"),
-  sampleFileEASCodes = dataConfig.getStrList("sampleFileEASCodes"),
-  sampleFileSASCodes = dataConfig.getStrList("sampleFileSASCodes"),
-  phenoFile = dataConfig.getStr("phenoFile"),
-  phenoFileId = dataConfig.getStr("phenoFileId"),
-  authors = dataConfig.getStrList("authors"),
-  email = dataConfig.getStr("email"),
-  organization = dataConfig.getStr("organization"),
-  acknowledgementsAnalysisReport = dataConfig.getStrList("acknowledgementsAnalysisReport"),
-  acknowledgementsQcReport = dataConfig.getStrList("acknowledgementsQcReport"),
-  nAncestryInferenceFeatures = dataConfig.getInt("nAncestryInferenceFeatures"),
-  minPCs = dataConfig.getInt("minPCs"),
-  maxPCs = dataConfig.getInt("maxPCs"),
-  nStddevs = dataConfig.getInt("nStddevs"),
-  maxSigRegions = if (dataConfig.isDefined("maxSigRegions")) { Some(dataConfig.getInt("maxSigRegions")) } else { None },
+final case class Binary(
+  binLiftOver: Path,
+  binGenotypeHarmonizer: Path,
+  binKing: Path,
+  binPlink: Path,
+  binTabix: Path,
+  binGhostscript: Path,
+  binKlustakwik: Path,
+  binPython: Path,
+  binLocuszoom: Path,
+  binPdflatex: Path,
+  binRscript: Path) extends Debug
 
-  // inferred global values
-  ancestryInferenceFeatures = if (dataConfig.isDefined("nAncestryInferenceFeatures")) { "1" * dataConfig.getInt("nAncestryInferenceFeatures") + "0" * (20 - dataConfig.getInt("nAncestryInferenceFeatures")) } else { "1" * 3 + "0" * (20 - 3) },
-  nArrays = dataConfig.getObjList("arrays").size,
-  nCohorts = dataConfig.getObjList("cohorts").size,
-  nMetas = dataConfig.getObjList("metas").size,
+final case class Python(
+  pyAlignNon1kgVariants: Path,
+  pyHailLoad: Path,
+  pyHailExportQcData: Path,
+  pyHailFilter: Path,
+  pyHailAncestryPcaMerge1kg: Path,
+  pyHailPcaMerge1kg: Path,
+  pyHailSampleqc: Path,
+  pyHailAssoc: Path,
+  pyHailMerge: Path,
+  pyHailMetaAnalysis: Path,
+  pyQqPlot: Path,
+  pyMhtPlot: Path,
+  pyExtractTopRegions: Path,
+  pyMakeSamplesRestoreTable: Path,
+  pyCompileExclusions: Path,
+  pyGenerateReportHeader: Path,
+  pyGenerateQcReportIntro: Path,
+  pyGenerateQcReportData: Path,
+  pyGenerateQcReportAncestry: Path,
+  pyGenerateQcReportIbdSexcheck: Path,
+  pyGenerateQcReportSampleqc: Path,
+  pyGenerateQcReportVariantqc: Path,
+  pyGenerateQcReportBibliography: Path,
+  pyGenerateAnalysisReportIntro: Path,
+  pyGenerateAnalysisReportData: Path,
+  pyGenerateAnalysisReportStrategy: Path,
+  pyGenerateAnalysisReportPhenoSummary: Path,
+  pyGenerateAnalysisReportPhenoCalibration: Path,
+  pyGenerateAnalysisReportPhenoTopLoci: Path,
+  pyGenerateAnalysisReportPhenoKnownLoci: Path,
+  pyGenerateAnalysisReportBibliography: Path,
+  pyMergeVariantLists: Path,
+  pyTop1000: Path,
+  pyAddGeneAnnot: Path,
+  pyPhenoDistPlot: Path) extends Debug
 
-  resources = ConfigResources(
-    preparePlink = ConfigMachine( cpus = dataConfig.getObj("preparePlink").getInt("cpus"), mem = dataConfig.getObj("preparePlink").getInt("mem"), maxRunTime = dataConfig.getObj("preparePlink").getInt("maxRunTime") ),
-    prepareFindBestDuplicateVariants = ConfigMachine( cpus = dataConfig.getObj("prepareFindBestDuplicateVariants").getInt("cpus"), mem = dataConfig.getObj("prepareFindBestDuplicateVariants").getInt("mem"), maxRunTime = dataConfig.getObj("prepareFindBestDuplicateVariants").getInt("maxRunTime") ),
-    prepareLiftOver = ConfigMachine( cpus = dataConfig.getObj("prepareLiftOver").getInt("cpus"), mem = dataConfig.getObj("prepareLiftOver").getInt("mem"), maxRunTime = dataConfig.getObj("prepareLiftOver").getInt("maxRunTime") ),
-    harmonizePlinkFull = ConfigMachine( cpus = dataConfig.getObj("harmonizePlinkFull").getInt("cpus"), mem = dataConfig.getObj("harmonizePlinkFull").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizePlinkFull").getInt("maxRunTime") ),
-    harmonizeGenotypeHarmonizer = ConfigMachine( cpus = dataConfig.getObj("harmonizeGenotypeHarmonizer").getInt("cpus"), mem = dataConfig.getObj("harmonizeGenotypeHarmonizer").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizeGenotypeHarmonizer").getInt("maxRunTime") ),
-    harmonizeAlignNon1kgVariants = ConfigMachine( cpus = dataConfig.getObj("harmonizeAlignNon1kgVariants").getInt("cpus"), mem = dataConfig.getObj("harmonizeAlignNon1kgVariants").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizeAlignNon1kgVariants").getInt("maxRunTime") ),
-    harmonizePlinkChr = ConfigMachine( cpus = dataConfig.getObj("harmonizePlinkChr").getInt("cpus"), mem = dataConfig.getObj("harmonizePlinkChr").getInt("mem"), maxRunTime = dataConfig.getObj("harmonizePlinkChr").getInt("maxRunTime") ),
-    loadHail = ConfigMachine( cpus = dataConfig.getObj("loadHail").getInt("cpus"), mem = dataConfig.getObj("loadHail").getInt("mem"), maxRunTime = dataConfig.getObj("loadHail").getInt("maxRunTime") ),
-    filterHail = ConfigMachine( cpus = dataConfig.getObj("filterHail").getInt("cpus"), mem = dataConfig.getObj("filterHail").getInt("mem"), maxRunTime = dataConfig.getObj("filterHail").getInt("maxRunTime") ),
-    prunePlink = ConfigMachine( cpus = dataConfig.getObj("prunePlink").getInt("cpus"), mem = dataConfig.getObj("prunePlink").getInt("mem"), maxRunTime = dataConfig.getObj("prunePlink").getInt("maxRunTime") ),
-    annotate = ConfigMachine( cpus = dataConfig.getObj("annotate").getInt("cpus"), mem = dataConfig.getObj("annotate").getInt("mem"), maxRunTime = dataConfig.getObj("annotate").getInt("maxRunTime") ),
-    kinshipKing = ConfigMachine( cpus = dataConfig.getObj("kinshipKing").getInt("cpus"), mem = dataConfig.getObj("kinshipKing").getInt("mem"), maxRunTime = dataConfig.getObj("kinshipKing").getInt("maxRunTime") ),
-    ancestryPcaHail = ConfigMachine( cpus = dataConfig.getObj("ancestryPcaHail").getInt("cpus"), mem = dataConfig.getObj("ancestryPcaHail").getInt("mem"), maxRunTime = dataConfig.getObj("ancestryPcaHail").getInt("maxRunTime") ),
-    ancestryPcaPlink = ConfigMachine( cpus = dataConfig.getObj("ancestryPcaPlink").getInt("cpus"), mem = dataConfig.getObj("ancestryPcaPlink").getInt("mem"), maxRunTime = dataConfig.getObj("ancestryPcaPlink").getInt("maxRunTime") ),
-    ancestryPcaPcair = ConfigMachine( cpus = dataConfig.getObj("ancestryPcaPcair").getInt("cpus"), mem = dataConfig.getObj("ancestryPcaPcair").getInt("mem"), maxRunTime = dataConfig.getObj("ancestryPcaPcair").getInt("maxRunTime") ),
-    ancestryClusterKlustakwik = ConfigMachine( cpus = dataConfig.getObj("ancestryClusterKlustakwik").getInt("cpus"), mem = dataConfig.getObj("ancestryClusterKlustakwik").getInt("mem"), maxRunTime = dataConfig.getObj("ancestryClusterKlustakwik").getInt("maxRunTime") ),
-    pca = ConfigMachine( cpus = dataConfig.getObj("pca").getInt("cpus"), mem = dataConfig.getObj("pca").getInt("mem"), maxRunTime = dataConfig.getObj("pca").getInt("maxRunTime") ),
-    sampleQcHail = ConfigMachine( cpus = dataConfig.getObj("sampleQcHail").getInt("cpus"), mem = dataConfig.getObj("sampleQcHail").getInt("mem"), maxRunTime = dataConfig.getObj("sampleQcHail").getInt("maxRunTime") ),
-    sampleQcKlustakwikPca = ConfigMachine( cpus = dataConfig.getObj("sampleQcKlustakwikPca").getInt("cpus"), mem = dataConfig.getObj("sampleQcKlustakwikPca").getInt("mem"), maxRunTime = dataConfig.getObj("sampleQcKlustakwikPca").getInt("maxRunTime") ),
-    sampleQcKlustakwikMetric = ConfigMachine( cpus = dataConfig.getObj("sampleQcKlustakwikMetric").getInt("cpus"), mem = dataConfig.getObj("sampleQcKlustakwikMetric").getInt("mem"), maxRunTime = dataConfig.getObj("sampleQcKlustakwikMetric").getInt("maxRunTime") ),
-    filterFinalHail = ConfigMachine( cpus = dataConfig.getObj("filterFinalHail").getInt("cpus"), mem = dataConfig.getObj("filterFinalHail").getInt("mem"), maxRunTime = dataConfig.getObj("filterFinalHail").getInt("maxRunTime") ),
-    filterFinalPlink = ConfigMachine( cpus = dataConfig.getObj("filterFinalPlink").getInt("cpus"), mem = dataConfig.getObj("filterFinalPlink").getInt("mem"), maxRunTime = dataConfig.getObj("filterFinalPlink").getInt("maxRunTime") ),
-    filterFinalPcair = ConfigMachine( cpus = dataConfig.getObj("filterFinalPcair").getInt("cpus"), mem = dataConfig.getObj("filterFinalPcair").getInt("mem"), maxRunTime = dataConfig.getObj("filterFinalPcair").getInt("maxRunTime") ),
-    filterImputePlink = ConfigMachine( cpus = dataConfig.getObj("filterImputePlink").getInt("cpus"), mem = dataConfig.getObj("filterImputePlink").getInt("mem"), maxRunTime = dataConfig.getObj("filterImputePlink").getInt("maxRunTime") ),
-    variantAssocHailAssoc = ConfigMachine( cpus = dataConfig.getObj("variantAssocHailAssoc").getInt("cpus"), mem = dataConfig.getObj("variantAssocHailAssoc").getInt("mem"), maxRunTime = dataConfig.getObj("variantAssocHailAssoc").getInt("maxRunTime") ),
-    variantAssocGeneratePheno = ConfigMachine( cpus = dataConfig.getObj("variantAssocGeneratePheno").getInt("cpus"), mem = dataConfig.getObj("variantAssocGeneratePheno").getInt("mem"), maxRunTime = dataConfig.getObj("variantAssocGeneratePheno").getInt("maxRunTime") ),
-    crossCohortPrepPlink = ConfigMachine( cpus = dataConfig.getObj("crossCohortPrepPlink").getInt("cpus"), mem = dataConfig.getObj("crossCohortPrepPlink").getInt("mem"), maxRunTime = dataConfig.getObj("crossCohortPrepPlink").getInt("maxRunTime") ),
-    crossCohortKinshipPlink = ConfigMachine( cpus = dataConfig.getObj("crossCohortKinshipPlink").getInt("cpus"), mem = dataConfig.getObj("crossCohortKinshipPlink").getInt("mem"), maxRunTime = dataConfig.getObj("crossCohortKinshipPlink").getInt("maxRunTime") ),
-    crossCohortKinshipKing = ConfigMachine( cpus = dataConfig.getObj("crossCohortKinshipKing").getInt("cpus"), mem = dataConfig.getObj("crossCohortKinshipKing").getInt("mem"), maxRunTime = dataConfig.getObj("crossCohortKinshipKing").getInt("maxRunTime") ),
-    metaAnalysisHail = ConfigMachine( cpus = dataConfig.getObj("metaAnalysisHail").getInt("cpus"), mem = dataConfig.getObj("metaAnalysisHail").getInt("mem"), maxRunTime = dataConfig.getObj("metaAnalysisHail").getInt("maxRunTime") ),
-    mergeAssocHail = ConfigMachine( cpus = dataConfig.getObj("mergeAssocHail").getInt("cpus"), mem = dataConfig.getObj("mergeAssocHail").getInt("mem"), maxRunTime = dataConfig.getObj("mergeAssocHail").getInt("maxRunTime") )
-  ),
+final case class Bash(
+  shRegPlot: Path,
+  shAnnotate: Path,
+  shKing: Path,
+  shPlinkPrepare: Path,
+  shPlinkToVcfNoHalfCalls: Path,
+  shCrossCohortCommonVariants: Path,
+  shMetaCohortSamples: Path,
+  shKlustakwikPca: Path,
+  shKlustakwikMetric: Path,
+  shTop1000Genes: Path) extends Debug
 
-  // arrays
-  Arrays = {
+final case class R(
+  rFindBestDuplicateVariants: Path,
+  rAncestryClusterMerge: Path,
+  rAncestryClusterTable: Path,
+  rCalcKinshipFamSizes: Path,
+  rPcair: Path,
+  rPlotAncestryPca: Path,
+  rPlotAncestryCluster: Path,
+  rIstatsPcsGmmClusterPlot: Path,
+  rIstatsAdjGmmPlotMetrics: Path,
+  rCalcIstatsAdj: Path,
+  rIstatsAdjPca: Path,
+  rExcludeCrossArray: Path,
+  rGeneratePheno: Path,
+  rVariantsSummaryTable: Path,
+  rUpsetplotBimFam: Path,
+  rMakeOutlierTable: Path,
+  rMakeMetricDistPlot: Path,
+  rTop20: Path,
+  rTop50Known: Path,
+  rMetaExclusionsTable: Path) extends Debug
 
-    for {
-      array <- dataConfig.getObjList("arrays")
-    } yield {
+final case class Utils(
+  imagesDir: Path,
+  scriptsDir: Path,
+  image: Image,
+  binary: Binary,
+  python: Python,
+  bash: Bash,
+  r: R) extends Debug
 
-      ConfigArray(
-        id = array.getStr("id"),
-        filename = array.getStr("filename"),
-        format = array.getStr("format"),
-        technology = array.getStr("technology"),
-        description = array.getStr("description"),
-        minPartitions = if (array.isDefined("minPartitions")) { Some(array.getInt("minPartitions")) } else { None },
-        liftOver = if (array.isDefined("liftOverChain")) { Some(array.getStr("liftOverChain")) } else { None },
-        sampleQcMetrics = if (array.isDefined("sampleQcMetrics")) { dataConfig.getStrList("sampleQcMetrics") } else { array.getStr("technology") match { case "wes" | "wgs" => defaultSampleMetricsSeq; case _ => defaultSampleMetricsGwas } },
-        nSampleMetricPcs = if (array.isDefined("nSampleMetricPcs")) { Some(array.getInt("nSampleMetricPcs")) } else { None },
-        sampleMetricCovars = if (array.isDefined("sampleMetricCovars")) { Some(array.getStrList("sampleMetricCovars").mkString("+")) } else { None },
-        xChr = array.getBool("xChr"),
-        yChr = array.getBool("yChr"),
-        mtChr = array.getBool("mtChr"),
-        skipGh = array.getStrList("skipGh"),
-        gqThreshold = if (array.isDefined("gqThreshold")) { Some(array.getInt("gqThreshold")) } else { None },
-        qcVariantFilters = if(array.isDefined("qcVariantFilters")) {
-          Some(ConfigVariantFilters(	
-            call_rate = if (array.getObj("qcVariantFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("qcVariantFilters").getStr("call_rate"))) } else { None },
-            AC = if (array.getObj("qcVariantFilters").isDefined("AC")) { Some(intervalToExpression("AC", array.getObj("qcVariantFilters").getStr("AC"))) } else { None },
-            AF = if (array.getObj("qcVariantFilters").isDefined("AF")) { Some(intervalToExpression("AF", array.getObj("qcVariantFilters").getStr("AF"))) } else { None },
-            het = if (array.getObj("qcVariantFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("qcVariantFilters").getStr("het"))) } else { None },
-            avg_het_ab = if (array.getObj("qcVariantFilters").isDefined("avg_het_ab")) { Some(intervalToExpression("avg_het_ab", array.getObj("qcVariantFilters").getStr("avg_het_ab"))) } else { None },
-            sample_n = if (array.getObj("qcVariantFilters").isDefined("sample_n")) { Some(array.getObj("qcVariantFilters").getInt("sample_n")) } else { None },
-            sample_seed = if (array.getObj("qcVariantFilters").isDefined("sample_seed")) { Some(array.getObj("qcVariantFilters").getInt("sample_seed")) } else { None },
-            AN = None,
-            n_called = None,
-            n_not_called = None,
-            homozygote_count = None,
-            n_het = None,
-            n_non_ref = None,
-            avg_ab = None,
-            het_freq_hwe = None,
-            p_value_hwe = None))
-        } else {
-          None
-        },
-        ancestryOutliersKeep = array.getStrList("ancestryOutliersKeep"),
-        duplicatesKeep = array.getStrList("duplicatesKeep"),
-        famsizeKeep = array.getStrList("famsizeKeep"),
-        sampleqcKeep = array.getStrList("sampleqcKeep"),
-        sexcheckKeep = array.getStrList("sexcheckKeep"),
-        analysisSampleFilters = if(array.isDefined("analysisSampleFilters")) {
-          Some(ConfigSampleFilters(
-            n_non_ref = if (array.getObj("analysisSampleFilters").isDefined("n_non_ref")) { Some(intervalToExpression("n_non_ref", array.getObj("analysisSampleFilters").getStr("n_non_ref"))) } else { None },
-            n_het = if (array.getObj("analysisSampleFilters").isDefined("n_het")) { Some(intervalToExpression("n_het", array.getObj("analysisSampleFilters").getStr("n_het"))) } else { None },
-            n_called = if (array.getObj("analysisSampleFilters").isDefined("n_called")) { Some(intervalToExpression("n_called", array.getObj("analysisSampleFilters").getStr("n_called"))) } else { None },
-            call_rate = if (array.getObj("analysisSampleFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("analysisSampleFilters").getStr("call_rate"))) } else { None },
-            n_singleton = if (array.getObj("analysisSampleFilters").isDefined("n_singleton")) { Some(intervalToExpression("n_singleton", array.getObj("analysisSampleFilters").getStr("n_singleton"))) } else { None },
-            r_ti_tv = if (array.getObj("analysisSampleFilters").isDefined("r_ti_tv")) { Some(intervalToExpression("r_ti_tv", array.getObj("analysisSampleFilters").getStr("r_ti_tv"))) } else { None },
-            het = if (array.getObj("analysisSampleFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("analysisSampleFilters").getStr("het"))) } else { None },
-            het_low = if (array.getObj("analysisSampleFilters").isDefined("het_low")) { Some(intervalToExpression("het_low", array.getObj("analysisSampleFilters").getStr("het_low"))) } else { None },
-            het_high = if (array.getObj("analysisSampleFilters").isDefined("het_high")) { Some(intervalToExpression("het_high", array.getObj("analysisSampleFilters").getStr("het_high"))) } else { None },
-            n_hom_var = if (array.getObj("analysisSampleFilters").isDefined("n_hom_var")) { Some(intervalToExpression("n_hom_var", array.getObj("analysisSampleFilters").getStr("n_hom_var"))) } else { None },
-            r_het_hom_var = if (array.getObj("analysisSampleFilters").isDefined("r_het_hom_var")) { Some(intervalToExpression("r_het_hom_var", array.getObj("analysisSampleFilters").getStr("r_het_hom_var"))) } else { None },
-            avg_ab = if (array.getObj("analysisSampleFilters").isDefined("avg_ab")) { Some(intervalToExpression("avg_ab", array.getObj("analysisSampleFilters").getStr("avg_ab"))) } else { None },
-            avg_ab50 = if (array.getObj("analysisSampleFilters").isDefined("avg_ab50")) { Some(intervalToExpression("avg_ab50", array.getObj("analysisSampleFilters").getStr("avg_ab50"))) } else { None }))
-        } else {
-          None
-        },
-        analysisVariantFilters = if(array.isDefined("analysisVariantFilters")) {
-          Some(ConfigVariantFilters(
-            call_rate = if (array.getObj("analysisVariantFilters").isDefined("call_rate")) { Some(intervalToExpression("call_rate", array.getObj("analysisVariantFilters").getStr("call_rate"))) } else { None },
-            AC = if (array.getObj("analysisVariantFilters").isDefined("AC")) { Some(intervalToExpression("AC", array.getObj("analysisVariantFilters").getStr("AC"))) } else { None },
-            AF = if (array.getObj("analysisVariantFilters").isDefined("AF")) { Some(intervalToExpression("AF", array.getObj("analysisVariantFilters").getStr("AF"))) } else { None },
-            AN = if (array.getObj("analysisVariantFilters").isDefined("AN")) { Some(intervalToExpression("AN", array.getObj("analysisVariantFilters").getStr("AN"))) } else { None },
-            n_called = if (array.getObj("analysisVariantFilters").isDefined("n_called")) { Some(intervalToExpression("n_called", array.getObj("analysisVariantFilters").getStr("n_called"))) } else { None },
-            n_not_called = if (array.getObj("analysisVariantFilters").isDefined("n_not_called")) { Some(intervalToExpression("n_not_called", array.getObj("analysisVariantFilters").getStr("n_not_called"))) } else { None },
-            homozygote_count = if (array.getObj("analysisVariantFilters").isDefined("homozygote_count")) { Some(intervalToExpression("homozygote_count", array.getObj("analysisVariantFilters").getStr("homozygote_count"))) } else { None },
-            n_het = if (array.getObj("analysisVariantFilters").isDefined("n_het")) { Some(intervalToExpression("n_het", array.getObj("analysisVariantFilters").getStr("n_het"))) } else { None },
-            n_non_ref = if (array.getObj("analysisVariantFilters").isDefined("n_non_ref")) { Some(intervalToExpression("n_non_ref", array.getObj("analysisVariantFilters").getStr("n_non_ref"))) } else { None },
-            avg_ab = if (array.getObj("analysisVariantFilters").isDefined("avg_ab")) { Some(intervalToExpression("avg_ab", array.getObj("analysisVariantFilters").getStr("avg_ab"))) } else { None },
-            het_freq_hwe = if (array.getObj("analysisVariantFilters").isDefined("het_freq_hwe")) { Some(intervalToExpression("het_freq_hwe", array.getObj("analysisVariantFilters").getStr("het_freq_hwe"))) } else { None },
-            p_value_hwe = if (array.getObj("analysisVariantFilters").isDefined("p_value_hwe")) { Some(intervalToExpression("p_value_hwe", array.getObj("analysisVariantFilters").getStr("p_value_hwe"))) } else { None },
-            het = if (array.getObj("analysisVariantFilters").isDefined("het")) { Some(intervalToExpression("het", array.getObj("analysisVariantFilters").getStr("het"))) } else { None },
-            avg_het_ab = if (array.getObj("analysisVariantFilters").isDefined("avg_het_ab")) { Some(intervalToExpression("avg_het_ab", array.getObj("analysisVariantFilters").getStr("avg_het_ab"))) } else { None },
-            sample_n = if (array.getObj("analysisVariantFilters").isDefined("sample_n")) { Some(array.getObj("analysisVariantFilters").getInt("sample_n")) } else { None },
-            sample_seed = if (array.getObj("analysisVariantFilters").isDefined("sample_seed")) { Some(array.getObj("analysisVariantFilters").getInt("sample_seed")) } else { None }))
-        } else {
-          None
-        })
+object ProjectConfig {
 
+  def parseConfig(config: loamstream.conf.DataConfig): ProjectConfig = {
+
+    // required global values in conf file
+    val loamstreamVersion = requiredStr(config = config, field = "loamstreamVersion")
+    val pipelineVersion = requiredStr(config = config, field = "pipelineVersion")
+    val projectId = requiredStr(config = config, field = "projectId")
+    val home = path(checkPath(requiredStr(config = config, field = "home", default = Some("./loam_out"))))
+    val hailCloud = requiredBool(config = config, field = "hailCloud")
+    val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
+    val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
+    val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = "hg18|hg19|hg38")
+    val regionsExclude = requiredStr(config = config, field = "regionsExclude")
+    val genePositions = requiredStr(config = config, field = "genePositions")
+    val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
+    val kgSample = requiredStr(config = config, field = "kgSample")
+    val kgSampleId = requiredStr(config = config, field = "kgSampleId")
+    val kgSamplePop = requiredStr(config = config, field = "kgSamplePop")
+    val kgSampleGroup = requiredStr(config = config, field = "kgSampleGroup")
+    val kgVcf = requiredStr(config = config, field = "kgVcf")
+    val kgIds = requiredStr(config = config, field = "kgIds")
+    val humanReferenceWild = requiredStr(config = config, field = "humanReferenceWild")
+    val fasta = requiredStr(config = config, field = "fasta")
+    val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")
+    val vepPluginsDir = requiredStr(config = config, field = "vepPluginsDir")
+    val dbNSFP = requiredStr(config = config, field = "dbNSFP")
+    val sampleFile = requiredStr(config = config, field = "sampleFile")
+    val sampleFileId = requiredStr(config = config, field = "sampleFileId")
+    val sampleFileSrSex = requiredStr(config = config, field = "sampleFileSrSex")
+    val sampleFileMaleCode = requiredStr(config = config, field = "sampleFileMaleCode")
+    val sampleFileFemaleCode = requiredStr(config = config, field = "sampleFileFemaleCode")
+    val sampleFileSrRace = requiredStr(config = config, field = "sampleFileSrRace")
+    val sampleFileAFRCodes = requiredStrList(config = config, field = "sampleFileAFRCodes")
+    val sampleFileAMRCodes = requiredStrList(config = config, field = "sampleFileAMRCodes")
+    val sampleFileEURCodes = requiredStrList(config = config, field = "sampleFileEURCodes")
+    val sampleFileEASCodes = requiredStrList(config = config, field = "sampleFileEASCodes")
+    val sampleFileSASCodes = requiredStrList(config = config, field = "sampleFileSASCodes")
+    val phenoFile = requiredStr(config = config, field = "phenoFile")
+    val phenoFileId = requiredStr(config = config, field = "phenoFileId")
+    val authors = requiredStrList(config = config, field = "authors")
+    val email = requiredStr(config = config, field = "email")
+    val organization = requiredStr(config = config, field = "organization")
+    val acknowledgementsAnalysisReport = requiredStrList(config = config, field = "acknowledgementsAnalysisReport")
+    val acknowledgementsQcReport = requiredStrList(config = config, field = "acknowledgementsQcReport")
+    val maxSigRegions = optionalInt(config = config, field = "maxSigRegions")
+    val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default=Some(3))
+    val minPCs = requiredInt(config = config, field = "minPCs")
+    val maxPCs = requiredInt(config = config, field = "maxPCs")
+    val nStddevs = requiredInt(config = config, field = "nStddevs")
+
+    val resources = ConfigResources(
+      preparePlink = {
+        val thisConfig = requiredObj(config = config, field = "preparePlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      prepareFindBestDuplicateVariants = {
+        val thisConfig = requiredObj(config = config, field = "prepareFindBestDuplicateVariants")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      prepareLiftOver = {
+        val thisConfig = requiredObj(config = config, field = "prepareLiftOver")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      harmonizePlinkFull = {
+        val thisConfig = requiredObj(config = config, field = "harmonizePlinkFull")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      harmonizeGenotypeHarmonizer = {
+        val thisConfig = requiredObj(config = config, field = "harmonizeGenotypeHarmonizer")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      harmonizeAlignNon1kgVariants = {
+        val thisConfig = requiredObj(config = config, field = "harmonizeAlignNon1kgVariants")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      harmonizePlinkChr = {
+        val thisConfig = requiredObj(config = config, field = "harmonizePlinkChr")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      loadHail = {
+        val thisConfig = requiredObj(config = config, field = "loadHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      filterHail = {
+        val thisConfig = requiredObj(config = config, field = "filterHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      prunePlink = {
+        val thisConfig = requiredObj(config = config, field = "prunePlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      annotate = {
+        val thisConfig = requiredObj(config = config, field = "annotate")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      kinshipKing = {
+        val thisConfig = requiredObj(config = config, field = "kinshipKing")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      ancestryPcaHail = {
+        val thisConfig = requiredObj(config = config, field = "ancestryPcaHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      ancestryPcaPlink = {
+        val thisConfig = requiredObj(config = config, field = "ancestryPcaPlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      ancestryPcaPcair = {
+        val thisConfig = requiredObj(config = config, field = "ancestryPcaPcair")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      ancestryClusterKlustakwik = {
+        val thisConfig = requiredObj(config = config, field = "ancestryClusterKlustakwik")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      pca = {
+        val thisConfig = requiredObj(config = config, field = "pca")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      sampleQcHail = {
+        val thisConfig = requiredObj(config = config, field = "sampleQcHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      sampleQcKlustakwikPca = {
+        val thisConfig = requiredObj(config = config, field = "sampleQcKlustakwikPca")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      sampleQcKlustakwikMetric = {
+        val thisConfig = requiredObj(config = config, field = "sampleQcKlustakwikMetric")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      filterFinalHail = {
+        val thisConfig = requiredObj(config = config, field = "filterFinalHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      filterFinalPlink = {
+        val thisConfig = requiredObj(config = config, field = "filterFinalPlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      filterFinalPcair = {
+        val thisConfig = requiredObj(config = config, field = "filterFinalPcair")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      filterImputePlink = {
+        val thisConfig = requiredObj(config = config, field = "filterImputePlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      variantAssocHailAssoc = {
+        val thisConfig = requiredObj(config = config, field = "variantAssocHailAssoc")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      variantAssocGeneratePheno = {
+        val thisConfig = requiredObj(config = config, field = "variantAssocGeneratePheno")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      crossCohortPrepPlink = {
+        val thisConfig = requiredObj(config = config, field = "crossCohortPrepPlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      crossCohortKinshipPlink = {
+        val thisConfig = requiredObj(config = config, field = "crossCohortKinshipPlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      crossCohortKinshipKing = {
+        val thisConfig = requiredObj(config = config, field = "crossCohortKinshipKing")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      metaAnalysisHail = {
+        val thisConfig = requiredObj(config = config, field = "metaAnalysisHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      mergeAssocHail = {
+        val thisConfig = requiredObj(config = config, field = "mergeAssocHail")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      }
+    )
+
+    // inferred global values
+    val ancestryInferenceFeatures = "1" * nAncestryInferenceFeatures + "0" * (20 - nAncestryInferenceFeatures)
+
+    // arrays
+    val Arrays = {
+    
+      for {
+        array <- requiredObjList(config = config, field = "arrays")
+      } yield {
+
+        val technology = requiredStr(config = array, field = "technology")
+    
+        ConfigArray(
+          id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          filename = requiredStr(config = array, field = "filename"),
+          format = requiredStr(config = array, field = "format"),
+          technology = technology,
+          description = requiredStr(config = array, field = "description"),
+          minPartitions = optionalInt(config = array, field = "minPartitions"),
+          liftOver = optionalStr(config = array, field = "liftOver"),
+          sampleQcMetrics = optionalStrList(config = array, field = "sampleQcMetrics") match { 
+            case None =>
+              technology match {
+                case "wes" | "wgs" => defaultSampleMetricsSeq
+                case _ => defaultSampleMetricsGwas
+              }
+            case Some(s) => s
+          },
+          nSampleMetricPcs = optionalInt(config = array, field = "nSampleMetricPcs"),
+          sampleMetricCovars = optionalStrList(config = array, field = "sampleMetricCovars") match { case Some(s) => Some(s.mkString("+")); case None => None },
+          xChr = requiredBool(config = array, field = "xChr"),
+          yChr = requiredBool(config = array, field = "yChr"),
+          mtChr = requiredBool(config = array, field = "mtChr"),
+          skipGh = requiredStrList(config = array, field = "skipGh"),
+          gqThreshold = optionalInt(config = array, field = "gqThreshold"),
+          qcVariantFilters = optionalObj(config = array, field = "qcVariantFilters") match {
+            case Some(o) =>
+              Some(ConfigVariantFilters(
+                call_rate = optionalStr(config = o, field = "call_rate") match { case Some(s) => Some(intervalToExpression("call_rate", s)); case None => None },
+                AC = optionalStr(config = o, field = "AC") match { case Some(s) => Some(intervalToExpression("AC", s)); case None => None },
+                AF = optionalStr(config = o, field = "AF") match { case Some(s) => Some(intervalToExpression("AF", s)); case None => None },
+                het = optionalStr(config = o, field = "het") match { case Some(s) => Some(intervalToExpression("het", s)); case None => None },
+                avg_het_ab = optionalStr(config = o, field = "avg_het_ab") match { case Some(s) => Some(intervalToExpression("avg_het_ab", s)); case None => None },
+                sample_n = optionalInt(config = o, field = "sample_n"),
+                sample_seed = optionalInt(config = o, field = "sample_seed"),
+                AN = None,
+                n_called = None,
+                n_not_called = None,
+                homozygote_count = None,
+                n_het = None,
+                n_non_ref = None,
+                avg_ab = None,
+                het_freq_hwe = None,
+                p_value_hwe = None))
+            case None => None
+          },
+          ancestryOutliersKeep = requiredStrList(config = array, field = "ancestryOutliersKeep"),
+          duplicatesKeep = requiredStrList(config = array, field = "duplicatesKeep"),
+          famsizeKeep = requiredStrList(config = array, field = "famsizeKeep"),
+          sampleqcKeep = requiredStrList(config = array, field = "sampleqcKeep"),
+          sexcheckKeep = requiredStrList(config = array, field = "sexcheckKeep"),
+          analysisSampleFilters = optionalObj(config = array, field = "analysisSampleFilters") match {
+            case Some(o) =>
+              Some(ConfigSampleFilters(
+                n_non_ref = optionalStr(config = o, field = "n_non_ref") match { case Some(s) => Some(intervalToExpression("n_non_ref", s)); case None => None },
+                n_het = optionalStr(config = o, field = "n_het") match { case Some(s) => Some(intervalToExpression("n_het", s)); case None => None },
+                n_called = optionalStr(config = o, field = "n_called") match { case Some(s) => Some(intervalToExpression("n_called", s)); case None => None },
+                call_rate = optionalStr(config = o, field = "call_rate") match { case Some(s) => Some(intervalToExpression("call_rate", s)); case None => None },
+                n_singleton = optionalStr(config = o, field = "n_singleton") match { case Some(s) => Some(intervalToExpression("n_singleton", s)); case None => None },
+                r_ti_tv = optionalStr(config = o, field = "r_ti_tv") match { case Some(s) => Some(intervalToExpression("r_ti_tv", s)); case None => None },
+                het = optionalStr(config = o, field = "het") match { case Some(s) => Some(intervalToExpression("het", s)); case None => None },
+                het_low = optionalStr(config = o, field = "het_low") match { case Some(s) => Some(intervalToExpression("het_low", s)); case None => None },
+                het_high = optionalStr(config = o, field = "het_high") match { case Some(s) => Some(intervalToExpression("het_high", s)); case None => None },
+                n_hom_var = optionalStr(config = o, field = "n_hom_var") match { case Some(s) => Some(intervalToExpression("n_hom_var", s)); case None => None },
+                r_het_hom_var = optionalStr(config = o, field = "r_het_hom_var") match { case Some(s) => Some(intervalToExpression("r_het_hom_var", s)); case None => None },
+                avg_ab = optionalStr(config = o, field = "avg_ab") match { case Some(s) => Some(intervalToExpression("avg_ab", s)); case None => None },
+                avg_ab50 = optionalStr(config = o, field = "avg_ab50") match { case Some(s) => Some(intervalToExpression("avg_ab50", s)); case None => None }))
+            case None => None
+          },
+          analysisVariantFilters = optionalObj(config = array, field = "analysisVariantFilters") match {
+            case Some(o) =>
+              Some(ConfigVariantFilters(
+                call_rate = optionalStr(config = o, field = "call_rate") match { case Some(s) => Some(intervalToExpression("call_rate", s)); case None => None },
+                AC = optionalStr(config = o, field = "AC") match { case Some(s) => Some(intervalToExpression("AC", s)); case None => None },
+                AF = optionalStr(config = o, field = "AF") match { case Some(s) => Some(intervalToExpression("AF", s)); case None => None },
+                AN = optionalStr(config = o, field = "AN") match { case Some(s) => Some(intervalToExpression("AN", s)); case None => None },
+                n_called = optionalStr(config = o, field = "n_called") match { case Some(s) => Some(intervalToExpression("n_called", s)); case None => None },
+                n_not_called = optionalStr(config = o, field = "n_not_called") match { case Some(s) => Some(intervalToExpression("n_not_called", s)); case None => None },
+                homozygote_count = optionalStr(config = o, field = "homozygote_count") match { case Some(s) => Some(intervalToExpression("homozygote_count", s)); case None => None },
+                n_het = optionalStr(config = o, field = "n_het") match { case Some(s) => Some(intervalToExpression("n_het", s)); case None => None },
+                n_non_ref = optionalStr(config = o, field = "n_non_ref") match { case Some(s) => Some(intervalToExpression("n_non_ref", s)); case None => None },
+                avg_ab = optionalStr(config = o, field = "avg_ab") match { case Some(s) => Some(intervalToExpression("avg_ab", s)); case None => None },
+                het_freq_hwe = optionalStr(config = o, field = "het_freq_hwe") match { case Some(s) => Some(intervalToExpression("het_freq_hwe", s)); case None => None },
+                p_value_hwe = optionalStr(config = o, field = "p_value_hwe") match { case Some(s) => Some(intervalToExpression("p_value_hwe", s)); case None => None },
+                het = optionalStr(config = o, field = "het") match { case Some(s) => Some(intervalToExpression("het", s)); case None => None },
+                avg_het_ab = optionalStr(config = o, field = "avg_het_ab") match { case Some(s) => Some(intervalToExpression("avg_het_ab", s)); case None => None },
+                sample_n = optionalInt(config = o, field = "sample_n"),
+                sample_seed = optionalInt(config = o, field = "sample_n")))
+            case None => None
+          })
+    
+      }
+    
     }
 
-  },
-
-  Cohorts = {
-
-    for {
-      cohort <- dataConfig.getObjList("cohorts")
-    } yield {
-
-      ConfigCohort(
-        id = cohort.getStr("id"),
-        array = cohort.getStr("array"),
-        ancestry = cohort.getStrList("ancestry"),
-        minPartitions = if (cohort.isDefined("minPartitions")) { Some(cohort.getInt("minPartitions")) } else { None })
-
+    val Cohorts = {
+    
+      for {
+        cohort <- requiredObjList(config = config, field = "cohorts")
+      } yield {
+    
+        ConfigCohort(
+          id = requiredStr(config = cohort, field = "id"),
+          array = requiredStr(config = cohort, field = "array"),
+          ancestry = requiredStrList(config = cohort, field = "ancestry"),
+          minPartitions = optionalInt(config = cohort, field = "minPartitions")
+        )
+    
+      }
+    
     }
 
-  },
-
-  Metas = {
-
-    for {
-      meta <- dataConfig.getObjList("metas")
-    } yield {
-
-      ConfigMeta(
-        id = meta.getStr("id"),
-        cohorts = meta.getStrList("cohorts"),
-        minPartitions = if (meta.isDefined("minPartitions")) { Some(meta.getInt("minPartitions")) } else { None })
-
+    val Metas = {
+    
+      for {
+        meta <- requiredObjList(config = config, field = "metas")
+      } yield {
+    
+        ConfigMeta(
+          id = requiredStr(config = meta, field = "id"),
+          cohorts = requiredStrList(config = meta, field = "cohorts"),
+          minPartitions = optionalInt(config = meta, field = "minPartitions")
+        )
+    
+      }
+    
     }
 
-  },
-
-  Merges = {
-
-    for {
-      merge <- dataConfig.getObjList("merges")
-    } yield {
-
-      ConfigMerge(
-        id = merge.getStr("id"),
-        cohorts_metas = merge.getStrList("cohorts_metas"),
-        minPartitions = if (merge.isDefined("minPartitions")) { Some(merge.getInt("minPartitions")) } else { None })
-
+    val Merges = {
+    
+      for {
+        merge <- requiredObjList(config = config, field = "merges")
+      } yield {
+    
+        ConfigMerge(
+          id = requiredStr(config = merge, field = "id"),
+          cohorts_metas = requiredStrList(config = merge, field = "cohorts_metas"),
+          minPartitions = optionalInt(config = merge, field = "minPartitions")
+        )
+    
+      }
+    
     }
 
-  },
-
-  Phenos = {
-
-    for {
-      pheno <- dataConfig.getObjList("phenos")
-    } yield {
-
-      ConfigPheno(
-        id = pheno.getStr("id"),
-        name = pheno.getStr("name"))
-
+    val Phenos = {
+    
+      for {
+        pheno <- requiredObjList(config = config, field = "phenos")
+      } yield {
+    
+        ConfigPheno(
+          id = requiredStr(config = pheno, field = "id"),
+          name = requiredStr(config = pheno, field = "name")
+        )
+    
+      }
+    
     }
 
-  },
-
-  Models = {
-
-    for {
-      model <- dataConfig.getObjList("models")
-    } yield {
-
-      ConfigModel(
-        id = model.getStr("id"),
-        pheno = model.getStr("pheno"),
-        trans = model.getStr("trans"),
-        test = model.getStr("test"),
-        covars = model.getStrList("covars").mkString("+"))
+    val Models = {
+    
+      for {
+        model <- requiredObjList(config = config, field = "models")
+      } yield {
+    
+        ConfigModel(
+          id = requiredStr(config = model, field = "id"),
+          pheno = requiredStr(config = model, field = "pheno"),
+          trans = requiredStr(config = model, field = "trans"),
+          test = requiredStr(config = model, field = "test"),
+          covars = requiredStrList(config = model, field = "covars").mkString("+")
+        )
+      }
+    
     }
 
-  },
-
-  Knowns = {
-
-    for {
-      known <- dataConfig.getObjList("knowns")
-    } yield {
-
-      ConfigKnown(
-        id = known.getStr("id"),
-        data = known.getStr("data"),
-        hiLd = known.getStr("hiLd"),
-        n = if ( known.isDefined("n") ) { known.getStr("n") } else { "" },
-        nCase = if ( known.isDefined("nCase") ) { known.getStr("nCase") } else { "" },
-        nCtrl = if ( known.isDefined("nCtrl") ) { known.getStr("nCtrl") } else { "" },
-        desc = known.getStr("desc"),
-        citation = known.getStr("citation"))
-
+    val Knowns = {
+    
+      for {
+        known <- requiredObjList(config = config, field = "knowns")
+      } yield {
+    
+        ConfigKnown(
+          id = requiredStr(config = known, field = "id"),
+          data = requiredStr(config = known, field = "data"),
+          hiLd = requiredStr(config = known, field = "hiLd"),
+          n = getStrOrBlank(config = known, field = "n"),
+          nCase = getStrOrBlank(config = known, field = "nCase"),
+          nCtrl = getStrOrBlank(config = known, field = "nCtrl"),
+          desc = requiredStr(config = known, field = "desc"),
+          citation = requiredStr(config = known, field = "citation")
+        )
+    
+      }
+    
     }
 
-  },
+    val Reports = {
+    
+      for {
+        report <- requiredObjList(config = config, field = "reports")
+      } yield {
+    
+        ConfigReport(
+          id = requiredStr(config = report, field = "id"),
+          name = requiredStr(config = report, field = "name"),
+          sections = for {
+            section <- requiredObjList(config = report, field = "sections")
+          } yield {
+    
+            ConfigSection(
+              id = requiredStr(config = section, field = "id"),
+              title = requiredStr(config = section, field = "title"),
+              models = requiredStrList(config = section, field = "models"),
+              cohorts = optionalStrList(config = section, field = "cohorts"),
+              metas = optionalStrList(config = section, field = "metas"),
+              merges = optionalStrList(config = section, field = "merges"),
+              knowns = optionalStrList(config = section, field = "knowns")
+            )
+          
+          }
 
-  Reports = {
+        )
 
-    for {
-      report <- dataConfig.getObjList("reports")
-    } yield {
-
-      ConfigReport(
-        id = report.getStr("id"),
-        name = report.getStr("name"),
-        sections = for {
-          section <- report.getObjList("sections")
-        } yield {
-
-          ConfigSection(
-            id = section.getStr("id"),
-            title = section.getStr("title"),
-            models = section.getStrList("models"),
-            cohorts = if ( section.isDefined("cohorts") ) { Some(section.getStrList("cohorts")) } else { None },
-            metas = if ( section.isDefined("metas") ) { Some(section.getStrList("metas")) } else { None },
-            merges = if ( section.isDefined("merges") ) { Some(section.getStrList("merges")) } else { None },
-            knowns = if ( section.isDefined("knowns") ) { Some(section.getStrList("knowns")) } else { None })
-        
-        })
+      }
+    
     }
+
+    val nArrays = Arrays.size
+    val nCohorts = Cohorts.size
+    val nMetas = Metas.size
+
+    new ProjectConfig(
+
+      loamstreamVersion = loamstreamVersion,
+      pipelineVersion = pipelineVersion,
+      projectId = projectId,
+      home = home,
+      hailCloud = hailCloud,
+      cloudHome = cloudHome,
+      cloudShare = cloudShare,
+      referenceGenome = referenceGenome,
+      regionsExclude = regionsExclude,
+      genePositions = genePositions,
+      kgPurcellVcf = kgPurcellVcf,
+      kgSample = kgSample,
+      kgSampleId = kgSampleId,
+      kgSamplePop = kgSamplePop,
+      kgSampleGroup = kgSampleGroup,
+      kgVcf = kgVcf,
+      kgIds = kgIds,
+      humanReferenceWild = humanReferenceWild,
+      fasta = fasta,
+      vepCacheDir = vepCacheDir,
+      vepPluginsDir = vepPluginsDir,
+      dbNSFP = dbNSFP,
+      sampleFile = sampleFile,
+      sampleFileId = sampleFileId,
+      sampleFileSrSex = sampleFileSrSex,
+      sampleFileMaleCode = sampleFileMaleCode,
+      sampleFileFemaleCode = sampleFileFemaleCode,
+      sampleFileSrRace = sampleFileSrRace,
+      sampleFileAFRCodes = sampleFileAFRCodes,
+      sampleFileAMRCodes = sampleFileAMRCodes,
+      sampleFileEURCodes = sampleFileEURCodes,
+      sampleFileEASCodes = sampleFileEASCodes,
+      sampleFileSASCodes = sampleFileSASCodes,
+      phenoFile = phenoFile,
+      phenoFileId = phenoFileId,
+      authors = authors,
+      email = email,
+      organization = organization,
+      acknowledgementsAnalysisReport = acknowledgementsAnalysisReport,
+      acknowledgementsQcReport = acknowledgementsQcReport,
+      nAncestryInferenceFeatures = nAncestryInferenceFeatures,
+      ancestryInferenceFeatures = ancestryInferenceFeatures,
+      minPCs = minPCs,
+      maxPCs = maxPCs,
+      nStddevs = nStddevs,
+      resources = resources,
+      nArrays = nArrays,
+      nCohorts = nCohorts,
+      nMetas = nMetas,
+      maxSigRegions = maxSigRegions,
+      Arrays = Arrays,
+      Cohorts = Cohorts,
+      Metas = Metas,
+      Merges = Merges,
+      Phenos = Phenos,
+      Models = Models,
+      Knowns = Knowns,
+      Reports = Reports
+
+    )
 
   }
 
-)
+  def parseUtils(config: loamstream.conf.DataConfig): Utils = {
 
-final case class ArrayPheno(
-    array: ConfigArray,
-    pheno: ConfigPheno) {
-  def canEqual(a: Any) = a.isInstanceOf[ArrayPheno]
-  override def equals(that: Any): Boolean = that match {
-    case that: ArrayPheno => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
+    val imagesDir = path(checkPath(requiredStr(config = config, field = "imagesDir")))
+    val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
+
+    val image = Image(
+      imgHail = path(s"${imagesDir}/data_processing_v2.2_hailv02.simg"),
+      imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
+      imgPython27 = path(s"${imagesDir}/data_processing_v2.2_python27.simg"),
+      imgR34 = path(s"${imagesDir}/data_processing_v2.2_r34.simg"),
+      imgTools = path(s"${imagesDir}/data_processing_v2.2_tools.simg"),
+      imgTex = path(s"${imagesDir}/tex.simg"),
+      imgEnsemblVep = path(s"${imagesDir}/ensembl_vep.simg")
+    )
+
+    val binary = Binary(
+      binLiftOver = path("/usr/local/bin/liftOver"),
+      binGenotypeHarmonizer = path("GenotypeHarmonizer"),
+      binKing = path("/usr/local/bin/king"),
+      binPlink = path("/usr/local/bin/plink"),
+      binTabix = path("/usr/local/bin/tabix"),
+      binGhostscript = path("/usr/local/bin/gs"),
+      binKlustakwik = path("/usr/local/bin/KlustaKwik"),
+      binPython = path("/usr/local/bin/python"),
+      binLocuszoom = path("/usr/local/bin/locuszoom"),
+      binPdflatex = path("/usr/local/bin/pdflatex"),
+      binRscript = path("/usr/local/bin/Rscript")
+    )
+
+    val python = Python(
+      pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py"),
+      pyHailLoad = path(s"${scriptsDir}/hail_load.py"),
+      pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py"),
+      pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py"),
+      pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py"),
+      pyHailSampleqc = path(s"${scriptsDir}/hail_sampleqc.py"),
+      pyHailFilter = path(s"${scriptsDir}/hail_filter.py"),
+      pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
+      pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
+      pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
+      pyQqPlot = path(s"${scriptsDir}/qqplot.py"),
+      pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
+      pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
+      pyMakeSamplesRestoreTable = path(s"${scriptsDir}/make_samples_restore_table.py"),
+      pyCompileExclusions = path(s"${scriptsDir}/compile_exclusions.py"),
+      pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
+      pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
+      pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
+      pyGenerateQcReportAncestry = path(s"${scriptsDir}/generate_qc_report_ancestry.py"),
+      pyGenerateQcReportIbdSexcheck = path(s"${scriptsDir}/generate_qc_report_ibd_sexcheck.py"),
+      pyGenerateQcReportSampleqc = path(s"${scriptsDir}/generate_qc_report_sampleqc.py"),
+      pyGenerateQcReportVariantqc = path(s"${scriptsDir}/generate_qc_report_variantqc.py"),
+      pyGenerateQcReportBibliography = path(s"${scriptsDir}/generate_qc_report_bibliography.py"),
+      pyGenerateAnalysisReportIntro = path(s"${scriptsDir}/generate_analysis_report_intro.py"),
+      pyGenerateAnalysisReportData = path(s"${scriptsDir}/generate_analysis_report_data.py"),
+      pyGenerateAnalysisReportStrategy = path(s"${scriptsDir}/generate_analysis_report_strategy.py"),
+      pyGenerateAnalysisReportPhenoSummary = path(s"${scriptsDir}/generate_analysis_report_pheno_summary.py"),
+      pyGenerateAnalysisReportPhenoCalibration = path(s"${scriptsDir}/generate_analysis_report_pheno_calibration.py"),
+      pyGenerateAnalysisReportPhenoTopLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_top_loci.py"),
+      pyGenerateAnalysisReportPhenoKnownLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_known_loci.py"),
+      pyGenerateAnalysisReportBibliography = path(s"${scriptsDir}/generate_analysis_report_bibliography.py"),
+      pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
+      pyTop1000 = path(s"${scriptsDir}/top1000.py"),
+      pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py"),
+      pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
+    )
+
+    val bash = Bash(
+      shRegPlot = path(s"${scriptsDir}/regplot.sh"),
+      shAnnotate = path(s"${scriptsDir}/annotate.sh"),
+      shKing = path(s"${scriptsDir}/king.sh"),
+      shPlinkPrepare = path(s"${scriptsDir}/plink_prepare.sh"),
+      shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh"),
+      shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh"),
+      shMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.sh"),
+      shKlustakwikPca = path(s"${scriptsDir}/klustakwik.pca.sh"),
+      shKlustakwikMetric = path(s"${scriptsDir}/klustakwik.metric.sh"),
+      shTop1000Genes = path(s"${scriptsDir}/top1000_genes.sh")
+    )
+
+    val r = R(
+      rFindBestDuplicateVariants = path(s"${scriptsDir}/find_best_duplicate_variants.r"),
+      rAncestryClusterMerge = path(s"${scriptsDir}/ancestry_cluster_merge.r"),
+      rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
+      rCalcKinshipFamSizes = path(s"${scriptsDir}/calc_kinship_fam_sizes.r"),
+      rPcair = path(s"${scriptsDir}/pcair.r"),
+      rPlotAncestryPca = path(s"${scriptsDir}/plot_ancestry_pca.r"),
+      rPlotAncestryCluster = path(s"${scriptsDir}/plot_ancestry_cluster.r"),
+      rIstatsPcsGmmClusterPlot = path(s"${scriptsDir}/istats_pcs_gmm_cluster_plot.r"),
+      rIstatsAdjGmmPlotMetrics = path(s"${scriptsDir}/istats_adj_gmm_plot_metrics.r"),
+      rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
+      rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
+      rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
+      rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
+      rVariantsSummaryTable = path(s"${scriptsDir}/variants_summary_table.r"),
+      rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
+      rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
+      rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r"),
+      rTop20 = path(s"${scriptsDir}/top20.r"),
+      rTop50Known = path(s"${scriptsDir}/top50_known.r"),
+      rMetaExclusionsTable = path(s"${scriptsDir}/meta_exclusions_table.r")
+    )
+
+    new Utils(
+      imagesDir = imagesDir,
+      scriptsDir = scriptsDir,
+      image = image,
+      binary = binary,
+      python = python,
+      bash = bash,
+      r = r)
+
   }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + array.id.hashCode
-      result = prime * result + pheno.id.hashCode
-      result
-  }
+
 }
 
-final case class ModelCohort(
-    model: ConfigModel,
-    cohort: ConfigCohort) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelCohort]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelCohort => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + cohort.id.hashCode
-      result
-  }
-}
-
-final case class PhenoCohort(
-    pheno: ConfigPheno,
-    cohort: ConfigCohort) {
-  def canEqual(a: Any) = a.isInstanceOf[PhenoCohort]
-  override def equals(that: Any): Boolean = that match {
-    case that: PhenoCohort => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + pheno.id.hashCode
-      result = prime * result + cohort.id.hashCode
-      result
-  }
-}
-
-final case class ModelCohortKnown(
-    model: ConfigModel,
-    cohort: ConfigCohort,
-    known: ConfigKnown) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelCohortKnown]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelCohortKnown => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + cohort.id.hashCode
-      result = prime * result + known.id.hashCode
-      result
-  }
-}
-
-final case class ModelCohortMeta(
-    model: ConfigModel,
-    cohort: ConfigCohort,
-    meta: ConfigMeta) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelCohortMeta]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelCohortMeta => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + cohort.id.hashCode
-      result = prime * result + meta.id.hashCode
-      result
-  }
-}
-
-final case class PhenoCohortMeta(
-    pheno: ConfigPheno,
-    cohort: ConfigCohort,
-    meta: ConfigMeta) {
-  def canEqual(a: Any) = a.isInstanceOf[PhenoCohortMeta]
-  override def equals(that: Any): Boolean = that match {
-    case that: PhenoCohortMeta => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + pheno.id.hashCode
-      result = prime * result + cohort.id.hashCode
-      result = prime * result + meta.id.hashCode
-      result
-  }
-}
-
-final case class ModelCohortMetaKnown(
-    model: ConfigModel,
-    cohort: ConfigCohort,
-    meta: ConfigMeta,
-    known: ConfigKnown) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelCohortMetaKnown]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelCohortMetaKnown => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + cohort.id.hashCode
-      result = prime * result + meta.id.hashCode
-      result = prime * result + known.id.hashCode
-      result
-  }
-}
-
-final case class ModelMeta(
-    model: ConfigModel,
-    meta: ConfigMeta) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelMeta]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelMeta => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + meta.id.hashCode
-      result
-  }
-}
-
-final case class ModelMerge(
-    model: ConfigModel,
-    merge: ConfigMerge) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelMerge]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelMerge => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + merge.id.hashCode
-      result
-  }
-}
-
-final case class ModelMetaKnown(
-    model: ConfigModel,
-    meta: ConfigMeta,
-    known: ConfigKnown) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelMetaKnown]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelMetaKnown => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + meta.id.hashCode
-      result = prime * result + known.id.hashCode
-      result
-  }
-}
-
-final case class ModelMergeKnown(
-    model: ConfigModel,
-    merge: ConfigMerge,
-    known: ConfigKnown) {
-  def canEqual(a: Any) = a.isInstanceOf[ModelMergeKnown]
-  override def equals(that: Any): Boolean = that match {
-    case that: ModelMergeKnown => that.canEqual(this) && this.hashCode == that.hashCode
-    case _ => false
-  }
-  override def hashCode: Int = {
-      val prime = 31
-      var result = 1
-      result = prime * result + model.id.hashCode
-      result = prime * result + merge.id.hashCode
-      result = prime * result + known.id.hashCode
-      result
-  }
-}
-
-val cohorts: Seq[ConfigCohort] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
-  } yield {
-   
-    for {
-      c <- section.cohorts.get
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      g <- section.merges.get
-      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val modelCohorts: Seq[ModelCohort] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      c <- section.cohorts.get
-    } yield {
-      ModelCohort(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      g <- section.merges.get
-      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
-    } yield {
-      ModelCohort(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val phenoCohorts: Seq[PhenoCohort] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      c <- section.cohorts.get
-    } yield {
-      PhenoCohort(
-        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      g <- section.merges.get
-      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
-    } yield {
-      PhenoCohort(
-        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val modelCohortKnowns: Seq[ModelCohortKnown] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined && e.knowns.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      c <- section.cohorts.get
-      k <- section.knowns.get
-    } yield {
-      ModelCohortKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined && e.knowns.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      g <- section.merges.get
-      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
-      k <- section.knowns.get
-    } yield {
-      ModelCohortKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val modelCohortMetas: Seq[ModelCohortMeta] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      t <- section.metas.get
-      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
-    } yield {
-      ModelCohortMeta(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-      c <- projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == t).head.cohorts contains e.id).map(e => e.id)
-    } yield {
-      ModelCohortMeta(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val phenoCohortMetas: Seq[PhenoCohortMeta] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      t <- section.metas.get
-      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
-    } yield {
-      PhenoCohortMeta(
-        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-      c <- projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == t).head.cohorts contains e.id).map(e => e.id)
-    } yield {
-      PhenoCohortMeta(
-        pheno = projectConfig.Phenos.filter(e => e.id == projectConfig.Models.filter(e => e.id == m).head.pheno).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val modelCohortMetaKnowns: Seq[ModelCohortMetaKnown] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined && e.knowns.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      t <- section.metas.get
-      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
-      k <- section.knowns.get
-    } yield {
-      ModelCohortMetaKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined && e.knowns.isDefined)
-  } yield {
-   
-    for {
-      m <- section.models
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-      c <- projectConfig.Cohorts.filter(e => projectConfig.Metas.filter(e => e.id == t).head.cohorts contains e.id).map(e => e.id)
-      k <- section.knowns.get
-    } yield {
-      ModelCohortMetaKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val models: Seq[ConfigModel] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections)
-  } yield {
-    for {
-      m <- section.models
-    } yield {
-      projectConfig.Models.filter(e => e.id == m).head
-    }
-  }
-
-}.flatten.distinct
-
-val phenos: Seq[ConfigPheno] = {
-
-  for {
-    m <- models
-  } yield {
-    projectConfig.Phenos.filter(e => e.id == m.pheno).head
-  }
-
-}.distinct
-
-val metas: Seq[ConfigMeta] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-    for {
-      t <- section.metas.get
-    } yield {
-      projectConfig.Metas.filter(e => e.id == t).head
-    }
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-    for {
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-    } yield {
-      projectConfig.Metas.filter(e => e.id == t).head
-    }
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val merges: Seq[ConfigMerge] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-    for {
-      m <- section.merges.get
-    } yield {
-      projectConfig.Merges.filter(e => e.id == m).head
-    }
-  }
-
-}.flatten.distinct
-
-val knowns: Seq[ConfigKnown] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.knowns.isDefined)
-  } yield {
-    for {
-      k <- section.knowns.get
-    } yield {
-      projectConfig.Knowns.filter(e => e.id == k).head
-    }
-  }
-
-}.flatten.distinct
-
-val modelMetas: Seq[ModelMeta] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      t <- section.metas.get
-    } yield {
-      ModelMeta(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head)
-    }
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-    } yield {
-      ModelMeta(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head)
-    }
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val modelMerges: Seq[ModelMerge] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      t <- section.merges.get
-    } yield {
-      ModelMerge(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        merge = projectConfig.Merges.filter(e => e.id == t).head)
-    }
-  }
-
-}.flatten.distinct
-
-val modelMetaKnowns: Seq[ModelMetaKnown] = {
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined && e.knowns.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      t <- section.metas.get
-      k <- section.knowns.get
-    } yield {
-      ModelMetaKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined && e.knowns.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-      k <- section.knowns.get
-    } yield {
-      ModelMetaKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  }
-  x ++ y
-
-}.flatten.distinct
-
-val modelMergeKnowns: Seq[ModelMergeKnown] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined && e.knowns.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      t <- section.merges.get
-      k <- section.knowns.get
-    } yield {
-      ModelMergeKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        merge = projectConfig.Merges.filter(e => e.id == t).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  }
-
-}.flatten.distinct
-
-val cohortsList: Seq[ConfigCohort] = {
-
-  val w = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
-  } yield {
-   
-    for {
-      c <- section.cohorts.get
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  
-  }
-
-  val x = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-   
-    for {
-      t <- section.metas.get
-      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  
-  }
-
-  val y = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      g <- section.merges.get
-      c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  
-  }
-
-  val z = for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
-  } yield {
-   
-    for {
-      g <- section.merges.get
-      t <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Metas.filter(e => e.id == t).size > 0
-      c <- projectConfig.Metas.filter(e => e.id == t).head.cohorts
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  
-  }
-
-  w ++ x ++ y ++ z
-
-}.flatten.distinct
-
-val cohortsReport: Seq[ConfigCohort] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
-  } yield {
-    for {
-      c <- section.cohorts.get
-    } yield {
-      projectConfig.Cohorts.filter(e => e.id == c).head
-    }
-  }
-
-}.flatten.distinct
-
-val metasReport: Seq[ConfigMeta] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-    for {
-      t <- section.metas.get
-    } yield {
-      projectConfig.Metas.filter(e => e.id == t).head
-    }
-  }
-
-}.flatten.distinct
-
-val modelCohortsReport: Seq[ModelCohort] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      c <- section.cohorts.get
-    } yield {
-      ModelCohort(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head)
-    }
-  }
-
-}.flatten.distinct
-
-val modelCohortKnownsReport: Seq[ModelCohortKnown] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.cohorts.isDefined && e.knowns.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      c <- section.cohorts.get
-      k <- section.knowns.get
-    } yield {
-      ModelCohortKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        cohort = projectConfig.Cohorts.filter(e => e.id == c).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  }
-
-}.flatten.distinct
-
-val modelMetasReport: Seq[ModelMeta] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      t <- section.metas.get
-    } yield {
-      ModelMeta(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head)
-    }
-  }
-
-}.flatten.distinct
-
-val modelMetaKnownsReport: Seq[ModelMetaKnown] = {
-
-  for {
-    section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.metas.isDefined && e.knowns.isDefined)
-  } yield {
-    for {
-      m <- section.models
-      t <- section.metas.get
-      k <- section.knowns.get
-    } yield {
-      ModelMetaKnown(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head,
-        known = projectConfig.Knowns.filter(e => e.id == k).head)
-    }
-  }
-
-}.flatten.distinct
+// Initialize configuration and utilities, verify them, and write all objects to file
+println("Loading Project Configuration File ...")
+val dataConfig = loadConfig("dataConfig", "")
+
+val projectConfig = ProjectConfig.parseConfig(dataConfig)
+projectConfig.debugVars()
+for ( d <- projectConfig.Arrays ) { d.debugVars() }
+for ( d <- projectConfig.Cohorts ) { d.debugVars() }
+for ( d <- projectConfig.Metas ) { d.debugVars() }
+for ( d <- projectConfig.Merges ) { d.debugVars() }
+for ( d <- projectConfig.Phenos ) { d.debugVars() }
+for ( d <- projectConfig.Models ) { d.debugVars() }
+for ( d <- projectConfig.Knowns ) { d.debugVars() }
+for ( d <- projectConfig.Reports ) { d.debugVars() }
+println("... Project Configuration Loaded Successfully!")
+
+println("Loading Pipeline Utilities Configuration ...")
+val utils = ProjectConfig.parseUtils(dataConfig)
+utils.debugVars()
+utils.image.debugVars()
+utils.binary.debugVars()
+utils.python.debugVars()
+utils.bash.debugVars()
+utils.r.debugVars()
+println("... Pipeline Utilities Configuration Loaded Successfully!")

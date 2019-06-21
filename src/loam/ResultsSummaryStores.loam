@@ -67,14 +67,14 @@ val resultsSummaryStores = (
   val regPlotsBaseString = s"${baseName}.results.regplots"
 
   val resultsSummaryData = ResultsSummaryData(
-    sigRegions = store(localOutDir / s"${baseName}.results.sigregions.tsv"),
-    top1000 = store(localOutDir / s"${baseName}.results.top1000.tsv"),
-    top1000Genes = store(localOutDir / s"${baseName}.results.top1000.genes.tsv"),
-    top20AnnotAlignedRisk = store(localOutDir / s"${baseName}.results.top20.annot.aligned_risk.tsv"),
-    qqPlotPng = store(localOutDir / s"${baseName}.results.qq.png"),
-    mhtPlotPng = store(localOutDir / s"${baseName}.results.mht.png"),
-    regPlotsBase = localOutDir / regPlotsBaseString,
-    regPlotsPdf = store(localOutDir / s"${regPlotsBaseString}.pdf"))
+    sigRegions = store(projectConfig.home / s"${baseName}.results.sigregions.tsv"),
+    top1000 = store(projectConfig.home / s"${baseName}.results.top1000.tsv"),
+    top1000Genes = store(projectConfig.home / s"${baseName}.results.top1000.genes.tsv"),
+    top20AnnotAlignedRisk = store(projectConfig.home / s"${baseName}.results.top20.annot.aligned_risk.tsv"),
+    qqPlotPng = store(projectConfig.home / s"${baseName}.results.qq.png"),
+    mhtPlotPng = store(projectConfig.home / s"${baseName}.results.mht.png"),
+    regPlotsBase = projectConfig.home / regPlotsBaseString,
+    regPlotsPdf = store(projectConfig.home / s"${regPlotsBaseString}.pdf"))
 
   rs -> ResultsSummary(
     resultsSummaryData = resultsSummaryData)
@@ -126,7 +126,7 @@ val resultsKnownLociSummaryStores = (
   }
 
   val resultsKnownLociSummaryData = ResultsKnownLociSummaryData(
-    top50 = store(localOutDir / s"${baseName}.results.top50.tsv"))
+    top50 = store(projectConfig.home / s"${baseName}.results.top50.tsv"))
 
   rs -> ResultsKnownLociSummary(
     resultsKnownLociSummaryData = resultsKnownLociSummaryData)

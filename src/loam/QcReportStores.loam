@@ -36,30 +36,30 @@ final case class QcReport(
 val qcReportStores = QcReport(
 
   tablesData = TablesData(
-    variantsSummary = store(localOutDir / s"QCR.${projectConfig.projectId}.variants.summary.tbl"),
-    clusters = store(localOutDir / s"QCR.${projectConfig.projectId}.clusters.tbl"),
-    ancestry = store(localOutDir / s"QCR.${projectConfig.projectId}.ancestry.tbl"),
-    sampleQc = store(localOutDir / s"QCR.${projectConfig.projectId}.sampleqc.tbl")),
+    variantsSummary = store(projectConfig.home / s"QCR.${projectConfig.projectId}.variants.summary.tbl"),
+    clusters = store(projectConfig.home / s"QCR.${projectConfig.projectId}.clusters.tbl"),
+    ancestry = store(projectConfig.home / s"QCR.${projectConfig.projectId}.ancestry.tbl"),
+    sampleQc = store(projectConfig.home / s"QCR.${projectConfig.projectId}.sampleqc.tbl")),
 
   texData = TexData(
-    header = store(localOutDir / s"QCR.${projectConfig.projectId}.header.tex"),
-    intro = store(localOutDir / s"QCR.${projectConfig.projectId}.intro.tex"),
-    data = store(localOutDir / s"QCR.${projectConfig.projectId}.data.tex"),
-    ancestry = store(localOutDir / s"QCR.${projectConfig.projectId}.ancestry.tex"),
-    ibdSexcheck = store(localOutDir / s"QCR.${projectConfig.projectId}.ibd_sexcheck.tex"),
-    sampleQc = store(localOutDir / s"QCR.${projectConfig.projectId}.sampleqc.tex"),
-    variantQc = store(localOutDir / s"QCR.${projectConfig.projectId}.variantqc.tex"),
-    bibliography = store(localOutDir / s"QCR.${projectConfig.projectId}.bibliography.tex")),
+    header = store(projectConfig.home / s"QCR.${projectConfig.projectId}.header.tex"),
+    intro = store(projectConfig.home / s"QCR.${projectConfig.projectId}.intro.tex"),
+    data = store(projectConfig.home / s"QCR.${projectConfig.projectId}.data.tex"),
+    ancestry = store(projectConfig.home / s"QCR.${projectConfig.projectId}.ancestry.tex"),
+    ibdSexcheck = store(projectConfig.home / s"QCR.${projectConfig.projectId}.ibd_sexcheck.tex"),
+    sampleQc = store(projectConfig.home / s"QCR.${projectConfig.projectId}.sampleqc.tex"),
+    variantQc = store(projectConfig.home / s"QCR.${projectConfig.projectId}.variantqc.tex"),
+    bibliography = store(projectConfig.home / s"QCR.${projectConfig.projectId}.bibliography.tex")),
 
   figureData = FigureData(
-    samplesUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(localOutDir / s"QCR.${projectConfig.projectId}.samples.upsetplot.pdf")) } else { None },
-    variantsUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(localOutDir / s"QCR.${projectConfig.projectId}.variants.upsetplot.pdf")) } else { None },
-    metricDistUnadjPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.metric_dist_unadj.pdf"),
-    metricDistAdjPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.metric_dist_adj.pdf"),
-    samplesRemainingUpsetPlotPdf = store(localOutDir / s"QCR.${projectConfig.projectId}.samples_remaining.upsetplot.pdf"),
-    variantsRemainingUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(localOutDir / s"QCR.${projectConfig.projectId}.variants_remaining.upsetplot.pdf")) } else { None }),
+    samplesUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(projectConfig.home / s"QCR.${projectConfig.projectId}.samples.upsetplot.pdf")) } else { None },
+    variantsUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(projectConfig.home / s"QCR.${projectConfig.projectId}.variants.upsetplot.pdf")) } else { None },
+    metricDistUnadjPdf = store(projectConfig.home / s"QCR.${projectConfig.projectId}.metric_dist_unadj.pdf"),
+    metricDistAdjPdf = store(projectConfig.home / s"QCR.${projectConfig.projectId}.metric_dist_adj.pdf"),
+    samplesRemainingUpsetPlotPdf = store(projectConfig.home / s"QCR.${projectConfig.projectId}.samples_remaining.upsetplot.pdf"),
+    variantsRemainingUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(projectConfig.home / s"QCR.${projectConfig.projectId}.variants_remaining.upsetplot.pdf")) } else { None }),
 
-  tex = store(localOutDir / s"QCR.${projectConfig.projectId}.tex"),
-  pdf = store(localOutDir / s"QCR.${projectConfig.projectId}.pdf")
+  tex = store(projectConfig.home / s"QCR.${projectConfig.projectId}.tex"),
+  pdf = store(projectConfig.home / s"QCR.${projectConfig.projectId}.pdf")
 
 )

@@ -1,7 +1,7 @@
 /**
   * Ancestry PCA Step
   *  Description: Calculate PCs combined with 1KG Phase 3 Purcell 5k data
-  *  Requires: Hail, R, $rPlotAncestryPca
+  *  Requires: Hail, R, ${utils.r.rPlotAncestryPca}
   *  Notes:
   *     To perform ancestry inference and clustering with 1KG data, we must combine on common variants with reference data (clustering does not work when only using PCA loadings and projecting)
   */
@@ -12,13 +12,13 @@ import ProjectStores._
 
 def AncestryPca(array: ConfigArray): Unit = {
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
       google {
       
-        hail"""$pyHailAncestryPcaMerge1kg --
+        hail"""${utils.python.pyHailAncestryPcaMerge1kg} --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle.get}
@@ -43,9 +43,9 @@ def AncestryPca(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.ancestryPcaHail.cpus, mem = projectConfig.resources.ancestryPcaHail.mem, maxRunTime = projectConfig.resources.ancestryPcaHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.ancestryPcaHail.cpus, mem = projectConfig.resources.ancestryPcaHail.mem, maxRunTime = projectConfig.resources.ancestryPcaHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailAncestryPcaMerge1kg
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailAncestryPcaMerge1kg}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcf}
@@ -61,10 +61,10 @@ def AncestryPca(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.resources.ancestryPcaPcair.cpus, mem = projectConfig.resources.ancestryPcaPcair.mem, maxRunTime = projectConfig.resources.ancestryPcaPcair.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.ancestryPcaPcair.cpus, mem = projectConfig.resources.ancestryPcaPcair.mem, maxRunTime = projectConfig.resources.ancestryPcaPcair.maxRunTime) {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rPcair
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rPcair}
       --cpus ${projectConfig.resources.ancestryPcaPcair.cpus}
       --plink-in ${arrayStores(array).ref1kgData.plink.base.local.get}
       --gds-out ${arrayStores(array).ref1kgData.gds}
@@ -80,10 +80,10 @@ def AncestryPca(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rPlotAncestryPca
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rPlotAncestryPca}
       --id ${projectConfig.projectId}
       --pca-scores ${arrayStores(array).ancestryPcaData.scores}
       --out ${arrayStores(array).ancestryPcaData.plots}"""
@@ -106,7 +106,7 @@ def AncestryPca(array: ConfigArray): Unit = {
 
 def AncestryCluster(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
     cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f4- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
       .in(arrayStores(array).ancestryPcaData.scores)
@@ -115,19 +115,19 @@ def AncestryCluster(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.ancestryClusterKlustakwik.cpus, mem = projectConfig.resources.ancestryClusterKlustakwik.mem, maxRunTime = projectConfig.resources.ancestryClusterKlustakwik.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.ancestryClusterKlustakwik.cpus, mem = projectConfig.resources.ancestryClusterKlustakwik.mem, maxRunTime = projectConfig.resources.ancestryClusterKlustakwik.maxRunTime) {
   
-    cmd"""$binKlustakwik ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
+    cmd"""${utils.binary.binKlustakwik} ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)
       .out(arrayStores(array).ancestryClusterData.clu, arrayStores(array).ancestryClusterData.klg, arrayStores(array).ancestryClusterData.log)
       .tag(s"${arrayStores(array).ancestryClusterData.base}.binKlustakwik".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rPlotAncestryCluster
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rPlotAncestryCluster}
       --pca-scores ${arrayStores(array).ancestryPcaData.scores}
       --cluster ${arrayStores(array).ancestryClusterData.clu}
       --sample-file ${ProjectStores.sampleFile}
@@ -164,10 +164,10 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred).map(_.path).mkString(",")
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rAncestryClusterMerge
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rAncestryClusterMerge}
       --ancestry-in $inferredList
       --out-table ${ProjectStores.ancestryInferred}
       --out-outliers ${ProjectStores.ancestryOutliers}"""

@@ -43,13 +43,13 @@ def ExportQcData(array: ConfigArray): Unit = {
       }
   }
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
       google {
       
-        hail"""$pyHailExportQcData --
+        hail"""${utils.python.pyHailExportQcData} --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
@@ -76,9 +76,9 @@ def ExportQcData(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
       
-        cmd"""$binPython $pyHailExportQcData
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailExportQcData}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --regions-exclude ${ProjectStores.regionsExclude}
@@ -96,9 +96,9 @@ def ExportQcData(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.prunePlink.cpus, mem = projectConfig.resources.prunePlink.mem, maxRunTime = projectConfig.resources.prunePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.prunePlink.cpus, mem = projectConfig.resources.prunePlink.mem, maxRunTime = projectConfig.resources.prunePlink.maxRunTime) {
 
-    cmd"""$binPlink
+    cmd"""${utils.binary.binPlink}
       --bfile ${arrayStores(array).filteredData.plink.base.local.get}
       --allow-no-sex 
       --indep-pairwise 1000kb 1 0.2
@@ -108,7 +108,7 @@ def ExportQcData(array: ConfigArray): Unit = {
       .out(arrayStores(array).filteredData.pruneIn)
       .tag(s"${arrayStores(array).filteredData.pruneIn}".split("/").last)
 
-    cmd"""$binPlink
+    cmd"""${utils.binary.binPlink}
       --bfile ${arrayStores(array).filteredData.plink.base.local.get}
       --allow-no-sex 
       --extract ${arrayStores(array).filteredData.pruneIn}

@@ -8,7 +8,7 @@ import ArrayStores._
 
 def FilterImpute(array: String): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
     cmd"""sed '1d' ${arrayStores(array).finalData.variantsExclude} | awk '{print $$3}' > ${arrayStores(array).finalData.variantsExcludeIds}"""
     .in(arrayStores(array).finalData.variantsExclude)
@@ -17,9 +17,9 @@ def FilterImpute(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterImputePlink.cpus, mem = projectConfig.resources.filterImputePlink.mem, maxRunTime = projectConfig.resources.filterImputePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.filterImputePlink.cpus, mem = projectConfig.resources.filterImputePlink.mem, maxRunTime = projectConfig.resources.filterImputePlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(array).refData.base} --allow-no-sex --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).imputeData.base} --memory ${projectConfig.resources.filterImputePlink.mem * 0.9 * 1000}"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(array).refData.base} --allow-no-sex --exclude ${arrayStores(array).finalData.variantsExcludeIds} --make-bed --keep-allele-order --out ${arrayStores(array).imputeData.base} --memory ${projectConfig.resources.filterImputePlink.mem * 0.9 * 1000}"""
     .in(arrayStores(array).refData.data :+ arrayStores(array).finalData.variantsExcludeIds)
     .out(arrayStores(array).imputeData.data)
     .tag(s"${arrayStores(array).imputeData.base}".split("/").last)
