@@ -5,7 +5,7 @@ def unphase_genotypes(mt: hl.MatrixTable) -> hl.MatrixTable:
 	return mt.annotate_entries(
 		GT=hl.case()
 			.when(mt.GT.is_diploid(), hl.call(mt.GT[0], mt.GT[1], phased=False))
-			.when(mt.GT.is_haploid(), hl.call(mt.GT[0], phased=False))
+			.when(mt.GT.is_haploid(), hl.call(mt.GT[0], mt.GT[0], phased=False))
 			.default(hl.null(hl.tcall))
 	)
 
@@ -15,7 +15,6 @@ def adjust_sex_chromosomes(mt: hl.MatrixTable, is_female: hl.tstr) -> hl.MatrixT
 		GT = hl.case(missing_false=True)
 			.when(mt[is_female] & (mt.locus.in_y_par() | mt.locus.in_y_nonpar()), hl.null(hl.tcall))
 			.when((~ mt[is_female]) & (mt.locus.in_x_nonpar() | mt.locus.in_y_nonpar()) & mt.GT.is_het(), hl.null(hl.tcall))
-			.when((~ mt[is_female]) & (mt.locus.in_x_nonpar() | mt.locus.in_y_nonpar()), hl.call(mt.GT[0], phased=False))
 			.default(mt.GT)
 	)
 

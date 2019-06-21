@@ -70,7 +70,7 @@ def main(args=None):
 	print("convert genotypes to unphased")
 	mt = hail_utils.unphase_genotypes(mt = mt)
 
-	print("convert males to haploid on non-PAR X/Y chromosomes and set females to missing on Y")
+	print("convert males to diploid on non-PAR X/Y chromosomes and set females to missing on Y")
 	mt = hail_utils.adjust_sex_chromosomes(mt = mt, is_female = 'is_female')
 
 	gt_codes = list(mt.entry)

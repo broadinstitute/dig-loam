@@ -22,7 +22,7 @@ def main(args=None):
 			vcf_filter = hl.cond(hl.len(mt.filters) == 0, 0, 1),
 			in_autosome = hl.cond(mt.locus.in_autosome(), 0, 1),
 			AN = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
-			is_monomorphic = hl.cond((mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1), 0, 1),
+			is_monomorphic = hl.cond((mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), 0, 1),
 			is_snp = hl.cond(hl.is_snp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_mnp = hl.cond(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
 			is_indel = hl.cond(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
