@@ -363,7 +363,7 @@ object ProjectConfig {
     val hailCloud = requiredBool(config = config, field = "hailCloud")
     val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
     val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
-    val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = "hg18|hg19|hg38")
+    val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = "GRCh37|GRCh38")
     val regionsExclude = requiredStr(config = config, field = "regionsExclude")
     val genePositions = requiredStr(config = config, field = "genePositions")
     val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
