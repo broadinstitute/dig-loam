@@ -1,6 +1,7 @@
 import ProjectConfig._
 import PipelineConfig._
 import Fxns._
+import DirTree._
 
 final case class Known(
   data: Store,
@@ -10,17 +11,7 @@ final case class Known(
 
 object ProjectStores {
 
-  val autosomalChrs = (1 to 22).map(e => e.toString).toSeq
-
-  val nonAutosomalChrs = {
-
-    ( if ( projectConfig.Arrays.map(e => e.xChr).contains(true) ) Seq("X") else Seq.empty ) ++
-    ( if ( projectConfig.Arrays.map(e => e.yChr).contains(true) ) Seq("Y") else Seq.empty ) ++
-    ( if ( projectConfig.Arrays.map(e => e.mtChr).contains(true) ) Seq("MT") else Seq.empty )
-
-  }
-
-  val kgVcf = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
+  val kgVcf = expandChrList(arrayCfg.chrs).map { chr =>
   
     val vcf = store(checkPath(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -28,7 +19,7 @@ object ProjectStores {
   
   }.toMap
   
-  val kgIds = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
+  val kgIds = expandChrList(arrayCfg.chrs).map { chr =>
   
     val ids = store(checkPath(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -36,7 +27,7 @@ object ProjectStores {
   
   }.toMap
   
-  val humanReference = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
+  val humanReference = expandChrList(arrayCfg.chrs).map { chr =>
   
     val ref = store(checkPath(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -68,8 +59,8 @@ object ProjectStores {
   val sampleFile = store(path(projectConfig.sampleFile)).asInput
   val sampleFileGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
   val phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) }
-  val ancestryInferred = store(projectConfig.home / s"${projectConfig.projectId}.ancestry.inferred.tsv")
-  val ancestryInferredGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${ancestryInferred}".split("/").last)); case false => None }
-  val ancestryOutliers = store(projectConfig.home / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
+  val ancestryInferred = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryInferredGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
+  val ancestryOutliers = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
 
 }

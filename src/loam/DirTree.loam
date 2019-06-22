@@ -1,0 +1,221 @@
+import java.io.{File, BufferedWriter, FileWriter}
+import ProjectConfig._
+import Collections._
+import Stores._
+import Fxns._
+
+final case class DirTreeDataArray(
+  base: MultiPath,
+  prepare: MultiPath,
+  harmonize: MultiPath,
+  annotate: MultiPath,
+  impute: MultiPath,
+  sampleqc: MultiPath,
+  kinship: MultiPath,
+  ancestry: MultiPath,
+  pca: MultiPath,
+  sexcheck: MultiPath,
+  metrics: MultiPath,
+  filter: MultiPath,
+  pass1: MultiPath,
+  pass2: MultiPath) extends Debug
+
+final case class DirTreeAnalysisModelMeta(
+  base: MultiPath,
+  cohorts: Map[ConfigCohort, MultiPath]) extends Debug
+
+final case class DirTreeAnalysisModel(
+  base: MultiPath,
+  merges: Map[ConfigMerge, MultiPath],
+  metas: Map[ConfigMeta, DirTreeAnalysisModelMeta],
+  cohorts: Map[ConfigCohort, MultiPath]) extends Debug
+
+final case class DirTreeAnalysisPheno(
+  base: MultiPath,
+  models: Map[ConfigModel, DirTreeAnalysisModel]) extends Debug
+
+final case class DirTree(
+  base: MultiPath,
+  data: MultiPath,
+  dataArray: MultiPath,
+  dataArrayMap: Map[ConfigArray, DirTreeDataArray],
+  dataGlobal: MultiPath,
+  dataGlobalAncestry: MultiPath,
+  dataGlobalKinship: MultiPath,
+  dataGlobalKinshipMap: Map[ConfigMeta, MultiPath],
+  analysis: MultiPath,
+  analysisPhenoMap: Map[ConfigPheno, DirTreeAnalysisPheno],
+  report: MultiPath,
+  reportQc: MultiPath,
+  reportAnalysis: MultiPath,
+  reportAnalysisMap: Map[ConfigReport, MultiPath]) extends Debug
+
+def appendSubDir(msp: MultiPath, name: String): MultiPath = {
+  MultiPath(
+    local = Some(path(initDir(s"${msp.local.get}" + "/" + name))),
+    google = projectConfig.hailCloud match {
+      case true => Some(msp.google.get / name)
+      case false => None
+    }
+  )
+}
+
+object DirTree {
+
+  def initDirTree(cfg: ProjectConfig): DirTree = {
+
+    val base = MultiPath(
+      local = Some(path(initDir("loam_out"))),
+      google = cfg.hailCloud match {
+        case true => Some(cfg.cloudHome.get / s"${cfg.projectId}/loam_out")
+        case false => None
+      }
+    )
+
+    val data = appendSubDir(base, "data")
+    val dataArray = appendSubDir(data, "array")
+    val dataGlobal = appendSubDir(data, "global")
+    val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
+    val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
+    val analysis = appendSubDir(base, "analysis")
+    val report = appendSubDir(base, "report")
+    val reportQc = appendSubDir(report, "qc")
+    val reportAnalysis = appendSubDir(report, "analysis")
+
+    val dataArrayMap = cfg.Arrays.map { array =>
+      val base = appendSubDir(dataArray, array.id)
+      val sampleqc = appendSubDir(base, "sampleqc")
+      val filter = appendSubDir(base, "filter")
+      array -> DirTreeDataArray(
+        base = base,
+        prepare = appendSubDir(base, "prepare"),
+        harmonize = appendSubDir(base, "harmonize"),
+        annotate = appendSubDir(base, "annotate"),
+        impute = appendSubDir(base, "impute"),
+        sampleqc = sampleqc,
+        kinship = appendSubDir(sampleqc, "kinship"),
+        ancestry = appendSubDir(sampleqc, "ancestry"),
+        pca = appendSubDir(sampleqc, "pca"),
+        sexcheck = appendSubDir(sampleqc, "sexcheck"),
+        metrics = appendSubDir(sampleqc, "metrics"),
+        filter = filter,
+        pass1 = appendSubDir(filter, "pass1"),
+        pass2 = appendSubDir(filter, "pass2")
+      )
+    }.toMap
+
+    val dataGlobalKinshipMap = metasReport.map { meta =>
+      meta -> appendSubDir(dataGlobalKinship, meta.id)
+    }.toMap
+
+    val analysisPhenoMap = phenosReport.map { pheno =>
+
+      val base_pheno = appendSubDir(analysis, pheno.id)
+
+      pheno -> DirTreeAnalysisPheno(
+        base = base_pheno,
+        models = modelsReport.filter(e => e.pheno == pheno.id).map { model =>
+          val base_model = appendSubDir(base_pheno, model.id)
+          val model_merges = {
+            for {
+              section <- cfg.Reports.flatMap(e => e.sections).filter(e => e.models.contains(model.id)).filter(e => e.merges.isDefined)
+            } yield {
+              cfg.Merges.filter(e => section.merges.get.contains(e.id))
+            }
+          }.flatten.distinct
+          val model_metas = {
+            for {
+              section <- cfg.Reports.flatMap(e => e.sections).filter(e => e.models.contains(model.id)).filter(e => e.metas.isDefined)
+            } yield {
+              cfg.Metas.filter(e => section.metas.get.contains(e.id))
+            }
+          }.flatten.distinct
+          val model_cohorts = {
+            for {
+              section <- cfg.Reports.flatMap(e => e.sections).filter(e => e.models.contains(model.id)).filter(e => e.cohorts.isDefined)
+            } yield {
+              cfg.Cohorts.filter(e => section.cohorts.get.contains(e.id))
+            }
+          }.flatten.distinct
+          model -> DirTreeAnalysisModel(
+            base = base_model,
+            merges = model_merges.map { merge =>
+              merge -> appendSubDir(base_model, merge.id)
+            }.toMap,
+            metas = model_metas.map { meta =>
+              val base_meta = appendSubDir(base_model, meta.id)
+              val model_meta_cohorts = cfg.Cohorts.filter(e => meta.cohorts.contains(e.id))
+              val cohorts = model_meta_cohorts.map { cohort =>
+                cohort -> appendSubDir(base_meta, cohort.id)
+              }.toMap
+              meta -> DirTreeAnalysisModelMeta(
+                base = base_meta,
+                cohorts = cohorts
+              )
+            }.toMap,
+            cohorts = model_cohorts.map { cohort =>
+              cohort -> appendSubDir(base_model, cohort.id)
+            }.toMap
+          )
+        }.toMap
+      )
+
+    }.toMap
+    
+    val reportAnalysisMap = cfg.Reports.map { report =>
+      report -> appendSubDir(reportAnalysis, report.id)
+    }.toMap
+
+    new DirTree(
+      base = base,
+      data = data,
+      dataArray = dataArray,
+      dataArrayMap = dataArrayMap,
+      dataGlobal = dataGlobal,
+      dataGlobalAncestry = dataGlobalAncestry,
+      dataGlobalKinship = dataGlobalKinship,
+      dataGlobalKinshipMap = dataGlobalKinshipMap,
+      analysis = analysis,
+      analysisPhenoMap = analysisPhenoMap,
+      report = report,
+      reportQc = reportQc,
+      reportAnalysis = reportAnalysis,
+      reportAnalysisMap = reportAnalysisMap
+    )
+
+  }
+
+}
+
+println("Initializing Directory Tree ...")
+val dirTree = DirTree.initDirTree(projectConfig)
+println("... Finished Initializing Directory Tree")
+
+def writeConfig(cfg: ProjectConfig, utils: Utils): Any = {
+  val f = new File(s"${dirTree.base.local.get}/cfg.objects")
+  val bw = new BufferedWriter(new FileWriter(f))
+  val objs = Seq(dirTree, cfg) ++ cfg.Arrays
+  for ( o <- objs ) {
+    val vars = o.getClass.getDeclaredFields
+    val name = o.getClass.getName.split("\\$")(1)
+    bw.write("Class: " + name + "\n")
+    for ( v <- vars ) {
+      v.setAccessible(true)
+      bw.write("  " + v.getName() + " => " + v.get(o).toString + "\n")
+    }
+    bw.write("\n")
+  }
+  for ( o <- Seq(utils, utils.image, utils.binary, utils.python, utils.bash, utils.r, utils) ) {
+    val vars = o.getClass.getDeclaredFields
+    val name = o.getClass.getName.split("\\$")(1)
+    bw.write("Class: " + name + "\n")
+    for ( v <- vars ) {
+      v.setAccessible(true)
+      bw.write("  " + v.getName() + " => " + v.get(o).toString + "\n")
+    }
+    bw.write("\n")
+  }
+  bw.close()
+}
+
+writeConfig(projectConfig, utils)

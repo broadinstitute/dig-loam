@@ -124,10 +124,7 @@ final case class ConfigArray(
   sampleQcMetrics: Seq[String],
   nSampleMetricPcs: Option[Int],
   sampleMetricCovars: Option[String],
-  xChr: Boolean,
-  yChr: Boolean,
-  mtChr: Boolean,
-  skipGh: Seq[String],
+  chrs: Seq[String],
   gqThreshold: Option[Int],
   qcVariantFilters: Option[ConfigVariantFilters],
   ancestryOutliersKeep: Seq[String],
@@ -192,7 +189,6 @@ final case class ConfigReport(
 final case class ProjectConfig(
   loamstreamVersion: String,
   pipelineVersion: String,
-  home: Path,
   hailCloud: Boolean,
   cloudShare: Option[URI],
   cloudHome: Option[URI],
@@ -359,7 +355,6 @@ object ProjectConfig {
     val loamstreamVersion = requiredStr(config = config, field = "loamstreamVersion")
     val pipelineVersion = requiredStr(config = config, field = "pipelineVersion")
     val projectId = requiredStr(config = config, field = "projectId")
-    val home = path(checkPath(requiredStr(config = config, field = "home", default = Some("./loam_out"))))
     val hailCloud = requiredBool(config = config, field = "hailCloud")
     val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
     val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
@@ -559,10 +554,7 @@ object ProjectConfig {
           },
           nSampleMetricPcs = optionalInt(config = array, field = "nSampleMetricPcs"),
           sampleMetricCovars = optionalStrList(config = array, field = "sampleMetricCovars") match { case Some(s) => Some(s.mkString("+")); case None => None },
-          xChr = requiredBool(config = array, field = "xChr"),
-          yChr = requiredBool(config = array, field = "yChr"),
-          mtChr = requiredBool(config = array, field = "mtChr"),
-          skipGh = requiredStrList(config = array, field = "skipGh"),
+          chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
           gqThreshold = optionalInt(config = array, field = "gqThreshold"),
           qcVariantFilters = optionalObj(config = array, field = "qcVariantFilters") match {
             case Some(o) =>
@@ -776,7 +768,6 @@ object ProjectConfig {
       loamstreamVersion = loamstreamVersion,
       pipelineVersion = pipelineVersion,
       projectId = projectId,
-      home = home,
       hailCloud = hailCloud,
       cloudHome = cloudHome,
       cloudShare = cloudShare,

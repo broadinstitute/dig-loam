@@ -30,41 +30,26 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     }
 
-    if (! arrayCfg.skipGh.contains(chr)) {
-
-      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
-      
-        cmd"""${utils.binary.binGenotypeHarmonizer}
-        --input ${chrData.plink.base}
-        --inputType PLINK_BED
-        --output ${chrData.mergedKgPlink.base}
-        --outputType PLINK_BED
-        --ref ${ProjectStores.kgVcf(chr)}
-        --refType VCF
-        --keep
-        --update-id
-        --variants 1000
-        --mafAlign 0.1
-        --update-id
-        --update-reference-allele
-        --debug"""
-          .in(chrData.plink.data :+ ProjectStores.kgVcf(chr))
-          .out(chrData.mergedKgPlink.data :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
-          .tag(s"${chrData.mergedKgPlink.base}".split("/").last)
-      
-      }
-
-    } else {
-
-      local {
-
-        cmd"""echo -e "chr\tpos\toriginalId\tnewId" > ${chrData.mergedKgVarIdUpdate}; echo -e "chr\tpos\tid\talleles\taction\tmessage" > ${chrData.mergedKgVarSnpLog}"""
-          .in(chrData.plink.data)
-          .out(chrData.mergedKgVarIdUpdate, chrData.mergedKgVarSnpLog)
-          .tag(s"${chrData.mergedKgPlink.base}.skipGh".split("/").last)
-
-      }
-
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
+    
+      cmd"""${utils.binary.binGenotypeHarmonizer}
+      --input ${chrData.plink.base}
+      --inputType PLINK_BED
+      --output ${chrData.mergedKgPlink.base}
+      --outputType PLINK_BED
+      --ref ${ProjectStores.kgVcf(chr)}
+      --refType VCF
+      --keep
+      --update-id
+      --variants 1000
+      --mafAlign 0.1
+      --update-id
+      --update-reference-allele
+      --debug"""
+        .in(chrData.plink.data :+ ProjectStores.kgVcf(chr))
+        .out(chrData.mergedKgPlink.data :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
+        .tag(s"${chrData.mergedKgPlink.base}".split("/").last)
+    
     }
 
     drmWith(imageName = s"${utils.image.imgPython27}", cores = projectConfig.resources.harmonizeAlignNon1kgVariants.cpus, mem = projectConfig.resources.harmonizeAlignNon1kgVariants.mem, maxRunTime = projectConfig.resources.harmonizeAlignNon1kgVariants.maxRunTime) {

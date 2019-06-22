@@ -707,6 +707,28 @@ val cohortsList: Seq[ConfigCohort] = {
 
 }.flatten.distinct
 
+val phenosReport: Seq[ConfigPheno] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections)
+    model <- projectConfig.Models.filter(e => section.models.contains(e.id))
+  } yield {
+    projectConfig.Phenos.filter(e => e.id == model.pheno).head
+  }
+
+}.distinct
+
+val modelsReport: Seq[ConfigModel] = {
+
+  for {
+    section <- projectConfig.Reports.flatMap(e => e.sections)
+    m <- section.models
+  } yield {
+    projectConfig.Models.filter(e => e.id == m).head
+  }
+
+}.distinct
+
 val cohortsReport: Seq[ConfigCohort] = {
 
   for {
