@@ -11,7 +11,9 @@ final case class Known(
 
 object ProjectStores {
 
-  val kgVcf = expandChrList(arrayCfg.chrs).map { chr =>
+  val chrsAll = projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
+
+  val kgVcf = chrsAll.map { chr =>
   
     val vcf = store(checkPath(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -19,7 +21,7 @@ object ProjectStores {
   
   }.toMap
   
-  val kgIds = expandChrList(arrayCfg.chrs).map { chr =>
+  val kgIds = chrsAll.map { chr =>
   
     val ids = store(checkPath(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -27,7 +29,7 @@ object ProjectStores {
   
   }.toMap
   
-  val humanReference = expandChrList(arrayCfg.chrs).map { chr =>
+  val humanReference = chrsAll.map { chr =>
   
     val ref = store(checkPath(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr"))).asInput
   
