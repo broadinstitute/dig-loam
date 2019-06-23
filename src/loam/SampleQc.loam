@@ -10,7 +10,7 @@ import ProjectStores._
 
 def SampleQc(array: ConfigArray): Unit = {
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -22,7 +22,7 @@ def SampleQc(array: ConfigArray): Unit = {
       
       google {
       
-        hail"""$pyHailSampleqc --
+        hail"""${utils.python.pyHailSampleqc} --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
@@ -44,9 +44,9 @@ def SampleQc(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.sampleQcHail.cpus, mem = projectConfig.resources.sampleQcHail.mem, maxRunTime = projectConfig.resources.sampleQcHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.sampleQcHail.cpus, mem = projectConfig.resources.sampleQcHail.mem, maxRunTime = projectConfig.resources.sampleQcHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailSampleqc
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailSampleqc}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --clusters-in ${ProjectStores.ancestryInferred}
@@ -64,10 +64,10 @@ def SampleQc(array: ConfigArray): Unit = {
 
   val sampleMetricCovars = array.sampleMetricCovars.getOrElse("") match { case "" => ""; case _ => s"""--covars "${array.sampleMetricCovars.get}"""" }
   
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rCalcIstatsAdj
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rCalcIstatsAdj}
       --sampleqc-stats ${arrayStores(array).sampleQcData.stats}
       --sample-file ${ProjectStores.sampleFile}
       --iid-col ${projectConfig.sampleFileId}
@@ -80,8 +80,8 @@ def SampleQc(array: ConfigArray): Unit = {
       .out(arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sampleQcData.statsAdj)
       .tag(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
   
-    cmd"""$binRscript --vanilla --verbose
-      $rIstatsAdjPca
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rIstatsAdjPca}
       --sampleqc-stats-adj ${arrayStores(array).sampleQcData.statsAdj}
       --corr-plots ${arrayStores(array).sampleQcData.corrPlots}
       --pca-loadings ${arrayStores(array).sampleQcData.pcaLoadings}
@@ -99,19 +99,19 @@ def SampleQc(array: ConfigArray): Unit = {
    *  Requires: Klustakwik, R
    */
   
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.sampleQcKlustakwikPca.cpus, mem = projectConfig.resources.sampleQcKlustakwikPca.mem, maxRunTime = projectConfig.resources.sampleQcKlustakwikPca.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.sampleQcKlustakwikPca.cpus, mem = projectConfig.resources.sampleQcKlustakwikPca.mem, maxRunTime = projectConfig.resources.sampleQcKlustakwikPca.maxRunTime) {
 
-    cmd"""$shKlustakwikPca $binKlustakwik ${arrayStores(array).sampleQcData.pcaScores} ${arrayStores(array).sampleQcPcaClusterData.fet} ${arrayStores(array).sampleQcPcaClusterData.base} ${arrayStores(array).sampleQcPcaClusterData.log}"""
+    cmd"""${utils.bash.shKlustakwikPca} ${utils.binary.binKlustakwik} ${arrayStores(array).sampleQcData.pcaScores} ${arrayStores(array).sampleQcPcaClusterData.fet} ${arrayStores(array).sampleQcPcaClusterData.base} ${arrayStores(array).sampleQcPcaClusterData.log}"""
       .in(arrayStores(array).sampleQcData.pcaScores)
       .out(arrayStores(array).sampleQcPcaClusterData.fet, arrayStores(array).sampleQcPcaClusterData.clu, arrayStores(array).sampleQcPcaClusterData.klg, arrayStores(array).sampleQcPcaClusterData.log)
       .tag(s"${arrayStores(array).sampleQcPcaClusterData.base}.shKlustakwikPca".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rIstatsPcsGmmClusterPlot
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rIstatsPcsGmmClusterPlot}
       --pca-scores ${arrayStores(array).sampleQcData.pcaScores}
       --cluster ${arrayStores(array).sampleQcPcaClusterData.clu}
       --outliers ${arrayStores(array).sampleQcPcaClusterData.outliers}
@@ -136,9 +136,9 @@ def SampleQc(array: ConfigArray): Unit = {
   
   } yield { 
 
-    drmWith(imageName = s"$imgTools", cores = projectConfig.resources.sampleQcKlustakwikPca.cpus, mem = projectConfig.resources.sampleQcKlustakwikPca.mem, maxRunTime = projectConfig.resources.sampleQcKlustakwikPca.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.sampleQcKlustakwikPca.cpus, mem = projectConfig.resources.sampleQcKlustakwikPca.mem, maxRunTime = projectConfig.resources.sampleQcKlustakwikPca.maxRunTime) {
 
-      cmd"""$shKlustakwikMetric $binKlustakwik ${arrayStores(array).sampleQcData.statsAdj} ${metric} ${metricData.base} ${metricData.fet} ${metricData.log}"""
+      cmd"""${utils.bash.shKlustakwikMetric} ${utils.binary.binKlustakwik} ${arrayStores(array).sampleQcData.statsAdj} ${metric} ${metricData.base} ${metricData.fet} ${metricData.log}"""
         .in(arrayStores(array).sampleQcData.statsAdj)
         .out(metricData.fet, metricData.clu, metricData.klg, metricData.log)
         .tag(s"${metricData.base}.shKlustakwikMetric".split("/").last)
@@ -159,10 +159,10 @@ def SampleQc(array: ConfigArray): Unit = {
   
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rIstatsAdjGmmPlotMetrics
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rIstatsAdjGmmPlotMetrics}
       --ind-clu-files "${metricCluFiles.mkString(",")}"
       --stats-unadj ${arrayStores(array).sampleQcData.stats}
       --stats-adj ${arrayStores(array).sampleQcData.statsAdj}
@@ -182,17 +182,17 @@ def SampleQc(array: ConfigArray): Unit = {
    * Requires: Python
    */
   
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
   
-    cmd"""$binPython $pyMakeSamplesRestoreTable
+    cmd"""${utils.binary.binPython} ${utils.python.pyMakeSamplesRestoreTable}
       --ancestry-outliers-keep "${array.ancestryOutliersKeep.mkString(",")}"
       --duplicates-keep "${array.duplicatesKeep.mkString(",")}"
       --famsize-keep "${array.famsizeKeep.mkString(",")}"
       --sampleqc-keep "${array.sampleqcKeep.mkString(",")}"
       --sexcheck-keep "${array.sexcheckKeep.mkString(",")}"
-      --out ${arrayStores(array).qcData.samplesRestore}"""
-      .out(arrayStores(array).qcData.samplesRestore)
-      .tag(s"${arrayStores(array).qcData.samplesRestore}".split("/").last)
+      --out ${arrayStores(array).filterPass1.samplesRestore}"""
+      .out(arrayStores(array).filterPass1.samplesRestore)
+      .tag(s"${arrayStores(array).filterPass1.samplesRestore}".split("/").last)
 
   }
   
@@ -201,20 +201,20 @@ def SampleQc(array: ConfigArray): Unit = {
    * Requires: Python
    */
   
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
   
-    cmd"""$binPython $pyCompileExclusions
+    cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
       --ancestry-inferred ${ProjectStores.ancestryInferred}
       --kinship-related ${arrayStores(array).kinshipData.kin0Related}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
       --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
-      --restore ${arrayStores(array).qcData.samplesRestore}
-      --out ${arrayStores(array).qcData.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).qcData.samplesRestore)
-      .out(arrayStores(array).qcData.samplesExclude)
-      .tag(s"${arrayStores(array).qcData.samplesExclude}".split("/").last)
+      --restore ${arrayStores(array).filterPass1.samplesRestore}
+      --out ${arrayStores(array).filterPass1.samplesExclude}"""
+      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterPass1.samplesRestore)
+      .out(arrayStores(array).filterPass1.samplesExclude)
+      .tag(s"${arrayStores(array).filterPass1.samplesExclude}".split("/").last)
   
   }
 

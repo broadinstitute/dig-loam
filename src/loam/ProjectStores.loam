@@ -1,6 +1,7 @@
 import ProjectConfig._
 import PipelineConfig._
 import Fxns._
+import DirTree._
 
 final case class Known(
   data: Store,
@@ -10,17 +11,9 @@ final case class Known(
 
 object ProjectStores {
 
-  val autosomalChrs = (1 to 22).map(e => e.toString).toSeq
+  val chrsAll = projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
 
-  val nonAutosomalChrs = {
-
-    ( if ( projectConfig.Arrays.map(e => e.xChr).contains(true) ) Seq("X") else Seq.empty ) ++
-    ( if ( projectConfig.Arrays.map(e => e.yChr).contains(true) ) Seq("Y") else Seq.empty ) ++
-    ( if ( projectConfig.Arrays.map(e => e.mtChr).contains(true) ) Seq("MT") else Seq.empty )
-
-  }
-
-  val kgVcf = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
+  val kgVcf = chrsAll.map { chr =>
   
     val vcf = store(checkPath(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -28,7 +21,7 @@ object ProjectStores {
   
   }.toMap
   
-  val kgIds = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
+  val kgIds = chrsAll.map { chr =>
   
     val ids = store(checkPath(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -36,7 +29,7 @@ object ProjectStores {
   
   }.toMap
   
-  val humanReference = ( autosomalChrs ++ nonAutosomalChrs ).map { chr =>
+  val humanReference = chrsAll.map { chr =>
   
     val ref = store(checkPath(projectConfig.humanReferenceWild.replace("[CHROMOSOME]", s"$chr"))).asInput
   
@@ -49,27 +42,27 @@ object ProjectStores {
     known -> Known(
       data = store(path(checkPath(known.data))).asInput,
       hiLd = store(path(checkPath(known.hiLd))).asInput,
-      hiLdGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
+      hiLdGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
     )
 
   }.toMap
 
   val regionsExclude = store(path(checkPath(projectConfig.regionsExclude))).asInput
-  val regionsExcludeGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
+  val regionsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
   val genePositions = store(path(checkPath(projectConfig.genePositions))).asInput
   val kgPurcellVcf = store(path(checkPath(projectConfig.kgPurcellVcf))).asInput
-  val kgPurcellVcfGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgPurcellVcf}".split("/").last)); case false => None }
+  val kgPurcellVcfGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgPurcellVcf}".split("/").last)); case false => None }
   val kgSample = store(path(checkPath(projectConfig.kgSample))).asInput
-  val kgSampleGoogle = hailCloud match { case true => Some(store(googleInput.get / s"${projectConfig.kgSample}".split("/").last)); case false => None }
+  val kgSampleGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgSample}".split("/").last)); case false => None }
   val fasta = store(path(checkPath(projectConfig.fasta))).asInput
   val vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput
   val vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput
   val dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput
   val sampleFile = store(path(projectConfig.sampleFile)).asInput
-  val sampleFileGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
+  val sampleFileGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
   val phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) }
-  val ancestryInferred = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.tsv")
-  val ancestryInferredGoogle = hailCloud match { case true => Some(store(googleOutDir.get / s"${ancestryInferred}".split("/").last)); case false => None }
-  val ancestryOutliers = store(localOutDir / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
+  val ancestryInferred = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")
+  val ancestryInferredGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
+  val ancestryOutliers = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
 
 }

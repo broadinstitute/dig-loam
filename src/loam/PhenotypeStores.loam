@@ -37,7 +37,7 @@ val phenotypeStores = (
   }
 
   val figureData = FigureData(
-    distPlot = store(localOutDir / s"${prefix}.distplot.png"))
+    distPlot = store(projectConfig.home / s"${prefix}.distplot.png"))
 
   cp -> Phenotype(
     figureData = figureData)

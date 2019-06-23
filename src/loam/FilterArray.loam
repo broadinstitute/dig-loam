@@ -39,89 +39,89 @@ def FilterArray(array: ConfigArray): Unit = {
     }
   }.mkString(" ")
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
  
       local {
       
-        googleCopy(arrayStores(array).qcData.samplesExclude, arrayStores(array).qcData.samplesExcludeGoogle.get)
+        googleCopy(arrayStores(array).filterPass1.samplesExclude, arrayStores(array).filterPass1.samplesExcludeGoogle.get)
       
       }
 
       google {
 
-        hail"""$pyHailFilter --
+        hail"""${utils.python.pyHailFilter} --
           --cloud
           ${sfilters}
           ${vfilters}
-          --log ${arrayStores(array).analysisData.hailLogGoogle.get}
+          --log ${arrayStores(array).filterPass2.hailLogGoogle.get}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --samples-remove ${arrayStores(array).qcData.samplesExcludeGoogle.get}
-          --samples-stats-out ${arrayStores(array).analysisData.samplesStatsGoogle.get}
-          --samples-exclude-out ${arrayStores(array).analysisData.samplesExcludeGoogle.get}
-          --variants-stats-out ${arrayStores(array).analysisData.variantsStatsGoogle.get}
-          --variants-exclude-out ${arrayStores(array).analysisData.variantsExcludeGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).qcData.samplesExcludeGoogle.get)
-          .out(arrayStores(array).analysisData.samplesStatsGoogle.get, arrayStores(array).analysisData.samplesExcludeGoogle.get, arrayStores(array).analysisData.variantsStatsGoogle.get, arrayStores(array).analysisData.variantsExcludeGoogle.get, arrayStores(array).analysisData.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).analysisData.hailLog}.pyHailFilter.google".split("/").last)
+          --samples-remove ${arrayStores(array).filterPass1.samplesExcludeGoogle.get}
+          --samples-stats-out ${arrayStores(array).filterPass2.samplesStatsGoogle.get}
+          --samples-exclude-out ${arrayStores(array).filterPass2.samplesExcludeGoogle.get}
+          --variants-stats-out ${arrayStores(array).filterPass2.variantsStatsGoogle.get}
+          --variants-exclude-out ${arrayStores(array).filterPass2.variantsExcludeGoogle.get}"""
+          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterPass1.samplesExcludeGoogle.get)
+          .out(arrayStores(array).filterPass2.samplesStatsGoogle.get, arrayStores(array).filterPass2.samplesExcludeGoogle.get, arrayStores(array).filterPass2.variantsStatsGoogle.get, arrayStores(array).filterPass2.variantsExcludeGoogle.get, arrayStores(array).filterPass2.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).filterPass2.hailLog}.pyHailFilter.google".split("/").last)
       
       }
       
       local {
       
-        googleCopy(arrayStores(array).analysisData.samplesStatsGoogle.get, arrayStores(array).analysisData.samplesStats)
-        googleCopy(arrayStores(array).analysisData.samplesExcludeGoogle.get, arrayStores(array).analysisData.samplesExclude)
-        googleCopy(arrayStores(array).analysisData.variantsStatsGoogle.get, arrayStores(array).analysisData.variantsStats)
-        googleCopy(arrayStores(array).analysisData.variantsExcludeGoogle.get, arrayStores(array).analysisData.variantsExclude)
-        googleCopy(arrayStores(array).analysisData.hailLogGoogle.get, arrayStores(array).analysisData.hailLog)
+        googleCopy(arrayStores(array).filterPass2.samplesStatsGoogle.get, arrayStores(array).filterPass2.samplesStats)
+        googleCopy(arrayStores(array).filterPass2.samplesExcludeGoogle.get, arrayStores(array).filterPass2.samplesExclude)
+        googleCopy(arrayStores(array).filterPass2.variantsStatsGoogle.get, arrayStores(array).filterPass2.variantsStats)
+        googleCopy(arrayStores(array).filterPass2.variantsExcludeGoogle.get, arrayStores(array).filterPass2.variantsExclude)
+        googleCopy(arrayStores(array).filterPass2.hailLogGoogle.get, arrayStores(array).filterPass2.hailLog)
       
       }
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailFilter
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
           ${sfilters}
           ${vfilters}
-          --log ${arrayStores(array).analysisData.hailLog}
+          --log ${arrayStores(array).filterPass2.hailLog}
           --mt-in ${arrayStores(array).refData.mt.get}
-          --samples-remove ${arrayStores(array).qcData.samplesExclude}
-          --samples-stats-out ${arrayStores(array).analysisData.samplesStats}
-          --samples-exclude-out ${arrayStores(array).analysisData.samplesExclude}
-          --variants-stats-out ${arrayStores(array).analysisData.variantsStats}
-          --variants-exclude-out ${arrayStores(array).analysisData.variantsExclude}"""
-          .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).qcData.samplesExclude)
-          .out(arrayStores(array).analysisData.samplesStats, arrayStores(array).analysisData.samplesExclude, arrayStores(array).analysisData.variantsStats, arrayStores(array).analysisData.variantsExclude, arrayStores(array).analysisData.hailLog)
-          .tag(s"${arrayStores(array).analysisData.hailLog}.pyHailFilter".split("/").last)
+          --samples-remove ${arrayStores(array).filterPass1.samplesExclude}
+          --samples-stats-out ${arrayStores(array).filterPass2.samplesStats}
+          --samples-exclude-out ${arrayStores(array).filterPass2.samplesExclude}
+          --variants-stats-out ${arrayStores(array).filterPass2.variantsStats}
+          --variants-exclude-out ${arrayStores(array).filterPass2.variantsExclude}"""
+          .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).filterPass1.samplesExclude)
+          .out(arrayStores(array).filterPass2.samplesStats, arrayStores(array).filterPass2.samplesExclude, arrayStores(array).filterPass2.variantsStats, arrayStores(array).filterPass2.variantsExclude, arrayStores(array).filterPass2.hailLog)
+          .tag(s"${arrayStores(array).filterPass2.hailLog}.pyHailFilter".split("/").last)
 
       }
 
   }
   
-  //drmWith(imageName = s"$imgTools") {
+  //drmWith(imageName = s"${utils.image.imgTools}") {
   //
-  //  cmd"""$binTabix -f -p vcf ${arrayStores(array).cleanData.vcf}"""
+  //  cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(array).cleanData.vcf}"""
   //    .in(arrayStores(array).cleanData.vcf)
   //    .out(arrayStores(array).cleanData.tbi)
   //    .tag(s"${arrayStores(array).cleanData.tbi}".split("/").last)
   //
   //}
   //
-  //drmWith(imageName = s"$imgTools", cores = projectConfig.resources.filterFinalPlink.cpus, mem = projectConfig.resources.filterFinalPlink.mem, maxRunTime = projectConfig.resources.filterFinalPlink.maxRunTime) {
+  //drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.filterFinalPlink.cpus, mem = projectConfig.resources.filterFinalPlink.mem, maxRunTime = projectConfig.resources.filterFinalPlink.maxRunTime) {
   //
-  //  cmd"""$binPlink --vcf ${arrayStores(array).cleanData.vcf} --allow-no-sex --output-chr MT --keep-allele-order --make-bed --out ${arrayStores(array).cleanData.plink.base} --memory ${projectConfig.resources.filterFinalPlink.mem * 0.9 * 1000}"""
+  //  cmd"""${utils.binary.binPlink} --vcf ${arrayStores(array).cleanData.vcf} --allow-no-sex --output-chr MT --keep-allele-order --make-bed --out ${arrayStores(array).cleanData.plink.base} --memory ${projectConfig.resources.filterFinalPlink.mem * 0.9 * 1000}"""
   //    .in(arrayStores(array).cleanData.vcf)
   //    .out(arrayStores(array).cleanData.plink.data)
   //    .tag(s"${arrayStores(array).cleanData.plink.base}".split("/").last)
   //
   //}
   //
-  //drmWith(imageName = s"$imgR34", cores = projectConfig.resources.filterFinalPcair.cpus, mem = projectConfig.resources.filterFinalPcair.mem, maxRunTime = projectConfig.resources.filterFinalPcair.maxRunTime) {
+  //drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.filterFinalPcair.cpus, mem = projectConfig.resources.filterFinalPcair.mem, maxRunTime = projectConfig.resources.filterFinalPcair.maxRunTime) {
   //
-  //  cmd"""$binRscript --vanilla --verbose
-  //    $rPcair
+  //  cmd"""${utils.binary.binRscript} --vanilla --verbose
+  //    ${utils.r.rPcair}
   //    --cpus ${projectConfig.resources.filterFinalPcair.cpus}
   //    --plink-in ${arrayStores(array).prunedData.base}
   //    --gds-out ${arrayStores(array).cleanData.gds}

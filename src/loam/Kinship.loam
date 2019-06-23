@@ -12,19 +12,19 @@ import ArrayStores._
 
 def Kinship(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.kinshipKing.cpus, mem = projectConfig.resources.kinshipKing.mem, maxRunTime = projectConfig.resources.kinshipKing.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.kinshipKing.cpus, mem = projectConfig.resources.kinshipKing.mem, maxRunTime = projectConfig.resources.kinshipKing.maxRunTime) {
 
-    cmd"""$shKing $binKing ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.resources.kinshipKing.cpus}"""
+    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0} ${arrayStores(array).kinshipData.kin0Related} ${projectConfig.resources.kinshipKing.cpus}"""
     .in(arrayStores(array).filteredData.plink.data.local.get)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.kin0Related)
     .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.shKing".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rCalcKinshipFamSizes
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rCalcKinshipFamSizes}
       --kin0 ${arrayStores(array).kinshipData.kin0Related}
       --out ${arrayStores(array).kinshipData.famSizes}"""
       .in(arrayStores(array).kinshipData.kin0Related)

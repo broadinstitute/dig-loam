@@ -27,9 +27,9 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     }
   }.flatten.distinct
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""$shCrossCohortCommonVariants ${bimStringList.mkString(",")} ${metaKinshipStores(configMeta).commonVariants}"""
+    cmd"""${utils.bash.shCrossCohortCommonVariants} ${bimStringList.mkString(",")} ${metaKinshipStores(configMeta).commonVariants}"""
     .in(dataList)
     .out(metaKinshipStores(configMeta).commonVariants)
     .tag(s"${metaKinshipStores(configMeta).commonVariants}".split("/").last)
@@ -40,25 +40,25 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""$shMetaCohortSamples ${arrayStores(configCohort.array).refData.base}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
+    cmd"""${utils.bash.shMetaCohortSamples} ${arrayStores(configCohort.array).refData.base}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
     .in(arrayStores(configCohort.array).refData.data :+ ProjectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortPrepPlink.cpus, mem = projectConfig.resources.crossCohortPrepPlink.mem, maxRunTime = projectConfig.resources.crossCohortPrepPlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.crossCohortPrepPlink.cpus, mem = projectConfig.resources.crossCohortPrepPlink.mem, maxRunTime = projectConfig.resources.crossCohortPrepPlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).refData.base} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(configCohort.array).refData.base} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
     .in(arrayStores(configCohort.array).refData.data :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
     cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${metaKinshipStores(configMeta).metaCohort(configCohort).base}.fam > ${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}"""
     .in(metaKinshipStores(configMeta).metaCohort(configCohort).data)
@@ -73,7 +73,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   val mergeString = metaKinshipStores(configMeta).metaCohort.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
     cmd"""echo "${mergeString}" > ${metaKinshipStores(configMeta).mergeList}"""
     .out(metaKinshipStores(configMeta).mergeList)
@@ -81,18 +81,18 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortKinshipPlink.cpus, mem = projectConfig.resources.crossCohortKinshipPlink.mem, maxRunTime = projectConfig.resources.crossCohortKinshipPlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.crossCohortKinshipPlink.cpus, mem = projectConfig.resources.crossCohortKinshipPlink.mem, maxRunTime = projectConfig.resources.crossCohortKinshipPlink.maxRunTime) {
 
-    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --allow-no-sex --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000}"""
+    cmd"""${utils.binary.binPlink} --merge-list ${metaKinshipStores(configMeta).mergeList} --allow-no-sex --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000}"""
     .in((metaKinshipStores(configMeta).metaCohort.map(e => e._2).flatMap(e => e.data).toSeq ++ metaKinshipStores(configMeta).metaCohort.map(e => e._2.famMerge).toSeq) :+ metaKinshipStores(configMeta).mergeList)
     .out(metaKinshipStores(configMeta).dataFiltered)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}".split("/").last)
 
   }
 
-  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortKinshipKing.cpus, mem = projectConfig.resources.crossCohortKinshipKing.mem, maxRunTime = projectConfig.resources.crossCohortKinshipKing.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.crossCohortKinshipKing.cpus, mem = projectConfig.resources.crossCohortKinshipKing.mem, maxRunTime = projectConfig.resources.crossCohortKinshipKing.maxRunTime) {
 
-    cmd"""$shKing $binKing ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} ${projectConfig.resources.crossCohortKinshipKing.cpus}"""
+    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} ${projectConfig.resources.crossCohortKinshipKing.cpus}"""
     .in(metaKinshipStores(configMeta).dataFiltered)
     .out(metaKinshipStores(configMeta).log, metaKinshipStores(configMeta).kin0, metaKinshipStores(configMeta).kin0Related)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}.shKing".split("/").last)
@@ -103,10 +103,10 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rExcludeCrossArray
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rExcludeCrossArray}
       --kinship ${metaKinshipStores(configMeta).kin0Related}
       --samples ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}
       --meta-cohorts ${configMeta.cohorts.mkString(",")}

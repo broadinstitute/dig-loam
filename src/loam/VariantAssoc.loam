@@ -30,10 +30,10 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"$imgR34", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rGeneratePheno
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rGeneratePheno}
       --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
       --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.phenoFile.get}
@@ -61,7 +61,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -77,7 +77,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       
       google {
       
-        hail"""$pyHailAssoc --
+        hail"""${utils.python.pyHailAssoc} --
           --mt-in ${arrayStores(array).cleanData.mtGoogle.get}
           --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
           --pheno-in ${assoc.phenoGoogle.get}
@@ -105,9 +105,9 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
 
-        cmd"""$binPython $pyHailAssoc
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
           --mt-in ${arrayStores(array).cleanData.mt.get}
           --bim-in ${arrayStores(array).prunedData.base}.bim
           --pheno-in ${assoc.pheno}
@@ -127,9 +127,9 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${assoc.results}"""
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${assoc.results}"""
       .in(assoc.results)
       .out(assoc.tbi)
       .tag(s"${assoc.tbi}".split("/").last)
@@ -140,7 +140,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
 def KnownLociToGoogle(configKnown: ConfigKnown): Unit = {
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -176,10 +176,10 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"$imgR34", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
 
-    cmd"""$binRscript --vanilla --verbose
-      $rGeneratePheno
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rGeneratePheno}
       --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
       --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.phenoFile.get}
@@ -207,7 +207,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
   
@@ -220,7 +220,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       
       google {
       
-        hail"""$pyHailAssoc --
+        hail"""${utils.python.pyHailAssoc} --
           --mt-in ${arrayStores(array).cleanData.mtGoogle.get}
           --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
           --pheno-in ${known.phenoGoogle.get}
@@ -249,9 +249,9 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
 
-        cmd"""$binPython $pyHailAssoc
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
           --mt-in ${arrayStores(array).cleanData.mt.get}
           --bim-in ${arrayStores(array).prunedData.base}.bim
           --pheno-in ${known.pheno}
@@ -272,9 +272,9 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${known.results}"""
       .in(known.results)
       .out(known.tbi)
       .tag(s"${known.tbi}".split("/").last)

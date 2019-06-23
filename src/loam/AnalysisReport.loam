@@ -15,14 +15,14 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
 
-	cmd"""$binPython $pyGenerateReportHeader
+	cmd"""${utils.binary.binPython} ${utils.python.pyGenerateReportHeader}
       --out ${analysisReportStores(configReport).globalData.header}"""
       .out(analysisReportStores(configReport).globalData.header)
       .tag(s"${analysisReportStores(configReport).globalData.header}".split("/").last)
 
-    cmd"""$binPython $pyGenerateAnalysisReportIntro
+    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportIntro}
       --id ${projectConfig.projectId}
       --name "${configReport.name}"
       --authors "${projectConfig.authors.mkString(",")}"
@@ -83,9 +83,9 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"$imgPython27") {
+    drmWith(imageName = s"${utils.image.imgPython27}") {
     
-      cmd"""$binPython $pyGenerateAnalysisReportData
+      cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportData}
         --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
         --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get.path.toAbsolutePath()}
         --arrays ${arraysString.mkString(" ")}
@@ -99,9 +99,9 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   } else {
 
-    drmWith(imageName = s"$imgPython27") {
+    drmWith(imageName = s"${utils.image.imgPython27}") {
     
-      cmd"""$binPython $pyGenerateAnalysisReportData
+      cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportData}
         --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
         --bim ${cleanBimStrings.head}
         --arrays ${arraysString.mkString(" ")}
@@ -115,9 +115,9 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
 
-    cmd"""$binPython $pyGenerateAnalysisReportStrategy
+    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportStrategy}
       --cohorts "${cohortsString.mkString("___")}"
       --metas "${metasString.mkString("___")}"
       --merges "${mergesString.mkString("___")}"
@@ -142,9 +142,9 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
 
-    cmd"""$binPython $pyGenerateAnalysisReportBibliography
+    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportBibliography}
       --acknowledgements "${projectConfig.acknowledgementsAnalysisReport.mkString(",")}"
       --known-loci-citations "${knownLociCitations.mkString(",,,")}"
       --loamstream-version "${projectConfig.loamstreamVersion}"
@@ -184,9 +184,9 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.pheno) 
   }.toSeq
   
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
   
-    cmd"""$binPython $pyGenerateAnalysisReportPhenoSummary
+    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoSummary}
       --dist-plot ${distPlotStrings.mkString(" ")}
       --sample-file ${ProjectStores.sampleFile}
       --id-col ${projectConfig.sampleFileId}
@@ -295,9 +295,9 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     cohorts ++ metas ++ merges
   }.toSeq
 
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
   
-    cmd"""$binPython $pyGenerateAnalysisReportPhenoCalibration
+    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoCalibration}
       --qq-plots ${qqPlotStrings.mkString(" ")}
       --mht-plots ${mhtPlotStrings.mkString(" ")}
       --pheno-name ${configPheno.id}
@@ -340,9 +340,9 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsSummaryData.regPlotsPdf)
   }.toSeq
   
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
     
-    cmd"""$binPython $pyGenerateAnalysisReportPhenoTopLoci
+    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoTopLoci}
       --top-results ${top20AnnotAlignedRiskStrings.mkString(" ")}
       --regionals ${regplotsStrings.mkString(" ")}
       --pheno-name ${configPheno.id}
@@ -453,9 +453,9 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
       
         case _ =>
       
-          drmWith(imageName = s"$imgPython27") {
+          drmWith(imageName = s"${utils.image.imgPython27}") {
             
-            cmd"""$binPython $pyGenerateAnalysisReportPhenoKnownLoci
+            cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoKnownLoci}
               --top-known-loci ${top50Strings.mkString(" ")}
               --pheno-name ${configPheno.id}
               --pheno-long-name "${configPheno.name}"
@@ -485,7 +485,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   val reportAnalysisResultsStringList = reportAnalysisResultsList.map(e => s"""${e.path}""")
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
     cmd"""cat ${analysisReportStores(configReport).globalData.header} ${analysisReportStores(configReport).globalData.intro} ${analysisReportStores(configReport).globalData.data} ${analysisReportStores(configReport).globalData.strategy} ${reportAnalysisResultsStringList.mkString(" ")} ${analysisReportStores(configReport).globalData.bibliography} > ${analysisReportStores(configReport).globalData.tex}"""
       .in(reportAnalysisResultsList :+ analysisReportStores(configReport).globalData.header :+ analysisReportStores(configReport).globalData.intro :+ analysisReportStores(configReport).globalData.data :+ analysisReportStores(configReport).globalData.strategy :+ analysisReportStores(configReport).globalData.bibliography)
@@ -500,7 +500,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   val reportAnalysisResultsInputStringList = reportAnalysisResultsInputList.map(e => s"""${e.path}""")
 
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
     
     cmd"""cat ${analysisReportStores(configReport).globalData.introInput} ${analysisReportStores(configReport).globalData.dataInput} ${analysisReportStores(configReport).globalData.strategyInput} ${reportAnalysisResultsInputStringList.mkString(" ")} ${analysisReportStores(configReport).globalData.bibliographyInput} > ${analysisReportStores(configReport).globalData.input}"""
       .in(reportAnalysisResultsInputList :+ analysisReportStores(configReport).globalData.introInput :+ analysisReportStores(configReport).globalData.dataInput :+ analysisReportStores(configReport).globalData.strategyInput :+ analysisReportStores(configReport).globalData.bibliographyInput)
@@ -509,9 +509,9 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgTex") {
+  drmWith(imageName = s"${utils.image.imgTex}") {
     
-    cmd"""bash -c "$binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}; sleep 5; $binPdflatex --output-directory=${localOutDir} ${analysisReportStores(configReport).globalData.tex}""""
+    cmd"""bash -c "${utils.binary.binPdflatex} --output-directory=${projectConfig.home} ${analysisReportStores(configReport).globalData.tex}; sleep 5; ${utils.binary.binPdflatex} --output-directory=${projectConfig.home} ${analysisReportStores(configReport).globalData.tex}""""
       .in(analysisReportStores(configReport).globalData.tex)
       .out(analysisReportStores(configReport).globalData.pdf)
       .tag(s"${analysisReportStores(configReport).globalData.pdf}".split("/").last)

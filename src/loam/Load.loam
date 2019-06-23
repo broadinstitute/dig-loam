@@ -13,7 +13,7 @@ def Load(array: ConfigArray): Unit = {
   val minPartitions =  array.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${array.minPartitions.get}" }
   val gqThreshold =  array.gqThreshold.getOrElse("") match { case "" => ""; case _ => s"--gq-threshold ${array.gqThreshold.get}" }
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -26,7 +26,7 @@ def Load(array: ConfigArray): Unit = {
 
       google {
       
-        hail"""$pyHailLoad --
+        hail"""${utils.python.pyHailLoad} --
           --reference-genome ${projectConfig.referenceGenome}
           ${minPartitions}
           ${gqThreshold}
@@ -62,9 +62,9 @@ def Load(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.loadHail.cpus, mem = projectConfig.resources.loadHail.mem, maxRunTime = projectConfig.resources.loadHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.loadHail.cpus, mem = projectConfig.resources.loadHail.mem, maxRunTime = projectConfig.resources.loadHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailLoad
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailLoad}
           --reference-genome ${projectConfig.referenceGenome}
           ${minPartitions}
           ${gqThreshold}

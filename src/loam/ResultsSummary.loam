@@ -22,9 +22,9 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       }
   }
 
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
   
-    cmd"""$binPython $pyTop1000
+    cmd"""${utils.binary.binPython} ${utils.python.pyTop1000}
       --results ${results}
       --p pval 
       --out ${summaryStores.resultsSummaryData.top1000}"""
@@ -32,7 +32,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .out(summaryStores.resultsSummaryData.top1000)
       .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
 
-    cmd"""$shTop1000Genes ${summaryStores.resultsSummaryData.top1000} $binPython $pyAddGeneAnnot ${ProjectStores.genePositions} ${summaryStores.resultsSummaryData.top1000Genes}"""
+    cmd"""${utils.bash.shTop1000Genes} ${summaryStores.resultsSummaryData.top1000} ${utils.binary.binPython} ${utils.python.pyAddGeneAnnot} ${ProjectStores.genePositions} ${summaryStores.resultsSummaryData.top1000Genes}"""
       .in(summaryStores.resultsSummaryData.top1000, ProjectStores.genePositions)
       .out(summaryStores.resultsSummaryData.top1000Genes)
       .tag(s"${summaryStores.resultsSummaryData.top1000Genes}".split("/").last)
@@ -53,10 +53,10 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   
   }.distinct
   
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rTop20
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rTop20}
       --results ${summaryStores.resultsSummaryData.top1000}
       --chr "#chr"
       --pos pos
@@ -71,9 +71,9 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
   }
 
-  drmWith(imageName = s"$imgPython27") {
+  drmWith(imageName = s"${utils.image.imgPython27}") {
     
-    cmd"""$binPython $pyQqPlot
+    cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
       --results ${results}
       --p pval
       --out ${summaryStores.resultsSummaryData.qqPlotPng}"""
@@ -81,7 +81,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       .out(summaryStores.resultsSummaryData.qqPlotPng)
       .tag(s"${summaryStores.resultsSummaryData.qqPlotPng}".split("/").last)
     
-    cmd"""$binPython $pyMhtPlot
+    cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
       --results ${results}
       --chr "#chr"
       --pos pos
@@ -98,9 +98,9 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
     case Some(s) =>
 
-      drmWith(imageName = s"$imgPython27") {
+      drmWith(imageName = s"${utils.image.imgPython27}") {
         
-        cmd"""$binPython $pyExtractTopRegions
+        cmd"""${utils.binary.binPython} ${utils.python.pyExtractTopRegions}
           --results ${results}
           --chr "#chr"
           --pos pos
@@ -115,9 +115,9 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
     case None =>
 
-      drmWith(imageName = s"$imgPython27") {
+      drmWith(imageName = s"${utils.image.imgPython27}") {
         
-        cmd"""$binPython $pyExtractTopRegions
+        cmd"""${utils.binary.binPython} ${utils.python.pyExtractTopRegions}
           --results ${results}
           --chr "#chr"
           --pos pos
@@ -131,12 +131,12 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
   }
 
-  drmWith(imageName = s"$imgLocuszoom") {
+  drmWith(imageName = s"${utils.image.imgLocuszoom}") {
   
-    cmd"""$shRegPlot 
-      $binTabix
-      $binLocuszoom
-      $binGhostscript
+    cmd"""${utils.bash.shRegPlot} 
+      ${utils.binary.binTabix}
+      ${utils.binary.binLocuszoom}
+      ${utils.binary.binGhostscript}
       ${summaryStores.resultsSummaryData.sigRegions}
       ${results}
       EUR
@@ -164,10 +164,10 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
       }
   }
 
-  drmWith(imageName = s"$imgR34") {
+  drmWith(imageName = s"${utils.image.imgR34}") {
   
-    cmd"""$binRscript --vanilla --verbose
-      $rTop50Known
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rTop50Known}
       --results ${results}
       --known-loci ${ProjectStores.knownStores(configKnown).data}
       --known-ld ${ProjectStores.knownStores(configKnown).hiLd}

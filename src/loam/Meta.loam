@@ -13,7 +13,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   val minPartitions =  ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -44,7 +44,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       
       google {
       
-        hail"""$pyHailMetaAnalysis --
+        hail"""${utils.python.pyHailMetaAnalysis} --
           ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${meta.resultsGoogle.get}
@@ -90,9 +90,9 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailMetaAnalysis
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailMetaAnalysis}
           ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${meta.results}
@@ -105,9 +105,9 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${meta.results}"""
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${meta.results}"""
       .in(meta.results)
       .out(meta.tbi)
       .tag(s"${meta.tbi}".split("/").last)
@@ -122,7 +122,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
 
   val minPartitions =  ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
 
-  hailCloud match {
+  projectConfig.hailCloud match {
 
     case true =>
 
@@ -153,7 +153,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       
       google {
       
-        hail"""$pyHailMetaAnalysis --
+        hail"""${utils.python.pyHailMetaAnalysis} --
           ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${known.resultsGoogle.get}
@@ -199,9 +199,9 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
       
       }
 
-      drmWith(imageName = s"$imgHail", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
 
-        cmd"""$binPython $pyHailMetaAnalysis
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailMetaAnalysis}
           ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
           --out ${known.results}
@@ -214,9 +214,9 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
 
   }
   
-  drmWith(imageName = s"$imgTools") {
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""$binTabix -f -b 2 -e 2 ${known.results}"""
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${known.results}"""
       .in(known.results)
       .out(known.tbi)
       .tag(s"${known.tbi}".split("/").last)
