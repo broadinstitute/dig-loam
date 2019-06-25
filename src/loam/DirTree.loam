@@ -67,7 +67,7 @@ object DirTree {
     val base = MultiPath(
       local = Some(path(initDir("loam_out"))),
       google = cfg.hailCloud match {
-        case true => Some(cfg.cloudHome.get / s"${cfg.projectId}/loam_out")
+        case true => Some(cfg.cloudHome.get / "loam_out")
         case false => None
       }
     )

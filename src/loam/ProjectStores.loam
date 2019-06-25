@@ -42,7 +42,7 @@ object ProjectStores {
     known -> Known(
       data = store(path(checkPath(known.data))).asInput,
       hiLd = store(path(checkPath(known.hiLd))).asInput,
-      hiLdGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
+      hiLdGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
     )
 
   }.toMap
@@ -59,7 +59,7 @@ object ProjectStores {
   val vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput
   val dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput
   val sampleFile = store(path(projectConfig.sampleFile)).asInput
-  val sampleFileGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
+  val sampleFileGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
   val phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) }
   val ancestryInferred = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryInferredGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
