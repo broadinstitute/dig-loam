@@ -38,7 +38,7 @@ def main(args=None):
 			r"	\begin{tabular}{rrrrr" + 'c'*(5) + "}",
 			r"		\toprule"]
 	id_map_table.extend([
-			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-missObs}",r"\textbf{-Kinship}",r"\textbf{-PcOutlier}"]) + r"\\"])
+			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-missObs}",r"\textbf{-KinshipCrossArray}",r"\textbf{-KinshipArray}",r"\textbf{-PcOutlier}"]) + r"\\"])
 	id_map_table.extend([
 			r"		\midrule"])
 	i = 0
@@ -56,6 +56,7 @@ def main(args=None):
 			row.extend([df_temp[df_temp['removed_nogeno'] == 0].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_sampleqc'] == 1)].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_incomplete_obs'] == 1)].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_kinship_cross_array'] == 1)].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_kinship'] == 1)].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_pc_outlier'] == 1)].shape[0]])
 			if j < len(model_files[cohort].keys()):
