@@ -36,32 +36,42 @@ pcs$GROUP<-NULL
 out <- merge(data, pcs, all.y=T)
 out <- merge(out, pheno, all.x=T)
 
-covars_factors <- unlist(strsplit(args$covars,split="\\+"))
-for(cv in covars_factors) {
-	cvv <- unlist(strsplit(cv,split=""))
-	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
-		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		if(length(unique(out[,cvb])) == 1) {
-			cat(paste0("removing covariate ",cvb," with zero variance\n"))
+if(args$covars != "") {
+	covars_factors <- unlist(strsplit(args$covars,split="\\+"))
+	for(cv in covars_factors) {
+		cvv <- unlist(strsplit(cv,split=""))
+		if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+			cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+			if(length(unique(out[,cvb])) == 1) {
+				cat(paste0("removing covariate ",cvb," with zero variance\n"))
+			} else {
+				out[,cvb] <- as.factor(out[,cvb])
+				covars_factors <- c(covars_factors,paste0("factor(",cvb,")"))
+			}
+			covars_factors <- covars_factors[covars_factors != cv]
 		} else {
-			out[,cvb] <- as.factor(out[,cvb])
-			covars_factors <- c(covars_factors,paste0("factor(",cvb,")"))
-		}
-		covars_factors <- covars_factors[covars_factors != cv]
-	} else {
-		if(length(unique(out[,cv])) == 1) {
-			cat(paste0("removing covariate ",cv," with zero variance\n"))
+			if(length(unique(out[,cv])) == 1) {
+				cat(paste0("removing covariate ",cv," with zero variance\n"))
+			}
 		}
 	}
+} else {
+	covars_factors <- c()
 }
 covars_analysis<-paste(c(covars_factors,"1",paste0("PC",seq(args$n_pcs))),collapse="+")
 
-incomplete_obs <- out[! complete.cases(out[,c(gsub("\\]","",gsub("\\[","",covars)))]),c("IID",gsub("\\]","",gsub("\\[","",covars)))]
+if(length(covars) > 0) {
+	incomplete_obs <- out[! complete.cases(out[,covars]),c("IID",covars)]
+} else {
+	incomplete_obs <- data.frame()
+}
 
 if(nrow(incomplete_obs) > 0) {
-	print(paste0(nrow(incomplete_obs), " incomplete observations found"))
+	print(paste0(nrow(incomplete_obs), " incomplete observations found!"))
+	write.table(incomplete_obs,args$incomplete_obs,row.names=F,col.names=T,quote=F,sep="\t",append=F)
+} else {
+	cat("", file = args$incomplete_obs)
 }
-write.table(incomplete_obs,args$incomplete_obs,row.names=F,col.names=T,quote=F,sep="\t",append=F)
 
 out <- out[! out$IID %in% incomplete_obs$IID,]
 for(x in metrics) {
