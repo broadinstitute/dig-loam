@@ -19,7 +19,7 @@ def main(args=None):
 	print("add variant filter out table for QC")
 	mt = mt.annotate_rows(
 		qc_filters = hl.struct(
-			vcf_filter = hl.cond(hl.len(mt.filters) == 0, 0, 1),
+			vcf_filter = hl.cond((hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)), 0, 1),
 			in_autosome = hl.cond(mt.locus.in_autosome(), 0, 1),
 			AN = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
 			is_monomorphic = hl.cond((mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), 0, 1),

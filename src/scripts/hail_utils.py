@@ -28,7 +28,7 @@ def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, ph
 	if hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in ref_genome.x_contigs], keep=True).count()[0] > 0:
 		tbl = hl.impute_sex(
 			mt.filter_rows(
-				(hl.len(mt.filters) == 0) & 
+				(hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)) & 
 				(mt.variant_qc_raw.AN > 1) & 
 				((mt.variant_qc_raw.AF[1] > 0) & (mt.variant_qc_raw.AF[1] < 1)) & 
 				(hl.is_snp(mt.alleles[0], mt.alleles[1])) & 

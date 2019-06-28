@@ -36,7 +36,7 @@ def main(args=None):
 
 	print("begin sample filtering")
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic, autosomal variants for sample qc")
-	mt_sample_qc = mt.filter_rows((hl.len(mt.filters) == 0) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
+	mt_sample_qc = mt.filter_rows((hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)) & mt.locus.in_autosome() & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
 
 	print("calculate sample qc stats")
 	mt_sample_qc = hl.sample_qc(mt_sample_qc, name='sample_qc')

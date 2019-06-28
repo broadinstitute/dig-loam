@@ -13,7 +13,7 @@ def main(args=None):
 	mt = hl.read_matrix_table(args.mt_in)
 
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic variants")
-	mt = mt.filter_rows((hl.len(mt.filters) == 0) & (hl.len(mt.filters) == 0) & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
+	mt = mt.filter_rows((hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)) & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
 
 	print("read kg vcf file")
 	kg = hl.import_vcf(args.kg_vcf_in, force_bgz=True, reference_genome=args.reference_genome)
