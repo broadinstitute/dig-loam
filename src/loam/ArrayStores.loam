@@ -8,6 +8,7 @@ import DirTree._
 final case class RawData(
   plink: Option[Plink],
   vcf: Option[MultiPathVcf],
+  rawBase: Option[Path],
   unplaced: Option[Store],
   unique: Option[Store],
   indel: Option[Store],
@@ -289,6 +290,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val rawData = RawData(
     plink = plink,
     vcf = vcf,
+    rawBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawBaseString); case _ => None },
     unplaced = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unplaced")); case _ => None },
     unique = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unique")); case _ => None },
     indel = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.indel")); case _ => None },

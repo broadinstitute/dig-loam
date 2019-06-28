@@ -38,7 +38,7 @@ def main(args=None):
 			r"	\begin{tabular}{rrrrr" + 'c'*(6) + "}",
 			r"		\toprule"]
 	id_map_table.extend([
-			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-KinshipCrossArray}",r"\textbf{-KinshipArray}",r"\textbf{-missObs}",r"\textbf{-PcOutlier}"]) + r"\\"])
+			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-KinshipCrossArray}",r"\textbf{-KinshipArray}",r"\textbf{-MissObs}",r"\textbf{-PcOutlier}"]) + r"\\"])
 	id_map_table.extend([
 			r"		\midrule"])
 	i = 0
