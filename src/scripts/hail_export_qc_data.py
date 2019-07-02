@@ -31,6 +31,23 @@ def main(args=None):
 		)
 	)
 
+	print("add qc_exclude annotation for default qc filters")
+	mt = mt.annotate_rows(
+		qc_exclude = hl.cond(
+			((mt.qc_filters.vcf_filter == 1) |
+			(mt.qc_filters.in_autosome == 1) |
+			(mt.qc_filters.AN == 1) |
+			(mt.qc_filters.is_monomorphic == 1) |
+			(mt.qc_filters.is_snp == 1) |
+			(mt.qc_filters.is_mnp == 1) |
+			(mt.qc_filters.is_indel == 1) |
+			(mt.qc_filters.is_complex == 1) |
+			(mt.qc_filters.in_hild_region == 1)),
+			1,
+			0
+		)
+	)
+
 	for f in args.vfilter:
 		if f is not None:
 			print("filter variants based on " + f[0])
@@ -47,7 +64,7 @@ def main(args=None):
 			)
 		print("update exclusion column based on " + f[0])
 		mt = mt.annotate_rows(
-			qc_exclude = hl.cond(mt.qc_filters[f[0]] == 1, 1, 0)
+			qc_exclude = hl.cond(mt.qc_filters[f[0]] == 1, 1, mt.qc_exclude)
 		)
 
 	rows_filtered = mt.rows().select('qc_exclude')
