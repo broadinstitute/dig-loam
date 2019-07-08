@@ -35,10 +35,10 @@ def main(args=None):
 			r"	\caption{Summary of samples removed from " + args.pheno_long_name.replace("_","\_") + " analysis by cohort and model}",
 			r"	\begin{center}",
 			r"	\resizebox{\ifdim\width>\columnwidth\columnwidth\else\width\fi}{!}{%",
-			r"	\begin{tabular}{rrrrr" + 'c'*(5) + "}",
+			r"	\begin{tabular}{rrrrr" + 'c'*(6) + "}",
 			r"		\toprule"]
 	id_map_table.extend([
-			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-missObs}",r"\textbf{-Kinship}",r"\textbf{-PcOutlier}"]) + r"\\"])
+			r"		" + ' & '.join([r"\textbf{Cohort}",r"\textbf{Array}",r"\textbf{Ancestry}",r"\textbf{Trans}",r"\textbf{Covars}",r"\textbf{Total}",r"\textbf{-SampleQc}",r"\textbf{-KinshipCrossArray}",r"\textbf{-KinshipArray}",r"\textbf{-missObs}",r"\textbf{-PcOutlier}"]) + r"\\"])
 	id_map_table.extend([
 			r"		\midrule"])
 	i = 0
@@ -55,8 +55,9 @@ def main(args=None):
 			row = []
 			row.extend([df_temp[df_temp['removed_nogeno'] == 0].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_sampleqc'] == 1)].shape[0]])
-			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_incomplete_obs'] == 1)].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_kinship_cross_array'] == 1)].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_kinship'] == 1)].shape[0]])
+			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_incomplete_obs'] == 1)].shape[0]])
 			row.extend([df_temp[(df_temp['removed_nogeno'] == 0) & (df_temp['removed_pc_outlier'] == 1)].shape[0]])
 			if j < len(model_files[cohort].keys()):
 				lineEnd = r"\\*"
