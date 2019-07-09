@@ -5,6 +5,8 @@ library(gdsfmt)
 library(pryr)
 library(argparse)
 
+set.seed(1)
+
 parser <- ArgumentParser()
 parser$add_argument("--cpus", dest="cpus", type="character", help="number of cpus to use for King")
 parser$add_argument("--gds-in", dest="gds_in", type="character", help="a plink binary file path")
