@@ -124,6 +124,7 @@ kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kin
 kinship_in <- kinship_in[which((! kinship_in$ID1 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_kinship_cross_array == 1))]) & (! kinship_in$ID2 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_kinship_cross_array == 1))])),]
 if(nrow(kinship_in) > 0) {
 	kinship_in$pair_idx <- row.names(kinship_in)
+	kinship_in$rand_choice <- sample.int(2, replace = TRUE, size = nrow(kinship_in))
 	sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 	sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
 	names(sampleqc_in)[1] <- args$iid_col
@@ -156,9 +157,8 @@ if(nrow(kinship_in) > 0) {
 					}
 				} else {
 					if(kinship_in$ID1_call_rate[i] == kinship_in$ID2_call_rate[i]) {
-						randid <- sample(c(kinship_in$ID1[i],kinship_in$ID2[i]), size=1)
-						kinship_in$ID1_remove[which(kinship_in$ID1 == randid)] <- 1
-						kinship_in$ID2_remove[which(kinship_in$ID2 == randid)] <- 1
+						kinship_in$ID1_remove[which(kinship_in$rand_choice == 1)] <- 1
+						kinship_in$ID2_remove[which(kinship_in$rand_choice == 2)] <- 1
 					} else if(kinship_in$ID1_call_rate[i] > kinship_in$ID2_call_rate[i]) {
 						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
 						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
