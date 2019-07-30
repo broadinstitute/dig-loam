@@ -172,12 +172,12 @@ final case class SampleQcMetricClusterData(
   klg: Store,
   log: Store)
 
-final case class FilterPass1(
+final case class FilterQc(
   samplesExclude: Store,
   samplesExcludeGoogle: Option[Store],
   samplesRestore: Store)
 
-final case class FilterPass2(
+final case class FilterPostQc(
   samplesStats: Store,
   samplesExclude: Store,
   samplesStatsGoogle: Option[Store],
@@ -221,8 +221,8 @@ final case class Array(
   sampleQcData: SampleQcData,
   sampleQcPcaClusterData: SampleQcPcaClusterData,
   sampleQcMetricClusterData: Map[String, SampleQcMetricClusterData],
-  filterPass1: FilterPass1,
-  filterPass2: FilterPass2)
+  filterQc: FilterQc,
+  filterPostQc: FilterPostQc)
   //removed: cleanData: CleanData
 
 val arrayStores = projectConfig.Arrays.map { arrayCfg =>
@@ -242,8 +242,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val ancestryClusterBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.cluster"
   val pcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.pca"
   val sampleQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.sampleqc"
-  val pass1BaseString = s"${projectConfig.projectId}.${arrayCfg.id}.pass1"
-  val pass2BaseString = s"${projectConfig.projectId}.${arrayCfg.id}.pass2"
+  val filterQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.qc"
+  val filterPostQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.postqc"
   //val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
   val baseName = arrayCfg.filename.split("/").last
@@ -514,22 +514,22 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   }.toMap
 
-  val filterPass1 = FilterPass1(
-    samplesExclude = store(dirTree.dataArrayMap(arrayCfg).pass1.local.get / s"${pass1BaseString}.samples.exclude.txt"),
-    samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).pass1.google.get / s"${pass1BaseString}.samples.exclude.txt")); case false => None },
-	samplesRestore = store(dirTree.dataArrayMap(arrayCfg).pass1.local.get / s"${pass1BaseString}.samples.restore.tbl"))
+  val filterQc = FilterQc(
+    samplesExclude = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.exclude.txt"),
+    samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.google.get / s"${filterQcBaseString}.samples.exclude.txt")); case false => None },
+	samplesRestore = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.restore.tbl"))
 
-  val filterPass2 = FilterPass2(
-    samplesStats = store(dirTree.dataArrayMap(arrayCfg).pass2.local.get / s"${pass2BaseString}.samples.stats.tsv"),
-    samplesExclude = store(dirTree.dataArrayMap(arrayCfg).pass2.local.get / s"${pass2BaseString}.samples.exclude.txt"),
-    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).pass2.google.get / s"${pass2BaseString}.samples.stats.tsv")); case false => None },
-    samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).pass2.google.get / s"${pass2BaseString}.samples.exclude.txt")); case false => None },
-    variantsStats = store(dirTree.dataArrayMap(arrayCfg).pass2.local.get / s"${pass2BaseString}.variants.stats.tsv"),
-    variantsExclude = store(dirTree.dataArrayMap(arrayCfg).pass2.local.get / s"${pass2BaseString}.variants.exclude.txt"),
-    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).pass2.google.get / s"${pass2BaseString}.variants.stats.tsv")); case false => None },
-    variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).pass2.google.get / s"${pass2BaseString}.variants.exclude.txt")); case false => None },
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).pass2.local.get / s"${pass2BaseString}.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).pass2.google.get / s"${pass2BaseString}.hail.log")); case false => None })
+  val filterPostQc = FilterPostQc(
+    samplesStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.samples.stats.tsv"),
+    samplesExclude = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.samples.exclude.txt"),
+    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.samples.stats.tsv")); case false => None },
+    samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.samples.exclude.txt")); case false => None },
+    variantsStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variants.stats.tsv"),
+    variantsExclude = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variants.exclude.txt"),
+    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variants.stats.tsv")); case false => None },
+    variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variants.exclude.txt")); case false => None },
+    hailLog = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log"),
+    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None })
 
   //val cleanData = CleanData(
   //  plink = Plink(base = projectConfig.home / cleanBaseString, data = bedBimFam(projectConfig.home / cleanBaseString)),

@@ -17,8 +17,8 @@ final case class DirTreeDataArray(
   sexcheck: MultiPath,
   metrics: MultiPath,
   filter: MultiPath,
-  pass1: MultiPath,
-  pass2: MultiPath) extends Debug
+  filterQc: MultiPath,
+  filterPostQc: MultiPath) extends Debug
 
 final case class DirTreeDataCohort(
   base: MultiPath,
@@ -104,8 +104,8 @@ object DirTree {
         sexcheck = appendSubDir(sampleqc, "sexcheck"),
         metrics = appendSubDir(sampleqc, "metrics"),
         filter = filter,
-        pass1 = appendSubDir(filter, "pass1"),
-        pass2 = appendSubDir(filter, "pass2")
+        filterQc = appendSubDir(filter, "qc"),
+        filterPostQc = appendSubDir(filter, "postqc")
       )
     }.toMap
 

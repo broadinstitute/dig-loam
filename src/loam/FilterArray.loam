@@ -9,7 +9,7 @@ import ProjectStores._
 def FilterArray(array: ConfigArray): Unit = {
 
   val vfilters = {
-    array.vFilters match {
+    array.postQcVariantFilters match {
       case Some(a) =>
         for {
           f <- a.tupelize_metrics
@@ -24,7 +24,7 @@ def FilterArray(array: ConfigArray): Unit = {
   }.mkString(" ")
 
   val sfilters = {
-    array.sFilters match {
+    array.postQcSampleFilters match {
       case Some(a) =>
         for {
           f <- a.tupelize_metrics
@@ -44,7 +44,7 @@ def FilterArray(array: ConfigArray): Unit = {
  
       local {
       
-        googleCopy(arrayStores(array).filterPass1.samplesExclude, arrayStores(array).filterPass1.samplesExcludeGoogle.get)
+        googleCopy(arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterQc.samplesExcludeGoogle.get)
       
       }
 
@@ -54,26 +54,26 @@ def FilterArray(array: ConfigArray): Unit = {
           --cloud
           ${sfilters}
           ${vfilters}
-          --log ${arrayStores(array).filterPass2.hailLogGoogle.get}
+          --log ${arrayStores(array).filterPostQc.hailLogGoogle.get}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --samples-remove ${arrayStores(array).filterPass1.samplesExcludeGoogle.get}
-          --samples-stats-out ${arrayStores(array).filterPass2.samplesStatsGoogle.get}
-          --samples-exclude-out ${arrayStores(array).filterPass2.samplesExcludeGoogle.get}
-          --variants-stats-out ${arrayStores(array).filterPass2.variantsStatsGoogle.get}
-          --variants-exclude-out ${arrayStores(array).filterPass2.variantsExcludeGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterPass1.samplesExcludeGoogle.get)
-          .out(arrayStores(array).filterPass2.samplesStatsGoogle.get, arrayStores(array).filterPass2.samplesExcludeGoogle.get, arrayStores(array).filterPass2.variantsStatsGoogle.get, arrayStores(array).filterPass2.variantsExcludeGoogle.get, arrayStores(array).filterPass2.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).filterPass2.hailLog}.pyHailFilter.google".split("/").last)
+          --samples-remove ${arrayStores(array).filterQc.samplesExcludeGoogle.get}
+          --samples-stats-out ${arrayStores(array).filterPostQc.samplesStatsGoogle.get}
+          --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExcludeGoogle.get}
+          --variants-stats-out ${arrayStores(array).filterPostQc.variantsStatsGoogle.get}
+          --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}"""
+          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get)
+          .out(arrayStores(array).filterPostQc.samplesStatsGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsStatsGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get, arrayStores(array).filterPostQc.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter.google".split("/").last)
       
       }
       
       local {
       
-        googleCopy(arrayStores(array).filterPass2.samplesStatsGoogle.get, arrayStores(array).filterPass2.samplesStats)
-        googleCopy(arrayStores(array).filterPass2.samplesExcludeGoogle.get, arrayStores(array).filterPass2.samplesExclude)
-        googleCopy(arrayStores(array).filterPass2.variantsStatsGoogle.get, arrayStores(array).filterPass2.variantsStats)
-        googleCopy(arrayStores(array).filterPass2.variantsExcludeGoogle.get, arrayStores(array).filterPass2.variantsExclude)
-        googleCopy(arrayStores(array).filterPass2.hailLogGoogle.get, arrayStores(array).filterPass2.hailLog)
+        googleCopy(arrayStores(array).filterPostQc.samplesStatsGoogle.get, arrayStores(array).filterPostQc.samplesStats)
+        googleCopy(arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExclude)
+        googleCopy(arrayStores(array).filterPostQc.variantsStatsGoogle.get, arrayStores(array).filterPostQc.variantsStats)
+        googleCopy(arrayStores(array).filterPostQc.variantsExcludeGoogle.get, arrayStores(array).filterPostQc.variantsExclude)
+        googleCopy(arrayStores(array).filterPostQc.hailLogGoogle.get, arrayStores(array).filterPostQc.hailLog)
       
       }
 
@@ -84,16 +84,16 @@ def FilterArray(array: ConfigArray): Unit = {
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
           ${sfilters}
           ${vfilters}
-          --log ${arrayStores(array).filterPass2.hailLog}
+          --log ${arrayStores(array).filterPostQc.hailLog}
           --mt-in ${arrayStores(array).refData.mt.get}
           --samples-remove ${arrayStores(array).filterPass1.samplesExclude}
-          --samples-stats-out ${arrayStores(array).filterPass2.samplesStats}
-          --samples-exclude-out ${arrayStores(array).filterPass2.samplesExclude}
-          --variants-stats-out ${arrayStores(array).filterPass2.variantsStats}
-          --variants-exclude-out ${arrayStores(array).filterPass2.variantsExclude}"""
+          --samples-stats-out ${arrayStores(array).filterPostQc.samplesStats}
+          --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExclude}
+          --variants-stats-out ${arrayStores(array).filterPostQc.variantsStats}
+          --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExclude}"""
           .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).filterPass1.samplesExclude)
-          .out(arrayStores(array).filterPass2.samplesStats, arrayStores(array).filterPass2.samplesExclude, arrayStores(array).filterPass2.variantsStats, arrayStores(array).filterPass2.variantsExclude, arrayStores(array).filterPass2.hailLog)
-          .tag(s"${arrayStores(array).filterPass2.hailLog}.pyHailFilter".split("/").last)
+          .out(arrayStores(array).filterPostQc.samplesStats, arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.variantsStats, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterPostQc.hailLog)
+          .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter".split("/").last)
 
       }
 

@@ -137,9 +137,9 @@ final case class ConfigArray(
   famsizeKeep: Seq[String],
   sampleqcKeep: Seq[String],
   sexcheckKeep: Seq[String],
-  qcDataFilters: String,
-  sFilters: String,
-  vFilters: String) extends Debug
+  qcVariantFilters: String,
+  postQcSampleFilters: String,
+  postQcVariantFilters: String) extends Debug
 
 final case class ConfigCohort(
   id: String,
@@ -147,8 +147,8 @@ final case class ConfigCohort(
   ancestry: Seq[String],
   stratCol: String,
   stratCodes: Seq[String],
-  sFilters: String,
-  vFilters: String,
+  sampleFilters: String,
+  variantFilters: String,
   partitions: Option[Int]) extends Debug
 
 final case class ConfigMeta(
@@ -632,9 +632,9 @@ object ProjectConfig {
           famsizeKeep = requiredStrList(config = array, field = "famsizeKeep"),
           sampleqcKeep = requiredStrList(config = array, field = "sampleqcKeep"),
           sexcheckKeep = requiredStrList(config = array, field = "sexcheckKeep"),
-          qcDataFilters = optionalStr(config = array, field = "qcDataFilters"),
-          sFilters = optionalStr(config = array, field = "sFilters"),
-          vFilters = optionalStr(config = array, field = "vFilters")
+          qcVariantFilters = optionalStr(config = array, field = "qcVariantFilters"),
+          postQcSampleFilters = optionalStr(config = array, field = "postQcSampleFilters"),
+          postQcVariantFilters = optionalStr(config = array, field = "postQcVariantFilters")
         )
     
       }
@@ -652,10 +652,10 @@ object ProjectConfig {
           array = requiredStr(config = cohort, field = "array"),
           ancestry = requiredStrList(config = cohort, field = "ancestry"),
           minPartitions = optionalInt(config = cohort, field = "minPartitions")
-          cohortCol = optionalStr(config = cohort, field = "cohortCol"),
-          cohortCodes = optionalStrList(config = cohort, field = "cohortCodes"),
-          sFilters = optionalStr(config = cohort, field = "sFilters"),
-          vFilters = optionalStr(config = cohort, field = "vFilters")
+          stratCol = optionalStr(config = cohort, field = "stratCol"),
+          stratCodes = optionalStrList(config = cohort, field = "stratCodes"),
+          sampleFilters = optionalStr(config = cohort, field = "sampleFilters"),
+          variantFilters = optionalStr(config = cohort, field = "variantFilters")
         )
     
       }

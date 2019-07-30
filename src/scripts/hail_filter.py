@@ -12,6 +12,18 @@ def main(args=None):
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
 
+	if args.pheno_in is not None and args.id_col is not None and args.strat_col is not None and args.strat_codes is not None:
+		print("extract samples with appropriate cohort codes")
+		tbl = hl.import_table(args.pheno_in, no_header=False).key_by(args.id_col)
+		tbl = tbl.filter(hl.literal(set(args.strat_codes.split(","))).contains(tbl[args.strat_col]))
+		mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=True)
+	
+	if args.ancestry_in is not None and args.ancestry_keep is not None:
+		print("extract samples with appropriate ancestry")
+		tbl = hl.import_table(args.ancestry_in, no_header=False).key_by('IID')
+		tbl = tbl.filter(hl.literal(set(args.ancestry_keep.split(","))).contains(tbl['FINAL']))
+		mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=True)
+
 	if args.samples_remove is not None:
 		print("remove samples (ie samples that failed previous qc steps)")
 		for sample_file in args.samples_remove.split(","):
@@ -83,6 +95,10 @@ def main(args=None):
 	print("write failed sample ids to file")
 	tbl.filter(tbl.sample_qc_filters.exclude == 1, keep=True).select().export(args.samples_exclude_out, header=False)
 
+	if args.samples_keep_out is not None:
+		print("write clean sample ids to file")
+		tbl.filter(tbl.sample_qc_filters.exclude == 0, keep=True).select().export(args.samples_keep_out, header=False)
+
 	print("begin variant filtering")
 	mt = mt.annotate_cols(sample_qc_exclude = 0)
 	mt = mt.annotate_cols(sample_qc_exclude = tbl[mt.s].sample_qc_filters.exclude)
@@ -138,6 +154,10 @@ def main(args=None):
 	print("write failed variants to file")
 	tbl.filter(tbl.variant_qc_filters.exclude == 1, keep=True).select().export(args.variants_exclude_out, header=False)
 
+	if args.variants_keep_out is not None:
+		print("write clean variants to file")
+		tbl.filter(tbl.variant_qc_filters.exclude == 0, keep=True).select().export(args.variants_keep_out, header=False)
+
 	if args.cloud:
 		hl.copy_log(args.log)
 
@@ -147,22 +167,23 @@ if __name__ == "__main__":
 	parser.add_argument('--sfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
 	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
     parser.add_argument('--pheno-in', help='a phenotype file name')
+	parser.add_argument('--id-col', help='a sample id column name in phenotype file')
     parser.add_argument('--ancestry-in', help='an inferred ancestry file')
     parser.add_argument('--ancestry-keep', help='a comma separated list of ancestry codes to keep')
-    parser.add_argument('--cohort-col', help='a column name for a categorical column in the phenotype file')
-    parser.add_argument('--cohort-codes', help='a comma separated list of cohort column values to keep')
+    parser.add_argument('--strat-col', help='a column name for a categorical column in the phenotype file')
+    parser.add_argument('--strat-codes', help='a comma separated list of strat column values to keep')
 	parser.add_argument('--samples-remove', help='a comma separated list of files containing samples to remove before calculations')
 	parser.add_argument('--samples-extract', help='a comma separated list of files containing samples to extract before calculations')
 	parser.add_argument('--variants-remove', help='a comma separated list of files containing variants to remove before calculations')
 	parser.add_argument('--variants-extract', help='a comma separated list of files containing variants to extract before calculations')
+	parser.add_argument('--samples-keep-out', help='a base filename for samples to keep')
+    parser.add_argument('--variants-keep-out', help='a base filename for variants to keep')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)
 	requiredArgs.add_argument('--samples-stats-out', help='a base filename for sample qc', required=True)
 	requiredArgs.add_argument('--samples-exclude-out', help='a base filename for failed samples', required=True)
-    requiredArgs.add_argument('--samples-keep-out', help='a base filename for samples to keep', required=True)
 	requiredArgs.add_argument('--variants-stats-out', help='a base filename for variant qc', required=True)
 	requiredArgs.add_argument('--variants-exclude-out', help='a base filename for failed variants', required=True)
-    requiredArgs.add_argument('--variants-keep-out', help='a base filename for variants to keep', required=True)
 	args = parser.parse_args()
 	main(args)
