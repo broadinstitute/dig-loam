@@ -3,18 +3,19 @@
  * filter samples and variants to generate cohort-level exclusions for analysis
  */
 import ProjectConfig._
+import ArrayStores._
 import CohortStores._
 import ProjectStores._
 
 def FilterCohort(cohort: ConfigCohort): Unit = {
 
-  val array = arrayStores(cohort.array)
+  val array = projectConfig.Arrays.filter(e => cohort.array == e.id).head
 
   val vfilters = {
     cohort.variantFilters match {
       case Some(a) =>
         for {
-          f <- a.tupelize_metrics
+          f <- projectConfig.variantFilters.filter(e => e.id == a).head.tupelize_metrics
         } yield {
           f._2 match {
             case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
@@ -25,11 +26,11 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
     }
   }.mkString(" ")
 
-  val samplefilters = {
-    cohort.sFilters match {
+  val sfilters = {
+    cohort.sampleFilters match {
       case Some(a) =>
         for {
-          f <- a.tupelize_metrics
+          f <- projectConfig.sampleFilters.filter(e => e.id == a).head.tupelize_metrics
         } yield {
           f._2 match {
             case Some(s) => "--sfilter " + f._1 + " \"" + s + "\""
@@ -40,11 +41,25 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
     }
   }.mkString(" ")
 
+  val stratcol = {
+    cohort.stratCol match {
+      case Some(a) => "--strat-col " + a
+      case _ => ""
+    }
+  }
+
+  val stratcodes = {
+    cohort.stratCodes match {
+      case Some(a) => "--strat-codes " + a.mkString(",")
+      case _ => ""
+    }
+  }
+
   projectConfig.hailCloud match {
 
     case true =>
 
-      val samples_remove = Seq(array.filterQc.samplesExcludeGoogle.get, array.filterPostQc.samplesExcludeGoogle.get)
+      val samples_remove = Seq(arrayStores(array).filterQc.samplesExcludeGoogle.get.path, arrayStores(array).filterPostQc.samplesExcludeGoogle.get.path)
  
       google {
 
@@ -53,22 +68,22 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
           ${sfilters}
           ${vfilters}
           --log ${cohortStores(cohort).hailLogGoogle.get}
-          --mt-in ${array.refData.mtGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --pheno-in ${ProjectStores.phenoFileGoogle.get}
-          --id-col ${ProjectConfig.phenoFileId}
+          --id-col ${projectConfig.phenoFileId}
           --ancestry-in ${ProjectStores.ancestryInferredGoogle.get}
           --ancestry-keep "${cohort.ancestry.mkString(",")}"
-          --strat-col ${cohort.stratCol}
-          --strat-codes "${cohort.stratCodes.mkString(",")}"
+          ${stratcol}
+          ${stratcodes}
           --samples-remove "${samples_remove.mkString(",")}"
-          --variants-remove ${array.filterPostQc.variantsExcludeGoogle.get}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}
           --samples-stats-out ${cohortStores(cohort).samplesStatsGoogle.get}
           --samples-exclude-out ${cohortStores(cohort).samplesExcludeGoogle.get}
           --samples-keep-out ${cohortStores(cohort).samplesKeepGoogle.get}
           --variants-stats-out ${cohortStores(cohort).variantsStatsGoogle.get}
           --variants-exclude-out ${cohortStores(cohort).variantsExcludeGoogle.get}
           --variants-keep-out ${cohortStores(cohort).variantsKeepGoogle.get}"""
-          .in(samples_remove :+ ProjectStores.ancestryInferredGoogle.get :+ ProjectStores.ancestryInferredGoogle.get:+ array.refData.mtGoogle.get :+ array.filterPostQc.variantsExcludeGoogle.get)
+          .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
           .out(cohortStores(cohort).samplesStatsGoogle.get, cohortStores(cohort).samplesExcludeGoogle.get, cohortStores(cohort).variantsStatsGoogle.get, cohortStores(cohort).variantsExcludeGoogle.get, cohortStores(cohort).samplesKeepGoogle.get, cohortStores(cohort).variantsKeepGoogle.get, cohortStores(cohort).hailLogGoogle.get)
           .tag(s"${cohortStores(cohort).hailLog}.pyHailFilter.google".split("/").last)
 
@@ -88,7 +103,7 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
 
     case false =>
 
-      val samples_remove = Seq(array.filterQc.samplesExclude, array.filterPostQc.samplesExclude)
+      val samples_remove = Seq(arrayStores(array).filterQc.samplesExclude.path, arrayStores(array).filterPostQc.samplesExclude.path)
 
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
 
@@ -96,22 +111,22 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
           ${sfilters}
           ${vfilters}
           --log ${cohortStores(cohort).hailLog}
-          --mt-in ${array.refData.mt.get}
-          --pheno-in ${ProjectStores.phenoFile}
-          --id-col ${ProjectConfig.phenoFileId}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --pheno-in ${ProjectStores.phenoFile.get}
+          --id-col ${projectConfig.phenoFileId}
           --ancestry-in ${ProjectStores.ancestryInferred}
           --ancestry-keep "${cohort.ancestry.mkString(",")}"
-          --strat-col ${cohort.stratCol}
-          --strat-codes "${cohort.stratCodes.mkString(",")}"
+          ${stratcol}
+          ${stratcodes}
           --samples-remove "${samples_remove.mkString(",")}"
-          --variants-remove ${array.filterPostQc.variantsExclude}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExclude}
           --samples-stats-out ${cohortStores(cohort).samplesStats}
           --samples-exclude-out ${cohortStores(cohort).samplesExclude}
           --samples-keep-out ${cohortStores(cohort).samplesKeep}
           --variants-stats-out ${cohortStores(cohort).variantsStats}
           --variants-exclude-out ${cohortStores(cohort).variantsExclude}
           --variants-keep-out ${cohortStores(cohort).variantsKeep}"""
-          .in(samples_remove :+ ProjectStores.ancestryInferred :+ ProjectStores.ancestryInferred:+ array.refData.mt.get :+ array.filterPostQc.variantsExclude)
+          .in(ProjectStores.phenoFile.get, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, ProjectStores.ancestryInferred, ProjectStores.ancestryInferred, arrayStores(array).refData.mt.get, arrayStores(array).filterPostQc.variantsExclude)
           .out(cohortStores(cohort).samplesStats, cohortStores(cohort).samplesExclude, cohortStores(cohort).variantsStats, cohortStores(cohort).variantsExclude, cohortStores(cohort).samplesKeep, cohortStores(cohort).variantsKeep, cohortStores(cohort).hailLog)
           .tag(s"${cohortStores(cohort).hailLog}.pyHailFilter".split("/").last)
 

@@ -13,7 +13,7 @@ def ExportQcData(array: ConfigArray): Unit = {
     array.qcVariantFilters match {
       case Some(a) =>
         for {
-          f <- a.tupelize_metrics
+          f <- projectConfig.variantFilters.filter(e => e.id == a).head.tupelize_metrics
         } yield {
           f._2 match {
             case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
@@ -27,18 +27,18 @@ def ExportQcData(array: ConfigArray): Unit = {
   val sampleN = array.qcVariantFilters.getOrElse("") match {
     case "" => ""
     case _ =>
-      array.qcVariantFilters.get.sample_n.getOrElse("") match {
+      projectConfig.variantFilters.filter(e => e.id == array.qcVariantFilters.get).head.sample_n.getOrElse("") match {
         case "" => ""
-        case _ => s"--sample-n ${array.qcVariantFilters.get.sample_n.get}"
+        case _ => s"--sample-n ${projectConfig.variantFilters.filter(e => e.id == array.qcVariantFilters.get).head.sample_n.get}"
       }
   }
 
   val sampleSeed = array.qcVariantFilters.getOrElse("") match {
     case "" => ""
     case _ =>
-      array.qcVariantFilters.get.sample_seed.getOrElse("") match {
+      projectConfig.variantFilters.filter(e => e.id == array.qcVariantFilters.get).head.sample_seed.getOrElse("") match {
         case "" => ""
-        case _ => s"--sample-seed ${array.qcVariantFilters.get.sample_seed.get}"
+        case _ => s"--sample-seed ${projectConfig.variantFilters.filter(e => e.id == array.qcVariantFilters.get).head.sample_seed.get}"
       }
   }
 

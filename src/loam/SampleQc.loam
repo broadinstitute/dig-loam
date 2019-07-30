@@ -189,9 +189,9 @@ def SampleQc(array: ConfigArray): Unit = {
       --famsize-keep "${array.famsizeKeep.mkString(",")}"
       --sampleqc-keep "${array.sampleqcKeep.mkString(",")}"
       --sexcheck-keep "${array.sexcheckKeep.mkString(",")}"
-      --out ${arrayStores(array).filterPass1.samplesRestore}"""
-      .out(arrayStores(array).filterPass1.samplesRestore)
-      .tag(s"${arrayStores(array).filterPass1.samplesRestore}".split("/").last)
+      --out ${arrayStores(array).filterQc.samplesRestore}"""
+      .out(arrayStores(array).filterQc.samplesRestore)
+      .tag(s"${arrayStores(array).filterQc.samplesRestore}".split("/").last)
 
   }
   
@@ -209,11 +209,11 @@ def SampleQc(array: ConfigArray): Unit = {
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
       --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
-      --restore ${arrayStores(array).filterPass1.samplesRestore}
-      --out ${arrayStores(array).filterPass1.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterPass1.samplesRestore)
-      .out(arrayStores(array).filterPass1.samplesExclude)
-      .tag(s"${arrayStores(array).filterPass1.samplesExclude}".split("/").last)
+      --restore ${arrayStores(array).filterQc.samplesRestore}
+      --out ${arrayStores(array).filterQc.samplesExclude}"""
+      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterQc.samplesRestore)
+      .out(arrayStores(array).filterQc.samplesExclude)
+      .tag(s"${arrayStores(array).filterQc.samplesExclude}".split("/").last)
   
   }
 

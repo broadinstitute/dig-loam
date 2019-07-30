@@ -2,7 +2,7 @@ import ProjectConfig._
 //import Collections._
 ////import Directories._
 ////import StoreHelpers._
-////import ProjectStores._
+import ProjectStores._
 import ArrayStores._
 import Upload._
 import Prepare._
@@ -99,7 +99,7 @@ ProjectStores.phenoFile match {
       cohort <- projectConfig.Cohorts
     } yield {
 
-      FilterCohort(configCohort = cohort)
+      FilterCohort(cohort = cohort)
 
     }
 

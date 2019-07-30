@@ -43,6 +43,8 @@ final case class DirTree(
   data: MultiPath,
   dataArray: MultiPath,
   dataArrayMap: Map[ConfigArray, DirTreeDataArray],
+  dataCohort: MultiPath,
+  dataCohortMap: Map[ConfigCohort, DirTreeDataCohort],
   dataGlobal: MultiPath,
   dataGlobalAncestry: MultiPath,
   dataGlobalKinship: MultiPath,
@@ -112,7 +114,7 @@ object DirTree {
     val dataCohortMap = cfg.Cohorts.map { cohort =>
       val base = appendSubDir(dataCohort, cohort.id)
       val filter = appendSubDir(base, "filter")
-      array -> DirTreeDataCohort(
+      cohort -> DirTreeDataCohort(
         base = base,
         filter = filter
       )
@@ -185,6 +187,7 @@ object DirTree {
       data = data,
       dataArray = dataArray,
       dataArrayMap = dataArrayMap,
+      dataCohort = dataCohort,
       dataCohortMap = dataCohortMap,
       dataGlobal = dataGlobal,
       dataGlobalAncestry = dataGlobalAncestry,

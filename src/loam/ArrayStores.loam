@@ -563,8 +563,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     sampleQcData = sampleQcData,
     sampleQcPcaClusterData = sampleQcPcaClusterData,
     sampleQcMetricClusterData = sampleQcMetricClusterData,
-    filterPass1 = filterPass1,
-    filterPass2 = filterPass2)
+    filterQc = filterQc,
+    filterPostQc = filterPostQc)
     //removed: cleanData = cleanData
 
 }.toMap
