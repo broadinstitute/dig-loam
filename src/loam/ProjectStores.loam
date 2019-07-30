@@ -1,5 +1,4 @@
 import ProjectConfig._
-import PipelineConfig._
 import Fxns._
 import DirTree._
 
@@ -61,6 +60,7 @@ object ProjectStores {
   val sampleFile = store(path(projectConfig.sampleFile)).asInput
   val sampleFileGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
   val phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) }
+  val phenoFileGoogle = projectConfig.phenoFile match { case "" => None; case _ => projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None } }
   val ancestryInferred = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")
   val ancestryInferredGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
   val ancestryOutliers = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")

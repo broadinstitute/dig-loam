@@ -4,7 +4,6 @@
   *  Requires: Plink1.9, liftOver
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 
 def Prepare(arrayCfg: ConfigArray): Unit = {

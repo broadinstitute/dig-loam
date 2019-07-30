@@ -7,7 +7,6 @@
   * King only writes the '.kin0' file if families are found, so a bash script is used to write an empty file in that case
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 
 def Kinship(array: ConfigArray): Unit = {

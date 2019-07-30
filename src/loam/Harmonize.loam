@@ -7,7 +7,6 @@
   *     To save time, this will be run in parallel by chromosome number
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 

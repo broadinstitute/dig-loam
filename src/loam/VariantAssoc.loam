@@ -4,7 +4,6 @@
   *  Requires: Hail
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import AssocStores._
 import ProjectStores._

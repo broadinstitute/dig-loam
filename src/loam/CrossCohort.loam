@@ -4,7 +4,6 @@
   *  Requires: Plink, King
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 import AssocStores._

@@ -4,7 +4,6 @@
  *  Requires: R
  */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 

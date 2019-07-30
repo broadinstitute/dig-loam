@@ -1,5 +1,4 @@
 import ProjectConfig._
-import PipelineConfig._
 import StoreHelpers._
 
 final case class GlobalData(

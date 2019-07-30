@@ -4,7 +4,6 @@
   *  Requires: NA
   */
 import ProjectConfig._
-import PipelineConfig._
 import ProjectStores._
 import Fxns._
 
@@ -44,6 +43,18 @@ def Upload(): Unit = {
           local {
             googleCopy(ProjectStores.sampleFile, ProjectStores.sampleFileGoogle.get)
           }
+      }
+
+      ProjectStores.phenoFileGoogle match {
+        case Some(s) =>
+          checkURI(s"${s.get.uri}") match {
+            case 0 => ()
+            case 1 => 
+              local {
+                googleCopy(ProjectStores.phenoFile, s)
+              }
+          }
+        case _ => ()
       }
 
     case false => ()

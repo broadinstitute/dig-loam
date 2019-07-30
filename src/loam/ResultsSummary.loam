@@ -4,7 +4,6 @@
   *  Requires: Python, R
   */
 import ProjectConfig._
-import PipelineConfig._
 import ProjectStores._
 import AssocStores._
 import ResultsSummaryStores._

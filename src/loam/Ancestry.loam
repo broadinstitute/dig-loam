@@ -6,7 +6,6 @@
   *     To perform ancestry inference and clustering with 1KG data, we must combine on common variants with reference data (clustering does not work when only using PCA loadings and projecting)
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 

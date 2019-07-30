@@ -3,7 +3,6 @@
  * filter variants and generate imputation ready data set
  */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 
 def FilterImpute(array: String): Unit = {

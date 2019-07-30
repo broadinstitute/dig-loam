@@ -3,14 +3,13 @@
  * filter samples and variants to generate array-level exclusions for analysis
  */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 
 def FilterArray(array: ConfigArray): Unit = {
 
   val vfilters = {
-    array.analysisVariantFilters match {
+    array.vFilters match {
       case Some(a) =>
         for {
           f <- a.tupelize_metrics
@@ -25,7 +24,7 @@ def FilterArray(array: ConfigArray): Unit = {
   }.mkString(" ")
 
   val sfilters = {
-    array.analysisSampleFilters match {
+    array.sFilters match {
       case Some(a) =>
         for {
           f <- a.tupelize_metrics

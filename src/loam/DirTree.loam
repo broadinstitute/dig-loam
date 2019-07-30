@@ -20,6 +20,10 @@ final case class DirTreeDataArray(
   pass1: MultiPath,
   pass2: MultiPath) extends Debug
 
+final case class DirTreeDataCohort(
+  base: MultiPath,
+  filter: MultiPath) extends Debug
+
 final case class DirTreeAnalysisModelMeta(
   base: MultiPath,
   cohorts: Map[ConfigCohort, MultiPath]) extends Debug
@@ -74,6 +78,7 @@ object DirTree {
 
     val data = appendSubDir(base, "data")
     val dataArray = appendSubDir(data, "array")
+    val dataCohort = appendSubDir(data, "cohort")
     val dataGlobal = appendSubDir(data, "global")
     val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
     val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
@@ -101,6 +106,15 @@ object DirTree {
         filter = filter,
         pass1 = appendSubDir(filter, "pass1"),
         pass2 = appendSubDir(filter, "pass2")
+      )
+    }.toMap
+
+    val dataCohortMap = cfg.Cohorts.map { cohort =>
+      val base = appendSubDir(dataCohort, cohort.id)
+      val filter = appendSubDir(base, "filter")
+      array -> DirTreeDataCohort(
+        base = base,
+        filter = filter
       )
     }.toMap
 
@@ -171,6 +185,7 @@ object DirTree {
       data = data,
       dataArray = dataArray,
       dataArrayMap = dataArrayMap,
+      dataCohortMap = dataCohortMap,
       dataGlobal = dataGlobal,
       dataGlobalAncestry = dataGlobalAncestry,
       dataGlobalKinship = dataGlobalKinship,

@@ -137,24 +137,29 @@ final case class ConfigArray(
   famsizeKeep: Seq[String],
   sampleqcKeep: Seq[String],
   sexcheckKeep: Seq[String],
-  qcFilters: Seq[String],
-  analysisFilters: Seq[String]) extends Debug
+  qcDataFilters: String,
+  sFilters: String,
+  vFilters: String) extends Debug
 
 final case class ConfigCohort(
   id: String,
   array: String,
   ancestry: Seq[String],
-  minPartitions: Option[Int]) extends Debug
+  stratCol: String,
+  stratCodes: Seq[String],
+  sFilters: String,
+  vFilters: String,
+  partitions: Option[Int]) extends Debug
 
 final case class ConfigMeta(
   id: String,
   cohorts: Seq[String],
-  minPartitions: Option[Int]) extends Debug
+  partitions: Option[Int]) extends Debug
 
 final case class ConfigMerge(
   id: String,
   cohorts_metas: Seq[String],
-  minPartitions: Option[Int]) extends Debug
+  partitions: Option[Int]) extends Debug
 
 final case class ConfigPheno(
   id: String,
@@ -627,8 +632,9 @@ object ProjectConfig {
           famsizeKeep = requiredStrList(config = array, field = "famsizeKeep"),
           sampleqcKeep = requiredStrList(config = array, field = "sampleqcKeep"),
           sexcheckKeep = requiredStrList(config = array, field = "sexcheckKeep"),
-          qcFilters = optionalStrList(config = array, field = "qcFilters"),
-          analysisFilters = optionalStrList(config = array, field = "analysisFilters")
+          qcDataFilters = optionalStr(config = array, field = "qcDataFilters"),
+          sFilters = optionalStr(config = array, field = "sFilters"),
+          vFilters = optionalStr(config = array, field = "vFilters")
         )
     
       }
@@ -648,7 +654,8 @@ object ProjectConfig {
           minPartitions = optionalInt(config = cohort, field = "minPartitions")
           cohortCol = optionalStr(config = cohort, field = "cohortCol"),
           cohortCodes = optionalStrList(config = cohort, field = "cohortCodes"),
-          filters = optionalStrList(config = cohort, field = "filters")
+          sFilters = optionalStr(config = cohort, field = "sFilters"),
+          vFilters = optionalStr(config = cohort, field = "vFilters")
         )
     
       }

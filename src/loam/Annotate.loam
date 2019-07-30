@@ -5,7 +5,6 @@
   *  Notes:
   */
 import ProjectConfig._
-import PipelineConfig._
 import ProjectStores._
 import ArrayStores._
 

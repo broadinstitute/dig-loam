@@ -4,7 +4,6 @@
   *  Requires: R-3.4, Python, convert, pdflatex
   */
 import ProjectConfig._
-import PipelineConfig._
 import ArrayStores._
 import ProjectStores._
 import AssocStores._

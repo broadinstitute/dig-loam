@@ -4,7 +4,6 @@
   *  Requires: Hail
   */
 import ProjectConfig._
-import PipelineConfig._
 import AssocStores._
 
 def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
