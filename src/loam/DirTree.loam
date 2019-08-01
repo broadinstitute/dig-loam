@@ -24,14 +24,13 @@ final case class DirTreeDataCohort(
   base: MultiPath,
   filter: MultiPath) extends Debug
 
-final case class DirTreeAnalysisModelMeta(
-  base: MultiPath,
-  cohorts: Map[ConfigCohort, MultiPath]) extends Debug
-
 final case class DirTreeAnalysisModel(
   base: MultiPath,
+  base_cohort: Option[MultiPath],
+  base_meta: Option[MultiPath],
+  base_merge: Option[MultiPath],
   merges: Map[ConfigMerge, MultiPath],
-  metas: Map[ConfigMeta, DirTreeAnalysisModelMeta],
+  metas: Map[ConfigMeta, MultiPath],
   cohorts: Map[ConfigCohort, MultiPath]) extends Debug
 
 final case class DirTreeAnalysisPheno(
@@ -132,45 +131,22 @@ object DirTree {
         base = base_pheno,
         models = modelsReport.filter(e => e.pheno == pheno.id).map { model =>
           val base_model = appendSubDir(base_pheno, model.id)
-          val model_merges = {
-            for {
-              section <- cfg.Reports.flatMap(e => e.sections).filter(e => e.models.contains(model.id)).filter(e => e.merges.isDefined)
-            } yield {
-              cfg.Merges.filter(e => section.merges.get.contains(e.id))
-            }
-          }.flatten.distinct
-          val model_metas = {
-            for {
-              section <- cfg.Reports.flatMap(e => e.sections).filter(e => e.models.contains(model.id)).filter(e => e.metas.isDefined)
-            } yield {
-              cfg.Metas.filter(e => section.metas.get.contains(e.id))
-            }
-          }.flatten.distinct
-          val model_cohorts = {
-            for {
-              section <- cfg.Reports.flatMap(e => e.sections).filter(e => e.models.contains(model.id)).filter(e => e.cohorts.isDefined)
-            } yield {
-              cfg.Cohorts.filter(e => section.cohorts.get.contains(e.id))
-            }
-          }.flatten.distinct
+          val base_cohort = (modelCohorts ++ modelCohortMetas).size match { case 0 => None; case _ => Some(appendSubDir(base_model, "cohort")) }
+          val base_meta = modelMetas.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "meta")) }
+          val base_merge = modelMerges.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "merge")) }
           model -> DirTreeAnalysisModel(
             base = base_model,
-            merges = model_merges.map { merge =>
-              merge -> appendSubDir(base_model, merge.id)
+            base_cohort = base_cohort,
+            base_meta = base_meta,
+            base_merge = base_merge,
+            merges = modelMerges.map(e => e.merge).map { merge =>
+              merge -> appendSubDir(base_merge.get, merge.id)
             }.toMap,
-            metas = model_metas.map { meta =>
-              val base_meta = appendSubDir(base_model, meta.id)
-              val model_meta_cohorts = cfg.Cohorts.filter(e => meta.cohorts.contains(e.id))
-              val cohorts = model_meta_cohorts.map { cohort =>
-                cohort -> appendSubDir(base_meta, cohort.id)
-              }.toMap
-              meta -> DirTreeAnalysisModelMeta(
-                base = base_meta,
-                cohorts = cohorts
-              )
+            metas = modelMetas.map(e => e.meta).map { meta =>
+              meta -> appendSubDir(base_meta.get, meta.id)
             }.toMap,
-            cohorts = model_cohorts.map { cohort =>
-              cohort -> appendSubDir(base_model, cohort.id)
+            cohorts = (modelCohorts.map(e => e.cohort) ++ modelCohortMetas.map(e => e.cohort)).map { cohort =>
+              cohort -> appendSubDir(base_cohort.get, cohort.id)
             }.toMap
           )
         }.toMap

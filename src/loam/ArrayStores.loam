@@ -87,7 +87,8 @@ final case class FilteredData(
   pruneIn: Store)
 
 final case class PrunedData(
-  plink: Plink)
+  plink: Plink,
+  bimGoogle: Option[Store])
 
 final case class KinshipData(
   base: Path,
@@ -425,7 +426,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     pruneIn = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.prune.in"))
 
   val prunedData = PrunedData(
-    plink = Plink(base = dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / prunedBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / prunedBaseString)))
+    plink = Plink(base = dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / prunedBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / prunedBaseString)),
+    bimGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${prunedBaseString}.bim")); case false => None })
 
   val kinshipData = KinshipData(
     base = dirTree.dataArrayMap(arrayCfg).kinship.local.get / kinshipBaseString,

@@ -1,5 +1,5 @@
 import ProjectConfig._
-//import Collections._
+import Collections._
 ////import Directories._
 ////import StoreHelpers._
 import ProjectStores._
@@ -17,10 +17,10 @@ import SampleQc._
 import FilterArray._
 import FilterCohort._
 //import Impute._
-//import VariantAssoc._
-//import CrossCohort._
-//import Meta._
-//import Merge._
+import VariantAssoc._
+import CrossCohort._
+import Meta._
+import Merge._
 //import ResultsSummary._
 //import AssocStores._
 //import Phenotype._
@@ -98,130 +98,130 @@ ProjectStores.phenoFile match {
     for {
       cohort <- projectConfig.Cohorts
     } yield {
-
+    
       FilterCohort(cohort = cohort)
-
+    
     }
 
-    //// Cohort variant association
-    //for {
-    //  x <- modelCohorts
-    //} yield {
-    //
-    //  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None)
-    //
-    //}
-    //
-    //// Copy known results to Google Cloud
-    //for {
-    //  x <- ProjectStores.knownStores.keys
-    //} yield {
-    //
-    //  KnownLociToGoogle(configKnown = x)
-    //
-    //}
-    //
-    //// Cohort variant association for known loci
-    //for {
-    //  x <- modelCohortKnowns
-    //} yield {
-    //
-    //  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = None)
-    //
-    //}
-    //
-    //// Meta-analysis cross-cohort common variants search
-    //for {
-    //  meta <- metas
-    //} yield {
-    //
-    //  CrossCohortCommonVars(configMeta = meta)
-    //
-    //}
-    //
-    //// Meta-analysis cross-cohort qc prep
-    //for {
-    //  meta <- metas
-    //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-    //} yield {
-    //
-    //  CrossCohortPrep(configMeta = meta, configCohort = cohort)
-    //
-    //}
-    //
-    //// Meta-analysis cross-array kinship
-    //for {
-    //  meta <- metas
-    //} yield {
-    //
-    //  CrossCohortKinship(meta)
-    //
-    //}
-    //
-    //// Meta-analysis calculate cross-cohort kinship sample exclusions
-    //for {
-    //  meta <- metas
-    //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-    //} yield {
-    //
-    //  CrossCohortExclude(configMeta = meta, configCohort = cohort)
-    //
-    //}
-    //
-    //// Meta-analysis specific cohort variant association
-    //for {
-    //  x <- modelCohortMetas
-    //} yield { 
-    //
-    //  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta))
-    //
-    //}
-    //
-    //// Meta-analysis specific cohort variant association for known loci
-    //for {
-    //  x <- modelCohortMetaKnowns
-    //} yield { 
-    //
-    //  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = Some(x.meta))
-    //
-    //}
-    //
-    //// Meta-analysis
-    //for {
-    //  x <- modelMetas
-    //} yield {
-    //
-    //  MetaAnalysis(configModel = x.model, configMeta = x.meta)
-    //
-    //}
-    //
-    //// Meta-analysis for known loci
-    //for {
-    //  x <- modelMetaKnowns
-    //} yield {
-    //
-    //  MetaAnalysisKnownLoci(configModel = x.model, configMeta = x.meta, configKnown = x.known)
-    //
-    //}
-    //
-    //// Merge results
-    //for {
-    //  x <- modelMerges
-    //} yield {
-    //
-    //  MergeAssoc(configModel = x.model, configMerge = x.merge)
-    //
-    //}
-    //
-    //// Merge known assoc results
-    //for {
-    //  x <- modelMergeKnowns
-    //} yield {
-    //
-    //  MergeKnownAssoc(configModel = x.model, configMerge = x.merge, configKnown = x.known)
-    //
-    //}
-    //
+    // Cohort variant association
+    for {
+      x <- modelCohorts
+    } yield {
+    
+      VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None)
+    
+    }
+    
+    // Copy known results to Google Cloud
+    for {
+      x <- ProjectStores.knownStores.keys
+    } yield {
+    
+      KnownLociToGoogle(configKnown = x)
+    
+    }
+    
+    // Cohort variant association for known loci
+    for {
+      x <- modelCohortKnowns
+    } yield {
+    
+      KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = None)
+    
+    }
+    
+    // Meta-analysis cross-cohort common variants search
+    for {
+      meta <- metas
+    } yield {
+    
+      CrossCohortCommonVars(configMeta = meta)
+    
+    }
+    
+    // Meta-analysis cross-cohort qc prep
+    for {
+      meta <- metas
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+    } yield {
+    
+      CrossCohortPrep(configMeta = meta, configCohort = cohort)
+    
+    }
+    
+    // Meta-analysis cross-array kinship
+    for {
+      meta <- metas
+    } yield {
+    
+      CrossCohortKinship(meta)
+    
+    }
+    
+    // Meta-analysis calculate cross-cohort kinship sample exclusions
+    for {
+      meta <- metas
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
+    } yield {
+    
+      CrossCohortExclude(configMeta = meta, configCohort = cohort)
+    
+    }
+    
+    // Meta-analysis specific cohort variant association
+    for {
+      x <- modelCohortMetas
+    } yield { 
+    
+      VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta))
+    
+    }
+    
+    // Meta-analysis specific cohort variant association for known loci
+    for {
+      x <- modelCohortMetaKnowns
+    } yield { 
+    
+      KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = Some(x.meta))
+    
+    }
+    
+    // Meta-analysis
+    for {
+      x <- modelMetas
+    } yield {
+    
+      MetaAnalysis(configModel = x.model, configMeta = x.meta)
+    
+    }
+    
+    // Meta-analysis for known loci
+    for {
+      x <- modelMetaKnowns
+    } yield {
+    
+      MetaAnalysisKnownLoci(configModel = x.model, configMeta = x.meta, configKnown = x.known)
+    
+    }
+    
+    // Merge results
+    for {
+      x <- modelMerges
+    } yield {
+    
+      MergeAssoc(configModel = x.model, configMerge = x.merge)
+    
+    }
+    
+    // Merge known assoc results
+    for {
+      x <- modelMergeKnowns
+    } yield {
+    
+      MergeKnownAssoc(configModel = x.model, configMerge = x.merge, configKnown = x.known)
+    
+    }
+    
     //// Cohort Results Summary
     //for {
     //  x <- modelCohortsReport

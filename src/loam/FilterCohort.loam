@@ -59,7 +59,7 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
 
     case true =>
 
-      val samples_remove = Seq(arrayStores(array).filterQc.samplesExcludeGoogle.get.path, arrayStores(array).filterPostQc.samplesExcludeGoogle.get.path)
+      val samples_remove = Seq(s"""${arrayStores(array).filterQc.samplesExcludeGoogle.get.path}""", s"""${arrayStores(array).filterPostQc.samplesExcludeGoogle.get.path}""")
  
       google {
 
@@ -103,7 +103,7 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
 
     case false =>
 
-      val samples_remove = Seq(arrayStores(array).filterQc.samplesExclude.path, arrayStores(array).filterPostQc.samplesExclude.path)
+      val samples_remove = Seq(s"""${arrayStores(array).filterQc.samplesExclude.path}""", s"""${arrayStores(array).filterPostQc.samplesExclude.path}""")
 
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
 

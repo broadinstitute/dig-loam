@@ -38,12 +38,12 @@ def main(args=None):
 	if args.variants_remove is not None:
 		print("remove variants (ie variants that failed previous qc steps)")
 		for variant_file in args.variants_remove.split(","):
-			tbl = hl.import_table(variant_file, no_header=False).key_by('locus', 'alleles')
+			tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
 			mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=False)
     
 	if args.variants_extract is not None:
 		print("extract variants")
-		tbl = hl.import_table(args.variants_extract, no_header=False).key_by('locus', 'alleles')
+		tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
 		mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=True)
 
 	print("begin sample filtering")
@@ -117,7 +117,7 @@ def main(args=None):
 	print("initialize variant filter table")
 	tbl = tbl.annotate(
 		variant_qc_filters = hl.struct(
-			filters = hl.cond(hl.len(tbl.filters) == 0, 0, 1),
+			filters = hl.cond(hl.is_missing(tbl.filters), 0, hl.cond(hl.len(tbl.filters) == 0, 0, 1)),
 			AN = hl.cond(tbl.variant_qc.AN > 1, 0, 1),
 			is_monomorphic = hl.cond((tbl.variant_qc.AF > 0) & (tbl.variant_qc.AF < 1), 0, 1)
 		)

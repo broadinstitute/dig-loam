@@ -18,8 +18,11 @@ parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample 
 parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
 parser$add_argument("--kinship-in", dest="kinship_in", type="character", help="a kinship file containing related pairs")
 parser$add_argument("--samples-exclude-qc", dest="samples_exclude_qc", type="character", help="a list of sample IDs to exclude based on sample qc")
+parser$add_argument("--samples-exclude-postqc", dest="samples_exclude_postqc", type="character", help="a list of sample IDs to exclude based on postqc filters")
+parser$add_argument("--samples-exclude-cohort", dest="samples_exclude_cohort", type="character", help="a list of sample IDs to exclude based on cohort-level filters")
 parser$add_argument("--samples-exclude-cross-array", dest="samples_exclude_cross_array", type="character", help="a list of sample IDs to exclude based on cross array kinship")
-parser$add_argument("--variants-exclude", dest="variants_exclude", default=NULL, type="character", help="variant IDs file")
+parser$add_argument("--variants-exclude-postqc", dest="variants_exclude_postqc", default=NULL, type="character", help="a list of variant IDs to exclude based on post-qc filtering")
+parser$add_argument("--variants-exclude-cohort", dest="variants_exclude_cohort", default=NULL, type="character", help="a list of variant IDs to exclude based on cohort-level filtering")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
@@ -88,13 +91,15 @@ if(! is.null(args$ancestry_keep)) {
 
 cat("reading sample and variant IDs from gds file\n")
 geno <- GdsGenotypeReader(filename = args$gds_in)
+geno_snps <- data.frame(idx = getSnpID(geno), name = paste(getChromosome(geno), pos = getPosition(geno), sep=":"))
 iids <- getScanID(geno)
-vids <- getSnpID(geno)
 close(geno)
 
 id_map <- data.frame(ID = pheno[,args$iid_col])
 id_map$removed_nogeno <- 0
 id_map$removed_sampleqc <- 0
+id_map$removed_postqc_filters <- 0
+id_map$removed_cohort_filters <- 0
 id_map$removed_incomplete_obs <- 0
 id_map$removed_kinship_cross_array <- 0
 id_map$removed_kinship <- 0
@@ -110,18 +115,34 @@ if(args$samples_exclude_qc != "") {
 	cat(paste0("removed ",as.character(length(id_map$removed_sampleqc[which(id_map$removed_sampleqc == 1)]))," samples that did not pass sample qc"),"\n")
 }
 
+cat("read in sample IDs excluded during post-qc filtering\n")
+if(args$samples_exclude_postqc != "") {
+	samples_excl<-scan(file=args$samples_exclude_postqc,what="character")
+	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+	id_map$removed_postqc_filters[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$ID %in% samples_excl))] <- 1
+	cat(paste0("removed ",as.character(length(id_map$removed_postqc_filters[which(id_map$removed_postqc_filters == 1)]))," samples that did not pass post-qc filters"),"\n")
+}
+
+cat("read in sample IDs excluded during cohort-level filtering\n")
+if(args$samples_exclude_cohort != "") {
+	samples_excl<-scan(file=args$samples_exclude_cohort,what="character")
+	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+	id_map$removed_cohort_filters[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$ID %in% samples_excl))] <- 1
+	cat(paste0("removed ",as.character(length(id_map$removed_cohort_filters[which(id_map$removed_cohort_filters == 1)]))," samples that did not pass cohort-level filters"),"\n")
+}
+
 cat("read in sample IDs excluded during cross array kinship checks\n")
 if(args$samples_exclude_cross_array != "") {
 	samples_excl<-scan(file=args$samples_exclude_cross_array,what="character")
 	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
-	id_map$removed_kinship_cross_array[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$ID %in% samples_excl))] <- 1
+	id_map$removed_kinship_cross_array[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_cohort_filters == 0) & (id_map$ID %in% samples_excl))] <- 1
 	cat(paste0("removed ",as.character(length(id_map$removed_kinship_cross_array[which(id_map$removed_kinship_cross_array == 1)]))," samples due to cross-array kinship"),"\n")
 }
 
 cat("reading in kinship values for related pairs\n")
 kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kinship_in$ID2 %in% pheno[,args$iid_col])),]
-kinship_in <- kinship_in[which((! kinship_in$ID1 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_kinship_cross_array == 1))]) & (! kinship_in$ID2 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_kinship_cross_array == 1))])),]
+kinship_in <- kinship_in[which((! kinship_in$ID1 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_postqc_filters == 1) | (id_map$removed_cohort_filters == 1) | (id_map$removed_kinship_cross_array == 1))]) & (! kinship_in$ID2 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_postqc_filters == 1) | (id_map$removed_cohort_filters == 1) | (id_map$removed_kinship_cross_array == 1))])),]
 if(nrow(kinship_in) > 0) {
 	kinship_in$pair_idx <- row.names(kinship_in)
 	kinship_in$rand_choice <- sample.int(2, replace = TRUE, size = nrow(kinship_in))
@@ -172,7 +193,7 @@ if(nrow(kinship_in) > 0) {
 		samples_excl <- kinship_in$ID1[which(kinship_in$ID1_remove == 1)]
 		samples_excl <- c(samples_excl, kinship_in$ID2[which(kinship_in$ID2_remove == 1)])
 		pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
-		id_map$removed_kinship[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_kinship_cross_array == 0) & (id_map$ID %in% samples_excl))] <- 1
+		id_map$removed_kinship[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_cohort_filters == 0) & (id_map$removed_kinship_cross_array == 0) & (id_map$ID %in% samples_excl))] <- 1
 		cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)]))," samples due to within-array kinship"),"\n")
 	}
 } else {
@@ -181,14 +202,24 @@ if(nrow(kinship_in) > 0) {
 
 cat("extracting only complete observations\n")
 pheno <- pheno[complete.cases(pheno),]
-id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_kinship_cross_array == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
+id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_cohort_filters == 0) & (id_map$removed_kinship_cross_array == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
 cat("read variant exclusion list\n")
-variants_excl<-scan(file=args$variants_exclude,what="character")
+variants_excl <- c()
+variants_excl_postqc <- try(read.table(args$variants_exclude_postqc,header=FALSE, as.is=TRUE, stringsAsFactors=FALSE, sep="\t"), silent=TRUE)
+if(! inherits(variants_excl_postqc, "try-error")) {
+	variants_excl <- c(variants_excl,variants_excl_postqc$V1)
+}
+variants_excl_cohort <- try(read.table(args$variants_exclude_cohort,header=FALSE, as.is=TRUE, stringsAsFactors=FALSE, sep="\t"), silent=TRUE)
+if(! inherits(variants_excl_cohort, "try-error")) {
+	variants_excl <- c(variants_excl,variants_excl_cohort$V1)
+}
+variants_excl<-unique(variants_excl)
+
+variants_incl<-geno_snps$idx[! geno_snps$name %in% variants_excl]
 
 samples_incl<-pheno[,args$iid_col]
-variants_incl<-vids[! vids %in% variants_excl]
 
 kinship<-NULL
 if(args$test == "lmm") {

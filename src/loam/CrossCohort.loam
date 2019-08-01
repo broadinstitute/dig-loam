@@ -14,7 +14,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     for {
       cohort <- configMeta.cohorts
     } yield {
-      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).refData.base.toString + ".bim"
+      arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredData.plink.base.local.get.toString + ".bim"
     }
   }.distinct
 
@@ -22,7 +22,7 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
     for {
       cohort <- configMeta.cohorts
     } yield {
-      arrayStores(projectConfig.Cohorts.filter(e => e.id == cohort).head.array).refData.data.toSeq
+      arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredData.plink.data.local.get
     }
   }.flatten.distinct
 
@@ -39,10 +39,12 @@ def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
+  val arrayCfg = projectConfig.Arrays.filter(e => e.id == configCohort.array).head
+
   drmWith(imageName = s"${utils.image.imgTools}") {
 
-    cmd"""${utils.bash.shMetaCohortSamples} ${arrayStores(configCohort.array).refData.base}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(arrayStores(configCohort.array).refData.data :+ ProjectStores.ancestryInferred)
+    cmd"""${utils.bash.shMetaCohortSamples} ${arrayStores(arrayCfg).filteredData.plink.base.local.get}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
+    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ ProjectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 
@@ -50,8 +52,8 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.crossCohortPrepPlink.cpus, mem = projectConfig.resources.crossCohortPrepPlink.mem, maxRunTime = projectConfig.resources.crossCohortPrepPlink.maxRunTime) {
 
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(configCohort.array).refData.base} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
-    .in(arrayStores(configCohort.array).refData.data :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).filteredData.plink.base.local.get} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
+    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
 

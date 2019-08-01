@@ -1,4 +1,6 @@
 import ProjectConfig._
+import DirTree._
+import Collections._
 import StoreHelpers._
 
 final case class Assoc(
@@ -72,18 +74,22 @@ val assocStores = (
       case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}"
     }
 
+    val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
+
+    val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
+
     assoc -> Assoc(
-      idMap = store(projectConfig.home / s"${prefix}.samples_exclude.map.tsv"),
-      phenoLog = store(projectConfig.home / s"${prefix}.pheno.log"),
-      pheno = store(projectConfig.home / s"${prefix}.pheno.tsv"),
-      phenoGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.pheno.tsv")); case false => None },
-      pcs = store(projectConfig.home / s"${prefix}.pcs.include"),
-      pcsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.pcs.include")); case false => None },
-      results = store(projectConfig.home / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      resultsHailLog = store(projectConfig.home / s"${prefix}.results.hail.log"),
-      resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.hail.log")); case false => None },
-      tbi = store(projectConfig.home / s"${prefix}.results.tsv.bgz.tbi")
+      idMap = store(local_home / s"${prefix}.samples_exclude.map.tsv"),
+      phenoLog = store(local_home / s"${prefix}.pheno.log"),
+      pheno = store(local_home / s"${prefix}.pheno.tsv"),
+      phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pheno.tsv")); case false => None },
+      pcs = store(local_home / s"${prefix}.pcs.include"),
+      pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pcs.include")); case false => None },
+      results = store(local_home / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
+      resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
+      resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
+      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
     )
 
   }.toMap
@@ -114,19 +120,23 @@ val knownLociStores = (
       case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}.${known.id}"
       case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}.${known.id}"
     }
+
+    val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
+
+    val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
     
     knownLoci -> Assoc(
-        idMap = store(projectConfig.home / s"${prefix}.samples_exclude.map.tsv"),
-        phenoLog = store(projectConfig.home / s"${prefix}.pheno.log"),
-        pheno = store(projectConfig.home / s"${prefix}.pheno.tsv"),
-        phenoGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.pheno.tsv")); case false => None },
-        pcs = store(projectConfig.home / s"${prefix}.pcs.include"),
-        pcsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.pcs.include")); case false => None },
-        results = store(projectConfig.home / s"${prefix}.results.tsv.bgz"),
-        resultsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.tsv.bgz")); case false => None },
-        resultsHailLog = store(projectConfig.home / s"${prefix}.results.hail.log"),
-        resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.hail.log")); case false => None },
-        tbi = store(projectConfig.home / s"${prefix}.results.tsv.bgz.tbi")
+        idMap = store(local_home / s"${prefix}.samples_exclude.map.tsv"),
+        phenoLog = store(local_home / s"${prefix}.pheno.log"),
+        pheno = store(local_home / s"${prefix}.pheno.tsv"),
+        phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pheno.tsv")); case false => None },
+        pcs = store(local_home / s"${prefix}.pcs.include"),
+        pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pcs.include")); case false => None },
+        results = store(local_home / s"${prefix}.results.tsv.bgz"),
+        resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
+        resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
+        resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
+        tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
       )
 
   }.toMap
@@ -137,7 +147,9 @@ val metaKinshipStores = metas.map { meta =>
   val baseRefFilteredString = s"${baseString}.ref.filtered"
   val baseKinshipString = s"${baseString}.kinship"
 
-  val commonVariants = store(projectConfig.home / s"${baseRefFilteredString}.common_variants.txt")
+  val local_home = dirTree.dataGlobalKinshipMap(meta).local.get
+
+  val commonVariants = store(local_home / s"${baseRefFilteredString}.common_variants.txt")
 
   val metaCohort = projectConfig.Cohorts.filter(e => meta.cohorts contains e.id).map { cohort =>
 
@@ -146,23 +158,23 @@ val metaKinshipStores = metas.map { meta =>
     val cohortKinshipBaseString = s"${cohortBaseString}.kinship"
 
     cohort -> MetaCohort(
-      data = bedBimFam(projectConfig.home / cohortRefBaseString),
-      base = projectConfig.home / cohortRefBaseString,
-      samples = store(projectConfig.home / s"${cohortBaseString}.samples"),
-      famMerge = store(projectConfig.home / s"${cohortRefBaseString}.fam.merge"),
-      kinshipSamplesExclude = store(projectConfig.home / s"${cohortKinshipBaseString}.samples.exclude"))
+      data = bedBimFam(local_home / cohortRefBaseString),
+      base = local_home / cohortRefBaseString,
+      samples = store(local_home / s"${cohortBaseString}.samples"),
+      famMerge = store(local_home / s"${cohortRefBaseString}.fam.merge"),
+      kinshipSamplesExclude = store(local_home / s"${cohortKinshipBaseString}.samples.exclude"))
 
   }.toMap
 
   meta -> MetaKinship(
     commonVariants = commonVariants,
-    mergeList= store(projectConfig.home / s"${baseRefFilteredString}.merge_list.txt"),
-    dataFiltered = bedBimFam(projectConfig.home / baseRefFilteredString),
-    baseFiltered = projectConfig.home / baseRefFilteredString,
-    baseKinship = projectConfig.home / baseKinshipString,
-    log = store(projectConfig.home / s"${baseKinshipString}.log"),
-    kin0 = store(projectConfig.home / s"${baseKinshipString}.kin0"),
-    kin0Related = store(projectConfig.home / s"${baseKinshipString}.kin0.related"),
+    mergeList= store(local_home / s"${baseRefFilteredString}.merge_list.txt"),
+    dataFiltered = bedBimFam(local_home / baseRefFilteredString),
+    baseFiltered = local_home / baseRefFilteredString,
+    baseKinship = local_home / baseKinshipString,
+    log = store(local_home / s"${baseKinshipString}.log"),
+    kin0 = store(local_home / s"${baseKinshipString}.kin0"),
+    kin0Related = store(local_home / s"${baseKinshipString}.kin0.related"),
     metaCohort = metaCohort)
 
 }.toMap
@@ -182,12 +194,16 @@ val metaStores = (
 
   val baseString = s"${projectConfig.projectId}.${meta.id}.${model.id}"
 
+  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
+
+  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
+
   modelMeta -> Meta(
-    results = store(projectConfig.home / s"${baseString}.results.tsv.bgz"),
-    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${baseString}.results.tsv.bgz")); case false => None },
-    hailLog = store(projectConfig.home / s"${baseString}.results.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${baseString}.results.hail.log")); case false => None },
-    tbi = store(projectConfig.home / s"${baseString}.results.tsv.bgz.tbi")
+    results = store(local_home / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.tsv.bgz")); case false => None },
+    hailLog = store(local_home / s"${baseString}.results.hail.log"),
+    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.hail.log")); case false => None },
+    tbi = store(local_home / s"${baseString}.results.tsv.bgz.tbi")
   )
 
 }.toMap
@@ -208,12 +224,16 @@ val knownMetaStores = (
 
   val prefix = s"${projectConfig.projectId}.${meta.id}.${model.id}.${known.id}"
 
+  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
+
+  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
+
   modelMetaKnown -> Meta(
-      results = store(projectConfig.home / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      hailLog = store(projectConfig.home / s"${prefix}.results.hail.log"),
-      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.hail.log")); case false => None },
-      tbi = store(projectConfig.home / s"${prefix}.results.tsv.bgz.tbi")
+      results = store(local_home / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
+      hailLog = store(local_home / s"${prefix}.results.hail.log"),
+      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
+      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
   )
 
 }.toMap
@@ -233,12 +253,16 @@ val mergeStores = (
 
   val baseString = s"${projectConfig.projectId}.${merge.id}.${model.id}"
 
+  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).local.get
+
+  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).google.get); case false => None }
+
   modelMerge -> Merge(
-    results = store(projectConfig.home / s"${baseString}.results.tsv.bgz"),
-    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${baseString}.results.tsv.bgz")); case false => None },
-    hailLog = store(projectConfig.home / s"${baseString}.results.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${baseString}.results.hail.log")); case false => None },
-    tbi = store(projectConfig.home / s"${baseString}.results.tsv.bgz.tbi")
+    results = store(local_home / s"${baseString}.results.tsv.bgz"),
+    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.tsv.bgz")); case false => None },
+    hailLog = store(local_home / s"${baseString}.results.hail.log"),
+    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.hail.log")); case false => None },
+    tbi = store(local_home / s"${baseString}.results.tsv.bgz.tbi")
   )
 
 }.toMap
@@ -259,12 +283,16 @@ val knownMergeStores = (
 
   val prefix = s"${projectConfig.projectId}.${merge.id}.${model.id}.${known.id}"
 
+  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).local.get
+
+  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).google.get); case false => None }
+
   modelMergeKnown -> Merge(
-      results = store(projectConfig.home / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      hailLog = store(projectConfig.home / s"${prefix}.results.hail.log"),
-      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${prefix}.results.hail.log")); case false => None },
-      tbi = store(projectConfig.home / s"${prefix}.results.tsv.bgz.tbi")
+      results = store(local_home / s"${prefix}.results.tsv.bgz"),
+      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
+      hailLog = store(local_home / s"${prefix}.results.hail.log"),
+      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
+      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
   )
 
 }.toMap

@@ -10,7 +10,7 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
 
   val meta = metaStores((configModel, configMeta))
 
-  val minPartitions =  ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
+  val minPartitions =  projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
 
   projectConfig.hailCloud match {
 
@@ -119,7 +119,7 @@ def MetaAnalysisKnownLoci(configModel: ConfigModel, configMeta: ConfigMeta, conf
 
   val known = knownMetaStores((configModel, configMeta, configKnown))
 
-  val minPartitions =  ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
+  val minPartitions =  projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${projectConfig.Metas.filter(e => e.id == configMeta.id).head.minPartitions.get}" }
 
   projectConfig.hailCloud match {
 
