@@ -25,8 +25,8 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, cohortStores(configCohort).variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, cohortStores(configCohort).variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
 
   }
   
@@ -48,7 +48,6 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       --samples-exclude-cohort ${cohortStores(configCohort).samplesExclude}
       --samples-exclude-cross-array "${excludeCrossArrayString}"
       --variants-exclude-postqc ${arrayStores(array).filterPostQc.variantsExclude}
-      --variants-exclude-cohort ${cohortStores(configCohort).variantsExclude}
       --test ${configModel.test}
       --trans "${configModel.trans}"
       --covars "${configModel.covars}"
@@ -175,8 +174,8 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, cohortStores(configCohort).variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, cohortStores(configCohort).variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
 
   }
   
@@ -198,7 +197,6 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       --samples-exclude-cohort ${cohortStores(configCohort).samplesExclude}
       --samples-exclude-cross-array "${excludeCrossArrayString}"
       --variants-exclude-postqc ${arrayStores(array).filterPostQc.variantsExclude}
-      --variants-exclude-cohort ${cohortStores(configCohort).variantsExclude}
       --test ${configModel.test}
       --trans "${configModel.trans}"
       --covars "${configModel.covars}"

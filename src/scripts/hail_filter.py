@@ -1,13 +1,24 @@
 import hail as hl
 import argparse
-import hail_utils
 
 def main(args=None):
 
-	if not args.cloud:
-		hl.init(log = args.log)
+	if args.hail_utils:
+		import importlib.util
+		with hl.hadoop_open(args.hail_utils, 'r') as f:
+			script = f.read()
+		with open("hail_utils.py", 'w') as f:
+			f.write(script)
+		spec = importlib.util.spec_from_file_location('hail_utils', 'hail_utils.py')
+		hail_utils = importlib.util.module_from_spec(spec)   
+		spec.loader.exec_module(hail_utils)
 	else:
-		hl.init()
+		import hail_utils
+
+	if not args.cloud:
+		hl.init(log = args.log, idempotent=True)
+	else:
+		hl.init(idempotent=True)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -27,24 +38,40 @@ def main(args=None):
 	if args.samples_remove is not None:
 		print("remove samples (ie samples that failed previous qc steps)")
 		for sample_file in args.samples_remove.split(","):
-			tbl = hl.import_table(sample_file, no_header=True).key_by('f0')
-			mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=False)
+			try:
+				tbl = hl.import_table(sample_file, no_header=True).key_by('f0')
+			except:
+				print("skipping empty file " + sample_file)
+			else:
+				mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=False)
 
 	if args.samples_extract is not None:
 		print("extract samples")
-		tbl = hl.import_table(args.samples_extract, no_header=True).key_by('f0')
-		mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=True)
+		try:
+			tbl = hl.import_table(args.samples_extract, no_header=True).key_by('f0')
+		except:
+			print("skipping empty file " + args.samples_extract)
+		else:
+			mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=True)
 
 	if args.variants_remove is not None:
 		print("remove variants (ie variants that failed previous qc steps)")
 		for variant_file in args.variants_remove.split(","):
-			tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
-			mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=False)
+			try:
+				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+			except:
+				print("skipping empty file " + variant_file)
+			else:
+				mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=False)
     
 	if args.variants_extract is not None:
 		print("extract variants")
-		tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
-		mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=True)
+		try:
+			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+		except:
+			print("skipping empty file " + args.variants_extract)
+		else:
+			mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=True)
 
 	print("begin sample filtering")
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic, autosomal variants for sample qc")
@@ -108,7 +135,7 @@ def main(args=None):
 	mt = hl.variant_qc(mt, name='variant_qc')
 
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
-	mt = hail_utils.adjust_variant_qc_sex(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc')
+	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc')
 
 	print("extract variant qc stats table")
 	tbl = mt.rows()
@@ -168,6 +195,7 @@ if __name__ == "__main__":
 	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
 	parser.add_argument('--pheno-in', help='a phenotype file name')
 	parser.add_argument('--id-col', help='a sample id column name in phenotype file')
+	parser.add_argument('--case-ctrl-col', help='a case/ctrl type column name in phenotype file (ie. coded as 1/0)')
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
 	parser.add_argument('--ancestry-keep', help='a comma separated list of ancestry codes to keep')
 	parser.add_argument('--strat-col', help='a column name for a categorical column in the phenotype file')
@@ -178,6 +206,7 @@ if __name__ == "__main__":
 	parser.add_argument('--variants-extract', help='a comma separated list of files containing variants to extract before calculations')
 	parser.add_argument('--samples-keep-out', help='a base filename for samples to keep')
 	parser.add_argument('--variants-keep-out', help='a base filename for variants to keep')
+	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)

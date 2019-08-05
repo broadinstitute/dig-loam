@@ -30,6 +30,7 @@ def Load(array: ConfigArray): Unit = {
           ${minPartitions}
           ${gqThreshold}
           --cloud
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           --log ${arrayStores(array).refData.hailLogGoogle.get}
           --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
           --sample-in ${ProjectStores.sampleFileGoogle.get}
@@ -43,7 +44,7 @@ def Load(array: ConfigArray): Unit = {
           --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
           --mt-checkpoint ${arrayStores(array).refData.mtCheckpointGoogle.get}
           --mt-out ${arrayStores(array).refData.mtGoogle.get}"""
-          .in(arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, ProjectStores.sampleFileGoogle.get)
+          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, ProjectStores.sampleFileGoogle.get)
           .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.mtCheckpointGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
           .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
       

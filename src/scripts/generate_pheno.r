@@ -22,7 +22,6 @@ parser$add_argument("--samples-exclude-postqc", dest="samples_exclude_postqc", t
 parser$add_argument("--samples-exclude-cohort", dest="samples_exclude_cohort", type="character", help="a list of sample IDs to exclude based on cohort-level filters")
 parser$add_argument("--samples-exclude-cross-array", dest="samples_exclude_cross_array", type="character", help="a list of sample IDs to exclude based on cross array kinship")
 parser$add_argument("--variants-exclude-postqc", dest="variants_exclude_postqc", default=NULL, type="character", help="a list of variant IDs to exclude based on post-qc filtering")
-parser$add_argument("--variants-exclude-cohort", dest="variants_exclude_cohort", default=NULL, type="character", help="a list of variant IDs to exclude based on cohort-level filtering")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
@@ -205,15 +204,11 @@ pheno <- pheno[complete.cases(pheno),]
 id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_cohort_filters == 0) & (id_map$removed_kinship_cross_array == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
-cat("read variant exclusion list\n")
+cat("read post-qc variant exclusion list\n")
 variants_excl <- c()
 variants_excl_postqc <- try(read.table(args$variants_exclude_postqc,header=FALSE, as.is=TRUE, stringsAsFactors=FALSE, sep="\t"), silent=TRUE)
 if(! inherits(variants_excl_postqc, "try-error")) {
 	variants_excl <- c(variants_excl,variants_excl_postqc$V1)
-}
-variants_excl_cohort <- try(read.table(args$variants_exclude_cohort,header=FALSE, as.is=TRUE, stringsAsFactors=FALSE, sep="\t"), silent=TRUE)
-if(! inherits(variants_excl_cohort, "try-error")) {
-	variants_excl <- c(variants_excl,variants_excl_cohort$V1)
 }
 variants_excl<-unique(variants_excl)
 

@@ -280,6 +280,7 @@ final case class Binary(
   binRscript: Path) extends Debug
 
 final case class Python(
+  pyHailUtils: Path,
   pyAlignNon1kgVariants: Path,
   pyHailLoad: Path,
   pyHailExportQcData: Path,
@@ -880,6 +881,7 @@ object ProjectConfig {
     )
 
     val python = Python(
+      pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py"),
       pyHailLoad = path(s"${scriptsDir}/hail_load.py"),
       pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py"),

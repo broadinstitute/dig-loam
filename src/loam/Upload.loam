@@ -58,7 +58,18 @@ def Upload(): Unit = {
               }
             case _ => ()
           }
+        case _ => ()
+      }
 
+      ProjectStores.hailUtils match {
+        case Some(r) =>
+          ProjectStores.hailUtilsGoogle match {
+            case Some(s) =>
+              local {
+                googleCopy(r, s)
+              }
+            case _ => ()
+          }
         case _ => ()
       }
 

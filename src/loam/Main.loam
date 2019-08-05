@@ -21,7 +21,7 @@ import VariantAssoc._
 import CrossCohort._
 import Meta._
 import Merge._
-//import ResultsSummary._
+import ResultsSummary._
 //import AssocStores._
 //import Phenotype._
 //import QcReport._
@@ -222,60 +222,60 @@ ProjectStores.phenoFile match {
     
     }
     
-    //// Cohort Results Summary
-    //for {
-    //  x <- modelCohortsReport
-    //} yield {
-    //
-    //  ResultsSummary(configModel = x.model, configCohort = Some(x.cohort), configMeta = None, configMerge = None)
-    //
-    //}
-    //
-    //// Meta Results Summary
-    //for {
-    //  x <- modelMetasReport
-    //} yield { 
-    //
-    //  ResultsSummary(configModel = x.model, configCohort = None, configMeta = Some(x.meta), configMerge = None)
-    //
-    //}
-    //
-    //// Merge Results Summary
-    //for {
-    //  x <- modelMerges
-    //} yield { 
-    //
-    //  ResultsSummary(configModel = x.model, configCohort = None, configMeta = None, configMerge = Some(x.merge))
-    //
-    //}
-    //
-    //// Cohort Known Loci Results Summary
-    //for {
-    //  x <- modelCohortKnownsReport
-    //} yield { 
-    //
-    //  ResultsKnownLociSummary(configModel = x.model, configCohort = Some(x.cohort), configMeta = None, configMerge = None, configKnown = x.known)
-    //
-    //}
-    //
-    //// Meta Known Loci Results Summary
-    //for {
-    //  x <- modelMetaKnownsReport
-    //} yield { 
-    //
-    //  ResultsKnownLociSummary(configModel = x.model, configCohort = None, configMeta = Some(x.meta), configMerge = None, configKnown = x.known)
-    //
-    //}
-    //
-    //// Merge Known Loci Results Summary
-    //for {
-    //  x <- modelMergeKnowns
-    //} yield { 
-    //
-    //  ResultsKnownLociSummary(configModel = x.model, configCohort = None, configMeta = None, configMerge = Some(x.merge), configKnown = x.known)
-    //
-    //}
-    //
+    // Cohort Results Summary
+    for {
+      x <- modelCohortsReport
+    } yield {
+    
+      ResultsSummary(configModel = x.model, configCohort = Some(x.cohort), configMeta = None, configMerge = None)
+    
+    }
+    
+    // Meta Results Summary
+    for {
+      x <- modelMetasReport
+    } yield { 
+    
+      ResultsSummary(configModel = x.model, configCohort = None, configMeta = Some(x.meta), configMerge = None)
+    
+    }
+    
+    // Merge Results Summary
+    for {
+      x <- modelMerges
+    } yield { 
+    
+      ResultsSummary(configModel = x.model, configCohort = None, configMeta = None, configMerge = Some(x.merge))
+    
+    }
+    
+    // Cohort Known Loci Results Summary
+    for {
+      x <- modelCohortKnownsReport
+    } yield { 
+    
+      ResultsKnownLociSummary(configModel = x.model, configCohort = Some(x.cohort), configMeta = None, configMerge = None, configKnown = x.known)
+    
+    }
+    
+    // Meta Known Loci Results Summary
+    for {
+      x <- modelMetaKnownsReport
+    } yield { 
+    
+      ResultsKnownLociSummary(configModel = x.model, configCohort = None, configMeta = Some(x.meta), configMerge = None, configKnown = x.known)
+    
+    }
+    
+    // Merge Known Loci Results Summary
+    for {
+      x <- modelMergeKnowns
+    } yield { 
+    
+      ResultsKnownLociSummary(configModel = x.model, configCohort = None, configMeta = None, configMerge = Some(x.merge), configKnown = x.known)
+    
+    }
+    
     //// Generate Phenotype Figures for Cohorts
     //for {
     //  x <- phenoCohorts

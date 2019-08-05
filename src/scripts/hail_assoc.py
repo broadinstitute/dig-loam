@@ -4,10 +4,23 @@ import pandas as pd
 
 def main(args=None):
 
-	if not args.cloud:
-		hl.init(log = args.log)
+	if args.hail_utils:
+		import importlib.util
+		with hl.hadoop_open(args.hail_utils, 'r') as f:
+			script = f.read()
+		with open("hail_utils.py", 'w') as f:
+			f.write(script)
+		spec = importlib.util.spec_from_file_location('hail_utils', 'hail_utils.py')
+		hail_utils = importlib.util.module_from_spec(spec)   
+		spec.loader.exec_module(hail_utils)
 	else:
-		hl.init()
+		import hail_utils
+
+
+	if not args.cloud:
+		hl.init(log = args.log, idempotent=True)
+	else:
+		hl.init(idempotent=True)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -18,15 +31,19 @@ def main(args=None):
 	if args.extract_ld:
 		print("extract hi ld known variants")
 		ld_vars = []
-		tbl = hl.import_table(
-			args.extract_ld,
-			no_header=False,
-			types={'SNP_A': hl.tstr, 'SNP_B': hl.tstr, 'R2': hl.tfloat, 'CLOSEST_GENE': hl.tstr}
-		)
-		tbl1 = tbl.key_by('SNP_A')
-		tbl2 = tbl.key_by('SNP_B')
-		mt = mt.annotate_rows(in_hild = hl.cond((hl.is_defined(tbl1[mt.rsid])) | (hl.is_defined(tbl2[mt.rsid])), True, False))
-		mt = mt.filter_rows(mt.in_hild, keep=True)
+		try:
+			tbl = hl.import_table(
+				args.extract_ld,
+				no_header=False,
+				types={'SNP_A': hl.tstr, 'SNP_B': hl.tstr, 'R2': hl.tfloat, 'CLOSEST_GENE': hl.tstr}
+			)
+		except:
+			print("skipping hi ld known variants extraction due to empty file")
+		else:
+			tbl1 = tbl.key_by('SNP_A')
+			tbl2 = tbl.key_by('SNP_B')
+			mt = mt.annotate_rows(in_hild = hl.cond((hl.is_defined(tbl1[mt.rsid])) | (hl.is_defined(tbl2[mt.rsid])), True, False))
+			mt = mt.filter_rows(mt.in_hild, keep=True)
 
 	print("annotate samples with phenotype file")
 	tbl = hl.import_table(
@@ -80,139 +97,139 @@ def main(args=None):
 				covars = [x for x in covars if x != covars[i]]
 		covars = covars + pcs
 
+	print("calculate variant qc")
+	mt = hl.variant_qc(mt, name="results")
+
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
-	mt_autosomal = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)], keep=True)
+	mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
+	mt_y = hl.filter_intervals(mt, [hl.parse_locus_interval('Y')], keep=True)
+	mt_y = mt_y.filter_cols(mt_y.is_female, keep=False)
 
-	# for later use when sex chromosomes included
-	# mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
-	# mt_y = hl.filter_intervals(mt, [hl.parse_locus_interval('Y')], keep=True)
-	# mt_y = mt_y.filter_cols(mt_y.is_female, keep=False)
-
-	def calc_variant_attributes(mt):
-
-		print("count males and females")
-		tbl = mt.cols()
-		mt = mt.annotate_globals(
-			global_n = tbl.count(),
-			global_n_males = tbl.aggregate(hl.agg.count_where(~ tbl.is_female)),
-			global_n_females = tbl.aggregate(hl.agg.count_where(tbl.is_female))
-		)
-		
-		print("count male/female hets, homvars and called")
-		mt = mt.annotate_rows(
-			results = hl.struct(
-				n_called = hl.agg.count_where(hl.is_defined(mt.GT)),
-				n_male_diploid = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_diploid())),
-				n_male_haploid = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_haploid())),
-				n_male_het = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_het())),
-				n_male_hom_var = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_hom_var())),
-				n_male_hom_ref = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_hom_ref())),
-				n_male_called = hl.agg.count_where((~ mt.is_female) & (hl.is_defined(mt.GT))),
-				n_female_diploid = hl.agg.count_where((mt.is_female) & (mt.GT.is_diploid())),
-				n_female_haploid = hl.agg.count_where((mt.is_female) & (mt.GT.is_haploid())),
-				n_female_het = hl.agg.count_where((mt.is_female) & (mt.GT.is_het())),
-				n_female_hom_var = hl.agg.count_where((mt.is_female) & (mt.GT.is_hom_var())),
-				n_female_hom_ref = hl.agg.count_where((mt.is_female) & (mt.GT.is_hom_ref())),
-				n_female_called = hl.agg.count_where((mt.is_female) & (hl.is_defined(mt.GT)))
-			)
-		)
-	
-		if args.test in ["wald","firth","lrt","score"]:
-			mt = mt.annotate_rows(
-				results = mt.results.annotate(
-					n_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT))),
-					n_male_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT)) & (~ mt.is_female)),
-					n_male_case_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_hom_var()) & (~ mt.is_female)),
-					n_male_case_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_het()) & (~ mt.is_female)),
-					n_female_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT)) & (mt.is_female)),
-					n_female_case_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_hom_var()) & (mt.is_female)),
-					n_female_case_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_het()) & (mt.is_female)),
-					n_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT))),
-					n_male_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT)) & (~ mt.is_female)),
-					n_male_ctrl_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_hom_var()) & (~ mt.is_female)),
-					n_male_ctrl_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_het()) & (~ mt.is_female)),
-					n_female_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT)) & (mt.is_female)),
-					n_female_ctrl_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_hom_var()) & (mt.is_female)),
-					n_female_ctrl_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_het()) & (mt.is_female))
-				)
-			)
-	
-		print("calculate callRate, AC, and AF (accounting appropriately for sex chromosomes)")
-		mt = mt.annotate_rows(
-			results = mt.results.annotate(
-				call_rate = hl.cond(
-					mt.locus.in_y_nonpar(),
-					mt.results.n_male_called / mt.global_n_males,
-					hl.cond(
-						mt.locus.in_x_nonpar(),
-						(mt.results.n_male_called + 2*mt.results.n_female_called) / (mt.global_n_males + 2*mt.global_n_females),
-						(mt.results.n_male_called + mt.results.n_female_called) / (mt.global_n_males + mt.global_n_females)
-					)
-				),
-				ac = hl.cond(
-					mt.locus.in_y_nonpar(),
-					mt.results.n_male_hom_var,
-					hl.cond(
-						mt.locus.in_x_nonpar(),
-						mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var,
-						mt.results.n_male_het + 2*mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var
-					)
-				),
-				af = hl.cond(
-					mt.locus.in_y_nonpar(),
-					mt.results.n_male_hom_var / mt.results.n_male_called,
-					hl.cond(
-						mt.locus.in_x_nonpar(),
-						(mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var) / (mt.results.n_male_called + 2*mt.results.n_female_called),
-						(mt.results.n_male_het + 2*mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var) / (2*mt.results.n_male_called + 2*mt.results.n_female_called)
-					)
-				)
-			)
-		)
-
-		if args.test in ["wald","firth","lrt","score"]:
-			print("calculate AF in cases and ctrls (accounting appropriately for sex chromosomes)")
-			mt = mt.annotate_rows(
-				results = mt.results.annotate(
-					af_case = hl.cond(
-						mt.locus.in_y_nonpar(),
-						mt.results.n_male_case_hom_var / mt.results.n_male_case_called,
-						hl.cond(
-							mt.locus.in_x_nonpar(),
-							(mt.results.n_male_case_hom_var + mt.results.n_female_case_het + 2*mt.results.n_female_case_hom_var) / (mt.results.n_male_case_called + 2*mt.results.n_female_case_called),
-							(mt.results.n_male_case_het + 2*mt.results.n_male_case_hom_var + mt.results.n_female_case_het + 2*mt.results.n_female_case_hom_var) / (2*mt.results.n_male_case_called + 2*mt.results.n_female_case_called)
-						)
-					),
-					af_ctrl = hl.cond(
-						mt.locus.in_y_nonpar(),
-						mt.results.n_male_ctrl_hom_var / mt.results.n_male_ctrl_called,
-						hl.cond(
-							mt.locus.in_x_nonpar(),
-							(mt.results.n_male_ctrl_hom_var + mt.results.n_female_ctrl_het + 2*mt.results.n_female_ctrl_hom_var) / (mt.results.n_male_ctrl_called + 2*mt.results.n_female_ctrl_called),
-							(mt.results.n_male_ctrl_het + 2*mt.results.n_male_ctrl_hom_var + mt.results.n_female_ctrl_het + 2*mt.results.n_female_ctrl_hom_var) / (2*mt.results.n_male_ctrl_called + 2*mt.results.n_female_ctrl_called)
-						)
-					)
-				)
-			)
-	
-		print("calculate mac and maf (accounting appropriately for sex chromosomes)")
-		mt = mt.annotate_rows(
-			results = mt.results.annotate(
-				mac = hl.cond(
-					mt.results.af <= 0.5,
-					mt.results.ac,
-					2*mt.results.n_called - mt.results.ac
-				),
-				maf = hl.cond(
-					mt.results.af <= 0.5,
-					mt.results.af,
-					1 - mt.results.af)
-			)
-		)
-		return mt
+	#def calc_variant_attributes(mt):
+    #
+	#	print("count males and females")
+	#	tbl = mt.cols()
+	#	mt = mt.annotate_globals(
+	#		global_n = tbl.count(),
+	#		global_n_males = tbl.aggregate(hl.agg.count_where(~ tbl.is_female)),
+	#		global_n_females = tbl.aggregate(hl.agg.count_where(tbl.is_female))
+	#	)
+	#	
+	#	print("count male/female hets, homvars and called")
+	#	mt = mt.annotate_rows(
+	#		results = hl.struct(
+	#			n_called = hl.agg.count_where(hl.is_defined(mt.GT)),
+	#			n_male_diploid = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_diploid())),
+	#			n_male_haploid = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_haploid())),
+	#			n_male_het = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_het())),
+	#			n_male_hom_var = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_hom_var())),
+	#			n_male_hom_ref = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_hom_ref())),
+	#			n_male_called = hl.agg.count_where((~ mt.is_female) & (hl.is_defined(mt.GT))),
+	#			n_female_diploid = hl.agg.count_where((mt.is_female) & (mt.GT.is_diploid())),
+	#			n_female_haploid = hl.agg.count_where((mt.is_female) & (mt.GT.is_haploid())),
+	#			n_female_het = hl.agg.count_where((mt.is_female) & (mt.GT.is_het())),
+	#			n_female_hom_var = hl.agg.count_where((mt.is_female) & (mt.GT.is_hom_var())),
+	#			n_female_hom_ref = hl.agg.count_where((mt.is_female) & (mt.GT.is_hom_ref())),
+	#			n_female_called = hl.agg.count_where((mt.is_female) & (hl.is_defined(mt.GT)))
+	#		)
+	#	)
+	#
+	#	if args.test in ["wald","firth","lrt","score"]:
+	#		mt = mt.annotate_rows(
+	#			results = mt.results.annotate(
+	#				n_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT))),
+	#				n_male_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT)) & (~ mt.is_female)),
+	#				n_male_case_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_hom_var()) & (~ mt.is_female)),
+	#				n_male_case_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_het()) & (~ mt.is_female)),
+	#				n_female_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT)) & (mt.is_female)),
+	#				n_female_case_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_hom_var()) & (mt.is_female)),
+	#				n_female_case_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_het()) & (mt.is_female)),
+	#				n_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT))),
+	#				n_male_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT)) & (~ mt.is_female)),
+	#				n_male_ctrl_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_hom_var()) & (~ mt.is_female)),
+	#				n_male_ctrl_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_het()) & (~ mt.is_female)),
+	#				n_female_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT)) & (mt.is_female)),
+	#				n_female_ctrl_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_hom_var()) & (mt.is_female)),
+	#				n_female_ctrl_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_het()) & (mt.is_female))
+	#			)
+	#		)
+	#
+	#	print("calculate callRate, AC, and AF (accounting appropriately for sex chromosomes)")
+	#	mt = mt.annotate_rows(
+	#		results = mt.results.annotate(
+	#			call_rate = hl.cond(
+	#				mt.locus.in_y_nonpar(),
+	#				mt.results.n_male_called / mt.global_n_males,
+	#				hl.cond(
+	#					mt.locus.in_x_nonpar(),
+	#					(mt.results.n_male_called + 2*mt.results.n_female_called) / (mt.global_n_males + 2*mt.global_n_females),
+	#					(mt.results.n_male_called + mt.results.n_female_called) / (mt.global_n_males + mt.global_n_females)
+	#				)
+	#			),
+	#			ac = hl.cond(
+	#				mt.locus.in_y_nonpar(),
+	#				mt.results.n_male_hom_var,
+	#				hl.cond(
+	#					mt.locus.in_x_nonpar(),
+	#					mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var,
+	#					mt.results.n_male_het + 2*mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var
+	#				)
+	#			),
+	#			af = hl.cond(
+	#				mt.locus.in_y_nonpar(),
+	#				mt.results.n_male_hom_var / mt.results.n_male_called,
+	#				hl.cond(
+	#					mt.locus.in_x_nonpar(),
+	#					(mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var) / (mt.results.n_male_called + 2*mt.results.n_female_called),
+	#					(mt.results.n_male_het + 2*mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var) / (2*mt.results.n_male_called + 2*mt.results.n_female_called)
+	#				)
+	#			)
+	#		)
+	#	)
+    #
+	#	if args.test in ["wald","firth","lrt","score"]:
+	#		print("calculate AF in cases and ctrls (accounting appropriately for sex chromosomes)")
+	#		mt = mt.annotate_rows(
+	#			results = mt.results.annotate(
+	#				af_case = hl.cond(
+	#					mt.locus.in_y_nonpar(),
+	#					mt.results.n_male_case_hom_var / mt.results.n_male_case_called,
+	#					hl.cond(
+	#						mt.locus.in_x_nonpar(),
+	#						(mt.results.n_male_case_hom_var + mt.results.n_female_case_het + 2*mt.results.n_female_case_hom_var) / (mt.results.n_male_case_called + 2*mt.results.n_female_case_called),
+	#						(mt.results.n_male_case_het + 2*mt.results.n_male_case_hom_var + mt.results.n_female_case_het + 2*mt.results.n_female_case_hom_var) / (2*mt.results.n_male_case_called + 2*mt.results.n_female_case_called)
+	#					)
+	#				),
+	#				af_ctrl = hl.cond(
+	#					mt.locus.in_y_nonpar(),
+	#					mt.results.n_male_ctrl_hom_var / mt.results.n_male_ctrl_called,
+	#					hl.cond(
+	#						mt.locus.in_x_nonpar(),
+	#						(mt.results.n_male_ctrl_hom_var + mt.results.n_female_ctrl_het + 2*mt.results.n_female_ctrl_hom_var) / (mt.results.n_male_ctrl_called + 2*mt.results.n_female_ctrl_called),
+	#						(mt.results.n_male_ctrl_het + 2*mt.results.n_male_ctrl_hom_var + mt.results.n_female_ctrl_het + 2*mt.results.n_female_ctrl_hom_var) / (2*mt.results.n_male_ctrl_called + 2*mt.results.n_female_ctrl_called)
+	#					)
+	#				)
+	#			)
+	#		)
+	#
+	#	print("calculate mac and maf (accounting appropriately for sex chromosomes)")
+	#	mt = mt.annotate_rows(
+	#		results = mt.results.annotate(
+	#			mac = hl.cond(
+	#				mt.results.af <= 0.5,
+	#				mt.results.ac,
+	#				2*mt.results.n_called - mt.results.ac
+	#			),
+	#			maf = hl.cond(
+	#				mt.results.af <= 0.5,
+	#				mt.results.af,
+	#				1 - mt.results.af)
+	#		)
+	#	)
+	#	return mt
 
 	def linear_regression(mt):
-		mt = calc_variant_attributes(mt)
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "results")
 		tbl = hl.linear_regression_rows(
 			y = mt.pheno[pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
@@ -223,10 +240,10 @@ def main(args=None):
 				mt.results.n_male_called,
 				mt.results.n_female_called,
 				mt.results.call_rate,
-				mt.results.ac,
-				mt.results.af,
-				mt.results.mac,
-				mt.results.maf
+				mt.results.AC,
+				mt.results.AF,
+				mt.results.MAC,
+				mt.results.MAF
 			]
 		)
 		tbl = tbl.select(
@@ -239,10 +256,10 @@ def main(args=None):
 			male = tbl.n_male_called,
 			female = tbl.n_female_called,
 			call_rate = tbl.call_rate,
-			ac = tbl.ac,
-			af = tbl.af,
-			mac = tbl.mac,
-			maf = tbl.maf,
+			ac = tbl.AC,
+			af = tbl.AF,
+			mac = tbl.MAC,
+			maf = tbl.MAF,
 			sum_x = tbl.sum_x,
 			y_transpose_x = tbl.y_transpose_x,
 			beta = tbl.beta,
@@ -253,7 +270,7 @@ def main(args=None):
 		return tbl
 
 	def logistic_regression(mt, test):
-		mt = calc_variant_attributes(mt)
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "results", is_case = args.pheno_col)
 		tbl = hl.logistic_regression_rows(
 			test = test,
 			y = mt.pheno[pheno_analyzed],
@@ -267,12 +284,14 @@ def main(args=None):
 				mt.results.n_case_called,
 				mt.results.n_ctrl_called,
 				mt.results.call_rate,
-				mt.results.ac,
-				mt.results.af,
-				mt.results.af_case,
-				mt.results.af_ctrl,
-				mt.results.mac,
-				mt.results.maf
+				mt.results.AC,
+				mt.results.AC_case,
+				mt.results.AC_ctrl,
+				mt.results.AF,
+				mt.results.AF_case,
+				mt.results.AF_ctrl,
+				mt.results.MAC,
+				mt.results.MAF
 			]
 		)
 
@@ -289,12 +308,14 @@ def main(args=None):
 				case = tbl.n_case_called,
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
-				ac = tbl.ac,
-				af = tbl.af,
-				af_case = tbl.af_case,
-				af_ctrl = tbl.af_ctrl,
-				mac = tbl.mac,
-				maf = tbl.maf,
+				ac = tbl.AC,
+				ac_case = tbl.AC_case,
+				ac_ctrl = tbl.AC_ctrl,
+				af = tbl.AF,
+				af_case = tbl.AF_case,
+				af_ctrl = tbl.AF_ctrl,
+				mac = tbl.MAC,
+				maf = tbl.MAF,
 				beta = tbl.beta,
 				se = tbl.standard_error,
 				z_stat = tbl.z_stat,
@@ -316,12 +337,14 @@ def main(args=None):
 				case = tbl.n_case_called,
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
-				ac = tbl.ac,
-				af = tbl.af,
-				af_case = tbl.af_case,
-				af_ctrl = tbl.af_ctrl,
-				mac = tbl.mac,
-				maf = tbl.maf,
+				ac = tbl.AC,
+				ac_case = tbl.AC_case,
+				ac_ctrl = tbl.AC_ctrl,
+				af = tbl.AF,
+				af_case = tbl.AF_case,
+				af_ctrl = tbl.AF_ctrl,
+				mac = tbl.MAC,
+				maf = tbl.MAF,
 				beta = tbl.beta,
 				chi_sq_stat = tbl.chi_sq_stat,
 				pval = tbl.p_value,
@@ -342,12 +365,14 @@ def main(args=None):
 				case = tbl.n_case_called,
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
-				ac = tbl.ac,
-				af = tbl.af,
-				af_case = tbl.af_case,
-				af_ctrl = tbl.af_ctrl,
-				mac = tbl.mac,
-				maf = tbl.maf,
+				ac = tbl.AC,
+				ac_case = tbl.AC_case,
+				ac_ctrl = tbl.AC_ctrl,
+				af = tbl.AF,
+				af_case = tbl.AF_case,
+				af_ctrl = tbl.AF_ctrl,
+				mac = tbl.MAC,
+				maf = tbl.MAF,
 				beta = tbl.beta,
 				chi_sq_stat = tbl.chi_sq_stat,
 				pval = tbl.p_value,
@@ -368,35 +393,38 @@ def main(args=None):
 				case = tbl.n_case_called,
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
-				ac = tbl.ac,
-				af = tbl.af,
-				af_case = tbl.af_case,
-				af_ctrl = tbl.af_ctrl,
-				mac = tbl.mac,
-				maf = tbl.maf,
+				ac = tbl.AC,
+				ac_case = tbl.AC_case,
+				ac_ctrl = tbl.AC_ctrl,
+				af = tbl.AF,
+				af_case = tbl.AF_case,
+				af_ctrl = tbl.AF_ctrl,
+				mac = tbl.MAC,
+				maf = tbl.MAF,
 				chi_sq_stat = tbl.chi_sq_stat,
 				pval = tbl.p_value
 			)
 		return tbl
 
-	# for later use when sex chromosomes included
-	# mt_nony_results = lm(mt_nony)
-	# mt_y_results = lm(mt_y)
-	# mt_results = mt_nony_results.union(mt_y_results)
-
 	if args.test == 'lm':
-		mt_results = linear_regression(mt_autosomal)
+		mt_nony_results = linear_regression(mt_nony)
+		mt_y_results = linear_regression(mt_y)
+		mt_results = mt_nony_results.union(mt_y_results)
 
 	elif args.test in ['wald','firth','lrt','score']:
-		mt_results = logistic_regression(mt_autosomal, args.test)
+		mt_nony_results = logistic_regression(mt_nony, args.test)
+		mt_y_results = logistic_regression(mt_y, args.test)
+		mt_results = mt_nony_results.union(mt_y_results)
 
 	else:
 		print("test " + args.test + " not currently supported!")
 		return 1
 
 	mt_results = mt_results.key_by()
+	mt_results = mt_results.annotate(chr_idx = hl.cond(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.cond(mt_results.locus.contig == "X", 23, hl.cond(mt_results.locus.contig == "Y", 24, hl.cond(mt_results.locus.contig == "MT", 25, 26)))))
 	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
-	mt_results = mt_results.order_by(hl.int(mt_results.chr), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
+	mt_results = mt_results.order_by(hl.int(mt_results.chr_idx), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
+	mt_results = mt_results.drop(mt_results.chr_idx)
 	mt_results = mt_results.rename({'chr': '#chr'})
 	mt_results.export(args.out)
 

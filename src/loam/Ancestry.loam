@@ -18,6 +18,7 @@ def AncestryPca(array: ConfigArray): Unit = {
       google {
       
         hail"""${utils.python.pyHailAncestryPcaMerge1kg} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --kg-vcf-in ${ProjectStores.kgPurcellVcfGoogle.get}
@@ -26,7 +27,7 @@ def AncestryPca(array: ConfigArray): Unit = {
           --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}
           --cloud
           --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
+          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, ProjectStores.kgPurcellVcfGoogle.get, ProjectStores.kgSampleGoogle.get)
           .out(arrayStores(array).ref1kgData.plink.data.google.get :+ arrayStores(array).ref1kgData.kgSamplesGoogle.get :+ arrayStores(array).ref1kgData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}.pyHailAncestryPcaMerge1kg".split("/").last)
       

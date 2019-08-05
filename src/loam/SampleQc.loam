@@ -22,13 +22,14 @@ def SampleQc(array: ConfigArray): Unit = {
       google {
       
         hail"""${utils.python.pyHailSampleqc} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
           --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}
           --cloud
           --log ${arrayStores(array).sampleQcData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
+          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
           .out(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
       

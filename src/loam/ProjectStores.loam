@@ -46,6 +46,8 @@ object ProjectStores {
 
   }.toMap
 
+  val hailUtils = projectConfig.hailCloud match { case true => Some(store(path(checkPath(utils.python.pyHailUtils.toString()))).asInput); case false => None }
+  val hailUtilsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.base.google.get / s"${utils.python.pyHailUtils}".split("/").last)); case false => None }
   val regionsExclude = store(path(checkPath(projectConfig.regionsExclude))).asInput
   val regionsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
   val genePositions = store(path(checkPath(projectConfig.genePositions))).asInput

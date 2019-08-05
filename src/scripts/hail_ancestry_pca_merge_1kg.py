@@ -1,13 +1,24 @@
 import hail as hl
 import argparse
-import hail_utils
 
 def main(args=None):
 
-	if not args.cloud:
-		hl.init(log = args.log)
+	if args.hail_utils:
+		import importlib.util
+		with hl.hadoop_open(args.hail_utils, 'r') as f:
+			script = f.read()
+		with open("hail_utils.py", 'w') as f:
+			f.write(script)
+		spec = importlib.util.spec_from_file_location('hail_utils', 'hail_utils.py')
+		hail_utils = importlib.util.module_from_spec(spec)   
+		spec.loader.exec_module(hail_utils)
 	else:
-		hl.init()
+		import hail_utils
+
+	if not args.cloud:
+		hl.init(log = args.log, idempotent=True)
+	else:
+		hl.init(idempotent=True)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
@@ -84,6 +95,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)

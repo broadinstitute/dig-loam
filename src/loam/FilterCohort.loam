@@ -59,12 +59,13 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
 
     case true =>
 
-      val samples_remove = Seq(s"""${arrayStores(array).filterQc.samplesExcludeGoogle.get.path}""", s"""${arrayStores(array).filterPostQc.samplesExcludeGoogle.get.path}""")
+      val samples_remove = Seq(s"""${arrayStores(array).filterQc.samplesExcludeGoogle.get.uri}""", s"""${arrayStores(array).filterPostQc.samplesExcludeGoogle.get.uri}""")
  
       google {
 
         hail"""${utils.python.pyHailFilter} --
           --cloud
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           ${sfilters}
           ${vfilters}
           --log ${cohortStores(cohort).hailLogGoogle.get}
@@ -83,7 +84,7 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
           --variants-stats-out ${cohortStores(cohort).variantsStatsGoogle.get}
           --variants-exclude-out ${cohortStores(cohort).variantsExcludeGoogle.get}
           --variants-keep-out ${cohortStores(cohort).variantsKeepGoogle.get}"""
-          .in(ProjectStores.phenoFileGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
+          .in(ProjectStores.hailUtilsGoogle.get, ProjectStores.phenoFileGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
           .out(cohortStores(cohort).samplesStatsGoogle.get, cohortStores(cohort).samplesExcludeGoogle.get, cohortStores(cohort).variantsStatsGoogle.get, cohortStores(cohort).variantsExcludeGoogle.get, cohortStores(cohort).samplesKeepGoogle.get, cohortStores(cohort).variantsKeepGoogle.get, cohortStores(cohort).hailLogGoogle.get)
           .tag(s"${cohortStores(cohort).hailLog}.pyHailFilter.google".split("/").last)
 

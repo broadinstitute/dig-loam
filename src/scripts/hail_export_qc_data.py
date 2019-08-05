@@ -4,9 +4,9 @@ import argparse
 def main(args=None):
 
 	if not args.cloud:
-		hl.init(log = args.log)
+		hl.init(log = args.log, idempotent=True)
 	else:
-		hl.init()
+		hl.init(idempotent=True)
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)

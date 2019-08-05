@@ -5,9 +5,9 @@ import pandas as pd
 def main(args=None):
 
 	if not args.cloud:
-		hl.init(log = args.log)
+		hl.init(log = args.log, idempotent=True)
 	else:
-		hl.init()
+		hl.init(idempotent=True)
 
 	cohorts = []
 	tests = {}
@@ -131,8 +131,8 @@ def main(args=None):
 		tbl = tbl.annotate(id = hl.or_else(tbl.id, tbl[c + "_id"]))
 
 	# add variant attribute columns and select output
-	tbl = tbl.annotate(chr = tbl.locus.contig, pos = tbl.locus.position, ref = tbl.alleles[0], alt = tbl.alleles[1])
-	cols_keep = ['chr','pos','id','ref','alt','n','male','female']
+	tbl = tbl.annotate(chr_idx = hl.cond(tbl.locus.in_autosome(), hl.int(tbl.locus.contig), hl.cond(tbl.locus.contig == "X", 23, hl.cond(tbl.locus.contig == "Y", 24, hl.cond(tbl.locus.contig == "MT", 25, 26)))), chr = tbl.locus.contig, pos = tbl.locus.position, ref = tbl.alleles[0], alt = tbl.alleles[1])
+	cols_keep = ['chr_idx','chr','pos','id','ref','alt','n','male','female']
 	if 'case' in list(tbl.row_value):
 		cols_keep = cols_keep + ['case']
 	if 'ctrl' in list(tbl.row_value):
@@ -142,7 +142,8 @@ def main(args=None):
 
 	tbl = tbl.key_by()
 	tbl = tbl.drop(tbl.locus, tbl.alleles)
-	tbl = tbl.order_by(hl.int(tbl.chr), hl.int(tbl.pos), tbl.ref, tbl.alt)
+	tbl = tbl.order_by(hl.int(tbl.chr_idx), hl.int(tbl.pos), tbl.ref, tbl.alt)
+	tbl = tbl.drop(tbl.chr_idx)
 	tbl = tbl.rename({'chr': '#chr', 'odds_ratio': 'or'})
 	tbl.export(args.out)
 

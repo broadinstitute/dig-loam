@@ -163,73 +163,82 @@ for(i in 1:nrow(x)) {
 
 x <- x[x$status != "remove",]
 
-for(i in 1:nrow(x)) {
-	if(x$status[i] == "rev") {
-		ref <- x$ref_known[i]
-		alt <- x$alt_known[i]
-		x$ref_known[i] <- alt
-		x$alt_known[i] <- ref
-		if("beta_known" %in% names(x)) x$beta_known[i] <- -1 * x$beta_known[i]
-		if("or_known" %in% names(x)) x$or_known[i] <- 1 / x$or_known[i]
-	} else if(x$status[i] == "comp") {
-		x$ref_known[i] <- complement(x$ref_known[i])
-		x$alt_known[i] <- complement(x$alt_known[i])
-	} else if(x$status[i] == "rev_comp") {
-		ref <- x$ref_known[i]
-		alt <- x$alt_known[i]
-		x$ref_known[i] <- alt
-		x$alt_known[i] <- ref
-		x$ref_known[i] <- complement(x$ref_known[i])
-		x$alt_known[i] <- complement(x$alt_known[i])
-		if("beta_known" %in% names(x)) x$beta_known[i] <- -1 * x$beta_known[i]
-		if("or_known" %in% names(x)) x$or_known[i] <- 1 / x$or_known[i]
-	}
-}
+if(nrow(x) > 0) {
 
-x <- x[order(-x$ident, -x$r2, x$pval_known),]
-x <- x[! duplicated(x$CLOSEST_GENE),]
-
-x$status<-NULL
-x$ref_known<-NULL
-x$alt_known<-NULL
-x$ident<-NULL
-
-cols_out <- c(cols_keep,"CLOSEST_GENE","r2")
-cols_out_post <- names(x)[! names(x) %in% c(cols_keep,"CLOSEST_GENE","r2")]
-if(args$known_loci_n != "") {
-	x$n_known <- args$known_loci_n
-	cols_out <- c(cols_out, "n_known")
-}
-if(args$known_loci_case != "") {
-	x$case_known <- args$known_loci_case
-	cols_out <- c(cols_out, "case_known")
-}
-if(args$known_loci_ctrl != "") {
-	x$ctrl_known <- args$known_loci_ctrl
-	cols_out <- c(cols_out, "ctrl_known")
-}
-cols_out <- c(cols_out, cols_out_post)
-
-x <- x[,cols_out]
-names(x)[names(x) == "CLOSEST_GENE"] <- "gene"
-
-x <- head(x, n=50)
-
-for(i in 1:nrow(x)) {
-	if(args$test %in% c("wald","lrt","firth")) {
-		if((x$or[i] <= 1 & x$or_known[i] <= 1) || (x$or[i] >= 1 & x$or_known[i] >= 1)){
-			x$id[i]<-paste("\\large{\\textbf{",x$id[i],"}}",sep="")
+	for(i in 1:nrow(x)) {
+		if(x$status[i] == "rev") {
+			ref <- x$ref_known[i]
+			alt <- x$alt_known[i]
+			x$ref_known[i] <- alt
+			x$alt_known[i] <- ref
+			if("beta_known" %in% names(x)) x$beta_known[i] <- -1 * x$beta_known[i]
+			if("or_known" %in% names(x)) x$or_known[i] <- 1 / x$or_known[i]
+		} else if(x$status[i] == "comp") {
+			x$ref_known[i] <- complement(x$ref_known[i])
+			x$alt_known[i] <- complement(x$alt_known[i])
+		} else if(x$status[i] == "rev_comp") {
+			ref <- x$ref_known[i]
+			alt <- x$alt_known[i]
+			x$ref_known[i] <- alt
+			x$alt_known[i] <- ref
+			x$ref_known[i] <- complement(x$ref_known[i])
+			x$alt_known[i] <- complement(x$alt_known[i])
+			if("beta_known" %in% names(x)) x$beta_known[i] <- -1 * x$beta_known[i]
+			if("or_known" %in% names(x)) x$or_known[i] <- 1 / x$or_known[i]
 		}
-	} else {
-		if(sign(x$beta[i]) == 0 || sign(x$beta[i]) == 0 || (sign(x$beta[i]) == sign(x$beta_known[i]))) x$id[i]<-paste("\\large{\\textbf{",x$id[i],"}}",sep="")
 	}
+	
+	x <- x[order(-x$ident, -x$r2, x$pval_known),]
+	x <- x[! duplicated(x$CLOSEST_GENE),]
+	
+	x$status<-NULL
+	x$ref_known<-NULL
+	x$alt_known<-NULL
+	x$ident<-NULL
+	
+	cols_out <- c(cols_keep,"CLOSEST_GENE","r2")
+	cols_out_post <- names(x)[! names(x) %in% c(cols_keep,"CLOSEST_GENE","r2")]
+	if(args$known_loci_n != "") {
+		x$n_known <- args$known_loci_n
+		cols_out <- c(cols_out, "n_known")
+	}
+	if(args$known_loci_case != "") {
+		x$case_known <- args$known_loci_case
+		cols_out <- c(cols_out, "case_known")
+	}
+	if(args$known_loci_ctrl != "") {
+		x$ctrl_known <- args$known_loci_ctrl
+		cols_out <- c(cols_out, "ctrl_known")
+	}
+	cols_out <- c(cols_out, cols_out_post)
+	
+	x <- x[,cols_out]
+	names(x)[names(x) == "CLOSEST_GENE"] <- "gene"
+	
+	x <- head(x, n=50)
+	
+	for(i in 1:nrow(x)) {
+		if(args$test %in% c("wald","lrt","firth")) {
+			if((x$or[i] <= 1 & x$or_known[i] <= 1) || (x$or[i] >= 1 & x$or_known[i] >= 1)){
+				x$id[i]<-paste("\\large{\\textbf{",x$id[i],"}}",sep="")
+			}
+		} else {
+			if(sign(x$beta[i]) == 0 || sign(x$beta[i]) == 0 || (sign(x$beta[i]) == sign(x$beta_known[i]))) x$id[i]<-paste("\\large{\\textbf{",x$id[i],"}}",sep="")
+		}
+	}
+	
+	## replace _ with \_ to make compatible with pgfplotstabletypeset
+	# deprecated due to unknown changes
+	#x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
+	
+	# replace any columns with all missing values
+	x <- Filter(function(a) !(all(is.na(a))), x)
+	
+	write.table(x, args$out, row.names=F, col.names=T, quote=F, append=F, sep="\t", na="nan")
+
+} else {
+
+	cat("", file=args$out)
+
 }
 
-## replace _ with \_ to make compatible with pgfplotstabletypeset
-# deprecated due to unknown changes
-#x <- data.frame(lapply(x, FUN=function(z) gsub("_","\\\\_",z)))
-
-# replace any columns with all missing values
-x <- Filter(function(a) !(all(is.na(a))), x)
-
-write.table(x, args$out, row.names=F, col.names=T, quote=F, append=F, sep="\t", na="nan")

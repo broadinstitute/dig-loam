@@ -1,13 +1,24 @@
 import hail as hl
 import argparse
-import hail_utils
 
 def main(args=None):
 
-	if not args.cloud:
-		hl.init(log = args.log)
+	if args.hail_utils:
+		import importlib.util
+		with hl.hadoop_open(args.hail_utils, 'r') as f:
+			script = f.read()
+		with open("hail_utils.py", 'w') as f:
+			f.write(script)
+		spec = importlib.util.spec_from_file_location('hail_utils', 'hail_utils.py')
+		hail_utils = importlib.util.module_from_spec(spec)   
+		spec.loader.exec_module(hail_utils)
 	else:
-		hl.init()
+		import hail_utils
+
+	if not args.cloud:
+		hl.init(log = args.log, idempotent=True)
+	else:
+		hl.init(idempotent=True)
 
 	print("read vcf file")
 	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False)
@@ -111,7 +122,7 @@ def main(args=None):
 				return 1
 
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
-	mt = hail_utils.adjust_variant_qc_sex(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')
+	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
@@ -134,6 +145,7 @@ if __name__ == "__main__":
 	parser.add_argument('--min-partitions', type=int, default=None, help='number of min partitions')
 	parser.add_argument('--gq-threshold', type=int, help='add filtered entry fields set to missing where GQ is below threshold')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)

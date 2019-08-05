@@ -4,9 +4,9 @@ import argparse
 def main(args=None):
 
 	if not args.cloud:
-		hl.init(log = args.log)
+		hl.init(log = args.log, idempotent=True)
 	else:
-		hl.init()
+		hl.init(idempotent=True)
 
 	results=[]
 	for r in args.results.split(","):
@@ -49,9 +49,11 @@ def main(args=None):
 	cols_order = ['chr','pos','ref','alt'] + list(tbl.row_value)
 	tbl = tbl.annotate(chr = tbl.locus.contig, pos = tbl.locus.position, ref = tbl.alleles[0], alt = tbl.alleles[1])
 	tbl = tbl.key_by()
+	tbl = tbl.annotate(chr_idx = hl.cond(tbl.locus.in_autosome(), hl.int(tbl.chr), hl.cond(tbl.locus.contig == "X", 23, hl.cond(tbl.locus.contig == "Y", 24, hl.cond(tbl.locus.contig == "MT", 25, 26)))))
 	tbl = tbl.drop(tbl.locus, tbl.alleles)
 	tbl = tbl.select(*cols_order)
-	tbl = tbl.order_by(hl.int(tbl.chr), hl.int(tbl.pos), tbl.ref, tbl.alt)
+	tbl = tbl.order_by(hl.int(tbl.chr_idx), hl.int(tbl.pos), tbl.ref, tbl.alt)
+	tbl = tbl.drop(tbl.chr_idx)
 	tbl = tbl.rename({'chr': '#chr'})
 	tbl.export(args.out)
 
