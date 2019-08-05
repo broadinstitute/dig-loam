@@ -127,7 +127,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 			MAC = hl.cond(
 				mt[variant_qc].AF <= 0.5,
 				mt[variant_qc].AC,
-				2*mt[variant_qc].n_called = mt[variant_qc].AC
+				2*mt[variant_qc].n_called - mt[variant_qc].AC
 			),
 			MAF = hl.cond(
 				mt[variant_qc].AF <= 0.5,
@@ -277,12 +277,12 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				MAC_case = hl.cond(
 					mt[variant_qc].AF_case <= 0.5,
 					mt[variant_qc].AC_case,
-					2*mt[variant_qc].n_case_called = mt[variant_qc].AC_case
+					2*mt[variant_qc].n_case_called - mt[variant_qc].AC_case
 				),
 				MAC_ctrl = hl.cond(
 					mt[variant_qc].AF_ctrl <= 0.5,
 					mt[variant_qc].AC_ctrl,
-					2*mt[variant_qc].n_ctrl_called = mt[variant_qc].AC_ctrl
+					2*mt[variant_qc].n_ctrl_called - mt[variant_qc].AC_ctrl
 				),
 				MAF_case = hl.cond(
 					mt[variant_qc].AF_case <= 0.5,

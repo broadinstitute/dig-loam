@@ -441,6 +441,7 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--trans', help='a transformation code')
 	parser.add_argument('--covars', help="a '+' separated list of covariates")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")
