@@ -104,7 +104,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       local {
       
         googleCopy(assoc.resultsGoogle.get, assoc.results)
-        googleCopy(assoc.variantsStatsGoogle.get, assoc.variantsStats)
+        googleCopy(assoc.variantsStatsGoogle.get, assoc.variantsStats.get)
         googleCopy(assoc.resultsHailLogGoogle.get, assoc.resultsHailLog)
       
       }
@@ -114,7 +114,6 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
-          --hail-utils ${ProjectStores.hailUtils}
           --mt-in ${arrayStores(array).refData.mt.get}
           --bim-in ${arrayStores(array).prunedData.plink.base}.bim
           --pheno-in ${assoc.pheno}
@@ -125,10 +124,10 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.results}
-          --variants-stats-out ${assoc.variantsStats}
+          --variants-stats-out ${assoc.variantsStats.get}
           --log ${assoc.resultsHailLog}"""
-            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ assoc.pheno :+ assoc.pcs :+ ProjectStores.hailUtils)
-            .out(assoc.results, assoc.variantsStats, assoc.resultsHailLog)
+            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ assoc.pheno :+ assoc.pcs)
+            .out(assoc.results, assoc.variantsStats.get, assoc.resultsHailLog)
             .tag(s"${assoc.results}".split("/").last)
 
       }
@@ -264,7 +263,6 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
-          --hail-utils ${ProjectStores.hailUtils}
           --mt-in ${arrayStores(array).refData.mt.get}
           --bim-in ${arrayStores(array).prunedData.plink.base}.bim
           --pheno-in ${known.pheno}
@@ -277,7 +275,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --covars "${configModel.covars}"
           --out ${known.results}
           --log ${known.resultsHailLog}"""
-            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd :+ ProjectStores.hailUtils)
+            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
             .out(known.results, known.resultsHailLog)
             .tag(s"${known.results}".split("/").last)
 
