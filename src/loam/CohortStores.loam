@@ -15,8 +15,6 @@ final case class Cohort(
   variantsStatsGoogle: Option[Store],
   variantsExclude: Store,
   variantsExcludeGoogle: Option[Store],
-  variantsKeep: Store,
-  variantsKeepGoogle: Option[Store],
   hailLog: Store,
   hailLogGoogle: Option[Store])
 
@@ -35,8 +33,6 @@ val cohortStores = projectConfig.Cohorts.map { cohortCfg =>
     variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.variants.stats.tsv")); case false => None },
     variantsExclude = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.variants.exclude.txt"),
     variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.variants.exclude.txt")); case false => None },
-    variantsKeep = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.variants.keep.txt"),
-    variantsKeepGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.variants.keep.txt")); case false => None },
     hailLog = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.hail.log"),
     hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.hail.log")); case false => None }
   )

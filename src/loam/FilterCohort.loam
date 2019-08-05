@@ -82,10 +82,9 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
           --samples-exclude-out ${cohortStores(cohort).samplesExcludeGoogle.get}
           --samples-keep-out ${cohortStores(cohort).samplesKeepGoogle.get}
           --variants-stats-out ${cohortStores(cohort).variantsStatsGoogle.get}
-          --variants-exclude-out ${cohortStores(cohort).variantsExcludeGoogle.get}
-          --variants-keep-out ${cohortStores(cohort).variantsKeepGoogle.get}"""
+          --variants-exclude-out ${cohortStores(cohort).variantsExcludeGoogle.get}"""
           .in(ProjectStores.hailUtilsGoogle.get, ProjectStores.phenoFileGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
-          .out(cohortStores(cohort).samplesStatsGoogle.get, cohortStores(cohort).samplesExcludeGoogle.get, cohortStores(cohort).variantsStatsGoogle.get, cohortStores(cohort).variantsExcludeGoogle.get, cohortStores(cohort).samplesKeepGoogle.get, cohortStores(cohort).variantsKeepGoogle.get, cohortStores(cohort).hailLogGoogle.get)
+          .out(cohortStores(cohort).samplesStatsGoogle.get, cohortStores(cohort).samplesExcludeGoogle.get, cohortStores(cohort).variantsStatsGoogle.get, cohortStores(cohort).variantsExcludeGoogle.get, cohortStores(cohort).samplesKeepGoogle.get, cohortStores(cohort).hailLogGoogle.get)
           .tag(s"${cohortStores(cohort).hailLog}.pyHailFilter.google".split("/").last)
 
       }
@@ -97,7 +96,6 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
         googleCopy(cohortStores(cohort).samplesKeepGoogle.get, cohortStores(cohort).samplesKeep)
         googleCopy(cohortStores(cohort).variantsStatsGoogle.get, cohortStores(cohort).variantsStats)
         googleCopy(cohortStores(cohort).variantsExcludeGoogle.get, cohortStores(cohort).variantsExclude)
-        googleCopy(cohortStores(cohort).variantsKeepGoogle.get, cohortStores(cohort).variantsKeep)
         googleCopy(cohortStores(cohort).hailLogGoogle.get, cohortStores(cohort).hailLog)
       
       }
@@ -125,10 +123,9 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
           --samples-exclude-out ${cohortStores(cohort).samplesExclude}
           --samples-keep-out ${cohortStores(cohort).samplesKeep}
           --variants-stats-out ${cohortStores(cohort).variantsStats}
-          --variants-exclude-out ${cohortStores(cohort).variantsExclude}
-          --variants-keep-out ${cohortStores(cohort).variantsKeep}"""
+          --variants-exclude-out ${cohortStores(cohort).variantsExclude}"""
           .in(ProjectStores.phenoFile.get, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, ProjectStores.ancestryInferred, ProjectStores.ancestryInferred, arrayStores(array).refData.mt.get, arrayStores(array).filterPostQc.variantsExclude)
-          .out(cohortStores(cohort).samplesStats, cohortStores(cohort).samplesExclude, cohortStores(cohort).variantsStats, cohortStores(cohort).variantsExclude, cohortStores(cohort).samplesKeep, cohortStores(cohort).variantsKeep, cohortStores(cohort).hailLog)
+          .out(cohortStores(cohort).samplesStats, cohortStores(cohort).samplesExclude, cohortStores(cohort).variantsStats, cohortStores(cohort).variantsExclude, cohortStores(cohort).samplesKeep, cohortStores(cohort).hailLog)
           .tag(s"${cohortStores(cohort).hailLog}.pyHailFilter".split("/").last)
 
       }

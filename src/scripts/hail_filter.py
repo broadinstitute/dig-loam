@@ -192,7 +192,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--sfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
-	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
+	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include variants satisfying this expression')
 	parser.add_argument('--pheno-in', help='a phenotype file name')
 	parser.add_argument('--id-col', help='a sample id column name in phenotype file')
 	parser.add_argument('--case-ctrl-col', help='a case/ctrl type column name in phenotype file (ie. coded as 1/0)')

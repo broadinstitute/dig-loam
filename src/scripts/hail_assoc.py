@@ -98,7 +98,15 @@ def main(args=None):
 		covars = covars + pcs
 
 	print("calculate variant qc")
-	mt = hl.variant_qc(mt, name="results")
+	mt = hl.variant_qc(mt, name="variant_qc")
+
+	if args.test == 'lm':
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
+	elif args.test in ['wald','firth','lrt','score']:
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_col)
+	else:
+		print("test " + args.test + " not currently supported!")
+		return 1
 
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
 	mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
@@ -229,21 +237,20 @@ def main(args=None):
 	#	return mt
 
 	def linear_regression(mt):
-		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "results")
 		tbl = hl.linear_regression_rows(
 			y = mt.pheno[pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
 			pass_through = [
 				mt.rsid,
-				mt.results.n_called,
-				mt.results.n_male_called,
-				mt.results.n_female_called,
-				mt.results.call_rate,
-				mt.results.AC,
-				mt.results.AF,
-				mt.results.MAC,
-				mt.results.MAF
+				mt.variant_qc.n_called,
+				mt.variant_qc.n_male_called,
+				mt.variant_qc.n_female_called,
+				mt.variant_qc.call_rate,
+				mt.variant_qc.AC,
+				mt.variant_qc.AF,
+				mt.variant_qc.MAC,
+				mt.variant_qc.MAF
 			]
 		)
 		tbl = tbl.select(
@@ -270,7 +277,6 @@ def main(args=None):
 		return tbl
 
 	def logistic_regression(mt, test):
-		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "results", is_case = args.pheno_col)
 		tbl = hl.logistic_regression_rows(
 			test = test,
 			y = mt.pheno[pheno_analyzed],
@@ -278,20 +284,18 @@ def main(args=None):
 			covariates = [1] + [mt.pheno[x] for x in covars],
 			pass_through = [
 				mt.rsid,
-				mt.results.n_called,
-				mt.results.n_male_called,
-				mt.results.n_female_called,
-				mt.results.n_case_called,
-				mt.results.n_ctrl_called,
-				mt.results.call_rate,
-				mt.results.AC,
-				mt.results.AC_case,
-				mt.results.AC_ctrl,
-				mt.results.AF,
-				mt.results.AF_case,
-				mt.results.AF_ctrl,
-				mt.results.MAC,
-				mt.results.MAF
+				mt.variant_qc.n_called,
+				mt.variant_qc.n_male_called,
+				mt.variant_qc.n_female_called,
+				mt.variant_qc.n_case_called,
+				mt.variant_qc.n_ctrl_called,
+				mt.variant_qc.call_rate,
+				mt.variant_qc.AC,
+				mt.variant_qc.AF,
+				mt.variant_qc.AF_case,
+				mt.variant_qc.AF_ctrl,
+				mt.variant_qc.MAC,
+				mt.variant_qc.MAF
 			]
 		)
 
@@ -309,8 +313,6 @@ def main(args=None):
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
 				ac = tbl.AC,
-				ac_case = tbl.AC_case,
-				ac_ctrl = tbl.AC_ctrl,
 				af = tbl.AF,
 				af_case = tbl.AF_case,
 				af_ctrl = tbl.AF_ctrl,
@@ -338,8 +340,6 @@ def main(args=None):
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
 				ac = tbl.AC,
-				ac_case = tbl.AC_case,
-				ac_ctrl = tbl.AC_ctrl,
 				af = tbl.AF,
 				af_case = tbl.AF_case,
 				af_ctrl = tbl.AF_ctrl,
@@ -366,8 +366,6 @@ def main(args=None):
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
 				ac = tbl.AC,
-				ac_case = tbl.AC_case,
-				ac_ctrl = tbl.AC_ctrl,
 				af = tbl.AF,
 				af_case = tbl.AF_case,
 				af_ctrl = tbl.AF_ctrl,
@@ -394,8 +392,6 @@ def main(args=None):
 				ctrl = tbl.n_ctrl_called,
 				call_rate = tbl.call_rate,
 				ac = tbl.AC,
-				ac_case = tbl.AC_case,
-				ac_ctrl = tbl.AC_ctrl,
 				af = tbl.AF,
 				af_case = tbl.AF_case,
 				af_ctrl = tbl.AF_ctrl,
@@ -416,10 +412,6 @@ def main(args=None):
 		mt_y_results = logistic_regression(mt_y, args.test)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	else:
-		print("test " + args.test + " not currently supported!")
-		return 1
-
 	mt_results = mt_results.key_by()
 	mt_results = mt_results.annotate(chr_idx = hl.cond(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.cond(mt_results.locus.contig == "X", 23, hl.cond(mt_results.locus.contig == "Y", 24, hl.cond(mt_results.locus.contig == "MT", 25, 26)))))
 	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
@@ -438,6 +430,12 @@ def main(args=None):
 	#else:
 	#	return 1
 
+	if args.variants_stats_out:
+		print("write variant qc metrics to file")
+		tbl = mt.rows()
+		tbl = tbl.drop(tbl.variant_qc_raw)
+		tbl.flatten().export(args.variants_stats_out, header=True)
+
 	if args.cloud:
 		hl.copy_log(args.log)
 
@@ -448,6 +446,7 @@ if __name__ == "__main__":
 	parser.add_argument('--extract', help="a variant list to extract for analysis")
 	parser.add_argument('--extract-ld', help="a file containing hild proxy results in the form (SNP_A	SNP_B	R2)")
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
+	parser.add_argument('--variants-stats-out', help='a base filename for variant qc')
 	parser.add_argument('--pops', help='a comma separated list of populations to include in analysis')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')

@@ -81,6 +81,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       google {
       
         hail"""${utils.python.pyHailAssoc} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
           --pheno-in ${assoc.phenoGoogle.get}
@@ -91,10 +92,11 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.resultsGoogle.get}
+          --variants-stats-out ${assoc.variantsStatsGoogle.get}
           --cloud
           --log ${assoc.resultsHailLogGoogle.get}"""
-            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
-            .out(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
+            .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, assoc.phenoGoogle.get, assoc.pcsGoogle.get)
+            .out(assoc.resultsGoogle.get, assoc.variantsStatsGoogle.get, assoc.resultsHailLogGoogle.get)
             .tag(s"${assoc.results}.google".split("/").last)
       
       }
@@ -102,6 +104,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       local {
       
         googleCopy(assoc.resultsGoogle.get, assoc.results)
+        googleCopy(assoc.variantsStatsGoogle.get, assoc.variantsStats)
         googleCopy(assoc.resultsHailLogGoogle.get, assoc.resultsHailLog)
       
       }
@@ -111,6 +114,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+          --hail-utils ${ProjectStores.hailUtils}
           --mt-in ${arrayStores(array).refData.mt.get}
           --bim-in ${arrayStores(array).prunedData.plink.base}.bim
           --pheno-in ${assoc.pheno}
@@ -121,9 +125,10 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
           --out ${assoc.results}
+          --variants-stats-out ${assoc.variantsStats}
           --log ${assoc.resultsHailLog}"""
-            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ assoc.pheno :+ assoc.pcs)
-            .out(assoc.results, assoc.resultsHailLog)
+            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ assoc.pheno :+ assoc.pcs :+ ProjectStores.hailUtils)
+            .out(assoc.results, assoc.variantsStats, assoc.resultsHailLog)
             .tag(s"${assoc.results}".split("/").last)
 
       }
@@ -227,6 +232,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       google {
       
         hail"""${utils.python.pyHailAssoc} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
           --pheno-in ${known.phenoGoogle.get}
@@ -240,7 +246,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --out ${known.resultsGoogle.get}
           --cloud
           --log ${known.resultsHailLogGoogle.get}"""
-            .in(arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+            .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
             .out(known.resultsGoogle.get, known.resultsHailLogGoogle.get)
             .tag(s"${known.results}.google".split("/").last)
       
@@ -258,6 +264,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+          --hail-utils ${ProjectStores.hailUtils}
           --mt-in ${arrayStores(array).refData.mt.get}
           --bim-in ${arrayStores(array).prunedData.plink.base}.bim
           --pheno-in ${known.pheno}
@@ -270,7 +277,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
           --covars "${configModel.covars}"
           --out ${known.results}
           --log ${known.resultsHailLog}"""
-            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
+            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd :+ ProjectStores.hailUtils)
             .out(known.results, known.resultsHailLog)
             .tag(s"${known.results}".split("/").last)
 
