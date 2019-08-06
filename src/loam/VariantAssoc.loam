@@ -143,7 +143,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
 
-  configCohort.cohortResultsFilters match {
+  configCohort.resultsVariantFilters match {
 
     case Some(a) =>
 
@@ -181,7 +181,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           
           local {
           
-            googleCopy(assoc.variantsFilterGoogle.get, assoc.variantsFilters.get)
+            googleCopy(assoc.variantsFilterGoogle.get, assoc.variantsFilter.get)
             googleCopy(assoc.variantsExcludeGoogle.get, assoc.variantsExclude.get)
             googleCopy(assoc.variantsFilterHailLogGoogle.get, assoc.variantsFilterHailLog.get)
           
@@ -206,6 +206,8 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       }
 
     case _ => ()
+
+  }
 
 }
 

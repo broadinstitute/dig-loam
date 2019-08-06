@@ -86,6 +86,57 @@ val assocStores = (
 
     val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
 
+    val variantsFilter = cohort.resultsVariantFilters match {
+      case Some(s) => Some(store(local_home / s"${prefix}.variants.filter.tsv"))
+      case None => None
+    }
+
+    val variantsFilterGoogle = cohort.resultsVariantFilters match {
+      case Some(s) =>
+        projectConfig.hailCloud match {
+          case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv"))
+          case false => None
+        }
+      case None => None
+    }
+
+    val variantsExclude = cohort.resultsVariantFilters match {
+      case Some(s) => Some(store(local_home / s"${prefix}.variants.exclude.txt"))
+      case None => None
+    }
+
+    val variantsExcludeGoogle = cohort.resultsVariantFilters match {
+      case Some(s) =>
+        projectConfig.hailCloud match {
+          case true => Some(store(cloud_home.get / s"${prefix}.variants.exclude.txt"))
+          case false => None
+        }
+      case None => None
+    }
+
+    val resultsHailLogGoogle = cohort.resultsVariantFilters match {
+      case Some(s) =>
+        projectConfig.hailCloud match {
+          case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log"))
+          case false => None
+        }
+      case None => None
+    }
+
+    val variantsFilterHailLog = cohort.resultsVariantFilters match {
+      case Some(s) => Some(store(local_home / s"${prefix}.variants.filter.hail.log"))
+      case None => None
+    }
+
+    val variantsFilterHailLogGoogle = cohort.resultsVariantFilters match {
+      case Some(s) =>
+        projectConfig.hailCloud match {
+          case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.hail.log"))
+          case false => None
+        }
+      case None => None
+    }
+
     assoc -> Assoc(
       idMap = store(local_home / s"${prefix}.samples_exclude.map.tsv"),
       phenoLog = store(local_home / s"${prefix}.pheno.log"),
@@ -94,58 +145,18 @@ val assocStores = (
       pcs = store(local_home / s"${prefix}.pcs.include"),
       pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pcs.include")); case false => None },
       results = store(local_home / s"${prefix}.results.tsv.bgz"),
-      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi",
+      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi"),
       resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
       variantsStats = Some(store(local_home / s"${prefix}.variants.stats.tsv.bgz")),
       variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.variants.stats.tsv.bgz")); case false => None },
-      variantsFilter = cohort.cohortResultsFilters match {
-        case true => Some(store(local_home / s"${prefix}.variants.filter.tsv"))
-        case false => None
-      },
-      variantsFilterGoogle = cohort.cohortResultsFilters match {
-        case true =>
-          projectConfig.hailCloud match {
-            case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv"))
-            case false => None
-          }
-        case false => None
-      },
-      variantsExclude = cohort.cohortResultsFilters match {
-        case true => Some(store(local_home / s"${prefix}.variants.exclude.txt"))
-        case false => None
-      },
-      variantsExcludeGoogle = cohort.cohortResultsFilters match {
-        case true =>
-          projectConfig.hailCloud match {
-            case true => Some(store(cloud_home.get / s"${prefix}.variants.exclude.txt"))
-            case false => None
-          }
-        case false => None
-      },
-      resultsHailLog = cohort.cohortResultsFilters match {
-        case true => Some(store(local_home / s"${prefix}.results.hail.log"))
-        case false => None
-      },
-      resultsHailLogGoogle = cohort.cohortResultsFilters match {
-        case true =>
-          projectConfig.hailCloud match {
-            case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log"))
-            case false => None
-          }
-        case false => None
-      },
-      variantsFilterHailLog = cohort.cohortResultsFilters match {
-        case true => Some(store(local_home / s"${prefix}.variants.filter.hail.log"))
-        case false => None
-      },
-      variantsFilterHailLogGoogle = cohort.cohortResultsFilters match {
-        case true =>
-          projectConfig.hailCloud match {
-            case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.hail.log"))
-            case false => None
-          }
-        case false => None
-      })
+      variantsFilter = variantsFilter,
+      variantsFilterGoogle = variantsFilterGoogle,
+      variantsExclude = variantsExclude,
+      variantsExcludeGoogle = variantsExcludeGoogle,
+      resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
+      resultsHailLogGoogle = resultsHailLogGoogle,
+      variantsFilterHailLog = variantsFilterHailLog,
+      variantsFilterHailLogGoogle = variantsFilterHailLogGoogle
     )
 
   }.toMap
@@ -198,6 +209,8 @@ val knownLociStores = (
         variantsExcludeGoogle = None,
         resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
         resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
+        variantsFilterHailLog = None,
+        variantsFilterHailLogGoogle = None,
         tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
       )
 
