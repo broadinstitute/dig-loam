@@ -139,7 +139,6 @@ def main(args=None):
 
 	print("extract variant qc stats table")
 	tbl = mt.rows()
-	tbl = tbl.drop(tbl.variant_qc_raw)
 
 	print("initialize variant filter table")
 	tbl = tbl.annotate(
@@ -176,6 +175,7 @@ def main(args=None):
 			)
 
 	print("write variant qc metrics and exclusions to file")
+	tbl = tbl.drop("info","variant_qc_raw")
 	tbl.flatten().export(args.variants_stats_out, header=True)
 
 	print("write failed variants to file")

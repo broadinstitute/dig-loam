@@ -103,7 +103,7 @@ def main(args=None):
 	if args.test == 'lm':
 		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
 	elif args.test in ['wald','firth','lrt','score']:
-		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_col)
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
 	else:
 		print("test " + args.test + " not currently supported!")
 		return 1
@@ -433,7 +433,7 @@ def main(args=None):
 	if args.variants_stats_out:
 		print("write variant qc metrics to file")
 		tbl = mt.rows()
-		tbl = tbl.drop(tbl.variant_qc_raw)
+		tbl = tbl.drop("info","variant_qc_raw")
 		tbl.flatten().export(args.variants_stats_out, header=True)
 
 	if args.cloud:

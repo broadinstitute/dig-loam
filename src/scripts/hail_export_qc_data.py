@@ -83,7 +83,7 @@ def main(args=None):
 		mt = mt.annotate_rows(downsample_exclude = hl.cond(mt.qc_exclude == 0, 0, -1))
 
 	print("write variant table to file")
-	mt.rows().flatten().export(args.variants_out, types_file=None)
+	mt.rows().drop("info").flatten().export(args.variants_out, types_file=None)
 
 	print("filtering matrix table for qc")
 	mt = mt.filter_rows((mt.qc_exclude != 1) & (mt.downsample_exclude != 1), keep=True)

@@ -147,8 +147,9 @@ final case class ConfigCohort(
   ancestry: Seq[String],
   stratCol: Option[String],
   stratCodes: Option[Seq[String]],
-  sampleFilters: Option[String],
-  variantFilters: Option[String],
+  cohortSampleFilters: Option[String],
+  cohortVariantFilters: Option[String],
+  resultsVariantFilters: Option[Seq[String]],
   minPartitions: Option[Int]) extends Debug
 
 final case class ConfigMeta(
@@ -285,6 +286,7 @@ final case class Python(
   pyHailLoad: Path,
   pyHailExportQcData: Path,
   pyHailFilter: Path,
+  pyHailFilterResults: Path,
   pyHailAncestryPcaMerge1kg: Path,
   pyHailPcaMerge1kg: Path,
   pyHailSampleqc: Path,
@@ -657,8 +659,9 @@ object ProjectConfig {
           minPartitions = optionalInt(config = cohort, field = "minPartitions"),
           stratCol = optionalStr(config = cohort, field = "stratCol"),
           stratCodes = optionalStrList(config = cohort, field = "stratCodes"),
-          sampleFilters = optionalStr(config = cohort, field = "sampleFilters"),
-          variantFilters = optionalStr(config = cohort, field = "variantFilters")
+          cohortSampleFilters = optionalStr(config = cohort, field = "cohortSampleFilters"),
+          cohortVariantFilters = optionalStr(config = cohort, field = "cohortVariantFilters"),
+          resultsVariantFilters = optionalStrList(config = cohort, field = "resultsVariantFilters")
         )
     
       }
@@ -889,6 +892,7 @@ object ProjectConfig {
       pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py"),
       pyHailSampleqc = path(s"${scriptsDir}/hail_sampleqc.py"),
       pyHailFilter = path(s"${scriptsDir}/hail_filter.py"),
+      pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
       pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),

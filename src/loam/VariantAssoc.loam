@@ -143,6 +143,70 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
 
+  configCohort.cohortResultsFilters match {
+
+    case Some(a) =>
+
+      val vfilters = {
+        for {
+          b <- a
+          f <- projectConfig.variantFilters.filter(e => e.id == b).head.tupelize_metrics
+        } yield {
+          f._2 match {
+            case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
+            case _ => ""
+          }
+        }
+      }.mkString(" ")
+      
+      projectConfig.hailCloud match {
+      
+        case true =>
+      
+          google {
+      
+            hail"""${utils.python.pyHailFilterResults} --
+              --cloud
+              --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+              ${vfilters}
+              --log ${assoc.variantsFilterHailLogGoogle.get}
+              --stats-in ${assoc.variantsStatsGoogle.get}
+              --variants-filters-out ${assoc.variantsFilterGoogle.get}
+              --variants-exclude-out ${assoc.variantsExcludeGoogle.get}"""
+              .in(ProjectStores.hailUtilsGoogle.get, assoc.variantsStatsGoogle.get)
+              .out(assoc.variantsFilterGoogle.get, assoc.variantsExcludeGoogle.get, assoc.variantsFilterHailLogGoogle.get)
+              .tag(s"${assoc.variantsStats}.pyHailFilterResults.google".split("/").last)
+      
+          }
+          
+          local {
+          
+            googleCopy(assoc.variantsFilterGoogle.get, assoc.variantsFilters.get)
+            googleCopy(assoc.variantsExcludeGoogle.get, assoc.variantsExclude.get)
+            googleCopy(assoc.variantsFilterHailLogGoogle.get, assoc.variantsFilterHailLog.get)
+          
+          }
+      
+        case false =>
+      
+          drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
+      
+            cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterResults}
+              ${vfilters}
+              --log ${assoc.variantsFilterHailLog.get}
+              --stats-in ${assoc.variantsStats}
+              --variants-filters-out ${assoc.variantsFilter.get}
+              --variants-exclude-out ${assoc.variantsExclude.get}"""
+              .in(assoc.variantsStats.get)
+              .out(assoc.variantsFilter.get, assoc.variantsExclude.get, assoc.variantsFilterHailLog.get)
+              .tag(s"${assoc.variantsStats}.pyHailFilterResults".split("/").last)
+      
+          }
+      
+      }
+
+    case _ => ()
+
 }
 
 def KnownLociToGoogle(configKnown: ConfigKnown): Unit = {

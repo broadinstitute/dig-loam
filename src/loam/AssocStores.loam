@@ -11,6 +11,7 @@ final case class Assoc(
   pcs: Store,
   pcsGoogle: Option[Store],
   results: Store,
+  tbi: Store,
   resultsGoogle: Option[Store],
   variantsStats: Option[Store],
   variantsStatsGoogle: Option[Store],
@@ -20,7 +21,8 @@ final case class Assoc(
   variantsExcludeGoogle: Option[Store],
   resultsHailLog: Store,
   resultsHailLogGoogle: Option[Store],
-  tbi: Store)
+  variantsFilterHailLog: Option[Store],
+  variantsFilterHailLogGoogle: Option[Store])
 
 final case class MetaCohort(
   data: Seq[Store],
@@ -92,16 +94,58 @@ val assocStores = (
       pcs = store(local_home / s"${prefix}.pcs.include"),
       pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pcs.include")); case false => None },
       results = store(local_home / s"${prefix}.results.tsv.bgz"),
+      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi",
       resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      variantsStats = Some(store(local_home / s"${prefix}.variants.stats.tsv")),
-      variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.variants.stats.tsv")); case false => None },
-      variantsFilter = Some(store(local_home / s"${prefix}.variants.filter.tsv")),
-      variantsFilterGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv")); case false => None },
-      variantsExclude = Some(store(local_home / s"${prefix}.variants.exclude.txt")),
-      variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.variants.exclude.txt")); case false => None },
-      resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
-      resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
-      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
+      variantsStats = Some(store(local_home / s"${prefix}.variants.stats.tsv.bgz")),
+      variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.variants.stats.tsv.bgz")); case false => None },
+      variantsFilter = cohort.cohortResultsFilters match {
+        case true => Some(store(local_home / s"${prefix}.variants.filter.tsv"))
+        case false => None
+      },
+      variantsFilterGoogle = cohort.cohortResultsFilters match {
+        case true =>
+          projectConfig.hailCloud match {
+            case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv"))
+            case false => None
+          }
+        case false => None
+      },
+      variantsExclude = cohort.cohortResultsFilters match {
+        case true => Some(store(local_home / s"${prefix}.variants.exclude.txt"))
+        case false => None
+      },
+      variantsExcludeGoogle = cohort.cohortResultsFilters match {
+        case true =>
+          projectConfig.hailCloud match {
+            case true => Some(store(cloud_home.get / s"${prefix}.variants.exclude.txt"))
+            case false => None
+          }
+        case false => None
+      },
+      resultsHailLog = cohort.cohortResultsFilters match {
+        case true => Some(store(local_home / s"${prefix}.results.hail.log"))
+        case false => None
+      },
+      resultsHailLogGoogle = cohort.cohortResultsFilters match {
+        case true =>
+          projectConfig.hailCloud match {
+            case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log"))
+            case false => None
+          }
+        case false => None
+      },
+      variantsFilterHailLog = cohort.cohortResultsFilters match {
+        case true => Some(store(local_home / s"${prefix}.variants.filter.hail.log"))
+        case false => None
+      },
+      variantsFilterHailLogGoogle = cohort.cohortResultsFilters match {
+        case true =>
+          projectConfig.hailCloud match {
+            case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.hail.log"))
+            case false => None
+          }
+        case false => None
+      })
     )
 
   }.toMap

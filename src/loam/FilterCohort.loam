@@ -12,7 +12,7 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
   val array = projectConfig.Arrays.filter(e => cohort.array == e.id).head
 
   val vfilters = {
-    cohort.variantFilters match {
+    cohort.cohortVariantFilters match {
       case Some(a) =>
         for {
           f <- projectConfig.variantFilters.filter(e => e.id == a).head.tupelize_metrics
@@ -27,7 +27,7 @@ def FilterCohort(cohort: ConfigCohort): Unit = {
   }.mkString(" ")
 
   val sfilters = {
-    cohort.sampleFilters match {
+    cohort.cohortSampleFilters match {
       case Some(a) =>
         for {
           f <- projectConfig.sampleFilters.filter(e => e.id == a).head.tupelize_metrics

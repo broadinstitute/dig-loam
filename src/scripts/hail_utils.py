@@ -118,6 +118,11 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
 					.default(hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)))),
 				hl.null(hl.tfloat64)
+			),
+			avg_alt_gq = hl.cond(
+				'GQ' in gt_codes,
+				hl.agg.filter(mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
+				hl.null(hl.tfloat64)
 			)
 		)}
 	)
@@ -139,35 +144,37 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 
 	if is_case is not None:
 
-		num_case_males = mt.aggregate_cols(hl.agg.count_where((~ mt[is_female]) & (mt[is_case])))
-		num_case_females = mt.aggregate_cols(hl.agg.count_where((mt[is_female]) & (mt[is_case])))
-		num_ctrl_males = mt.aggregate_cols(hl.agg.count_where((~ mt[is_female]) & (~ mt[is_case])))
-		num_ctrl_females = mt.aggregate_cols(hl.agg.count_where((mt[is_female]) & (~ mt[is_case])))
+		num_case_males = mt.aggregate_cols(hl.agg.count_where((~ mt[is_female]) & (mt.pheno[is_case] == 1)))
+		num_case_females = mt.aggregate_cols(hl.agg.count_where((mt[is_female]) & (mt.pheno[is_case] == 1)))
+		num_ctrl_males = mt.aggregate_cols(hl.agg.count_where((~ mt[is_female]) & (mt.pheno[is_case] == 0)))
+		num_ctrl_females = mt.aggregate_cols(hl.agg.count_where((mt[is_female]) & (mt.pheno[is_case] == 0)))
 
 		mt = mt.annotate_rows(
 			**{variant_qc: mt[variant_qc].annotate(
-				n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_case])),
-				n_case_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt[is_case])),
-				n_case_male_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (~ mt[is_female]) & (mt[is_case])),
-				n_case_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt[is_case])),
-				n_case_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt[is_case])),
-				n_case_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt[is_case])),
-				n_case_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt[is_case])),
-				n_case_female_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (mt[is_female]) & (mt[is_case])),
-				n_case_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt[is_case])),
-				n_case_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt[is_case])),
-				n_case_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt[is_case])),
-				n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_case])),
-				n_ctrl_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_male_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (~ mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_female_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (~ mt[is_case])),
-				n_ctrl_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (~ mt[is_case]))
+				n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
+				n_case_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 1)),
+				n_case_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_male_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_female_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_case_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+				n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
+				n_ctrl_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 0)),
+				n_ctrl_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_male_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_female_het_ref = hl.agg.count_where(mt.GT.is_het_ref() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+				n_ctrl_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 0))
 			)}
 		)
 
@@ -214,21 +221,21 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 					.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))
 					.default((mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))),
 				het_freq_hwe_case = (hl.case()
-					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & mt[is_case], hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
+					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
 					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-					.default(hl.agg.filter(mt[is_case], hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe))),
+					.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe))),
 				het_freq_hwe_ctrl = (hl.case()
-					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (~ mt[is_case]), hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
+					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
 					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-					.default(hl.agg.filter(~ mt[is_case], hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe))),
+					.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe))),
 				p_value_hwe_case = (hl.case()
-					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & mt[is_case], hl.agg.hardy_weinberg_test(mt.GT)).p_value)
+					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.hardy_weinberg_test(mt.GT)).p_value)
 					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-					.default(hl.agg.filter(mt[is_case], hl.agg.hardy_weinberg_test(mt.GT).p_value))),
+					.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.hardy_weinberg_test(mt.GT).p_value))),
 				p_value_hwe_ctrl = (hl.case()
-					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (~ mt[is_case]), hl.agg.hardy_weinberg_test(mt.GT)).p_value)
+					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.hardy_weinberg_test(mt.GT)).p_value)
 					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-					.default(hl.agg.filter(~ mt[is_case], hl.agg.hardy_weinberg_test(mt.GT).p_value))),
+					.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.hardy_weinberg_test(mt.GT).p_value))),
 				het_case = (hl.case()
 					.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_case_female_het / mt[variant_qc].n_case_female_called)
 					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
@@ -240,33 +247,43 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				avg_ab_case = hl.cond(
 					'AD' in gt_codes,
 					(hl.case()
-						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & mt[is_case], hl.agg.mean(mt.AB)))
+						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.mean(mt.AB)))
 						.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-						.default(hl.agg.filter(mt[is_case], hl.agg.mean(mt.AB)))),
+						.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.mean(mt.AB)))),
 					hl.null(hl.tfloat64)
 				),
 				avg_ab_ctrl = hl.cond(
 					'AD' in gt_codes,
 					(hl.case()
-						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (~ mt[is_case]), hl.agg.mean(mt.AB)))
+						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.mean(mt.AB)))
 						.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-						.default(hl.agg.filter(~ mt[is_case], hl.agg.mean(mt.AB)))),
+						.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.mean(mt.AB)))),
 					hl.null(hl.tfloat64)
 				),
 				avg_het_ab_case = hl.cond(
 					'AD' in gt_codes,
 					(hl.case()
-						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & mt[is_case], hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
+						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
 						.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-						.default(hl.agg.filter(mt[is_case], hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
+						.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
 					hl.null(hl.tfloat64)
 				),
 				avg_het_ab_ctrl = hl.cond(
 					'AD' in gt_codes,
 					(hl.case()
-						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (~ mt[is_case]), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
+						.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
 						.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
-						.default(hl.agg.filter(~ mt[is_case], hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
+						.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
+					hl.null(hl.tfloat64)
+				),
+				avg_alt_gq_case = hl.cond(
+					'GQ' in gt_codes,
+					hl.agg.filter((mt.pheno[is_case] == 1) & mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
+					hl.null(hl.tfloat64)
+				),
+				avg_alt_gq_ctrl = hl.cond(
+					'GQ' in gt_codes,
+					hl.agg.filter((mt.pheno[is_case] == 0) & mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
 					hl.null(hl.tfloat64)
 				)
 			)}
@@ -294,10 +311,8 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 					mt[variant_qc].AF_ctrl,
 					1 - mt[variant_qc].AF_ctrl
 				),
-				diff_miss_p_value = fisher_exact_test(mt[variant_qc].AC_case, mt[variant_qc].AC_ref_case, mt[variant_qc].AC_ctrl, mt[variant_qc].AC_ref_ctrl).p_value,
-				diff_miss_odds_ratio = fisher_exact_test(mt[variant_qc].AC_case, mt[variant_qc].AC_ref_case, mt[variant_qc].AC_ctrl, mt[variant_qc].AC_ref_ctrl).odds_ratio,
-				diff_miss_ci_95_lower = fisher_exact_test(mt[variant_qc].AC_case, mt[variant_qc].AC_ref_case, mt[variant_qc].AC_ctrl, mt[variant_qc].AC_ref_ctrl).ci_95_lower,
-				diff_miss_ci_95_upper = fisher_exact_test(mt[variant_qc].AC_case, mt[variant_qc].AC_ref_case, mt[variant_qc].AC_ctrl, mt[variant_qc].AC_ref_ctrl).ci_95_upper
+				fet_miss = hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)),
+				fet_assoc = hl.fisher_exact_test(hl.int32(mt[variant_qc].AC_case), hl.int32(mt[variant_qc].AC_ref_case), hl.int32(mt[variant_qc].AC_ctrl), hl.int32(mt[variant_qc].AC_ref_ctrl))
 			)}
 		)
 

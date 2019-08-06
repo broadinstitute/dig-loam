@@ -23,14 +23,14 @@ val cohortStores = projectConfig.Cohorts.map { cohortCfg =>
   val baseString = s"${projectConfig.projectId}.${cohortCfg.id}"
 
   cohortCfg -> Cohort(
-    samplesStats = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.samples.stats.tsv"),
-    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.samples.stats.tsv")); case false => None },
+    samplesStats = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.samples.stats.tsv.bgz"),
+    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.samples.stats.tsv.bgz")); case false => None },
     samplesExclude = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.samples.exclude.txt"),
     samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.samples.exclude.txt")); case false => None },
     samplesKeep = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.samples.keep.txt"),
     samplesKeepGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.samples.keep.txt")); case false => None },
-    variantsStats = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.variants.stats.tsv"),
-    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.variants.stats.tsv")); case false => None },
+    variantsStats = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.variants.stats.tsv.bgz"),
+    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.variants.stats.tsv.bgz")); case false => None },
     variantsExclude = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.variants.exclude.txt"),
     variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataCohortMap(cohortCfg).filter.google.get / s"${baseString}.variants.exclude.txt")); case false => None },
     hailLog = store(dirTree.dataCohortMap(cohortCfg).filter.local.get / s"${baseString}.hail.log"),
