@@ -21,13 +21,34 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
       }
   }
 
+  val exclude = configCohort match {
+    case Some(s) => assocStores((configModel, configCohort.get, None)).variantsExclude
+    case None => None
+  }
+
+  val inList = exclude match {
+    case None => Seq(results)
+    case Some(s) => Seq(results, exclude.get)
+  }
+
+  val excludeString = configCohort match {
+    case Some(s) => 
+      assocStores((configModel, configCohort.get, None)).variantsExclude match {
+        case Some(t) =>
+          s"--exclude ${t.toString.split("@")(1)}"
+        case None => ""
+      }
+    case None => ""
+  }
+
   drmWith(imageName = s"${utils.image.imgPython27}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyTop1000}
       --results ${results}
+      ${excludeString}
       --p pval 
       --out ${summaryStores.resultsSummaryData.top1000}"""
-      .in(results)
+      .in(inList)
       .out(summaryStores.resultsSummaryData.top1000)
       .tag(s"${summaryStores.resultsSummaryData.top1000}".split("/").last)
 
@@ -74,6 +95,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
     
     cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
       --results ${results}
+      ${excludeString}
       --p pval
       --out ${summaryStores.resultsSummaryData.qqPlotPng}"""
       .in(results)
@@ -82,6 +104,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
     
     cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
       --results ${results}
+      ${excludeString}
       --chr "#chr"
       --pos pos
       --p pval
@@ -101,6 +124,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
         
         cmd"""${utils.binary.binPython} ${utils.python.pyExtractTopRegions}
           --results ${results}
+          ${excludeString}
           --chr "#chr"
           --pos pos
           --p pval
@@ -118,6 +142,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
         
         cmd"""${utils.binary.binPython} ${utils.python.pyExtractTopRegions}
           --results ${results}
+          ${excludeString}
           --chr "#chr"
           --pos pos
           --p pval

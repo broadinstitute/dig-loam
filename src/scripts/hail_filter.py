@@ -89,30 +89,48 @@ def main(args=None):
 	print("initialize sample qc filter table")
 	tbl = mt_sample_qc.cols()
 	tbl = tbl.annotate(
-		sample_qc_filters = hl.struct(
+		ls_filters = hl.struct(
 			exclude = 0
 		)
 	)
 
-	if args.sfilter is not None:
+	if args.sfilter:
 		for f in args.sfilter:
 			if f is not None:
-				print("filter samples based on " + f[0])
-				tbl = tbl.annotate(
-					sample_qc_filters = tbl.sample_qc_filters.annotate(
-						**{f[0]: hl.cond(eval(hl.eval(f[1].replace(f[0],"tbl.sample_qc." + f[0]))), 0, 1)}
+				fields = f[1].split(",")
+				absent = False
+				for field in fields:
+					if field not in tbl.row_value:
+						absent = True
+					f[2] = f[2].replace(field,"tbl." + field)
+				if not absent:
+					print("filter samples based on configuration filter " + f[0] + " for field/s " + f[1])
+					tbl = tbl.annotate(
+						ls_filters = tbl.ls_filters.annotate(
+							**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+						)
 					)
-				)
+				else:
+					print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+					tbl = tbl.annotate(
+						ls_filters = tbl.ls_filters.annotate(
+							**{f[0]: 0}
+						)
+					)
 			else:
 				tbl = tbl.annotate(
-					sample_qc_filters = tbl.sample_qc_filters.annotate(
+					ls_filters = tbl.ls_filters.annotate(
 						**{f[0]: 0}
 					)
 				)
 			print("update exclusion column based on " + f[0])
 			tbl = tbl.annotate(
-				sample_qc_filters = tbl.sample_qc_filters.annotate(
-					exclude = hl.cond(tbl.sample_qc_filters[f[0]] == 1, 1, tbl.sample_qc_filters.exclude)
+				ls_filters = tbl.ls_filters.annotate(
+					exclude = hl.cond(
+						tbl.ls_filters[f[0]] == 1,
+						1,
+						tbl.ls_filters.exclude
+					)
 				)
 			)
 
@@ -120,15 +138,15 @@ def main(args=None):
 	tbl.flatten().export(args.samples_stats_out, header=True)
 
 	print("write failed sample ids to file")
-	tbl.filter(tbl.sample_qc_filters.exclude == 1, keep=True).select().export(args.samples_exclude_out, header=False)
+	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select().export(args.samples_exclude_out, header=False)
 
 	if args.samples_keep_out is not None:
 		print("write clean sample ids to file")
-		tbl.filter(tbl.sample_qc_filters.exclude == 0, keep=True).select().export(args.samples_keep_out, header=False)
+		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select().export(args.samples_keep_out, header=False)
 
 	print("begin variant filtering")
 	mt = mt.annotate_cols(sample_qc_exclude = 0)
-	mt = mt.annotate_cols(sample_qc_exclude = tbl[mt.s].sample_qc_filters.exclude)
+	mt = mt.annotate_cols(sample_qc_exclude = tbl[mt.s].ls_filters.exclude)
 	mt = mt.filter_cols(mt.sample_qc_exclude == 0, keep=True)
 
 	print("calculate variant qc stats")
@@ -142,7 +160,7 @@ def main(args=None):
 
 	print("initialize variant filter table")
 	tbl = tbl.annotate(
-		variant_qc_filters = hl.struct(
+		ls_filters = hl.struct(
 			filters = hl.cond(hl.is_missing(tbl.filters), 0, hl.cond(hl.len(tbl.filters) == 0, 0, 1)),
 			AN = hl.cond(tbl.variant_qc.AN > 1, 0, 1),
 			is_monomorphic = hl.cond((tbl.variant_qc.AF > 0) & (tbl.variant_qc.AF < 1), 0, 1)
@@ -150,27 +168,45 @@ def main(args=None):
 	)
 
 	print("add exclude field and update for base filters")
-	tbl = tbl.annotate(variant_qc_filters = hl.struct(exclude = hl.cond((tbl.variant_qc_filters.filters == 1) | (tbl.variant_qc_filters.AN == 1) | (tbl.variant_qc_filters.is_monomorphic == 1), 1, 0)))
+	tbl = tbl.annotate(ls_filters = hl.struct(exclude = hl.cond((tbl.ls_filters.filters == 1) | (tbl.ls_filters.AN == 1) | (tbl.ls_filters.is_monomorphic == 1), 1, 0)))
 
-	if args.vfilter is not None:
+	if args.vfilter:
 		for f in args.vfilter:
 			if f is not None:
-				print("filter variants based on " + f[0])
-				tbl = tbl.annotate(
-					variant_qc_filters = tbl.variant_qc_filters.annotate(
-						**{f[0]: hl.cond(eval(hl.eval(f[1].replace(f[0],"tbl.variant_qc." + f[0]))), 0, 1)}
+				fields = f[1].split(",")
+				absent = False
+				for field in fields:
+					if field not in tbl.row_value:
+						absent = True
+					f[2] = f[2].replace(field,"tbl." + field)
+				if not absent:
+					print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
+					tbl = tbl.annotate(
+						ls_filters = tbl.ls_filters.annotate(
+							**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+						)
 					)
-				)
+				else:
+					print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+					tbl = tbl.annotate(
+						ls_filters = tbl.ls_filters.annotate(
+							**{f[0]: 0}
+						)
+					)
 			else:
 				tbl = tbl.annotate(
-					variant_qc_filters = tbl.variant_qc_filters.annotate(
+					ls_filters = tbl.ls_filters.annotate(
 						**{f[0]: 0}
 					)
 				)
 			print("update exclusion column based on " + f[0])
 			tbl = tbl.annotate(
-				variant_qc_filters = tbl.variant_qc_filters.annotate(
-					exclude = hl.cond(tbl.variant_qc_filters[f[0]] == 1, 1, tbl.variant_qc_filters.exclude)
+				ls_filters = tbl.ls_filters.annotate(
+					exclude = hl.cond(
+						tbl.ls_filters[f[0]] == 1,
+						1,
+						tbl.ls_filters.exclude
+					)
 				)
 			)
 
@@ -179,11 +215,11 @@ def main(args=None):
 	tbl.flatten().export(args.variants_stats_out, header=True)
 
 	print("write failed variants to file")
-	tbl.filter(tbl.variant_qc_filters.exclude == 1, keep=True).select().export(args.variants_exclude_out, header=False)
+	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select().export(args.variants_exclude_out, header=False)
 
 	if args.variants_keep_out is not None:
 		print("write clean variants to file")
-		tbl.filter(tbl.variant_qc_filters.exclude == 0, keep=True).select().export(args.variants_keep_out, header=False)
+		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select().export(args.variants_keep_out, header=False)
 
 	if args.cloud:
 		hl.copy_log(args.log)
@@ -191,8 +227,8 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--sfilter', nargs=2, action='append', help='column name followed by expression; include samples satisfying this expression')
-	parser.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include variants satisfying this expression')
+	parser.add_argument('--sfilter', nargs=3, action='append', help='column name followed by expression; include samples satisfying this expression')
+	parser.add_argument('--vfilter', nargs=3, action='append', help='column name followed by expression; include variants satisfying this expression')
 	parser.add_argument('--pheno-in', help='a phenotype file name')
 	parser.add_argument('--id-col', help='a sample id column name in phenotype file')
 	parser.add_argument('--case-ctrl-col', help='a case/ctrl type column name in phenotype file (ie. coded as 1/0)')

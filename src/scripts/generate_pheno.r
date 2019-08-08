@@ -212,8 +212,7 @@ if(! inherits(variants_excl_postqc, "try-error")) {
 }
 variants_excl<-unique(variants_excl)
 
-variants_incl<-geno_snps$idx[! geno_snps$name %in% variants_excl]
-
+variants_incl<-geno_snps$idx[! as.character(geno_snps$name) %in% variants_excl]
 samples_incl<-pheno[,args$iid_col]
 
 kinship<-NULL

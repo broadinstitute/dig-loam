@@ -8,83 +8,28 @@ final case class ConfigMachine(
   mem: Int,
   maxRunTime: Int) extends Debug
 
-final case class ConfigSampleFilters(
+final case class ConfigNumericFilters(
   id: String,
-  chrs: Seq[String],
-  n_non_ref: Option[String],
-  n_het: Option[String],
-  n_called: Option[String],
-  call_rate: Option[String],
-  n_singleton: Option[String],
-  r_ti_tv: Option[String],
-  het: Option[String],
-  het_low: Option[String],
-  het_high: Option[String],
-  n_hom_var: Option[String],
-  r_het_hom_var: Option[String],
-  avg_ab: Option[String],
-  avg_ab50: Option[String]
-) extends Debug {
-  def tupelize_metrics: List[(String,Option[String])] = {
-    List(
-      ("n_non_ref",n_non_ref),
-      ("n_het",n_het),
-      ("n_called",n_called),
-      ("call_rate",call_rate),
-      ("n_singleton",n_singleton),
-      ("r_ti_tv",r_ti_tv),
-      ("het",het),
-      ("het_low",het_low),
-      ("het_high",het_high),
-      ("n_hom_var",n_hom_var),
-      ("r_het_hom_var",r_het_hom_var),
-      ("avg_ab",avg_ab),
-      ("avg_ab50",avg_ab50)
-   )
-  }
-}
+  field: String,
+  range: String,
+  expression: String) extends Debug
 
-final case class ConfigVariantFilters(
+final case class ConfigBooleanFilters(
   id: String,
-  chrs: Seq[String],
-  stratCol: Option[String],
-  stratCodes: Option[Seq[String]],
-  call_rate: Option[String],
-  AC: Option[String],
-  AF: Option[String],
-  AN: Option[String],
-  n_called: Option[String],
-  n_not_called: Option[String],
-  homozygote_count: Option[String],
-  n_het: Option[String],
-  het: Option[String],
-  n_non_ref: Option[String],
-  avg_ab: Option[String],
-  avg_het_ab: Option[String],
-  het_freq_hwe: Option[String],
-  p_value_hwe: Option[String],
-  sample_n: Option[Int],
-  sample_seed: Option[Int]
-) extends Debug {
-  def tupelize_metrics: List[(String,Option[String])] = {
-    List(
-      ("call_rate",call_rate),
-      ("AC",AC),
-      ("AF",AF),
-      ("AN",AN),
-      ("n_called",n_called),
-      ("n_not_called",n_not_called),
-      ("homozygote_count",homozygote_count),
-      ("n_het",n_het),
-      ("het",het),
-      ("n_non_ref",n_non_ref),
-      ("avg_ab",avg_ab),
-      ("avg_het_ab",avg_het_ab),
-      ("het_freq_hwe",het_freq_hwe),
-      ("p_value_hwe",p_value_hwe)
-   )
-  }
-}
+  field: String,
+  value: Boolean,
+  expression: String) extends Debug
+
+final case class ConfigCategoricalFilters(
+  id: String,
+  field: String,
+  values: Seq[String],
+  expression: String) extends Debug
+
+final case class ConfigCompoundFilters(
+  id: String,
+  filters: Seq[String],
+  expression: String) extends Debug
 
 final case class ConfigResources(
   preparePlink: ConfigMachine,
@@ -137,9 +82,11 @@ final case class ConfigArray(
   famsizeKeep: Seq[String],
   sampleqcKeep: Seq[String],
   sexcheckKeep: Seq[String],
-  qcVariantFilters: Option[String],
-  postQcSampleFilters: Option[String],
-  postQcVariantFilters: Option[String]) extends Debug
+  qcVariantFilters: Option[Seq[String]],
+  qcVariantSampleN: Option[Int],
+  qcVariantSampleSeed: Option[Int],
+  postQcSampleFilters: Option[Seq[String]],
+  postQcVariantFilters: Option[Seq[String]]) extends Debug
 
 final case class ConfigCohort(
   id: String,
@@ -148,7 +95,7 @@ final case class ConfigCohort(
   stratCol: Option[String],
   stratCodes: Option[Seq[String]],
   cohortSampleFilters: Option[String],
-  cohortVariantFilters: Option[String],
+  cohortVariantFilters: Option[Seq[String]],
   resultsVariantFilters: Option[Seq[String]],
   minPartitions: Option[Int]) extends Debug
 
@@ -247,8 +194,14 @@ final case class ProjectConfig(
   nCohorts: Int,
   nMetas: Int,
   maxSigRegions: Option[Int],
-  variantFilters: Seq[ConfigVariantFilters],
-  sampleFilters: Seq[ConfigSampleFilters],
+  numericVariantFilters: Seq[ConfigNumericFilters],
+  booleanVariantFilters: Seq[ConfigBooleanFilters],
+  categoricalVariantFilters: Seq[ConfigCategoricalFilters],
+  compoundVariantFilters: Seq[ConfigCompoundFilters],
+  numericSampleFilters: Seq[ConfigNumericFilters],
+  booleanSampleFilters: Seq[ConfigBooleanFilters],
+  categoricalSampleFilters: Seq[ConfigCategoricalFilters],
+  compoundSampleFilters: Seq[ConfigCompoundFilters],
   Arrays: Seq[ConfigArray],
   Cohorts: Seq[ConfigCohort],
   Metas: Seq[ConfigMeta],
@@ -542,65 +495,132 @@ object ProjectConfig {
     // inferred global values
     val ancestryInferenceFeatures = "1" * nAncestryInferenceFeatures + "0" * (20 - nAncestryInferenceFeatures)
 
-    val variantFilters = {
-    
+    val numericVariantFilters = {
       for {
-        vfilter <- requiredObjList(config = config, field = "variantFilters")
+        vfilter <- requiredObjList(config = config, field = "numericVariantFilters")
       } yield {
-    
-        ConfigVariantFilters(
+        ConfigNumericFilters(
           id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-          chrs = requiredStrList(config = vfilter, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
-          stratCol = optionalStr(config = vfilter, field = "stratCol"),
-          stratCodes = optionalStrList(config = vfilter, field = "stratCodes"),
-          call_rate = optionalStr(config = vfilter, field = "call_rate") match { case Some(s) => Some(intervalToExpression("call_rate", s)); case None => None },
-          AC = optionalStr(config = vfilter, field = "AC") match { case Some(s) => Some(intervalToExpression("AC", s)); case None => None },
-          AF = optionalStr(config = vfilter, field = "AF") match { case Some(s) => Some(intervalToExpression("AF", s)); case None => None },
-          het = optionalStr(config = vfilter, field = "het") match { case Some(s) => Some(intervalToExpression("het", s)); case None => None },
-          avg_het_ab = optionalStr(config = vfilter, field = "avg_het_ab") match { case Some(s) => Some(intervalToExpression("avg_het_ab", s)); case None => None },
-          AN = optionalStr(config = vfilter, field = "AN") match { case Some(s) => Some(intervalToExpression("AN", s)); case None => None },
-          n_called = optionalStr(config = vfilter, field = "n_called") match { case Some(s) => Some(intervalToExpression("n_called", s)); case None => None },
-          n_not_called = optionalStr(config = vfilter, field = "n_not_called") match { case Some(s) => Some(intervalToExpression("n_not_called", s)); case None => None },
-          homozygote_count = optionalStr(config = vfilter, field = "homozygote_count") match { case Some(s) => Some(intervalToExpression("homozygote_count", s)); case None => None },
-          n_het = optionalStr(config = vfilter, field = "n_het") match { case Some(s) => Some(intervalToExpression("n_het", s)); case None => None },
-          n_non_ref = optionalStr(config = vfilter, field = "n_non_ref") match { case Some(s) => Some(intervalToExpression("n_non_ref", s)); case None => None },
-          avg_ab = optionalStr(config = vfilter, field = "avg_ab") match { case Some(s) => Some(intervalToExpression("avg_ab", s)); case None => None },
-          het_freq_hwe = optionalStr(config = vfilter, field = "het_freq_hwe") match { case Some(s) => Some(intervalToExpression("het_freq_hwe", s)); case None => None },
-          p_value_hwe = optionalStr(config = vfilter, field = "p_value_hwe") match { case Some(s) => Some(intervalToExpression("p_value_hwe", s)); case None => None },
-          sample_n = optionalInt(config = vfilter, field = "sample_n"),
-          sample_seed = optionalInt(config = vfilter, field = "sample_seed")
+          field = requiredStr(config = vfilter, field = "field"),
+          range = requiredStr(config = vfilter, field = "range"),
+          expression = intervalToExpression(requiredStr(config = vfilter, field = "field"), requiredStr(config = vfilter, field = "range"))
         )
-    
       }
-    
     }
 
-    val sampleFilters = {
-    
+    val booleanVariantFilters = {
       for {
-        sfilter <- requiredObjList(config = config, field = "sampleFilters")
+        vfilter <- requiredObjList(config = config, field = "booleanVariantFilters")
       } yield {
-    
-        ConfigSampleFilters(
-          id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-          chrs = requiredStrList(config = sfilter, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
-          call_rate = optionalStr(config = sfilter, field = "call_rate") match { case Some(s) => Some(intervalToExpression("call_rate", s)); case None => None },
-          het = optionalStr(config = sfilter, field = "het") match { case Some(s) => Some(intervalToExpression("het", s)); case None => None },
-          n_called = optionalStr(config = sfilter, field = "n_called") match { case Some(s) => Some(intervalToExpression("n_called", s)); case None => None },
-          n_het = optionalStr(config = sfilter, field = "n_het") match { case Some(s) => Some(intervalToExpression("n_het", s)); case None => None },
-          n_non_ref = optionalStr(config = sfilter, field = "n_non_ref") match { case Some(s) => Some(intervalToExpression("n_non_ref", s)); case None => None },
-          avg_ab = optionalStr(config = sfilter, field = "avg_ab") match { case Some(s) => Some(intervalToExpression("avg_ab", s)); case None => None },
-          n_singleton = optionalStr(config = sfilter, field = "n_singleton") match { case Some(s) => Some(intervalToExpression("n_singleton", s)); case None => None },
-          r_ti_tv = optionalStr(config = sfilter, field = "r_ti_tv") match { case Some(s) => Some(intervalToExpression("r_ti_tv", s)); case None => None },
-          het_low = optionalStr(config = sfilter, field = "het_low") match { case Some(s) => Some(intervalToExpression("het_low", s)); case None => None },
-          het_high = optionalStr(config = sfilter, field = "het_high") match { case Some(s) => Some(intervalToExpression("het_high", s)); case None => None },
-          n_hom_var = optionalStr(config = sfilter, field = "n_hom_var") match { case Some(s) => Some(intervalToExpression("n_hom_var", s)); case None => None },
-          r_het_hom_var = optionalStr(config = sfilter, field = "r_het_hom_var") match { case Some(s) => Some(intervalToExpression("r_het_hom_var", s)); case None => None },
-          avg_ab50 = optionalStr(config = sfilter, field = "avg_ab50") match { case Some(s) => Some(intervalToExpression("avg_ab50", s)); case None => None }
+        ConfigBooleanFilters(
+          id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          field = requiredStr(config = vfilter, field = "field"),
+          value = requiredBool(config = vfilter, field = "value"),
+          expression = booleanToExpression(requiredStr(config = vfilter, field = "field"), requiredStr(config = vfilter, field = "value"))
         )
-    
       }
-    
+    }
+
+    val categoricalVariantFilters = {
+      for {
+        vfilter <- requiredObjList(config = config, field = "categoricalVariantFilters")
+      } yield {
+        ConfigCategoricalFilters(
+          id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          field = requiredStr(config = vfilter, field = "field"),
+          values = requiredStrList(config = vfilter, field = "values"),
+          expression = categoricalToExpression(requiredStr(config = vfilter, field = "field"), requiredStrList(config = vfilter, field = "values"))
+        )
+      }
+    }
+
+    val compoundVariantFilters = {
+      for {
+        vfilter <- requiredObjList(config = config, field = "compoundVariantFilters")
+      } yield {
+        val expressions = for {
+          f <- requiredStrList(config = vfilter, field = "filters")
+        } yield {
+          f match {
+            case n if numericVariantFilters.map(e => e.id) contains n =>
+              numericVariantFilters.filter(e => e.id == n).head.expression
+            case b if booleanVariantFilters.map(e => e.id) contains b =>
+              booleanVariantFilters.filter(e => e.id == b).head.expression
+            case c if categoricalVariantFilters.map(e => e.id) contains c =>
+              categoricalVariantFilters.filter(e => e.id == c).head.expression
+            case _ => throw new CfgException("requiredStrList: vfilter '" + f + "' not found")
+          }
+        }
+        ConfigCompoundFilters(
+          id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          filters = requiredStrList(config = vfilter, field = "filters"),
+          expression = "(" + expressions.mkString(") & (") + ")"
+        )
+      }
+    }
+
+    val numericSampleFilters = {
+      for {
+        sfilter <- requiredObjList(config = config, field = "numericSampleFilters")
+      } yield {
+        ConfigNumericFilters(
+          id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          field = requiredStr(config = sfilter, field = "field"),
+          range = requiredStr(config = sfilter, field = "range"),
+          expression = intervalToExpression(requiredStr(config = sfilter, field = "field"), requiredStr(config = sfilter, field = "range"))
+        )
+      }
+    }
+
+    val booleanSampleFilters = {
+      for {
+        sfilter <- requiredObjList(config = config, field = "booleanSampleFilters")
+      } yield {
+        ConfigBooleanFilters(
+          id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          field = requiredStr(config = sfilter, field = "field"),
+          value = requiredBool(config = sfilter, field = "value"),
+          expression = booleanToExpression(requiredStr(config = sfilter, field = "field"), requiredStr(config = sfilter, field = "value"))
+        )
+      }
+    }
+
+    val categoricalSampleFilters = {
+      for {
+        sfilter <- requiredObjList(config = config, field = "categoricalSampleFilters")
+      } yield {
+        ConfigCategoricalFilters(
+          id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          field = requiredStr(config = sfilter, field = "field"),
+          values = requiredStrList(config = sfilter, field = "values"),
+          expression = categoricalToExpression(requiredStr(config = sfilter, field = "field"), requiredStrList(config = sfilter, field = "values"))
+        )
+      }
+    }
+
+    val compoundSampleFilters = {
+      for {
+        sfilter <- requiredObjList(config = config, field = "compoundSampleFilters")
+      } yield {
+        val expressions = for {
+          f <- requiredStrList(config = sfilter, field = "filters")
+        } yield {
+          f match {
+            case n if numericSampleFilters.map(e => e.id) contains n =>
+              numericSampleFilters.filter(e => e.id == n).head.expression
+            case b if booleanSampleFilters.map(e => e.id) contains b =>
+              booleanSampleFilters.filter(e => e.id == b).head.expression
+            case c if categoricalSampleFilters.map(e => e.id) contains c =>
+              categoricalSampleFilters.filter(e => e.id == c).head.expression
+            case _ => throw new CfgException("requiredStrList: sfilter '" + f + "' not found")
+          }
+        }
+        ConfigCompoundFilters(
+          id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+          filters = requiredStrList(config = sfilter, field = "filters"),
+          expression = "(" + expressions.mkString(") & (") + ")"
+        )
+      }
     }
 
     // arrays
@@ -637,9 +657,11 @@ object ProjectConfig {
           famsizeKeep = requiredStrList(config = array, field = "famsizeKeep"),
           sampleqcKeep = requiredStrList(config = array, field = "sampleqcKeep"),
           sexcheckKeep = requiredStrList(config = array, field = "sexcheckKeep"),
-          qcVariantFilters = optionalStr(config = array, field = "qcVariantFilters"),
-          postQcSampleFilters = optionalStr(config = array, field = "postQcSampleFilters"),
-          postQcVariantFilters = optionalStr(config = array, field = "postQcVariantFilters")
+          qcVariantFilters = optionalStrList(config = array, field = "qcVariantFilters"),
+          qcVariantSampleN = optionalInt(config = array, field = "qcVariantSampleN"),
+          qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed"),
+          postQcSampleFilters = optionalStrList(config = array, field = "postQcSampleFilters"),
+          postQcVariantFilters = optionalStrList(config = array, field = "postQcVariantFilters")
         )
     
       }
@@ -660,7 +682,7 @@ object ProjectConfig {
           stratCol = optionalStr(config = cohort, field = "stratCol"),
           stratCodes = optionalStrList(config = cohort, field = "stratCodes"),
           cohortSampleFilters = optionalStr(config = cohort, field = "cohortSampleFilters"),
-          cohortVariantFilters = optionalStr(config = cohort, field = "cohortVariantFilters"),
+          cohortVariantFilters = optionalStrList(config = cohort, field = "cohortVariantFilters"),
           resultsVariantFilters = optionalStrList(config = cohort, field = "resultsVariantFilters")
         )
     
@@ -839,8 +861,14 @@ object ProjectConfig {
       nCohorts = nCohorts,
       nMetas = nMetas,
       maxSigRegions = maxSigRegions,
-      variantFilters = variantFilters,
-      sampleFilters = sampleFilters,
+      numericVariantFilters =  numericVariantFilters,
+      booleanVariantFilters = booleanVariantFilters,
+      categoricalVariantFilters = categoricalVariantFilters,
+      compoundVariantFilters = compoundVariantFilters,
+      numericSampleFilters =  numericSampleFilters,
+      booleanSampleFilters = booleanSampleFilters,
+      categoricalSampleFilters = categoricalSampleFilters,
+      compoundSampleFilters = compoundSampleFilters,
       Arrays = Arrays,
       Cohorts = Cohorts,
       Metas = Metas,

@@ -6,6 +6,16 @@ def main(args=None):
 
 	print "reading results from file"
 	df=pd.read_table(args.results, low_memory=False, compression="gzip")
+
+	if args.exclude:
+		print "reading in variant exclusions from file"
+		excl=pd.read_table(args.exclude, header=None, low_memory=False)
+		excl.columns=["locus","alleles"]
+		excl_list=excl['locus'] + ':' + excl['alleles'].str.replace('\[|\]|\"','').str.replace(',',':')
+		df['excl_id']=df['#chr'].map(str) + ':' + df['pos'].map(str) + ':' + df['ref'].map(str) + ':' + df['alt'].map(str)
+		df=df[~ df['excl_id'].isin(excl_list)]
+		df.drop(columns=['excl_id'], inplace=True)
+
 	df.dropna(subset=[args.p], inplace=True)
 	df.reset_index(drop=True, inplace=True)
 
@@ -70,6 +80,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--max-regions', type=int, help='maximum number of top regions to report')
+	parser.add_argument('--exclude', help='a variant exclusion file')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)
 	requiredArgs.add_argument('--chr', help='a chromosome column name in --results', required=True)

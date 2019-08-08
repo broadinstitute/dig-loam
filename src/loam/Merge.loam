@@ -15,38 +15,71 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
     case true =>
 
       val resultsListStrings = {
-      
         for {
           c <- configMerge.cohorts_metas
         } yield {
-      
-          val result = (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq).head
-          c + "___" + s"${result.toString.split("@")(1)}"
-      
+          val l = for {
+            f <- (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq)
+          } yield {
+            c + "___" + s"${f.toString.split("@")(1)}"
+          }
+          l.size match {
+            case 0 => None
+            case _ => l.head
+          }
         }
-      
       }
-      
+
+      val excludeListStrings = {
+        val l = for {
+          c <- configMerge.cohorts_metas
+        } yield {
+          val m = for {
+            f <- assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.variantsExclude.get).toSeq
+          } yield {
+            c + "___" + s"${f.toString.split("@")(1)}"
+          }
+          m.size match {
+            case 0 => None
+            case _ => m.head
+          }
+        }
+        l.size match {
+          case 0 => ""
+          case _ => "--exclusions " + l.mkString(",")
+        }
+      }
+
       val resultsList = {
-      
         for {
           c <- configMerge.cohorts_metas
         } yield {
-      
           (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.resultsGoogle.get).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq).head
-      
         }
-      
+      }
+
+      val excludeList = {
+        for {
+          c <- configMerge.cohorts_metas if projectConfig.Cohorts.map(e => e.id).toSeq contains c
+        } yield {
+          assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.variantsExcludeGoogle.get).toSeq.head
+        }
+      }
+
+      val inList = excludeList.size match {
+        case 0 => resultsList
+        case _ => resultsList ++ excludeList
       }
       
       google {
       
         hail"""${utils.python.pyHailMerge} --
           --results ${resultsListStrings.mkString(",")}
+          ${excludeListStrings}
           --out ${merge.resultsGoogle.get}
           --cloud
           --log ${merge.hailLogGoogle.get}"""
-            .in(resultsList)
+            .in(inList)
             .out(merge.resultsGoogle.get, merge.hailLogGoogle.get)
             .tag(s"${merge.results}.google".split("/").last)
       
@@ -62,37 +95,70 @@ def MergeAssoc(configModel: ConfigModel, configMerge: ConfigMerge): Unit = {
     case false =>
 
       val resultsListStrings = {
-      
         for {
           c <- configMerge.cohorts_metas
         } yield {
-      
-          val result = (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.results).toSeq).head
-          c + "___" + s"${result.toString.split("@")(1)}"
-      
+          val l = for {
+            f <- (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.results).toSeq)
+          } yield {
+            c + "___" + s"${f.toString.split("@")(1)}"
+          }
+          l.size match {
+            case 0 => None
+            case _ => l.head
+          }
         }
-      
       }
-      
+
+      val excludeListStrings = {
+        val l = for {
+          c <- configMerge.cohorts_metas
+        } yield {
+          val m = for {
+            f <- assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.variantsExclude.get).toSeq
+          } yield {
+            c + "___" + s"${f.toString.split("@")(1)}"
+          }
+          m.size match {
+            case 0 => None
+            case _ => m.head
+          }
+        }
+        l.size match {
+          case 0 => ""
+          case _ => "--exclusions " + l.mkString(",")
+        }
+      }
+
       val resultsList = {
-      
         for {
           c <- configMerge.cohorts_metas
         } yield {
-      
           (assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq ++ metaStores.filter(e => e._1._2.id == c).filter(e => e._1._1 == configModel).map(e => e._2.results).toSeq).head
-      
         }
-      
+      }
+
+      val excludeList = {
+        for {
+          c <- configMerge.cohorts_metas if projectConfig.Cohorts.map(e => e.id).toSeq contains c
+        } yield {
+            assocStores.filter(e => ! e._1._3.isDefined).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.variantsExclude.get).toSeq.head
+        }
+      }
+
+      val inList = excludeList.size match {
+        case 0 => resultsList
+        case _ => resultsList ++ excludeList
       }
 
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.mergeAssocHail.cpus, mem = projectConfig.resources.mergeAssocHail.mem, maxRunTime = projectConfig.resources.mergeAssocHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailMerge}
           --results ${resultsListStrings.mkString(",")}
+          ${excludeListStrings}
           --out ${merge.results}
           --log ${merge.hailLog}"""
-            .in(resultsList)
+            .in(inList)
             .out(merge.results, merge.hailLog)
             .tag(s"${merge.results}".split("/").last)
 

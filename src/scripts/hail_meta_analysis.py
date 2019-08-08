@@ -16,7 +16,13 @@ def main(args=None):
 		cohorts.append(r.split("___")[0])
 		tests[r.split("___")[0]] = r.split("___")[1]
 		files[r.split("___")[0]] = r.split("___")[2]
-	
+
+	exclusions = {}
+	if args.exclusions:
+		for r in args.exclusions.split(","):
+			if r != "None":
+				exclusions[r.split("___")[0]] = r.split("___")[1]
+
 	if len(set(tests.values())) > 1:
 		stop("inverse variance weighted meta analysis cannot be performed on results resulting from different statistical tests!")
 	
@@ -29,6 +35,15 @@ def main(args=None):
 		tbl_temp = tbl_temp.annotate(locus = hl.parse_locus(hl.str(tbl_temp.chr) + ":" + hl.str(tbl_temp.pos)), alleles =  [tbl_temp.ref, tbl_temp.alt])
 		tbl_temp = tbl_temp.key_by('locus', 'alleles')
 		tbl_temp = tbl_temp.drop(tbl_temp.chr, tbl_temp.pos, tbl_temp.ref, tbl_temp.alt)
+
+		if c in exclusions:
+			print("importing exclusions for cohort " + c)
+			try:
+				tbl_exclude = hl.import_table(exclusions[c], no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+			except:
+				print("skipping empty file " + exclusions[c])
+			else:
+				tbl_temp = tbl_temp.filter(hl.is_defined(tbl_exclude[tbl_temp.key]), keep=False)
 
 		# convert any numeric columns that imputed as string
 		if 'beta' in list(tbl_temp.row): tbl_temp = tbl_temp.annotate(beta = hl.float(tbl_temp.beta))
@@ -154,9 +169,10 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--min-partitions', type=int, default=None, help='number of partitions')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--exclusions', help='a comma separated list of cohort ids and exclusion files each separated by 3 underscores')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
-	requiredArgs.add_argument('--results', help='a comma separated list of test codes and results files each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--results', help='a comma separated list of cohort ids, test codes, and results files each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)

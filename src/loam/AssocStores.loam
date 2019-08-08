@@ -87,14 +87,14 @@ val assocStores = (
     val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
 
     val variantsFilter = cohort.resultsVariantFilters match {
-      case Some(s) => Some(store(local_home / s"${prefix}.variants.filter.tsv"))
+      case Some(s) => Some(store(local_home / s"${prefix}.variants.filter.tsv.bgz"))
       case None => None
     }
 
     val variantsFilterGoogle = cohort.resultsVariantFilters match {
       case Some(s) =>
         projectConfig.hailCloud match {
-          case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv"))
+          case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv.bgz"))
           case false => None
         }
       case None => None

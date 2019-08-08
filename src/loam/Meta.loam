@@ -17,28 +17,60 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
     case true =>
 
       val resultsListStrings = {
-      
         for {
           c <- configMeta.cohorts
         } yield {
-      
-          val result = assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq.head
-          c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
-      
+          val l = for {
+            f <- assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq
+          } yield {
+            c + "___" + configModel.test + "___" + s"${f.toString.split("@")(1)}"
+          }
+          l.size match {
+            case 0 => None
+            case _ => l.head
+          }
         }
-      
       }
-      
+
+      val excludeListStrings = {
+        val l = for {
+          c <- configMeta.cohorts
+        } yield {
+          val m = for {
+            f <- assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.variantsExcludeGoogle.isDefined).map(e => e._2.variantsExcludeGoogle.get).toSeq
+          } yield {
+            c + "___" + s"${f.toString.split("@")(1)}"
+          }
+          m.size match {
+            case 0 => None
+            case _ => m.head
+          }
+        }
+        l.size match {
+          case 0 => ""
+          case _ => "--exclusions " + l.mkString(",")
+        }
+      }
+
       val resultsList = {
-      
         for {
           c <- configMeta.cohorts
         } yield {
-      
           assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.resultsGoogle.isDefined).map(e => e._2.resultsGoogle.get).toSeq.head
-      
         }
-      
+      }
+
+      val excludeList = {
+        for {
+          c <- configMeta.cohorts
+        } yield {
+          assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).filter(e => e._2.variantsExcludeGoogle.isDefined).map(e => e._2.variantsExcludeGoogle.get).toSeq.head
+        }
+      }
+
+      val inList = excludeList.size match {
+        case 0 => resultsList
+        case _ => resultsList ++ excludeList
       }
       
       google {
@@ -46,10 +78,11 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
         hail"""${utils.python.pyHailMetaAnalysis} --
           ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
+          ${excludeListStrings}
           --out ${meta.resultsGoogle.get}
           --cloud
           --log ${meta.hailLogGoogle.get}"""
-            .in(resultsList)
+            .in(inList)
             .out(meta.resultsGoogle.get, meta.hailLogGoogle.get)
             .tag(s"${meta.results}.google".split("/").last)
       
@@ -65,41 +98,74 @@ def MetaAnalysis(configModel: ConfigModel, configMeta: ConfigMeta): Unit = {
     case false =>
 
       val resultsListStrings = {
-      
         for {
           c <- configMeta.cohorts
         } yield {
-      
-          val result = assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq.head
-          c + "___" + configModel.test + "___" + s"${result.toString.split("@")(1)}"
-      
+          val l = for {
+            f <- assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq
+          } yield {
+            c + "___" + configModel.test + "___" + s"${f.toString.split("@")(1)}"
+          }
+          l.size match {
+            case 0 => None
+            case _ => l.head
+          }
         }
+      }
       
+      val excludeListStrings = {
+        val l = for {
+          c <- configMeta.cohorts
+        } yield {
+          val m = for {
+            f <- assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.variantsExclude.get).toSeq
+          } yield {
+            c + "___" + s"${f.toString.split("@")(1)}"
+          }
+          m.size match {
+            case 0 => None
+            case _ => m.head
+          }
+        }
+        l.size match {
+          case 0 => ""
+          case _ => "--exclusions " + l.mkString(",")
+        }
       }
       
       val resultsList = {
-      
         for {
           c <- configMeta.cohorts
         } yield {
-      
           assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.results).toSeq.head
-      
         }
-      
       }
-
+      
+      val excludeList = {
+        for {
+          c <- configMeta.cohorts
+        } yield {
+          assocStores.filter(e => e._1._3.isDefined).filter(e => e._1._3.get == configMeta).filter(e => e._1._1 == configModel).filter(e => e._1._2.id == c).map(e => e._2.variantsExclude.get).toSeq.head
+        }
+      }
+      
+      val inList = excludeList.size match {
+        case 0 => resultsList
+        case _ => resultsList ++ excludeList
+      }
+      
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.metaAnalysisHail.cpus, mem = projectConfig.resources.metaAnalysisHail.mem, maxRunTime = projectConfig.resources.metaAnalysisHail.maxRunTime) {
-
+      
         cmd"""${utils.binary.binPython} ${utils.python.pyHailMetaAnalysis}
           ${minPartitions}
           --results ${resultsListStrings.mkString(",")}
+          ${excludeListStrings}
           --out ${meta.results}
           --log ${meta.hailLog}"""
-            .in(resultsList)
+            .in(inList)
             .out(meta.results, meta.hailLog)
             .tag(s"${meta.results}".split("/").last)
-
+      
       }
 
   }

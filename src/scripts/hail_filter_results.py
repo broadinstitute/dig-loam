@@ -21,45 +21,60 @@ def main(args=None):
 		hl.init(idempotent=True)
 
 	print("import variant stats table")
-	tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+	tbl = hl.import_table(args.stats_in, impute=True, types={'locus': 'locus<GRCh37>', 'alleles': 'array<str>'}).key_by('locus', 'alleles')
 
 	print("initialize variant filter table with exclude field")
-	tbl = tbl.annotate(variant_qc_filters = hl.struct(exclude = 0))
+	tbl = tbl.annotate(ls_filters = hl.struct(exclude = 0))
 
-	if args.vfilter is not None:
+	if args.vfilter:
 		for f in args.vfilter:
 			if f is not None:
-				print("filter variants based on " + f[0])
-				tbl = tbl.annotate(
-					variant_qc_filters = tbl.variant_qc_filters.annotate(
-						**{f[0]: hl.cond(eval(hl.eval(f[1].replace(f[0],"tbl.variant_qc." + f[0]))), 0, 1)}
+				fields = f[1].split(",")
+				absent = False
+				for field in fields:
+					if field not in tbl.row_value:
+						absent = True
+					f[2] = f[2].replace(field,"tbl['" + field + "']")
+				if not absent:
+					print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
+					tbl = tbl.annotate(
+						ls_filters = tbl.ls_filters.annotate(
+							**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+						)
 					)
-				)
+				else:
+					print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+					tbl = tbl.annotate(
+						ls_filters = tbl.ls_filters.annotate(
+							**{f[0]: 0}
+						)
+					)
 			else:
 				tbl = tbl.annotate(
-					variant_qc_filters = tbl.variant_qc_filters.annotate(
+					ls_filters = tbl.ls_filters.annotate(
 						**{f[0]: 0}
 					)
 				)
 			print("update exclusion column based on " + f[0])
 			tbl = tbl.annotate(
-				variant_qc_filters = tbl.variant_qc_filters.annotate(
-					exclude = hl.cond(tbl.variant_qc_filters[f[0]] == 1, 1, tbl.variant_qc_filters.exclude)
+				ls_filters = tbl.ls_filters.annotate(
+					exclude = hl.cond(
+						tbl.ls_filters[f[0]] == 1,
+						1,
+						tbl.ls_filters.exclude
+					)
 				)
 			)
 
-	print(tbl.describe())
-	return
 	print("write variant qc metrics and exclusions to file")
-	tbl = tbl.drop("info","variant_qc_raw")
-	tbl.flatten().export(args.variants_stats_out, header=True)
+	tbl.flatten().export(args.variants_filters_out, header=True)
 
 	print("write failed variants to file")
-	tbl.filter(tbl.variant_qc_filters.exclude == 1, keep=True).select().export(args.variants_exclude_out, header=False)
+	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select().export(args.variants_exclude_out, header=False)
 
 	if args.variants_keep_out is not None:
 		print("write clean variants to file")
-		tbl.filter(tbl.variant_qc_filters.exclude == 0, keep=True).select().export(args.variants_keep_out, header=False)
+		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select().export(args.variants_keep_out, header=False)
 
 	if args.cloud:
 		hl.copy_log(args.log)
@@ -72,8 +87,8 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--stats-in', help='a variants stats file name', required=True)
-	requiredArgs.add_argument('--vfilter', nargs=2, action='append', help='column name followed by expression; include variants satisfying this expression', required=True)
-	requiredArgs.add_argument('--variants-stats-out', help='a base filename for variant qc', required=True)
+	requiredArgs.add_argument('--vfilter', nargs=3, action='append', help='column name followed by expression; include variants satisfying this expression', required=True)
+	requiredArgs.add_argument('--variants-filters-out', help='a base filename for variant qc', required=True)
 	requiredArgs.add_argument('--variants-exclude-out', help='a base filename for failed variants', required=True)
 	args = parser.parse_args()
 	main(args)

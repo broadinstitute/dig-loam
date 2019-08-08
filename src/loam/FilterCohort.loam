@@ -7,37 +7,79 @@ import ArrayStores._
 import CohortStores._
 import ProjectStores._
 
+final case class CfgException(s: String) extends Exception(s)
+
 def FilterCohort(cohort: ConfigCohort): Unit = {
 
   val array = projectConfig.Arrays.filter(e => cohort.array == e.id).head
 
   val vfilters = {
     cohort.cohortVariantFilters match {
-      case Some(a) =>
+      case Some(l) =>
         for {
-          f <- projectConfig.variantFilters.filter(e => e.id == a).head.tupelize_metrics
+          f <- l
         } yield {
-          f._2 match {
-            case Some(s) => "--vfilter " + f._1 + " \"" + s + "\""
-            case _ => ""
+          f match {
+            case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+              "--vfilter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+            case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+              "--vfilter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+            case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+              "--vfilter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+            case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+              val ids = for {
+                ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+              } yield {
+                ff match {
+                  case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+                    projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+                  case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+                    projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+                  case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+                    projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+                  case _ => throw new CfgException("FilterCohort: vfilters '" + ff + "' not found")
+                }
+              }
+              "--vfilter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+            case _ => throw new CfgException("FilterCohort: vfilters '" + f + "' not found")
           }
         }
-      case _ => List("")
+      case None => List("")
     }
   }.mkString(" ")
 
   val sfilters = {
     cohort.cohortSampleFilters match {
-      case Some(a) =>
+      case Some(l) =>
         for {
-          f <- projectConfig.sampleFilters.filter(e => e.id == a).head.tupelize_metrics
+          f <- l
         } yield {
-          f._2 match {
-            case Some(s) => "--sfilter " + f._1 + " \"" + s + "\""
-            case _ => ""
+          f match {
+            case n if projectConfig.numericSampleFilters.map(e => e.id) contains n =>
+              "--sfilter " + projectConfig.numericSampleFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericSampleFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericSampleFilters.filter(e => e.id == n).head.expression + "\""
+            case b if projectConfig.booleanSampleFilters.map(e => e.id) contains b =>
+              "--sfilter " + projectConfig.booleanSampleFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanSampleFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanSampleFilters.filter(e => e.id == b).head.expression + "\""
+            case c if projectConfig.categoricalSampleFilters.map(e => e.id) contains c =>
+              "--sfilter " + projectConfig.categoricalSampleFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalSampleFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalSampleFilters.filter(e => e.id == c).head.expression + "\""
+            case d if projectConfig.compoundSampleFilters.map(e => e.id) contains d =>
+              val ids = for {
+                ff <- projectConfig.compoundSampleFilters.filter(e => e.id == d).head.filters
+              } yield {
+                ff match {
+                  case nn if projectConfig.numericSampleFilters.map(e => e.id) contains nn =>
+                    projectConfig.numericSampleFilters.filter(e => e.id == nn).head.field
+                  case bb if projectConfig.booleanSampleFilters.map(e => e.id) contains bb =>
+                    projectConfig.booleanSampleFilters.filter(e => e.id == bb).head.field
+                  case cc if projectConfig.categoricalSampleFilters.map(e => e.id) contains cc =>
+                    projectConfig.categoricalSampleFilters.filter(e => e.id == cc).head.field
+                  case _ => throw new CfgException("FilterCohort: sfilters '" + ff + "' not found")
+                }
+              }
+              "--sfilter " + projectConfig.compoundSampleFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundSampleFilters.filter(e => e.id == d).head.expression + "\""
+            case _ => throw new CfgException("FilterCohort: sfilters '" + f + "' not found")
           }
         }
-      case _ => List("")
+      case None => List("")
     }
   }.mkString(" ")
 
