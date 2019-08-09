@@ -94,7 +94,7 @@ final case class ConfigCohort(
   ancestry: Seq[String],
   stratCol: Option[String],
   stratCodes: Option[Seq[String]],
-  cohortSampleFilters: Option[String],
+  cohortSampleFilters: Option[Seq[String]],
   cohortVariantFilters: Option[Seq[String]],
   resultsVariantFilters: Option[Seq[String]],
   minPartitions: Option[Int]) extends Debug
@@ -548,7 +548,7 @@ object ProjectConfig {
               booleanVariantFilters.filter(e => e.id == b).head.expression
             case c if categoricalVariantFilters.map(e => e.id) contains c =>
               categoricalVariantFilters.filter(e => e.id == c).head.expression
-            case _ => throw new CfgException("requiredStrList: vfilter '" + f + "' not found")
+            case _ => throw new CfgException("compoundVariantFilters: variant filter '" + f + "' not found")
           }
         }
         ConfigCompoundFilters(
@@ -612,7 +612,7 @@ object ProjectConfig {
               booleanSampleFilters.filter(e => e.id == b).head.expression
             case c if categoricalSampleFilters.map(e => e.id) contains c =>
               categoricalSampleFilters.filter(e => e.id == c).head.expression
-            case _ => throw new CfgException("requiredStrList: sfilter '" + f + "' not found")
+            case _ => throw new CfgException("compoundSampleFilters: sample filter '" + f + "' not found")
           }
         }
         ConfigCompoundFilters(
@@ -630,12 +630,63 @@ object ProjectConfig {
         array <- requiredObjList(config = config, field = "arrays")
       } yield {
 
-        val technology = requiredStr(config = array, field = "technology")
+        val technology = requiredStr(config = array, field = "technology", regex = "gwas|wgs|wes")
+
+        val qcVariantFilters = optionalStrList(config = array, field = "qcVariantFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericVariantFilters.map(e => e.id) contains n => ()
+                case b if booleanVariantFilters.map(e => e.id) contains b => ()
+                case c if categoricalVariantFilters.map(e => e.id) contains c => ()
+                case d if compoundVariantFilters.map(e => e.id) contains d => ()
+                case _ => throw new CfgException("arrays.qcVariantFilters: variant filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val postQcSampleFilters = optionalStrList(config = array, field = "postQcSampleFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericSampleFilters.map(e => e.id) contains n => ()
+                case b if booleanSampleFilters.map(e => e.id) contains b => ()
+                case c if categoricalSampleFilters.map(e => e.id) contains c => ()
+                case d if compoundSampleFilters.map(e => e.id) contains d => ()
+                case _ => throw new CfgException("arrays.postQcSampleFilters: sample filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val postQcVariantFilters = optionalStrList(config = array, field = "postQcVariantFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericVariantFilters.map(e => e.id) contains n => ()
+                case b if booleanVariantFilters.map(e => e.id) contains b => ()
+                case c if categoricalVariantFilters.map(e => e.id) contains c => ()
+                case d if compoundVariantFilters.map(e => e.id) contains d => ()
+                case _ => throw new CfgException("arrays.postQcVariantFilters: variant filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
     
         ConfigArray(
           id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           filename = requiredStr(config = array, field = "filename"),
-          format = requiredStr(config = array, field = "format"),
+          format = requiredStr(config = array, field = "format", regex = "plink|vcf"),
           technology = technology,
           description = requiredStr(config = array, field = "description"),
           minPartitions = optionalInt(config = array, field = "minPartitions"),
@@ -657,11 +708,11 @@ object ProjectConfig {
           famsizeKeep = requiredStrList(config = array, field = "famsizeKeep"),
           sampleqcKeep = requiredStrList(config = array, field = "sampleqcKeep"),
           sexcheckKeep = requiredStrList(config = array, field = "sexcheckKeep"),
-          qcVariantFilters = optionalStrList(config = array, field = "qcVariantFilters"),
+          qcVariantFilters = qcVariantFilters,
           qcVariantSampleN = optionalInt(config = array, field = "qcVariantSampleN"),
           qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed"),
-          postQcSampleFilters = optionalStrList(config = array, field = "postQcSampleFilters"),
-          postQcVariantFilters = optionalStrList(config = array, field = "postQcVariantFilters")
+          postQcSampleFilters = postQcSampleFilters,
+          postQcVariantFilters = postQcVariantFilters
         )
     
       }
@@ -673,17 +724,74 @@ object ProjectConfig {
       for {
         cohort <- requiredObjList(config = config, field = "cohorts")
       } yield {
-    
+
+        val array = requiredStr(config = cohort, field = "array")
+        Arrays.map(e => e.id) contains array match {
+          case true => ()
+          case false => throw new CfgException("cohorts.array: array '" + array + "' not found")
+        }
+
+        val cohortSampleFilters = optionalStrList(config = cohort, field = "cohortSampleFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericSampleFilters.map(e => e.id) contains n => ()
+                case b if booleanSampleFilters.map(e => e.id) contains b => ()
+                case c if categoricalSampleFilters.map(e => e.id) contains c => ()
+                case d if compoundSampleFilters.map(e => e.id) contains d => ()
+                case _ => throw new CfgException("cohorts.cohortSampleFilters: sample filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val cohortVariantFilters = optionalStrList(config = cohort, field = "cohortVariantFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericVariantFilters.map(e => e.id) contains n => ()
+                case b if booleanVariantFilters.map(e => e.id) contains b => ()
+                case c if categoricalVariantFilters.map(e => e.id) contains c => ()
+                case d if compoundVariantFilters.map(e => e.id) contains d => ()
+                case _ => throw new CfgException("cohorts.cohortVariantFilters: variant filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val resultsVariantFilters = optionalStrList(config = cohort, field = "resultsVariantFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericVariantFilters.map(e => e.id) contains n => ()
+                case b if booleanVariantFilters.map(e => e.id) contains b => ()
+                case c if categoricalVariantFilters.map(e => e.id) contains c => ()
+                case d if compoundVariantFilters.map(e => e.id) contains d => ()
+                case _ => throw new CfgException("cohorts.resultsVariantFilters: variant filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
         ConfigCohort(
           id = requiredStr(config = cohort, field = "id"),
-          array = requiredStr(config = cohort, field = "array"),
-          ancestry = requiredStrList(config = cohort, field = "ancestry"),
+          array = array,
+          ancestry = requiredStrList(config = cohort, field = "ancestry", regex = "EUR|AFR|AMR|SAS|EAS"),
           minPartitions = optionalInt(config = cohort, field = "minPartitions"),
           stratCol = optionalStr(config = cohort, field = "stratCol"),
           stratCodes = optionalStrList(config = cohort, field = "stratCodes"),
-          cohortSampleFilters = optionalStr(config = cohort, field = "cohortSampleFilters"),
-          cohortVariantFilters = optionalStrList(config = cohort, field = "cohortVariantFilters"),
-          resultsVariantFilters = optionalStrList(config = cohort, field = "resultsVariantFilters")
+          cohortSampleFilters = cohortSampleFilters,
+          cohortVariantFilters = cohortVariantFilters,
+          resultsVariantFilters = resultsVariantFilters
         )
     
       }
@@ -695,10 +803,19 @@ object ProjectConfig {
       for {
         meta <- requiredObjList(config = config, field = "metas")
       } yield {
-    
+
+        val cohorts = for {
+          c <- requiredStrList(config = meta, field = "cohorts")
+        } yield {
+          Cohorts.map(e => e.id) contains c match {
+            case true => c
+            case false => throw new CfgException("metas.cohorts: cohort '" + c + "' not found")
+          }
+        }
+
         ConfigMeta(
           id = requiredStr(config = meta, field = "id"),
-          cohorts = requiredStrList(config = meta, field = "cohorts"),
+          cohorts = cohorts,
           minPartitions = optionalInt(config = meta, field = "minPartitions")
         )
     
@@ -711,10 +828,23 @@ object ProjectConfig {
       for {
         merge <- requiredObjList(config = config, field = "merges")
       } yield {
+
+        val cohorts_metas = for {
+          c <- requiredStrList(config = merge, field = "cohorts_metas")
+        } yield {
+          Cohorts.map(e => e.id) contains c match {
+            case true => c
+            case false =>
+              Metas.map(e => e.id) contains c match {
+                case true => c
+                case false => throw new CfgException("merges.cohorts_metas: cohorts_metas '" + c + "' not found")
+              }
+          }
+        }
     
         ConfigMerge(
           id = requiredStr(config = merge, field = "id"),
-          cohorts_metas = requiredStrList(config = merge, field = "cohorts_metas"),
+          cohorts_metas = cohorts_metas,
           minPartitions = optionalInt(config = merge, field = "minPartitions")
         )
     
@@ -742,12 +872,18 @@ object ProjectConfig {
       for {
         model <- requiredObjList(config = config, field = "models")
       } yield {
+
+        val pheno = requiredStr(config = model, field = "pheno")
+        Phenos.map(e => e.id) contains pheno match {
+          case true => ()
+          case false => throw new CfgException("models.pheno: pheno '" + pheno + "' not found")
+        }
     
         ConfigModel(
           id = requiredStr(config = model, field = "id"),
-          pheno = requiredStr(config = model, field = "pheno"),
-          trans = requiredStr(config = model, field = "trans"),
-          test = requiredStr(config = model, field = "test"),
+          pheno = pheno,
+          trans = requiredStr(config = model, field = "trans", regex = "log|invn|$^"),
+          test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm"),
           covars = requiredStrList(config = model, field = "covars").mkString("+")
         )
       }
@@ -787,15 +923,80 @@ object ProjectConfig {
           sections = for {
             section <- requiredObjList(config = report, field = "sections")
           } yield {
+
+            val models = for {
+              m <- requiredStrList(config = section, field = "models")
+            } yield {
+              Models.map(e => e.id) contains m match {
+                case true => m
+                case false => throw new CfgException("reports.sections.models: model '" + m + "' not found")
+              }
+            }
+
+            val cohorts = optionalStrList(config = section, field = "cohorts") match {
+              case Some(s) =>
+                for {
+                  f <- s
+                } yield {
+                  f match {
+			        case n if Cohorts.map(e => e.id) contains n => ()
+                    case _ => throw new CfgException("reports.sections.cohorts: cohort '" + f + "' not found")
+                  }
+                }
+                Some(s)
+              case None => None
+            }
+
+            val metas = optionalStrList(config = section, field = "metas") match {
+              case Some(s) =>
+                for {
+                  f <- s
+                } yield {
+                  f match {
+                    case n if Metas.map(e => e.id) contains n => ()
+                    case _ => throw new CfgException("reports.sections.metas: meta '" + f + "' not found")
+                  }
+                }
+                Some(s)
+              case None => None
+            }
+
+            val merges = optionalStrList(config = section, field = "merges") match {
+              case Some(s) =>
+                for {
+                  f <- s
+                } yield {
+                  f match {
+                    case n if Merges.map(e => e.id) contains n => ()
+                    case _ => throw new CfgException("reports.sections.merges: merge '" + f + "' not found")
+                  }
+                }
+                Some(s)
+              case None => None
+            }
+
+            val knowns = optionalStrList(config = section, field = "knowns") match {
+              case Some(s) =>
+                for {
+                  f <- s
+                } yield {
+                  f match {
+                    case n if Knowns.map(e => e.id) contains n => ()
+                    case _ => throw new CfgException("reports.sections.knowns: known '" + f + "' not found")
+                  }
+                }
+                Some(s)
+              case None => None
+            }
     
             ConfigSection(
               id = requiredStr(config = section, field = "id"),
               title = requiredStr(config = section, field = "title"),
-              models = requiredStrList(config = section, field = "models"),
-              cohorts = optionalStrList(config = section, field = "cohorts"),
-              metas = optionalStrList(config = section, field = "metas"),
-              merges = optionalStrList(config = section, field = "merges"),
-              knowns = optionalStrList(config = section, field = "knowns")
+              models = models,
+              cohorts = cohorts,
+              metas = metas,
+              merges = merges,
+              knowns = knowns
             )
           
           }
