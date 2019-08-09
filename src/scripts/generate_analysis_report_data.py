@@ -31,7 +31,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\section{Data}"); f.write("\n")
 		f.write(r"\label{Data}"); f.write("\n")
 
-		text=r"In order to run the data we received through our analysis pipeline in an efficient manner, the genotype arrays were each given a short code name; {0}. In Table \ref{{table:Data-Table-Array-Information}}, we list the corresponding filename of the data set we received, the format of the file set (\textit{{note: 'bfile' refers to binary Plink format \cite{{plink}}}}), and a liftOver \cite{{liftover}} chain file if it was required to remap the variants to GRCh37 / hg19 coordinates".format(list2text(df['id']).replace("_","\_"))
+		text=r"In order to run the data we received through our analysis pipeline in an efficient manner, the genotype arrays were each given a short code name; {0}. In Table \ref{{table:Data-Table-Array-Information}}, we list the corresponding filename of the data set we received, the format of the file set (\textit{{note: 'bfile' refers to binary Plink format \cite{{plink}}}}), and a liftOver \cite{{liftover}} chain file if it was required to remap the variants to GRCh37 / hg19 coordinates.".format(list2text(df['id']).replace("_","\_"))
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if args.variants_upset_diagram is not None:

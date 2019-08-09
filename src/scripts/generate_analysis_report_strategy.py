@@ -18,7 +18,7 @@ def main(args=None):
 		f.write("\n"); f.write(r"\subsection{Sample structure and pipeline}"); f.write("\n")
 		f.write(r"\label{Sample-structure-and-pipeline}"); f.write("\n")
 
-		text=r"The strategy we used to perform association testing can be found below. The 'ID' columns are the names used to identify each set of association test results in this document. The 'Report' columns indicate whether or not that particular set of association results will be presented in the tables and plots of the proceeding sections."
+		text=r"The strategy we used to perform association testing can be found below. The 'ID' columns are the names used to identify each set of association test results in this document. The 'Report' columns indicate whether or not that particular set of association results will be presented in the tables and plots of the following sections."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\ExecuteMetaData[\currfilebase.input]{Strategy-Sample-structure-and-pipeline}".encode('utf-8')); f.write("\n")
