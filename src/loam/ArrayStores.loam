@@ -59,8 +59,8 @@ final case class HarmonizedData(
   forceA2: Store)
 
 final case class RefData(
-  plink: Option[Plink],
-  vcf: MultiPathVcf,
+  plink: Option[MultiPathPlink],
+  vcf: Option[MultiPathVcf],
   mtCheckpoint: Option[Store],
   mtCheckpointGoogle: Option[Store],
   mt: Option[Store],
@@ -248,43 +248,38 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   //val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
   val baseName = arrayCfg.filename.split("/").last
+  val inputType = arrayCfg.technology + "_" + arrayCfg.format
 
-  val plink = arrayCfg.technology match {
-
-    case "gwas" =>
-
-      arrayCfg.format match {
-        case "plink" =>
-          Some(Plink(
-            base = path(arrayCfg.filename),
-            data = Seq(store(path(checkPath(arrayCfg.filename + s".bed"))).asInput,store(path(checkPath(arrayCfg.filename + s".bim"))).asInput,store(path(checkPath(arrayCfg.filename + s".fam"))).asInput),
-          ))
-        case _ =>
-          Some(Plink(
-            base = dirTree.base.local.get / rawBaseString,
-            data = bedBimFam(path(checkPlinkPath(s"${dirTree.base.local.get}" + s"/${rawBaseString}")))
-          ))
-      }
-
-    case _ => None
-
+  val plink = inputType match {
+    case "gwas_plink" | "wgs_plink" | "wes_plink" =>
+      Some(Plink(
+        base = path(arrayCfg.filename),
+        data = Seq(store(path(checkPath(arrayCfg.filename + s".bed"))).asInput,store(path(checkPath(arrayCfg.filename + s".bim"))).asInput,store(path(checkPath(arrayCfg.filename + s".fam"))).asInput),
+      ))
+    case "gwas_vcf" =>
+      Some(Plink(
+        base = dirTree.base.local.get / rawBaseString,
+        data = bedBimFam(path(checkPlinkPath(s"${dirTree.base.local.get}" + s"/${rawBaseString}")))
+      ))
+    case "wgs_vcf" | "wes_vcf" => None
+    case _ => throw new CfgException("invalid input type " + inputType)
   }
 
-  val vcf = arrayCfg.format match {
-    case "vcf" =>
-      arrayCfg.technology match {
-        case "gwas" =>
-          Some(MultiPathVcf(
-            base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = None),
-            data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = None),
-            tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = None)))
-        case _ =>
-          Some(MultiPathVcf(
-            base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = projectConfig.hailCloud match { case true => Some(dirTree.dataGlobal.google.get / baseName.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")); case false => None }),
-            data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / baseName)); case false => None }),
-            tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${baseName}.tbi")); case false => None })))
-      }
-    case _ => None
+  val vcf = inputType match {
+    case "gwas_vcf" =>
+      Some(MultiPathVcf(
+        base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = None),
+        data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = None),
+        tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = None)
+      ))
+    case "wgs_vcf" | "wes_vcf" =>
+      Some(MultiPathVcf(
+        base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = projectConfig.hailCloud match { case true => Some(dirTree.dataGlobal.google.get / baseName.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")); case false => None }),
+        data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / baseName)); case false => None }),
+        tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${baseName}.tbi")); case false => None })
+      ))
+    case "gwas_plink" | "wgs_plink" | "wes_plink" => None
+    case _ => throw new CfgException("invalid input type " + inputType)
   }
 
   val rawData = RawData(
@@ -387,18 +382,58 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   }
 
-  val refVcf = arrayCfg.technology match {
-    case "gwas" =>
-      MultiPathVcf(
+  val refVcf = inputType match {
+    case "gwas_vcf" | "gwas_plink" =>
+      Some(MultiPathVcf(
       base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString), google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString); case false => None }),
       data = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.gz")), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.gz")); case false => None }),
-      tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.gz.tbi")), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.gz.tbi")); case false => None }))
-    case _ =>
-      rawData.vcf.get
+      tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.gz.tbi")), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.gz.tbi")); case false => None })))
+    case "wgs_vcf" | "wes_vcf" => rawData.vcf
+    case "wgs_plink" | "wes_plink" => None
+    case _ => throw new CfgException("invalid input type " + inputType)
+  }
+
+  val refPlink = inputType match {
+    case "gwas_vcf" | "gwas_plink" =>
+      Some(MultiPathPlink(
+        base = MultiPath(
+          local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString),
+          google = projectConfig.hailCloud match {
+            case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString)
+            case false => None
+          }
+        ),
+        data = MultiSeqStore(
+          local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString)),
+          google = projectConfig.hailCloud match {
+            case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString))
+            case false => None
+          }
+        )
+      ))
+    case "wgs_plink" | "wes_plink" => 
+      Some(MultiPathPlink(
+        base = MultiPath(
+          local = Some(rawData.plink.get.base),
+          google = projectConfig.hailCloud match {
+            case true => Some(dirTree.dataGlobal.google.get / baseName)
+            case false => None
+          }
+        ),
+        data = MultiSeqStore(
+          local = Some(rawData.plink.get.data),
+          google = projectConfig.hailCloud match {
+            case true => Some(bedBimFam(dirTree.dataGlobal.google.get / baseName))
+            case false => None
+          }
+        )
+      ))
+    case "wgs_vcf" | "wes_vcf" => None
+    case _ => throw new CfgException("invalid input type " + inputType)
   }
 
   val refData = RefData(
-    plink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString))); case _ => None },
+    plink = refPlink,
     vcf = refVcf,
     mtCheckpoint = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
     mtCheckpointGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt.checkpoint")); case false => None },

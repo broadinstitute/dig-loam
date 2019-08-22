@@ -8,9 +8,11 @@ import ArrayStores._
 
 def Prepare(arrayCfg: ConfigArray): Unit = {
 
-  arrayCfg.format match {
+  val inputType = arrayCfg.technology + "_" + arrayCfg.format
 
-    case "vcf" =>
+  inputType match {
+
+    case "gwas_vcf" =>
 
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
       

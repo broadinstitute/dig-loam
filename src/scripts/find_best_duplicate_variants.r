@@ -24,7 +24,7 @@ dat$check<-0
 dat_nondups<-dat[! dat$chrpos %in% dups,]
 dat_dups<-dat[dat$chrpos %in% dups,]
 if(nrow(dat_dups) > 0) {
-	compliment <- function(x) {
+	complement <- function(x) {
 		comp<-c()
 		for(d in unlist(strsplit(toupper(x),split=""))) {
 			if(d == "A") comp <- c(comp,"T")
@@ -50,22 +50,38 @@ if(nrow(dat_dups) > 0) {
 	dat_dups$ALLELES_MONOA2<-paste("0",dat_dups$A2,sep="")
 	dat_dups$ALLELES_MONOCA1<-NA
 	dat_dups$ALLELES_MONOCA2<-NA
-	for(i in 1:nrow(dat_dups)) {
-		print(paste("   ... dup ",i," of ",nrow(dat_dups),sep=""))
-		dat_dups$ALLELES_C[i]<-compliment(dat_dups$ALLELES[i])
-		dat_dups$ALLELES_RC[i]<-compliment(dat_dups$ALLELES_R[i])
-		dat_dups$ALLELES_MONOCA1[i]<-paste(compliment(dat_dups$A1[i]),"0",sep="")
-		dat_dups$ALLELES_MONOCA2[i]<-paste("0",compliment(dat_dups$A2[i]),sep="")
-	}
+	print("calculating complements")
+	dat_dups$ALLELES_C<-sapply(dat_dups$ALLELES, complement)
+	print("calculating reverse complements")
+	dat_dups$ALLELES_RC<-sapply(dat_dups$ALLELES_R, complement)
+	print("calculating monomorphic A1 complements")
+	dat_dups$ALLELES_MONOCA1<-sapply(dat_dups$A1, function(x) paste0(complement(x),"0"))
+	print("calculating monomorphic A2 complements")
+	dat_dups$ALLELES_MONOCA2<-sapply(dat_dups$A2, function(x) paste0(complement(x),"0"))
+	print("calculating universal variant IDs")
+	dat_dups$uid<-apply(dat_dups[,c("CHR","POS","ALLELES","ALLELES_R","ALLELES_C","ALLELES_RC","ALLELES_MONOA1","ALLELES_MONOA2","ALLELES_MONOCA1","ALLELES_MONOCA2")], 1, function(x) paste(c(x[1],x[2],sort(x[3:length(x)])), collapse=":"))
+	dat_dups_dups<-dat_dups$uid[duplicated(dat_dups$uid)]
+	dat_dups<-dat_dups[dat_dups$uid %in% dat_dups_dups,]
 	dat_dups$non_unique<-0
 	dat_dups$ref<-NA
 	dat_dups$flip<-0
 	i<-0
-	for(pos in unique(dat_dups$chrpos[dat_dups$chrpos %in% dups])) {
+	chrpos_unique<-unique(dat_dups$chrpos[dat_dups$chrpos %in% dups])
+	chrpos_unique_length<-length(chrpos_unique)
+	for(pos in chrpos_unique) {
 		i<-i+1
-		print(paste(i," of ",length(unique(dat_dups$chrpos[dat_dups$chrpos %in% dups])),sep=""))
+		print(paste(i," of ",chrpos_unique_length,sep=""))
 		for(snp in dat_dups$SNP[dat_dups$chrpos == pos]) {
-			if(dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES_R[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES_C[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES_RC[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES_MONOA1[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOA1[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES_MONOA2[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOA2[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES_MONOA1[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOCA1[dat_dups$chrpos == pos & dat_dups$SNP != snp] || dat_dups$ALLELES_MONOA2[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOCA2[dat_dups$chrpos == pos & dat_dups$SNP != snp]) {
+			if(
+				dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES_R[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES_C[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES[dat_dups$SNP == snp] %in% dat_dups$ALLELES_RC[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES_MONOA1[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOA1[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES_MONOA2[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOA2[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES_MONOA1[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOCA1[dat_dups$chrpos == pos & dat_dups$SNP != snp] || 
+				dat_dups$ALLELES_MONOA2[dat_dups$SNP == snp] %in% dat_dups$ALLELES_MONOCA2[dat_dups$chrpos == pos & dat_dups$SNP != snp]
+			) {
 				dat_dups$non_unique[dat_dups$SNP == snp]<-1
 			}
 		}
@@ -96,7 +112,7 @@ if(nrow(dat_dups) > 0) {
 			ref<-names(sort(table(c(dat_dups$A1[dat_dups$chrpos == pos],dat_dups$A2[dat_dups$chrpos == pos])),decreasing=T)[1])[1]
 			dat_dups$ref[dat_dups$chrpos == pos]<-ref
 			dat_dups$flip[dat_dups$chrpos == pos & dat_dups$A2 == ref & dat_dups$A1 != "-" & dat_dups$A2 != "-"]<-1
-		}
+		}	
 	}
 	write.table(dat_dups$SNP[dat_dups$remove == 1],args$out,row.names=F,col.names=F,sep="\t",quote=F,append=F)
 } else {

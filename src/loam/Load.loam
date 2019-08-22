@@ -6,21 +6,48 @@
 import ProjectConfig._
 import ArrayStores._
 import ProjectStores._
+import Fxns._
 
 def Load(array: ConfigArray): Unit = {
 
   val minPartitions =  array.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${array.minPartitions.get}" }
   val gqThreshold =  array.gqThreshold.getOrElse("") match { case "" => ""; case _ => s"--gq-threshold ${array.gqThreshold.get}" }
 
+  val inputType = array.technology + "_" + array.format
+
   projectConfig.hailCloud match {
 
     case true =>
 
-      local {
-      
-        googleCopy(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.data.google.get)
-        googleCopy(arrayStores(array).refData.vcf.tbi.local.get, arrayStores(array).refData.vcf.tbi.google.get)
-      
+      val inputOptionString = inputType match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get}"
+        case "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.google.get}"
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      }
+
+      val inputFiles = array.technology + "_" + array.format match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, ProjectStores.sampleFileGoogle.get)
+        case "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.google.get :+ ProjectStores.hailUtilsGoogle.get :+ ProjectStores.sampleFileGoogle.get
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      }
+
+      val tagString = array.technology + "_" + array.format match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
+        case "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      }
+
+      array.technology + "_" + array.format match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => 
+          local {
+            googleCopy(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.data.google.get)
+            googleCopy(arrayStores(array).refData.vcf.get.tbi.local.get, arrayStores(array).refData.vcf.get.tbi.google.get)
+          }
+        case "wgs_plink" | "wes_plink" =>
+          local {
+            googleCopy(arrayStores(array).refData.plink.get.data.local.get, arrayStores(array).refData.plink.get.data.google.get)
+          }
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
       google {
@@ -32,7 +59,7 @@ def Load(array: ConfigArray): Unit = {
           --cloud
           --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           --log ${arrayStores(array).refData.hailLogGoogle.get}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.google.get}
+          ${inputOptionString}
           --sample-in ${ProjectStores.sampleFileGoogle.get}
           --id-col ${projectConfig.sampleFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
@@ -44,9 +71,9 @@ def Load(array: ConfigArray): Unit = {
           --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
           --mt-checkpoint ${arrayStores(array).refData.mtCheckpointGoogle.get}
           --mt-out ${arrayStores(array).refData.mtGoogle.get}"""
-          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, ProjectStores.sampleFileGoogle.get)
+          .in(inputFiles)
           .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.mtCheckpointGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
-          .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
+          .tag(tagString)
       
       }
 
@@ -62,6 +89,24 @@ def Load(array: ConfigArray): Unit = {
 
     case false =>
 
+      val inputOptionString = array.technology + "_" + array.format match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get}"
+        case "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.local.get}"
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      }
+
+      val inputFiles = array.technology + "_" + array.format match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, ProjectStores.sampleFile)
+        case "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.local.get :+ ProjectStores.sampleFile
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      }
+
+      val tagString = array.technology + "_" + array.format match {
+        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
+        case "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
+        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      }
+
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.loadHail.cpus, mem = projectConfig.resources.loadHail.mem, maxRunTime = projectConfig.resources.loadHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailLoad}
@@ -69,7 +114,7 @@ def Load(array: ConfigArray): Unit = {
           ${minPartitions}
           ${gqThreshold}
           --log ${arrayStores(array).refData.hailLog}
-          --vcf-in ${projectConfig.projectId} ${arrayStores(array).refData.vcf.data.local.get}
+          ${inputOptionString}
           --sample-in ${ProjectStores.sampleFile}
           --id-col ${projectConfig.sampleFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
@@ -81,9 +126,9 @@ def Load(array: ConfigArray): Unit = {
           --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
           --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.get}
           --mt-out ${arrayStores(array).refData.mt.get}"""
-          .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get, ProjectStores.sampleFile)
+          .in(inputFiles)
           .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.mtCheckpoint.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).refData.sitesVcf)
-          .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
+          .tag(tagString)
 
       }
 

@@ -20,8 +20,15 @@ def main(args=None):
 	else:
 		hl.init(idempotent=True)
 
-	print("read vcf file")
-	mt = hl.import_vcf(args.vcf_in[1], force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False)
+	if args.vcf_in:
+		print("read vcf file")
+		mt = hl.import_vcf(args.vcf_in, force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False)
+	elif args.plink_in:
+		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
+		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.is_case, mt.quant_pheno)
+	else:
+		print("option --vcf-in or --plink-in must be specified")
+		return -1
 
 	print("replace any spaces in sample ids with an underscore")
 	mt = mt.annotate_cols(s_new = mt.s.replace("\s+","_"))
@@ -146,9 +153,10 @@ if __name__ == "__main__":
 	parser.add_argument('--gq-threshold', type=int, help='add filtered entry fields set to missing where GQ is below threshold')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
+	parser.add_argument('--vcf-in', help='a compressed vcf file')
+	parser.add_argument('--plink-in', help='a plink file set base name')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
-	requiredArgs.add_argument('--vcf-in', nargs=2, help='a dataset label followed by a compressed vcf file (eg: CAMP CAMP.vcf.gz)', required=True)
 	requiredArgs.add_argument('--sample-in', help='a tab delimited sample file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the sample file', required=True)
 	requiredArgs.add_argument('--variant-metrics-out', help='an output filename for variant qc metrics', required=True)

@@ -31,7 +31,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
     
-      cmd"""${utils.binary.binGenotypeHarmonizer}
+      cmd"""java -Xms${projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000}m -Xmx${projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000}m -jar ${utils.binary.binGenotypeHarmonizer}
       --input ${chrData.plink.base}
       --inputType PLINK_BED
       --output ${chrData.mergedKgPlink.base}
@@ -120,24 +120,24 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base.local.get} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
       .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
-      .out(arrayStores(arrayCfg).refData.plink.get.data)
-      .tag(s"${arrayStores(arrayCfg).refData.plink.get.base}".split("/").last)
+      .out(arrayStores(arrayCfg).refData.plink.get.data.local.get)
+      .tag(s"${arrayStores(arrayCfg).refData.plink.get.base.local.get}".split("/").last)
 
-    cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} ${arrayStores(arrayCfg).refData.vcf.data.local.get}"""
+    cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.get.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
       .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
-      .out(arrayStores(arrayCfg).refData.vcf.data.local.get)
-      .tag(s"${arrayStores(arrayCfg).refData.vcf.data.local.get}".split("/").last)
+      .out(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
+      .tag(s"${arrayStores(arrayCfg).refData.vcf.get.data.local.get}".split("/").last)
 
   }
 
   drmWith(imageName = s"${utils.image.imgTools}") {
     
-    cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(arrayCfg).refData.vcf.data.local.get}"""
-      .in(arrayStores(arrayCfg).refData.vcf.data.local.get)
-      .out(arrayStores(arrayCfg).refData.vcf.tbi.local.get)
-      .tag(s"${arrayStores(arrayCfg).refData.vcf.tbi.local.get}".split("/").last)
+    cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
+      .in(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
+      .out(arrayStores(arrayCfg).refData.vcf.get.tbi.local.get)
+      .tag(s"${arrayStores(arrayCfg).refData.vcf.get.tbi.local.get}".split("/").last)
   
   }
 

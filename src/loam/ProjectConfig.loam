@@ -1093,14 +1093,14 @@ object ProjectConfig {
       imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
       imgPython27 = path(s"${imagesDir}/data_processing_v2.2_python27.simg"),
       imgR34 = path(s"${imagesDir}/data_processing_v2.2_r34.simg"),
-      imgTools = path(s"${imagesDir}/data_processing_v2.2_tools.simg"),
+      imgTools = path(s"${imagesDir}/data_processing_v3.0_tools.simg"),
       imgTex = path(s"${imagesDir}/tex.simg"),
       imgEnsemblVep = path(s"${imagesDir}/ensembl_vep.simg")
     )
 
     val binary = Binary(
       binLiftOver = path("/usr/local/bin/liftOver"),
-      binGenotypeHarmonizer = path("GenotypeHarmonizer"),
+      binGenotypeHarmonizer = path("/usr/local/bin/GenotypeHarmonizer.jar"),
       binKing = path("/usr/local/bin/king"),
       binPlink = path("/usr/local/bin/plink"),
       binTabix = path("/usr/local/bin/tabix"),
