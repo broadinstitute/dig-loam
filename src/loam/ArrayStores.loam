@@ -383,13 +383,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   }
 
   val refVcf = inputType match {
-    case "gwas_vcf" | "gwas_plink" =>
-      Some(MultiPathVcf(
-      base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString), google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString); case false => None }),
-      data = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.gz")), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.gz")); case false => None }),
-      tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.gz.tbi")), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.gz.tbi")); case false => None })))
     case "wgs_vcf" | "wes_vcf" => rawData.vcf
-    case "wgs_plink" | "wes_plink" => None
+    case "gwas_vcf" | "gwas_plink" | "wgs_plink" | "wes_plink" => None
     case _ => throw new CfgException("invalid input type " + inputType)
   }
 

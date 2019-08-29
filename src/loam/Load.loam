@@ -20,30 +20,30 @@ def Load(array: ConfigArray): Unit = {
     case true =>
 
       val inputOptionString = inputType match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get}"
-        case "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.google.get}"
+        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get}"
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.google.get}"
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
       val inputFiles = array.technology + "_" + array.format match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, ProjectStores.sampleFileGoogle.get)
-        case "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.google.get :+ ProjectStores.hailUtilsGoogle.get :+ ProjectStores.sampleFileGoogle.get
+        case "wgs_vcf" | "wes_vcf" => Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, ProjectStores.sampleFileGoogle.get)
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.google.get :+ ProjectStores.hailUtilsGoogle.get :+ ProjectStores.sampleFileGoogle.get
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
       val tagString = array.technology + "_" + array.format match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
-        case "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
+        case "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
       array.technology + "_" + array.format match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => 
+        case "wgs_vcf" | "wes_vcf" => 
           local {
             googleCopy(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.data.google.get)
             googleCopy(arrayStores(array).refData.vcf.get.tbi.local.get, arrayStores(array).refData.vcf.get.tbi.google.get)
           }
-        case "wgs_plink" | "wes_plink" =>
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" =>
           local {
             googleCopy(arrayStores(array).refData.plink.get.data.local.get, arrayStores(array).refData.plink.get.data.google.get)
           }
@@ -90,20 +90,20 @@ def Load(array: ConfigArray): Unit = {
     case false =>
 
       val inputOptionString = array.technology + "_" + array.format match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get}"
-        case "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.local.get}"
+        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get}"
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.local.get}"
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
       val inputFiles = array.technology + "_" + array.format match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, ProjectStores.sampleFile)
-        case "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.local.get :+ ProjectStores.sampleFile
+        case "wgs_vcf" | "wes_vcf" => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, ProjectStores.sampleFile)
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.local.get :+ ProjectStores.sampleFile
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
       val tagString = array.technology + "_" + array.format match {
-        case "gwas_plink" | "gwas_vcf" | "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
-        case "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
+        case "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
+        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 

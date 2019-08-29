@@ -18,20 +18,22 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     (chr, chrData) <- arrayStores(arrayCfg).annotatedChrData.get
 
-  } yield { 
+  } yield {
 
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
 
-	  cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --chr $chr --keep-allele-order --make-bed --out ${chrData.plink.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+	  cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --chr $chr --keep-allele-order --make-bed --out ${chrData.plink.base} --output-chr MT --memory ${(projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000)}"""
         .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
         .out(chrData.plink.data)
         .tag(s"${chrData.plink.base}".split("/").last)
 
     }
 
+    val harmMem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000
+
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
     
-      cmd"""java -Xms${projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000}m -Xmx${projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000}m -jar ${utils.binary.binGenotypeHarmonizer}
+      cmd"""java -Xms${harmMem.toInt}m -Xmx${harmMem.toInt}m -jar ${utils.binary.binGenotypeHarmonizer}
       --input ${chrData.plink.base}
       --inputType PLINK_BED
       --output ${chrData.mergedKgPlink.base}
@@ -125,21 +127,21 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
       .out(arrayStores(arrayCfg).refData.plink.get.data.local.get)
       .tag(s"${arrayStores(arrayCfg).refData.plink.get.base.local.get}".split("/").last)
 
-    cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.get.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
-      .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
-      .out(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
-      .tag(s"${arrayStores(arrayCfg).refData.vcf.get.data.local.get}".split("/").last)
+    //cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.get.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.75 * 1000} ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
+    //  .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
+    //  .out(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
+    //  .tag(s"${arrayStores(arrayCfg).refData.vcf.get.data.local.get}".split("/").last)
 
   }
 
-  drmWith(imageName = s"${utils.image.imgTools}") {
-    
-    cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
-      .in(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
-      .out(arrayStores(arrayCfg).refData.vcf.get.tbi.local.get)
-      .tag(s"${arrayStores(arrayCfg).refData.vcf.get.tbi.local.get}".split("/").last)
-  
-  }
+  //drmWith(imageName = s"${utils.image.imgTools}") {
+  //  
+  //  cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
+  //    .in(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
+  //    .out(arrayStores(arrayCfg).refData.vcf.get.tbi.local.get)
+  //    .tag(s"${arrayStores(arrayCfg).refData.vcf.get.tbi.local.get}".split("/").last)
+  //
+  //}
 
   val nonKgRemoveString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
   val nonKgMonoString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")

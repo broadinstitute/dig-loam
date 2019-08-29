@@ -24,7 +24,9 @@ def main(args=None):
 		print("read vcf file")
 		mt = hl.import_vcf(args.vcf_in, force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False)
 	elif args.plink_in:
+		print("read plink file")
 		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
+		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.is_case, mt.quant_pheno)
 	else:
 		print("option --vcf-in or --plink-in must be specified")

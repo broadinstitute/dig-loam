@@ -47,9 +47,13 @@ if(nrow(dat_dups) > 0) {
 	dat_dups$ALLELES_C<-NA
 	dat_dups$ALLELES_RC<-NA
 	dat_dups$ALLELES_MONOA1<-paste(dat_dups$A1,"0",sep="")
-	dat_dups$ALLELES_MONOA2<-paste("0",dat_dups$A2,sep="")
+	dat_dups$ALLELES_MONOA2<-paste(dat_dups$A2,"0",sep="")
+	dat_dups$ALLELES_MONORA1<-paste("0",dat_dups$A1,sep="")
+	dat_dups$ALLELES_MONORA2<-paste("0",dat_dups$A2,sep="")
 	dat_dups$ALLELES_MONOCA1<-NA
 	dat_dups$ALLELES_MONOCA2<-NA
+	dat_dups$ALLELES_MONORCA1<-NA
+	dat_dups$ALLELES_MONORCA2<-NA
 	print("calculating complements")
 	dat_dups$ALLELES_C<-sapply(dat_dups$ALLELES, complement)
 	print("calculating reverse complements")
@@ -58,8 +62,12 @@ if(nrow(dat_dups) > 0) {
 	dat_dups$ALLELES_MONOCA1<-sapply(dat_dups$A1, function(x) paste0(complement(x),"0"))
 	print("calculating monomorphic A2 complements")
 	dat_dups$ALLELES_MONOCA2<-sapply(dat_dups$A2, function(x) paste0(complement(x),"0"))
-	print("calculating universal variant IDs")
-	dat_dups$uid<-apply(dat_dups[,c("CHR","POS","ALLELES","ALLELES_R","ALLELES_C","ALLELES_RC","ALLELES_MONOA1","ALLELES_MONOA2","ALLELES_MONOCA1","ALLELES_MONOCA2")], 1, function(x) paste(c(x[1],x[2],sort(x[3:length(x)])), collapse=":"))
+	print("calculating monomorphic A1 reverse complements")
+	dat_dups$ALLELES_MONORCA1<-sapply(dat_dups$A1, function(x) paste0("0",complement(x)))
+	print("calculating monomorphic A2 reverse complements")
+	dat_dups$ALLELES_MONORCA2<-sapply(dat_dups$A2, function(x) paste0("0",complement(x)))
+	dat_dups$uid<-apply(dat_dups[,c("CHR","POS","ALLELES","ALLELES_R","ALLELES_C","ALLELES_RC","ALLELES_MONOA1","ALLELES_MONOA2","ALLELES_MONORA1","ALLELES_MONORA2","ALLELES_MONOCA1","ALLELES_MONOCA2","ALLELES_MONORCA1","ALLELES_MONORCA2")], 1, function(x) paste(c(x[1],x[2],sort(x[3:length(x)])), collapse=":"))
+	print(dat_dups)
 	dat_dups_dups<-dat_dups$uid[duplicated(dat_dups$uid)]
 	dat_dups<-dat_dups[dat_dups$uid %in% dat_dups_dups,]
 	dat_dups$non_unique<-0
