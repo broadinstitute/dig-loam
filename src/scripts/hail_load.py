@@ -27,7 +27,8 @@ def main(args=None):
 		print("read plink file")
 		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
-		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.is_case, mt.quant_pheno)
+		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
+		mt = mt.annotate_rows(qual = hl.null(hl.tfloat64), filters = hl.null(hl.tstr), info = hl.null(hl.tstr))
 	else:
 		print("option --vcf-in or --plink-in must be specified")
 		return -1
@@ -110,6 +111,11 @@ def main(args=None):
 		else:
 			mt = mt.annotate_entries(AB50 = hl.null(hl.tfloat64))
 		gt_codes = gt_codes + ['AB50']
+
+	if 'GQ' not in gt_codes:
+		print("add GQ")
+		mt = mt.annotate_entries(GQ = hl.null(hl.tfloat64))
+		gt_codes = gt_codes + ['GQ']
 
 	if args.gq_threshold is not None:
 		if 'GTT' not in gt_codes:
