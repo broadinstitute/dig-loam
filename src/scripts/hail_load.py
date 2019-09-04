@@ -28,7 +28,7 @@ def main(args=None):
 		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
-		mt = mt.annotate_rows(qual = hl.null(hl.tfloat64), filters = hl.null(hl.tstr), info = hl.null(hl.tstr))
+		mt = mt.annotate_rows(qual = hl.null(hl.tfloat64), filters = hl.null(hl.tset(hl.tstr)), info = hl.struct(**{}))
 	else:
 		print("option --vcf-in or --plink-in must be specified")
 		return -1
