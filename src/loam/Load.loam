@@ -50,7 +50,7 @@ def Load(array: ConfigArray): Unit = {
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
-      google {
+      googleWith(projectConfig.cloudResources.loadCluster) {
       
         hail"""${utils.python.pyHailLoad} --
           --reference-genome ${projectConfig.referenceGenome}

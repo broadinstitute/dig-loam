@@ -1,4 +1,5 @@
 import Fxns._
+import loamstream.googlecloud.ClusterConfig
 
 val defaultSampleMetricsGwas = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var")
 val defaultSampleMetricsSeq = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var","n_singleton","avg_ab","avg_ab50")
@@ -30,6 +31,9 @@ final case class ConfigCompoundFilters(
   id: String,
   filters: Seq[String],
   expression: String) extends Debug
+
+final case class ConfigCloudResources(
+  loadCluster: ClusterConfig) extends Debug
 
 final case class ConfigResources(
   preparePlink: ConfigMachine,
@@ -189,6 +193,7 @@ final case class ProjectConfig(
   minPCs: Int,
   maxPCs: Int,
   nStddevs: Int,
+  cloudResources: ConfigCloudResources,
   resources: ConfigResources,
   nArrays: Int,
   nCohorts: Int,
@@ -364,6 +369,27 @@ object ProjectConfig {
     val minPCs = requiredInt(config = config, field = "minPCs")
     val maxPCs = requiredInt(config = config, field = "maxPCs")
     val nStddevs = requiredInt(config = config, field = "nStddevs")
+
+    val cloudResources = ConfigCloudResources(
+      loadCluster = {
+        val thisConfig = optionalObj(config = config, field = "loadCluster")
+        thisConfig match {
+          case Some(o) => 
+            ClusterConfig(
+              properties = requiredStr(config = o, field = "properties"),
+              masterMachineType = requiredStr(config = o, field = "masterMachineType"),
+              masterBootDiskSize = requiredInt(config = o, field = "masterBootDiskSize"),
+              workerMachineType = requiredStr(config = o, field = "workerMachineType"),
+              workerBootDiskSize = requiredInt(config = o, field = "workerBootDiskSize"),
+              numWorkers = requiredInt(config = o, field = "numWorkers"),
+              numPreemptibleWorkers = requiredInt(config = o, field = "numPreemptibleWorkers"),
+              preemptibleWorkerBootDiskSize = requiredInt(config = o, field = "preemptibleWorkerBootDiskSize"),
+              maxClusterIdleTime = requiredStr(config = o, field = "maxClusterIdleTime")
+            )
+          case None => ClusterConfig()
+        }
+      }
+    )
 
     val resources = ConfigResources(
       preparePlink = {
@@ -1057,6 +1083,7 @@ object ProjectConfig {
       minPCs = minPCs,
       maxPCs = maxPCs,
       nStddevs = nStddevs,
+      cloudResources = cloudResources,
       resources = resources,
       nArrays = nArrays,
       nCohorts = nCohorts,

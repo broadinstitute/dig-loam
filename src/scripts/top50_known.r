@@ -155,10 +155,15 @@ for(i in 1:nrow(x)) {
 	alleles_rev <- paste(x$alt[i], x$ref[i], sep="")
 	alleles_rev_comp <- complement(paste(x$alt[i], x$ref[i], sep=""))
 	known_alleles <- paste(x$ref_known[i], x$alt_known[i], sep="")
-	if(known_alleles == alleles) x$status[i] <- "match"
-	if(known_alleles == alleles_comp) x$status[i] <- "comp"
-	if(known_alleles == alleles_rev) x$status[i] <- "rev"
-	if(known_alleles == alleles_rev_comp) x$status[i] <- "rev_comp"
+	if(known_alleles == alleles) {
+		x$status[i] <- "match"
+	} else if(known_alleles == alleles_comp) {
+		x$status[i] <- "comp"
+	} else if(known_alleles == alleles_rev) {
+		x$status[i] <- "rev"
+	} else if(known_alleles == alleles_rev_comp) {
+		x$status[i] <- "rev_comp"
+	}
 }
 
 x <- x[x$status != "remove",]
