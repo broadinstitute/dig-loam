@@ -39,7 +39,7 @@ def Prepare(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools") {
 
-    cmd"""sed '1d' ${arrayStores(array).rawData.imiss} | awk '{if($$6 > 0.5) print $$1" "$$2}' > ${arrayStores(array).rawData.imissRemove}"""
+    cmd"""sed '1d' ${arrayStores(array).rawData.imiss} | awk '{if($$6 > 0.5) print $$2" "$$2}' > ${arrayStores(array).rawData.imissRemove}"""
       .in(arrayStores(array).rawData.imiss)
       .out(arrayStores(array).rawData.imissRemove)
       .tag(s"${arrayStores(array).rawData.imissRemove}".split("/").last)
