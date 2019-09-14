@@ -118,7 +118,8 @@ def ExportQcData(array: ConfigArray): Unit = {
       --allow-no-sex 
       --indep-pairwise 1000kb 1 0.2
       --out ${arrayStores(array).filteredData.plink.base.local.get}
-      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
+      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}
+      --seed 1"""
       .in(arrayStores(array).filteredData.plink.data.local.get)
       .out(arrayStores(array).filteredData.pruneIn)
       .tag(s"${arrayStores(array).filteredData.pruneIn}".split("/").last)
@@ -130,7 +131,8 @@ def ExportQcData(array: ConfigArray): Unit = {
       --keep-allele-order
       --make-bed
       --out ${arrayStores(array).prunedData.plink.base}
-      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}"""
+      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}
+      --seed 1"""
       .in(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.pruneIn)
       .out(arrayStores(array).prunedData.plink.data)
       .tag(s"${arrayStores(array).prunedData.plink.base}".split("/").last)
