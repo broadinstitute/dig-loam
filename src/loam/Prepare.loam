@@ -30,7 +30,7 @@ def Prepare(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --missing --out ${arrayStores(array).rawData.rawBase}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --missing --out ${arrayStores(array).rawData.rawBase}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.lmiss, arrayStores(array).rawData.imiss)
       .tag(s"${arrayStores(array).rawData.base}.missing".split("/").last)
@@ -48,7 +48,7 @@ def Prepare(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --freq --out ${arrayStores(array).rawData.rawBase}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --freq --out ${arrayStores(array).rawData.rawBase}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(array).rawData.data)
       .out(arrayStores(array).rawData.freq)
       .tag(s"${arrayStores(array).rawData.freq}".split("/").last)
@@ -139,7 +139,8 @@ def Prepare(array: String): Unit = {
           --output-chr MT
           --make-bed
           --out ${arrayStores(array).annotatedData.base}
-          --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+          --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}
+          --seed 1"""
           .in(arrayStores(array).preparedData.data :+ arrayStores(array).preparedData.liftedExtract.get :+ arrayStores(array).preparedData.liftedUpdate.get)
           .out(arrayStores(array).annotatedData.data)
       

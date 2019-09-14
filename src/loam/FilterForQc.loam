@@ -28,7 +28,8 @@ def FilterForQc(array: String): Unit = {
       --geno 0.02
       --indep-pairwise 1000kb 1 0.2
       --out ${arrayStores(array).harmonizedData.refBase}
-      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
+      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}
+      --seed 1"""
       .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).harmonizedData.regionsExcludePlink)
       .out(arrayStores(array).harmonizedData.pruneIn)
       .tag(s"${arrayStores(array).harmonizedData.pruneIn}".split("/").last)
@@ -40,12 +41,13 @@ def FilterForQc(array: String): Unit = {
       --keep-allele-order
       --make-bed
       --out ${arrayStores(array).prunedData.base}
-      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
+      --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}
+      --seed 1"""
       .in(arrayStores(array).harmonizedData.refData :+ arrayStores(array).harmonizedData.pruneIn)
       .out(arrayStores(array).prunedData.data)
       .tag(s"${arrayStores(array).prunedData.base}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --allow-no-sex --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).prunedData.base} --allow-no-sex --output-chr MT --recode vcf-iid bgz --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --out ${arrayStores(array).prunedData.base} --memory ${projectConfig.resources.filterForQcPlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(array).prunedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).prunedData.vcf)
       .tag(s"${arrayStores(array).prunedData.vcf}".split("/").last)

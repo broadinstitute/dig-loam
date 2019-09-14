@@ -51,7 +51,7 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortPrepPlink.cpus, mem = projectConfig.resources.crossCohortPrepPlink.mem, maxRunTime = projectConfig.resources.crossCohortPrepPlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(configCohort.array).harmonizedData.refBase} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.crossCohortPrepPlink.mem * 0.9 * 1000} --seed 1"""
     .in(arrayStores(configCohort.array).harmonizedData.refData :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
@@ -83,7 +83,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.crossCohortKinshipPlink.cpus, mem = projectConfig.resources.crossCohortKinshipPlink.mem, maxRunTime = projectConfig.resources.crossCohortKinshipPlink.maxRunTime) {
 
-    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --allow-no-sex --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --merge-list ${metaKinshipStores(configMeta).mergeList} --allow-no-sex --chr 1-22 --maf 0.01 --geno 0.02 --make-bed --out ${metaKinshipStores(configMeta).baseFiltered} --memory ${projectConfig.resources.crossCohortKinshipPlink.mem * 0.9 * 1000} --seed 1"""
     .in((metaKinshipStores(configMeta).metaCohort.map(e => e._2).flatMap(e => e.data).toSeq ++ metaKinshipStores(configMeta).metaCohort.map(e => e._2.famMerge).toSeq) :+ metaKinshipStores(configMeta).mergeList)
     .out(metaKinshipStores(configMeta).dataFiltered)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}".split("/").last)

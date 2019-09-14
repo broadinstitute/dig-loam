@@ -25,7 +25,7 @@ def Harmonize(array: String): Unit = {
 
     drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
 
-	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --allow-no-sex --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+	  cmd"""$binPlink --bfile ${arrayStores(array).annotatedData.base} --allow-no-sex --chr $chr --keep-allele-order --make-bed --out ${chrData.base} --output-chr MT --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} --seed 1"""
         .in(arrayStores(array).annotatedData.data)
         .out(chrData.data)
         .tag(s"${chrData.base}".split("/").last)
@@ -89,7 +89,7 @@ def Harmonize(array: String): Unit = {
 
     drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkChr.cpus, mem = projectConfig.resources.harmonizePlinkChr.mem, maxRunTime = projectConfig.resources.harmonizePlinkChr.maxRunTime) {
       
-      cmd"""$binPlink --bfile ${chrData.mergedKgBase} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000}"""
+      cmd"""$binPlink --bfile ${chrData.mergedKgBase} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefBase} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000} --seed 1"""
         .in(chrData.mergedKg :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
         .out(chrData.mergedKgHuRef)
         .tag(s"${chrData.mergedKgHuRefBase}".split("/").last)
@@ -120,7 +120,7 @@ def Harmonize(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --allow-no-sex --merge-list ${arrayStores(array).harmonizedData.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${mergedKgHuRefLines.head} --allow-no-sex --merge-list ${arrayStores(array).harmonizedData.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(array).harmonizedData.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(array).annotatedChrData.map(e => e._2).flatMap(e => e.mergedKgHuRef).toSeq :+ arrayStores(array).harmonizedData.mergeList)
       .out(arrayStores(array).harmonizedData.data)
       .tag(s"${arrayStores(array).harmonizedData.base}".split("/").last)
@@ -138,7 +138,7 @@ def Harmonize(array: String): Unit = {
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
   
-    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --output-chr MT --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000}"""
+    cmd"""$binPlink --bfile ${arrayStores(array).harmonizedData.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(array).harmonizedData.forceA2} --output-chr MT --make-bed --out ${arrayStores(array).harmonizedData.refBase} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(array).harmonizedData.data :+ arrayStores(array).harmonizedData.forceA2)
       .out(arrayStores(array).harmonizedData.refData)
       .tag(s"${arrayStores(array).harmonizedData.refBase}".split("/").last)
