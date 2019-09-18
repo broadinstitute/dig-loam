@@ -1,4 +1,4 @@
-FROM broadinstitute/dig-loam:python36_base
+FROM python:3.6.9-slim-stretch
 
 # all main work in work
 WORKDIR /work
@@ -6,16 +6,19 @@ WORKDIR /work
 # install Java JDK
 RUN apt-get update && \
 	apt-get -y install software-properties-common && \
+	mkdir -p /usr/share/man/man1 && \
 	add-apt-repository -y ppa:openjdk-r/ppa && \
 	apt-get update && \
-	apt-get -y install openjdk-8-jdk
+	apt-get -y install openjdk-8-jdk && \
+	apt-get clean && \
+	rm -rf /var/lib/apt/lists/*
 
 # set JAVA_HOME and add it to PATH
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
 ENV PATH=$PATH:$JAVA_HOME
 
-# install hail v0.2
-RUN pip3 install hail==0.2.13
+# install hail v0.2.22
+RUN pip3 install hail==0.2.22
 
 # open /work directory permissions
 RUN chmod -R 777 /work

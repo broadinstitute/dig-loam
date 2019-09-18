@@ -1,0 +1,9 @@
+# Build Docker image and push to Dockerhub
+docker build -f hail.v0.2.22.Dockerfile --tag broadinstitute/dig-loam:hail.v0.2.22 --force-rm .
+docker push broadinstitute/dig-loam:hail.v0.2.22
+
+# Build Singularity image
+singularity build hail.v0.2.22.simg docker://broadinstitute/dig-loam:hail.v0.2.22
+
+# Start shell inside image
+singularity shell hail.v0.2.22.simg

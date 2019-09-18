@@ -1,4 +1,4 @@
-FROM broadinstitute/dig-loam:r34_base
+FROM rocker/r-ver:3.4.4
 
 # all main work in work
 WORKDIR /work
