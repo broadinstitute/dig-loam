@@ -82,7 +82,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
   
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.prepareFindBestDuplicateVariants.cpus, mem = projectConfig.resources.prepareFindBestDuplicateVariants.mem, maxRunTime = projectConfig.resources.prepareFindBestDuplicateVariants.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.prepareFindBestDuplicateVariants.cpus, mem = projectConfig.resources.prepareFindBestDuplicateVariants.mem, maxRunTime = projectConfig.resources.prepareFindBestDuplicateVariants.maxRunTime) {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose 
       ${utils.r.rFindBestDuplicateVariants}

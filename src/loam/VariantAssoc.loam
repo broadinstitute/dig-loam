@@ -32,7 +32,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   }
   
-  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rGeneratePheno}
@@ -270,7 +270,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   }
   
-  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rGeneratePheno}

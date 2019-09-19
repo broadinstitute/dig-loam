@@ -219,11 +219,12 @@ final case class ProjectConfig(
 final case class Image(
   imgHail: Path,
   imgLocuszoom: Path,
-  imgPython27: Path,
-  imgR34: Path,
+  imgPython2: Path,
+  imgR: Path,
   imgTools: Path,
   imgTex: Path,
-  imgEnsemblVep: Path) extends Debug
+  imgEnsemblVep: Path,
+  imgFlashPca: Path) extends Debug
 
 final case class Binary(
   binLiftOver: Path,
@@ -236,7 +237,8 @@ final case class Binary(
   binPython: Path,
   binLocuszoom: Path,
   binPdflatex: Path,
-  binRscript: Path) extends Debug
+  binRscript: Path,
+  binFlashPca: Path) extends Debug
 
 final case class Python(
   pyHailUtils: Path,
@@ -1116,13 +1118,14 @@ object ProjectConfig {
     val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
 
     val image = Image(
-      imgHail = path(s"${imagesDir}/data_processing_v2.2_hailv02.simg"),
+      imgHail = path(s"${imagesDir}/hail.simg"),
       imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
-      imgPython27 = path(s"${imagesDir}/data_processing_v2.2_python27.simg"),
-      imgR34 = path(s"${imagesDir}/data_processing_v2.2_r34.simg"),
-      imgTools = path(s"${imagesDir}/data_processing_v3.0_tools.simg"),
-      imgTex = path(s"${imagesDir}/tex.simg"),
-      imgEnsemblVep = path(s"${imagesDir}/ensembl_vep.simg")
+      imgPython2 = path(s"${imagesDir}/python2.simg"),
+      imgR = path(s"${imagesDir}/r.simg"),
+      imgTools = path(s"${imagesDir}/tools.simg"),
+      imgTexLive = path(s"${imagesDir}/texlive.simg"),
+      imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
+      imgFlashPca = path(s"${imagesDir}/flashpca.simg"))
     )
 
     val binary = Binary(
@@ -1136,7 +1139,8 @@ object ProjectConfig {
       binPython = path("/usr/local/bin/python"),
       binLocuszoom = path("/usr/local/bin/locuszoom"),
       binPdflatex = path("/usr/local/bin/pdflatex"),
-      binRscript = path("/usr/local/bin/Rscript")
+      binRscript = path("/usr/local/bin/Rscript",
+      binFlashPca = path("/usr/local/bin/flashpca.sh"))
     )
 
     val python = Python(

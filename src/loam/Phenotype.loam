@@ -31,7 +31,7 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
 
     case x if x > 1 =>
 
-      drmWith(imageName = s"${utils.image.imgPython27}") {
+      drmWith(imageName = s"${utils.image.imgPython2}") {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
           --pheno ${ProjectStores.phenoFile.get}
@@ -51,7 +51,7 @@ def PhenotypeDistPlots(configPheno: ConfigPheno, configCohort: ConfigCohort, con
 
     case y if y == 1 =>
 
-      drmWith(imageName = s"${utils.image.imgPython27}") {
+      drmWith(imageName = s"${utils.image.imgPython2}") {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
           --pheno ${ProjectStores.phenoFile.get}

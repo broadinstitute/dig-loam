@@ -14,7 +14,7 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
 
 	cmd"""${utils.binary.binPython} ${utils.python.pyGenerateReportHeader}
       --out ${analysisReportStores(configReport).globalData.header}"""
@@ -82,7 +82,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"${utils.image.imgPython27}") {
+    drmWith(imageName = s"${utils.image.imgPython2}") {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportData}
         --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -98,7 +98,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   } else {
 
-    drmWith(imageName = s"${utils.image.imgPython27}") {
+    drmWith(imageName = s"${utils.image.imgPython2}") {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportData}
         --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
@@ -114,7 +114,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
 
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportStrategy}
       --cohorts "${cohortsString.mkString("___")}"
@@ -141,7 +141,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
 
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportBibliography}
       --acknowledgements "${projectConfig.acknowledgementsAnalysisReport.mkString(",")}"
@@ -183,7 +183,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     assocStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._3.isDefined).map(e => e._2.pheno) 
   }.toSeq
   
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoSummary}
       --dist-plot ${distPlotStrings.mkString(" ")}
@@ -294,7 +294,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     cohorts ++ metas ++ merges
   }.toSeq
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoCalibration}
       --qq-plots ${qqPlotStrings.mkString(" ")}
@@ -339,7 +339,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
     resultsSummaryStores.filter(e => e._1._1.pheno == configPheno.id).filter(e => e._1._4.isDefined).map(e => e._2.resultsSummaryData.regPlotsPdf)
   }.toSeq
   
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
     
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoTopLoci}
       --top-results ${top20AnnotAlignedRiskStrings.mkString(" ")}
@@ -452,7 +452,7 @@ def AnalysisReportPheno(configReport: ConfigReport, configSection: ConfigSection
       
         case _ =>
       
-          drmWith(imageName = s"${utils.image.imgPython27}") {
+          drmWith(imageName = s"${utils.image.imgPython2}") {
             
             cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportPhenoKnownLoci}
               --top-known-loci ${top50Strings.mkString(" ")}
@@ -508,7 +508,7 @@ def AnalysisReportCompile(configReport: ConfigReport): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgTex}") {
+  drmWith(imageName = s"${utils.image.imgTexLive}") {
     
     cmd"""bash -c "${utils.binary.binPdflatex} --output-directory=${projectConfig.home} ${analysisReportStores(configReport).globalData.tex}; sleep 5; ${utils.binary.binPdflatex} --output-directory=${projectConfig.home} ${analysisReportStores(configReport).globalData.tex}""""
       .in(analysisReportStores(configReport).globalData.tex)

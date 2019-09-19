@@ -64,7 +64,7 @@ def SampleQc(array: ConfigArray): Unit = {
 
   val sampleMetricCovars = array.sampleMetricCovars.getOrElse("") match { case "" => ""; case _ => s"""--covars "${array.sampleMetricCovars.get}"""" }
   
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rCalcIstatsAdj}
@@ -108,7 +108,7 @@ def SampleQc(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rIstatsPcsGmmClusterPlot}
@@ -159,7 +159,7 @@ def SampleQc(array: ConfigArray): Unit = {
   
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rIstatsAdjGmmPlotMetrics}
@@ -182,7 +182,7 @@ def SampleQc(array: ConfigArray): Unit = {
    * Requires: Python
    */
   
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyMakeSamplesRestoreTable}
       --ancestry-outliers-keep "${array.ancestryOutliersKeep.mkString(",")}"
@@ -201,7 +201,7 @@ def SampleQc(array: ConfigArray): Unit = {
    * Requires: Python
    */
   
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
       --ancestry-inferred ${ProjectStores.ancestryInferred}

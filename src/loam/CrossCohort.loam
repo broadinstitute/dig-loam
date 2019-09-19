@@ -104,7 +104,7 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
 def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rExcludeCrossArray}

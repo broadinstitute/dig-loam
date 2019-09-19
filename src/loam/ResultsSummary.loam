@@ -41,7 +41,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
     case None => ""
   }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyTop1000}
       --results ${results}
@@ -73,7 +73,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
   
   }.distinct
   
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rTop20}
@@ -91,7 +91,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
   }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
     
     cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
       --results ${results}
@@ -120,7 +120,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
     case Some(s) =>
 
-      drmWith(imageName = s"${utils.image.imgPython27}") {
+      drmWith(imageName = s"${utils.image.imgPython2}") {
         
         cmd"""${utils.binary.binPython} ${utils.python.pyExtractTopRegions}
           --results ${results}
@@ -138,7 +138,7 @@ def ResultsSummary(configModel: ConfigModel, configCohort: Option[ConfigCohort],
 
     case None =>
 
-      drmWith(imageName = s"${utils.image.imgPython27}") {
+      drmWith(imageName = s"${utils.image.imgPython2}") {
         
         cmd"""${utils.binary.binPython} ${utils.python.pyExtractTopRegions}
           --results ${results}
@@ -188,7 +188,7 @@ def ResultsKnownLociSummary(configModel: ConfigModel, configCohort: Option[Confi
       }
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rTop50Known}

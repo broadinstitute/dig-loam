@@ -53,7 +53,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
     
     }
 
-    drmWith(imageName = s"${utils.image.imgPython27}", cores = projectConfig.resources.harmonizeAlignNon1kgVariants.cpus, mem = projectConfig.resources.harmonizeAlignNon1kgVariants.mem, maxRunTime = projectConfig.resources.harmonizeAlignNon1kgVariants.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.harmonizeAlignNon1kgVariants.cpus, mem = projectConfig.resources.harmonizeAlignNon1kgVariants.mem, maxRunTime = projectConfig.resources.harmonizeAlignNon1kgVariants.maxRunTime) {
       
       cmd"""${utils.binary.binPython} ${utils.python.pyAlignNon1kgVariants}
       --kg-ids ${ProjectStores.kgIds(chr)}
@@ -152,7 +152,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
   val mergedKgVarIdUpdateString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarIdUpdate.toString.split("@")(1)}"""}.mkString(",")
   val mergedKgVarSnpLogString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.mergedKgVarSnpLog.toString.split("@")(1)}"""}.mkString(",")
   
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyMergeVariantLists}
       --remove-in "$nonKgRemoveString"

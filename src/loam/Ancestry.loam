@@ -61,7 +61,7 @@ def AncestryPca(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}", cores = projectConfig.resources.ancestryPcaPcair.cpus, mem = projectConfig.resources.ancestryPcaPcair.mem, maxRunTime = projectConfig.resources.ancestryPcaPcair.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.ancestryPcaPcair.cpus, mem = projectConfig.resources.ancestryPcaPcair.mem, maxRunTime = projectConfig.resources.ancestryPcaPcair.maxRunTime) {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rPcair}
@@ -80,7 +80,7 @@ def AncestryPca(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rPlotAncestryPca}
@@ -124,7 +124,7 @@ def AncestryCluster(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rPlotAncestryCluster}
@@ -164,7 +164,7 @@ def MergeInferredAncestry(): Unit = {
 
   val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred).map(_.path).mkString(",")
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rAncestryClusterMerge}

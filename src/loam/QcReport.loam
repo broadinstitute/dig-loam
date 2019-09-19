@@ -17,7 +17,7 @@ def QcReport(): Unit = {
   val multiStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
   val dupRemoveStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).rawData.dupRemove.path}""").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rVariantsSummaryTable}
@@ -35,7 +35,7 @@ def QcReport(): Unit = {
   val clusterGroupsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
   val ancestryInferredStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rAncestryClusterTable}
@@ -52,7 +52,7 @@ def QcReport(): Unit = {
 
   val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.format, a.filename).mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
 
 	cmd"""${utils.binary.binPython} ${utils.python.pyGenerateReportHeader}
       --out ${qcReportStores.texData.header}"""
@@ -78,7 +78,7 @@ def QcReport(): Unit = {
   
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"${utils.image.imgR34}") {
+    drmWith(imageName = s"${utils.image.imgR}") {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rUpsetplotBimFam}
@@ -100,7 +100,7 @@ def QcReport(): Unit = {
 
     }
 
-    drmWith(imageName = s"${utils.image.imgPython27}") {
+    drmWith(imageName = s"${utils.image.imgPython2}") {
       
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportData}
         --narrays ${projectConfig.nArrays}
@@ -117,7 +117,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    drmWith(imageName = s"${utils.image.imgPython27}") {
+    drmWith(imageName = s"${utils.image.imgPython2}") {
   
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportData}
       --narrays ${projectConfig.nArrays}
@@ -139,7 +139,7 @@ def QcReport(): Unit = {
   val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).ancestryClusterData.plots.path.toAbsolutePath()}""").mkString(",") } }
   val restoreStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesRestore.path}""").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
 
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportAncestry}
       --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
@@ -161,7 +161,7 @@ def QcReport(): Unit = {
   val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
   val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
     
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportIbdSexcheck}
       --filtered-bim ${refPrunedBimStrings.mkString(" ")}
@@ -176,7 +176,7 @@ def QcReport(): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rMakeMetricDistPlot}
@@ -203,7 +203,7 @@ def QcReport(): Unit = {
   val sampleQcOutliersStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.outliers.path}""").mkString(",") } }
   val finalSampleExclusionsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).finalData.samplesExclude.path}""").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
     
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rMakeOutlierTable}
@@ -223,7 +223,7 @@ def QcReport(): Unit = {
 
   val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
     
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rUpsetplotBimFam}
@@ -239,7 +239,7 @@ def QcReport(): Unit = {
 
   val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.metricPlots.path.toAbsolutePath()}""").mkString(",") } }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
 
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportSampleqc}
       --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
@@ -262,7 +262,7 @@ def QcReport(): Unit = {
     
   if (projectConfig.nArrays > 1) {
 
-    drmWith(imageName = s"${utils.image.imgR34}") {
+    drmWith(imageName = s"${utils.image.imgR}") {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rUpsetplotBimFam}
@@ -275,7 +275,7 @@ def QcReport(): Unit = {
 
     }
 
-    drmWith(imageName = s"${utils.image.imgPython27}") {
+    drmWith(imageName = s"${utils.image.imgPython2}") {
   	  
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
         --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.get.path.toAbsolutePath()}
@@ -289,7 +289,7 @@ def QcReport(): Unit = {
   
   } else {
 
-    drmWith(imageName = s"${utils.image.imgPython27}") {
+    drmWith(imageName = s"${utils.image.imgPython2}") {
   
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
         --bim ${cleanBimStrings.head}
@@ -303,7 +303,7 @@ def QcReport(): Unit = {
   
   }
 
-  drmWith(imageName = s"${utils.image.imgPython27}") {
+  drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportBibliography}
       --acknowledgements "${projectConfig.acknowledgementsQcReport.mkString(",")}"
@@ -324,7 +324,7 @@ def QcReport(): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgTex}") {
+  drmWith(imageName = s"${utils.image.imgTexLive}") {
     
     cmd"""bash -c "${utils.binary.binPdflatex} --output-directory=${projectConfig.home} ${qcReportStores.tex}; sleep 5; ${utils.binary.binPdflatex} --output-directory=${projectConfig.home} ${qcReportStores.tex}""""
       .in(qcReportStores.tex)

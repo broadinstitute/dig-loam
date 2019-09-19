@@ -20,7 +20,7 @@ def Kinship(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR34}") {
+  drmWith(imageName = s"${utils.image.imgR}") {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rCalcKinshipFamSizes}
