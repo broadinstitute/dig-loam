@@ -57,17 +57,37 @@ if(unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))] ==
 library(UpSetR)
 # green: #16BE72
 # blue: #1F76B4
-if(length(ids) <= 4) { 
-	text_scale <- c(3, 3, 2, 2, 3, 2)
+if(length(ids) <= 2) {
+	text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 2.5)
+	point_size <- 10
+	line_size <- 5
+	mb_ratio = c(0.7, 0.3)
+	num_angles = 0
+} else if(length(ids) <= 3) { 
+	text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 1.7)
 	point_size <- 8
+	line_size <- 4
+	mb_ratio = c(0.7, 0.3)
+	num_angles = 0
+} else if(length(ids) <= 4) { 
+	text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 1.7)
+	point_size <- 6
 	line_size <- 3
 	mb_ratio = c(0.7, 0.3)
+	num_angles = -25
+} else if(length(ids) <= 5) { 
+	text_scale <- c(2, 1.5, 1, 1, 2, 1)
+	point_size <- 3.5
+	line_size <- 1.5
+	mb_ratio = c(0.65, 0.35)
+	num_angles = -35
 } else {
-	text_scale <- c(3, 3, 2, 2, 2, 2)
-	point_size <- 6
-	line_size <- 2
-	mb_ratio = c(0.5, 0.5)
+	text_scale <- c(2, 1.5, 1, 1, 2, 1)
+	point_size <- 3.5
+	line_size <- 1.5
+	mb_ratio = c(0.6, 0.4)
+	num_angles = -35
 }
 
-upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size = line_size, number.angles = -35, point.size = point_size, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = text_scale, mb.ratio = mb_ratio)
+upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size = line_size, number.angles = num_angles, point.size = point_size, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = text_scale, mb.ratio = mb_ratio)
 dev.off()

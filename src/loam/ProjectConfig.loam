@@ -616,7 +616,7 @@ val cohorts: Seq[ConfigCohort] = {
   val y = for {
     section <- projectConfig.Reports.flatMap(e => e.sections).filter(e => e.merges.isDefined)
   } yield {
-   
+
     for {
       g <- section.merges.get
       c <- projectConfig.Merges.filter(e => e.id == g).head.cohorts_metas if projectConfig.Cohorts.filter(e => e.id == c).size > 0

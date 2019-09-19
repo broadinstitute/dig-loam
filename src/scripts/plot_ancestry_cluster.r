@@ -137,27 +137,37 @@ for(i in 1:nrow(centers_unknown)) {
 			c<-centers_unknown[i,c("AMR","AFR","EAS","EUR","SAS")]
 			if(args$afr_codes != "") {
 				for(afr_code in unlist(strsplit(args$afr_codes,split=","))) {
-					c$AFR <- c$AFR + centers_unknown[i,paste0("sr_",afr_code)]
+					if(afr_code %in% pheno[,args$sr_race]) {
+						c$AFR <- c$AFR + centers_unknown[i,paste0("sr_",afr_code)]
+					}
 				}
 			}
 			if(args$amr_codes != "") {
 				for(amr_code in unlist(strsplit(args$amr_codes,split=","))) {
-					c$AMR <- c$AMR + centers_unknown[i,paste0("sr_",amr_code)]
+					if(amr_code %in% pheno[,args$sr_race]) {
+						c$AMR <- c$AMR + centers_unknown[i,paste0("sr_",amr_code)]
+					}
 				}
 			}
 			if(args$eur_codes != "") {
 				for(eur_code in unlist(strsplit(args$eur_codes,split=","))) {
-					c$EUR <- c$EUR + centers_unknown[i,paste0("sr_",eur_code)]
+					if(eur_code %in% pheno[,args$sr_race]) {
+						c$EUR <- c$EUR + centers_unknown[i,paste0("sr_",eur_code)]
+					}
 				}
 			}
 			if(args$eas_codes != "") {
 				for(eas_code in unlist(strsplit(args$eas_codes,split=","))) {
-					c$EAS <- c$EAS + centers_unknown[i,paste0("sr_",eas_code)]
+					if(eas_code %in% pheno[,args$sr_race]) {
+						c$EAS <- c$EAS + centers_unknown[i,paste0("sr_",eas_code)]
+					}
 				}
 			}
 			if(args$sas_codes != "") {
 				for(sas_code in unlist(strsplit(args$sas_codes,split=","))) {
-					c$SAS <- c$SAS + centers_unknown[i,paste0("sr_",sas_code)]
+					if(sas_code %in% pheno[,args$sr_race]) {
+						c$SAS <- c$SAS + centers_unknown[i,paste0("sr_",sas_code)]
+					}
 				}
 			}
 			c<-sort(c,decreasing=TRUE)
