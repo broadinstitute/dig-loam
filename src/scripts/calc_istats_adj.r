@@ -31,8 +31,7 @@ pheno<-pheno[,c(args$iid_col, covars), drop=FALSE]
 names(pheno)[1] <- "IID"
 
 pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F)
-pcs$POP<-NULL
-pcs$GROUP<-NULL
+pcs$FID<-NULL
 out <- merge(data, pcs, all.y=T)
 out <- merge(out, pheno, all.x=T)
 
