@@ -11,19 +11,20 @@ def Pca(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.pca.cpus, mem = projectConfig.resources.pca.mem, maxRunTime = projectConfig.resources.pca.maxRunTime) {
   
-    cmd"""${utils.binary.binFlashPca} --verbose \
-      --seed 1 \
-      --numthreads ${projectConfig.resources.pca.cpus} \
-      --ndim 20 \
-      --bfile ${arrayStores(array).prunedData.plink.base} \
-      --outpc ${arrayStores(array).pcaData.scores} \
-      --outvec ${arrayStores(array).pcaData.eigenVecs} \
-      --outload ${arrayStores(array).pcaData.loadings} \
-      --outval ${arrayStores(array).pcaData.eigenVals} \
-      --outpve ${arrayStores(array).pcaData.pve} \
+    cmd"""${utils.binary.binFlashPca} --verbose
+      --seed 1
+      --numthreads ${projectConfig.resources.pca.cpus}
+      --ndim 20
+      --bfile ${arrayStores(array).prunedData.plink.base}
+      --outpc ${arrayStores(array).pcaData.scores}
+      --outvec ${arrayStores(array).pcaData.eigenVecs}
+      --outload ${arrayStores(array).pcaData.loadings}
+      --outval ${arrayStores(array).pcaData.eigenVals}
+      --outpve ${arrayStores(array).pcaData.pve}
+      --outmeansd ${arrayStores(array).pcaData.meansd}
       > ${arrayStores(array).pcaData.log}"""
-      .in(aarrayStores(array).prunedData.plink.data)
-      .out(arrayStores(array).pcaData.log, arrayStores(array).pcaData.scores, arrayStores(array).pcaData.eigenvecs, arrayStores(array).pcaData.loadings, arrayStores(array).pcaData.eigenvals, arrayStores(array).pcaData.pve)
+      .in(arrayStores(array).prunedData.plink.data)
+      .out(arrayStores(array).pcaData.log, arrayStores(array).pcaData.scores, arrayStores(array).pcaData.eigenVecs, arrayStores(array).pcaData.loadings, arrayStores(array).pcaData.eigenVals, arrayStores(array).pcaData.pve, arrayStores(array).pcaData.meansd)
       .tag(s"${arrayStores(array).pcaData.scores}".split("/").last)
   
   }

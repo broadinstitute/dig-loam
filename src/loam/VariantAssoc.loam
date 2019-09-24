@@ -27,8 +27,8 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
 
   }
   
@@ -37,7 +37,6 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rGeneratePheno}
       --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
-      --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.phenoFile.get}
       --ancestry-in ${ProjectStores.ancestryInferred}
       --ancestry-keep ${configCohort.ancestry.mkString(",")}
@@ -265,8 +264,8 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(arrayStores(array).pcaData.gds, ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
 
   }
   
@@ -275,7 +274,6 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rGeneratePheno}
       --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
-      --gds-in ${arrayStores(array).pcaData.gds}
       --pheno-in ${ProjectStores.phenoFile.get}
       --ancestry-in ${ProjectStores.ancestryInferred}
       --ancestry-keep ${configCohort.ancestry.mkString(",")}

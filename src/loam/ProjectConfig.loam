@@ -50,7 +50,7 @@ final case class ConfigResources(
   kinshipKing: ConfigMachine,
   ancestryPcaHail: ConfigMachine,
   ancestryPcaPlink: ConfigMachine,
-  ancestryPcaPcair: ConfigMachine,
+  ancestryPcaFlashPca: ConfigMachine,
   ancestryClusterKlustakwik: ConfigMachine,
   pca: ConfigMachine,
   sampleQcHail: ConfigMachine,
@@ -222,7 +222,7 @@ final case class Image(
   imgPython2: Path,
   imgR: Path,
   imgTools: Path,
-  imgTex: Path,
+  imgTexLive: Path,
   imgEnsemblVep: Path,
   imgFlashPca: Path) extends Debug
 
@@ -450,8 +450,8 @@ object ProjectConfig {
         val thisConfig = requiredObj(config = config, field = "ancestryPcaPlink")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      ancestryPcaPcair = {
-        val thisConfig = requiredObj(config = config, field = "ancestryPcaPcair")
+      ancestryPcaFlashPca = {
+        val thisConfig = requiredObj(config = config, field = "ancestryPcaFlashPca")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
       ancestryClusterKlustakwik = {
@@ -1125,7 +1125,7 @@ object ProjectConfig {
       imgTools = path(s"${imagesDir}/tools.simg"),
       imgTexLive = path(s"${imagesDir}/texlive.simg"),
       imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
-      imgFlashPca = path(s"${imagesDir}/flashpca.simg"))
+      imgFlashPca = path(s"${imagesDir}/flashpca.simg")
     )
 
     val binary = Binary(
@@ -1139,8 +1139,8 @@ object ProjectConfig {
       binPython = path("/usr/local/bin/python"),
       binLocuszoom = path("/usr/local/bin/locuszoom"),
       binPdflatex = path("/usr/local/bin/pdflatex"),
-      binRscript = path("/usr/local/bin/Rscript",
-      binFlashPca = path("/usr/local/bin/flashpca.sh"))
+      binRscript = path("/usr/local/bin/Rscript"),
+      binFlashPca = path("/usr/local/bin/flashpca.sh")
     )
 
     val python = Python(

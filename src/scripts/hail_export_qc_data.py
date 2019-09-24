@@ -139,7 +139,7 @@ def main(args=None):
 	mt = mt.filter_rows((mt.ls_filters.exclude != 1) & (mt.ls_filters.downsample != 1), keep=True)
 
 	print("write Plink files to disk")
-	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s)
+	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s, pheno = -9)
 
 	if args.cloud:
 		hl.copy_log(args.log)

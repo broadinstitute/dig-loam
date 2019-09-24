@@ -117,6 +117,7 @@ final case class AncestryPcaData(
   loadings: Store,
   eigenVals: Store,
   pve: Store,
+  meansd: Store,
   plots: Store)
 
 final case class AncestryClusterData(
@@ -137,7 +138,8 @@ final case class PcaData(
   eigenVecs: Store,
   loadings: Store,
   eigenVals: Store,
-  pve: Store)
+  pve: Store,
+  meansd: Store)
 
 final case class SexcheckData(
   sexcheck: Store,
@@ -491,8 +493,9 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     scores = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.scores.tsv"),
     eigenVecs = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.eigenvecs.tsv"),
     loadings = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.loadings.tsv"),
-    eigenVals = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.eigenvals.tsv"),
-    pve = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.pve.tsv"),
+    eigenVals = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.eigenvals.txt"),
+    pve = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.pve.txt"),
+    meansd = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.meansd.tsv"),
     plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"))
   
   val ancestryClusterData = AncestryClusterData(
@@ -512,9 +515,9 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     scores = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.scores.tsv"),
     eigenVecs = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.eigenvecs.tsv"),
     loadings = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.loadings.tsv"),
-    eigenVals = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.eigenvals.tsv"),
-    pve = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.pve.tsv"),
-    scores = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.scores.tsv"))
+    eigenVals = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.eigenvals.txt"),
+    pve = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.pve.txt"),
+    meansd = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.meansd.tsv"))
 
   val sexcheckData = SexcheckData(
     sexcheck = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.tsv"),

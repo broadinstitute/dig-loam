@@ -83,7 +83,7 @@ def main(args=None):
 	print('merged data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
 
 	print("write Plink files to disk")
-	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s)
+	hl.export_plink(mt, args.plink_out, ind_id = mt.s, fam_id = mt.s, pheno = -9)
 
 	print("write ref sample table to file")
 	kg.rename({'s': 'ID'}).cols().export(args.kg_samples_out, header=True, types_file=None)

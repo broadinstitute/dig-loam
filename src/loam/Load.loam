@@ -20,7 +20,7 @@ def Load(array: ConfigArray): Unit = {
     case true =>
 
       val inputOptionString = inputType match {
-        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get}"
+        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get.toString.split("@")(1)}"
         case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.google.get}"
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
@@ -90,7 +90,7 @@ def Load(array: ConfigArray): Unit = {
     case false =>
 
       val inputOptionString = array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get}"
+        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get.toString.split("@")(1)}"
         case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.local.get}"
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }

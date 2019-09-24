@@ -63,19 +63,20 @@ def AncestryPca(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.ancestryPcaFlashPca.cpus, mem = projectConfig.resources.ancestryPcaFlashPca.mem, maxRunTime = projectConfig.resources.ancestryPcaFlashPca.maxRunTime) {
   
-    cmd"""${utils.binary.binFlashPca} --verbose \
-      --seed 1 \
-      --numthreads ${projectConfig.resources.ancestryPcaFlashPca.cpus} \
-      --ndim 20 \
-      --bfile ${arrayStores(array).ref1kgData.plink.base.local.get} \
-      --outpc ${arrayStores(array).ancestryPcaData.scores} \
-      --outvec ${arrayStores(array).ancestryPcaData.eigenVecs} \
-      --outload ${arrayStores(array).ancestryPcaData.loadings} \
-      --outval ${arrayStores(array).ancestryPcaData.eigenVals} \
-      --outpve ${arrayStores(array).ancestryPcaData.pve} \
+    cmd"""${utils.binary.binFlashPca} --verbose
+      --seed 1
+      --numthreads ${projectConfig.resources.ancestryPcaFlashPca.cpus}
+      --ndim 20
+      --bfile ${arrayStores(array).ref1kgData.plink.base.local.get}
+      --outpc ${arrayStores(array).ancestryPcaData.scores}
+      --outvec ${arrayStores(array).ancestryPcaData.eigenVecs}
+      --outload ${arrayStores(array).ancestryPcaData.loadings}
+      --outval ${arrayStores(array).ancestryPcaData.eigenVals}
+      --outpve ${arrayStores(array).ancestryPcaData.pve}
+      --outmeansd ${arrayStores(array).ancestryPcaData.meansd}
       > ${arrayStores(array).ancestryPcaData.log}"""
       .in(arrayStores(array).ref1kgData.plink.data.local.get)
-      .out(arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryPcaData.eigenvecs, arrayStores(array).ancestryPcaData.loadings, arrayStores(array).ancestryPcaData.eigenvals, arrayStores(array).ancestryPcaData.pve)
+      .out(arrayStores(array).ancestryPcaData.log, arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryPcaData.eigenVecs, arrayStores(array).ancestryPcaData.loadings, arrayStores(array).ancestryPcaData.eigenVals, arrayStores(array).ancestryPcaData.pve, arrayStores(array).ancestryPcaData.meansd)
       .tag(s"${arrayStores(array).ancestryPcaData.scores}".split("/").last)
   
   }

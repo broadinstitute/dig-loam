@@ -26,7 +26,7 @@ RUN echo "name: env" > /work/environment.yml && \
 	echo "- libgcc" >> /work/environment.yml && \
 	conda env create -f /work/environment.yml
 
-RUN ln -s /opt/conda/envs/env/bin/python3 /usr/local/bin/python
+RUN ln -s /opt/conda/envs/env/bin/python2 /usr/local/bin/python
 
 # activate the myapp environment
 ENV PATH /opt/conda/envs/env/bin:$PATH
