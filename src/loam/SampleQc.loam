@@ -205,14 +205,14 @@ def SampleQc(array: ConfigArray): Unit = {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
       --ancestry-inferred ${ProjectStores.ancestryInferred}
-      --kinship-related ${arrayStores(array).kinshipData.kin0Related}
+      --kinship-related ${arrayStores(array).kinshipData.kin0}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
       --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
       --restore ${arrayStores(array).filterQc.samplesRestore}
       --out ${arrayStores(array).filterQc.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0Related, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterQc.samplesRestore)
+      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterQc.samplesRestore)
       .out(arrayStores(array).filterQc.samplesExclude)
       .tag(s"${arrayStores(array).filterQc.samplesExclude}".split("/").last)
   

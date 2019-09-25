@@ -157,7 +157,7 @@ def QcReport(): Unit = {
   }
 
   val refPrunedBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).prunedData.base}.bim").mkString(",") } }
-  val kin0RelatedStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.kin0Related.path}""").mkString(",") } }
+  val kin0Strings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.kin0.path}""").mkString(",") } }
   val famSizesStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
   val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sexcheckData.problems.path}""").mkString(",") } }
 
@@ -165,12 +165,12 @@ def QcReport(): Unit = {
     
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportIbdSexcheck}
       --filtered-bim ${refPrunedBimStrings.mkString(" ")}
-      --kin0-related ${kin0RelatedStrings.mkString(" ")}
+      --kin0-related ${kin0Strings.mkString(" ")}
       --famsizes ${famSizesStrings.mkString(" ")}
       --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
       --restore ${restoreStrings.mkString(" ")}
       --out ${qcReportStores.texData.ibdSexcheck}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq)
+      .in(arrayStores.map(e => e._2).flatMap(e => e.prunedData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq)
       .out(qcReportStores.texData.ibdSexcheck)
       .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
 
@@ -208,14 +208,14 @@ def QcReport(): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rMakeOutlierTable}
       --ancestry-inferred-outliers ${ProjectStores.ancestryOutliers}
-      --kinship-related ${kin0RelatedStrings.mkString(" ")}
+      --kinship-related ${kin0Strings.mkString(" ")}
       --kinship-famsizes ${famSizesStrings.mkString(" ")}
       --imiss ${imissRemoveStrings.mkString(" ")}
       --sampleqc-outliers ${sampleQcOutliersStrings.mkString(" ")}
       --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
       --final-exclusions ${finalSampleExclusionsStrings.mkString(" ")}
       --out ${qcReportStores.tablesData.sampleQc}"""
-      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0Related).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesExclude).toSeq :+ ProjectStores.ancestryOutliers)
       .out(qcReportStores.tablesData.sampleQc)
       .tag(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
 

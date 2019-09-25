@@ -1140,7 +1140,7 @@ object ProjectConfig {
       binLocuszoom = path("/usr/local/bin/locuszoom"),
       binPdflatex = path("/usr/local/bin/pdflatex"),
       binRscript = path("/usr/local/bin/Rscript"),
-      binFlashPca = path("/usr/local/bin/flashpca.sh")
+      binFlashPca = path("/usr/local/bin/flashpca")
     )
 
     val python = Python(

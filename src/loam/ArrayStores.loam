@@ -93,9 +93,7 @@ final case class PrunedData(
 final case class KinshipData(
   base: Path,
   log: Store,
-  kin: Store,
   kin0: Store,
-  kin0Related: Store,
   famSizes: Store)
 
 final case class Ref1kgData(
@@ -471,9 +469,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val kinshipData = KinshipData(
     base = dirTree.dataArrayMap(arrayCfg).kinship.local.get / kinshipBaseString,
     log = store(dirTree.dataArrayMap(arrayCfg).kinship.local.get / s"${kinshipBaseString}.log"),
-    kin = store(dirTree.dataArrayMap(arrayCfg).kinship.local.get / s"${kinshipBaseString}.kin"),
     kin0 = store(dirTree.dataArrayMap(arrayCfg).kinship.local.get / s"${kinshipBaseString}.kin0"),
-    kin0Related = store(dirTree.dataArrayMap(arrayCfg).kinship.local.get / s"${kinshipBaseString}.kin0.related"),
     famSizes = store(dirTree.dataArrayMap(arrayCfg).kinship.local.get / s"${kinshipBaseString}.famsizes.tsv"))
 
   val ref1kgData = Ref1kgData(
@@ -491,11 +487,11 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     base = dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ancestryPcaBaseString,
     log = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.log"),
     scores = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.scores.tsv"),
-    eigenVecs = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.eigenvecs.tsv"),
-    loadings = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.loadings.tsv"),
-    eigenVals = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.eigenvals.txt"),
-    pve = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.pve.txt"),
-    meansd = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${ancestryPcaBaseString}.meansd.tsv"),
+    eigenVecs = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.eigenvecs.tsv"),
+    loadings = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.loadings.tsv"),
+    eigenVals = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.eigenvals.txt"),
+    pve = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.pve.txt"),
+    meansd = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.meansd.tsv"),
     plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"))
   
   val ancestryClusterData = AncestryClusterData(

@@ -27,8 +27,8 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
 
   }
   
@@ -43,7 +43,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       --pheno-col ${configModel.pheno}
       --iid-col ${projectConfig.phenoFileId}
       --sampleqc-in ${arrayStores(array).sampleQcData.stats}
-      --kinship-in ${arrayStores(array).kinshipData.kin0Related}
+      --kinship-in ${arrayStores(array).kinshipData.kin0}
       --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude}
       --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
       --samples-exclude-cohort ${cohortStores(configCohort).samplesExclude}
@@ -264,8 +264,8 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
 
   val generatePhenoIn = configMeta match {
 
-    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0Related, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
 
   }
   
@@ -280,7 +280,7 @@ def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configK
       --pheno-col ${configModel.pheno}
       --iid-col ${projectConfig.phenoFileId}
       --sampleqc-in ${arrayStores(array).sampleQcData.stats}
-      --kinship-in ${arrayStores(array).kinshipData.kin0Related}
+      --kinship-in ${arrayStores(array).kinshipData.kin0}
       --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude}
       --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
       --samples-exclude-cohort ${cohortStores(configCohort).samplesExclude}
