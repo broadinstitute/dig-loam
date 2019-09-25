@@ -4,6 +4,8 @@ library(argparse)
 
 parser <- ArgumentParser()
 parser$add_argument("--pca-scores", dest="pca_scores", type="character", help="A file containing PCA scores")
+parser$add_argument("--update-pop", nargs=3, dest="update_pop", default=NULL, type="character", help="A column name for sample ID, a column name for POP, and the filename. This argument updates the POP field for all overlapping sample IDs in the file")
+parser$add_argument("--update-group", nargs=3, dest="update_group", default=NULL, type="character", help="A column name for sample ID, a column name for GROUP, and the filename. This argument updates the GROUP field for all overlapping sample IDs in the file")
 parser$add_argument("--cluster", dest="cluster", type="character", help="A klustakwik cluster file")
 parser$add_argument("--sample-file", dest="sample_file", type="character", help="A sample file")
 parser$add_argument("--project-id", dest="project_id", type="character", help="A project id")
@@ -30,6 +32,31 @@ gg_color_hue <- function(n) {
 }
 
 pcs<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F)
+pcs$POP<-args$project_id
+pcs$GROUP<-args$project_id
+
+if(! is.null(args$update_pop)) {
+	print("updating population information from file")
+	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	pop_df<-pop_df[,c(args$update_pop[1],args$update_pop[2])]
+	names(pop_df)[1]<-"IID"
+	names(pop_df)[2]<-"POP_NEW"
+	pcs<-merge(pcs,pop_df,all.x=TRUE)
+	pcs$POP[! is.na(pcs$POP_NEW)]<-pcs$POP_NEW[! is.na(pcs$POP_NEW)]
+	pcs$POP_NEW<-NULL
+}
+
+if(! is.null(args$update_group)) {
+	print("updating group information from file")
+	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	group_df<-group_df[,c(args$update_group[1],args$update_group[2])]
+	names(group_df)[1]<-"IID"
+	names(group_df)[2]<-"GROUP_NEW"
+	pcs<-merge(pcs,group_df,all.x=TRUE)
+	pcs$GROUP[! is.na(pcs$GROUP_NEW)]<-pcs$GROUP_NEW[! is.na(pcs$GROUP_NEW)]
+	pcs$GROUP_NEW<-NULL
+}
+
 cl<-read.table(args$cluster, as.is=T, skip=1, stringsAsFactors=F)
 names(cl)[1]<-"CLUSTER"
 pcs<-cbind(pcs,cl)

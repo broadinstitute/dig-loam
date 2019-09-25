@@ -132,6 +132,8 @@ def AncestryCluster(array: ConfigArray): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rPlotAncestryCluster}
       --pca-scores ${arrayStores(array).ancestryPcaData.scores}
+      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples}
+      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples}
       --cluster ${arrayStores(array).ancestryClusterData.clu}
       --sample-file ${ProjectStores.sampleFile}
       --project-id ${projectConfig.projectId}
@@ -148,7 +150,7 @@ def AncestryCluster(array: ConfigArray): Unit = {
       --cluster-groups ${arrayStores(array).ancestryClusterData.groups}
       --ancestry-inferred ${arrayStores(array).ancestryData.inferred}
       --cluster-plots-no1kg ${arrayStores(array).ancestryClusterData.no1kgPlots}"""
-      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ancestryClusterData.clu, ProjectStores.sampleFile)
+      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ancestryClusterData.clu, ProjectStores.sampleFile)
       .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
       .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
 

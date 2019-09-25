@@ -32,7 +32,7 @@ names(pheno)[1] <- "IID"
 
 pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F)
 pcs$FID<-NULL
-out <- merge(data, pcs, all.y=T)
+out <- merge(data, pcs, all.x=T)
 out <- merge(out, pheno, all.x=T)
 
 if(args$covars != "") {

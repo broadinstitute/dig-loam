@@ -13,6 +13,8 @@ args<-parser$parse_args()
 print(args)
 
 data<-read.table(args$pca_scores, header=T, as.is=T)
+data$POP<-args$id
+data$GROUP<-args$id
 
 if(! is.null(args$update_pop)) {
 	print("updating population information from file")
