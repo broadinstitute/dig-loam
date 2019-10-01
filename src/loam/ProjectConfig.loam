@@ -378,6 +378,7 @@ object ProjectConfig {
         thisConfig match {
           case Some(o) => 
             ClusterConfig(
+              zone = requiredStr(config = o, field = "zone"),
               properties = requiredStr(config = o, field = "properties"),
               masterMachineType = requiredStr(config = o, field = "masterMachineType"),
               masterBootDiskSize = requiredInt(config = o, field = "masterBootDiskSize"),

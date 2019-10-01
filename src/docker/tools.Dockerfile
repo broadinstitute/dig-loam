@@ -24,14 +24,8 @@ ENV PATH=$PATH:$JAVA_HOME
 # install genotype harmonizer, klustakwik, plink1.9, tabix/bgzip, liftover, king
 RUN wget -q https://molgenis26.gcc.rug.nl/downloads/GenotypeHarmonizer/GenotypeHarmonizer-1.4.20-dist.tar.gz && \
 	tar -zxvf GenotypeHarmonizer-1.4.20-dist.tar.gz && \
-	dos2unix GenotypeHarmonizer-1.4.20-SNAPSHOT/GenotypeHarmonizer.sh && \
-	chmod +x GenotypeHarmonizer-1.4.20-SNAPSHOT/GenotypeHarmonizer.sh && \
-	ln -s /work/GenotypeHarmonizer-1.4.20-SNAPSHOT/GenotypeHarmonizer.sh /work/GenotypeHarmonizer-1.4.20-SNAPSHOT/GenotypeHarmonizer && \
+	ln -s /work/GenotypeHarmonizer-1.4.20-SNAPSHOT/GenotypeHarmonizer.jar /usr/local/bin/GenotypeHarmonizer.jar && \
 	rm GenotypeHarmonizer-1.4.20-dist.tar.gz
-
-# set GENOTYPE_HARMONIZER_HOME and add the directory to the system path
-ENV GENOTYPE_HARMONIZER_HOME=/work/GenotypeHarmonizer-1.4.20-SNAPSHOT/
-ENV PATH=$PATH:$GENOTYPE_HARMONIZER_HOME
 
 RUN apt-get update && \
 	apt-get -y install klustakwik && \

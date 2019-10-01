@@ -19,11 +19,10 @@ import CrossCohort._
 import Meta._
 import Merge._
 import ResultsSummary._
-
+import QcReport._
 //import Impute._
 //import AssocStores._
 //import Phenotype._
-//import QcReport._
 //import AnalysisReport._
 
 import loamstream.conf.DataConfig
@@ -73,9 +72,9 @@ for {
 
 }
 
-//// QC Report
-//QcReport()
-//
+// QC Report
+QcReport()
+
 //// Generate imputation ready data files
 //for {
 //  array <- projectConfig.Arrays
@@ -84,7 +83,7 @@ for {
 //  FilterImpute(array.id)
 //
 //}
-//
+
 
 // Only proceed if phenoFile is defined
 ProjectStores.phenoFile match {
