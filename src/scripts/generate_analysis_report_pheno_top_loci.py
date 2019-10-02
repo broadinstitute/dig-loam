@@ -170,7 +170,7 @@ def main(args=None):
 												r"      \caption{" + row[3].replace("_","\_") + r" $\pm 100 kb$}",
 												r"      \label{fig:" + args.pheno_name.replace("_","-") + r"-Top-Associations-Regional-Plots-" + cohort.replace("_","-") + "-" + model.replace("_","-").replace("+","-").replace(" ","-") + "-" + row[3].replace("_","-") + r"}",
 												r"   \end{subfigure}" + delim])
-											if nplots % 6 == 0 and idx < sigdf.shape[0]:
+											if nplots % 6 == 0 and idx < sigdf.shape[0] - 1:
 												if nplots == 6:
 													text.extend([
 														r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r" (Continued on next page)}",
@@ -179,7 +179,7 @@ def main(args=None):
 													text.extend([
 														r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r" (Continued)}",
 														r"\end{figure}"])
-										if nplots < 6:
+										if nplots < 7:
 											text.extend([
 												r"   \caption{Regional plots for cohort " + cohort.replace("_","\_") + " model " + model.replace("_","\_") + r"}"])
 										else:

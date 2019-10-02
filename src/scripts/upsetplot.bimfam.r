@@ -2,6 +2,7 @@ library(argparse)
 
 parser <- ArgumentParser()
 parser$add_argument("--input", nargs='+', dest="input", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--exclusions", nargs='+', dest="input", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--type", choices=c("bim","fam"), dest="type", type="character", help="a file type")
 parser$add_argument("--ancestry", dest="ancestry", type="character", help="an inferred ancestry file")
 parser$add_argument("--out", dest="out", type="character", help="an output filename ending in '.png' or '.pdf'")
@@ -11,6 +12,11 @@ print(args)
 
 barcolors <- list(AFR="#08306B",AMR="#41AB5D",EAS="#000000",EUR="#F16913",SAS="#3F007D")
 
+if(! is.null(args$ancestry)) {
+	anc<-read.table(args$ancestry,header=T,as.is=T,stringsAsFactors=F)
+	anc <- anc[! anc$FINAL == "OUTLIERS",]
+}
+
 ids<-list()
 for(inp in args$input) {
 	l<-unlist(strsplit(inp,","))[1]
@@ -18,8 +24,6 @@ for(inp in args$input) {
 	tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
 	if(args$type == "fam") {
 		if(! is.null(args$ancestry)) {
-			anc<-read.table(args$ancestry,header=T,as.is=T,stringsAsFactors=F)
-			anc <- anc[! anc$FINAL == "OUTLIERS",]
 			anc <- anc[anc$IID %in% tbl[,2],]
 			for(c in unique(anc$FINAL)) {
 				ids[[paste(l," (",c,")",sep="")]]<-tbl[,2][tbl[,2] %in% anc$IID[anc$FINAL == c]]
@@ -34,6 +38,21 @@ for(inp in args$input) {
 		xLabel = "Variants"
 	} else {
 		stop(paste("file type ",args$type," not supported",sep=""))
+	}
+}
+
+if(! is.null(args$exclusions)) {
+	for(excl in args$exclusions) {
+		l<-unlist(strsplit(excl,","))[1]
+		f<-unlist(strsplit(excl,","))[2]
+		excl_list<-scan(f, what="character")
+		if(! is.null(args$ancestry)) {
+			for(c in unique(anc$FINAL)) {
+				ids[[paste(l," (",c,")",sep="")]]<-ids[[paste(l," (",c,")",sep="")]][! ids[[paste(l," (",c,")",sep="")]] %in% excl_list]
+			}
+		} else {
+			ids[[l]]<-ids[[l]][! ids[[l]] %in% excl_list]
+		}
 	}
 }
 
