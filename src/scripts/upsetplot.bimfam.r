@@ -2,7 +2,7 @@ library(argparse)
 
 parser <- ArgumentParser()
 parser$add_argument("--input", nargs='+', dest="input", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
-parser$add_argument("--exclusions", nargs='+', dest="input", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--exclusions", nargs='+', dest="exclusions", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--type", choices=c("bim","fam"), dest="type", type="character", help="a file type")
 parser$add_argument("--ancestry", dest="ancestry", type="character", help="an inferred ancestry file")
 parser$add_argument("--out", dest="out", type="character", help="an output filename ending in '.png' or '.pdf'")
@@ -22,6 +22,7 @@ for(inp in args$input) {
 	l<-unlist(strsplit(inp,","))[1]
 	f<-unlist(strsplit(inp,","))[2]
 	tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
+	print(head(tbl))
 	if(args$type == "fam") {
 		if(! is.null(args$ancestry)) {
 			anc <- anc[anc$IID %in% tbl[,2],]
