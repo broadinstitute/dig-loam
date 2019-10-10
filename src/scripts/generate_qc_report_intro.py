@@ -52,7 +52,7 @@ def main(args=None):
 					sys.exit("failed to load vcf file " + aFile)
 				else:
 					samples = samples + [a for a in handle.header][-1].split('\t')[9:]
-			elif aType == "bfile":
+			elif aType == "plink":
 				handle = pd.read_table(aFile + ".fam", header=None, sep=" ")
 				handle.columns = ['fid','iid','fat','mot','sex','pheno']
 				samples = samples + handle['iid'].tolist()
