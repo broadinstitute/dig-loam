@@ -11,27 +11,39 @@ print(args)
 
 print("read in bim file")
 dat<-read.table(args$bim_in,header=F,as.is=T,stringsAsFactors=F)
-dat$chrpos<-paste(dat$V1,":",dat$V4,sep="")
+names(dat)[1]<-"CHR"
 names(dat)[2]<-"SNP"
-dups<-dat$chrpos[duplicated(dat$chrpos)]
-print("extract duplicate chr:pos pairs")
-dat<-dat[dat$chrpos %in% dups,]
+names(dat)[3]<-"CM"
+names(dat)[4]<-"POS"
+names(dat)[5]<-"A1"
+names(dat)[6]<-"A2"
+dat$CHRPOS<-paste(dat$CHR,":",dat$POS,sep="")
+dups<-dat$CHRPOS[duplicated(dat$CHRPOS)]
+print("extract duplicate CHR:POS pairs")
+dat<-dat[dat$CHRPOS %in% dups,]
 dat$remove<-0
 dat$check<-0
+print(paste0("data contains ",nrow(dat)," rows and ",length(unique(dat$CHRPOS))," CHR:POS pairs that are duplicated"))
 
-print("read in allele frequency file")
+print("read in allele frequency file and extract matching duplicate ids")
 tbl<-read.table(args$freq_in,header=T,as.is=T,stringsAsFactors=F)
 tbl<-tbl[,c("SNP","MAF")]
+tbl<-tbl[tbl$SNP %in% dat$SNP,]
+print(paste0("frequency file contains ",nrow(tbl)," rows matching data"))
 
 print("merge allele frequency into duplicates")
 dat<-merge(dat,tbl,all.x=T)
+print(paste0("merged data contains ",nrow(dat)," rows"))
 
-print("read in callrate file")
+print("read in callrate file and extract matching duplicate ids")
 tbl<-read.table(args$miss_in,header=T,as.is=T,stringsAsFactors=F)
 tbl<-tbl[,c("SNP","F_MISS")]
+tbl<-tbl[tbl$SNP %in% dat$SNP,]
+print(paste0("callrate file contains ",nrow(tbl)," values matching duplicate bim file variants"))
 
 print("merge callrate into duplicates")
 dat<-merge(dat,tbl,all.x=T)
+print(paste0("merged data contains ",nrow(dat)," rows"))
 
 if(nrow(dat) > 0) {
 	compliment <- function(x) {
@@ -71,28 +83,28 @@ if(nrow(dat) > 0) {
 	dat$ref<-NA
 	dat$flip<-0
 	i<-0
-	for(pos in unique(dat$chrpos[dat$chrpos %in% dups])) {
+	for(pos in unique(dat$CHRPOS[dat$CHRPOS %in% dups])) {
 		i<-i+1
-		print(paste(i," of ",length(unique(dat$chrpos[dat$chrpos %in% dups])),sep=""))
-		for(snp in dat$SNP[dat$chrpos == pos]) {
-			if(dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_R[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_C[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_RC[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOA1[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOA2[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOCA1[dat$chrpos == pos & dat$SNP != snp] || dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOCA2[dat$chrpos == pos & dat$SNP != snp]) {
+		print(paste(i," of ",length(unique(dat$CHRPOS[dat$CHRPOS %in% dups])),sep=""))
+		for(snp in dat$SNP[dat$CHRPOS == pos]) {
+			if(dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_R[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_C[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_RC[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOA1[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOA2[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOCA1[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOCA2[dat$CHRPOS == pos & dat$SNP != snp]) {
 				dat$non_unique[dat$SNP == snp]<-1
 			}
 		}
-		if(nrow(dat[dat$chrpos == pos & dat$non_unique == 1,]) > 0) {
-			maf_max<-max(dat$MAF[dat$chrpos == pos & dat$non_unique == 1])
-			maf_min<-min(dat$MAF[dat$chrpos == pos & dat$non_unique == 1])
+		if(nrow(dat[dat$CHRPOS == pos & dat$non_unique == 1,]) > 0) {
+			maf_max<-max(dat$MAF[dat$CHRPOS == pos & dat$non_unique == 1])
+			maf_min<-min(dat$MAF[dat$CHRPOS == pos & dat$non_unique == 1])
 			maf_diff<-maf_max-maf_min
-			miss_max<-max(dat$F_MISS[dat$chrpos == pos & dat$non_unique == 1])
-			miss_min<-min(dat$F_MISS[dat$chrpos == pos & dat$non_unique == 1])
+			miss_max<-max(dat$F_MISS[dat$CHRPOS == pos & dat$non_unique == 1])
+			miss_min<-min(dat$F_MISS[dat$CHRPOS == pos & dat$non_unique == 1])
 			miss_diff<-miss_max-miss_min
-			highcall_vars<-dat$SNP[dat$chrpos == pos & dat$non_unique == 1 & dat$F_MISS <= 0.02]
+			highcall_vars<-dat$SNP[dat$CHRPOS == pos & dat$non_unique == 1 & dat$F_MISS <= 0.02]
 			if(length(highcall_vars) <= 1) {
-				min_miss_var<-dat$SNP[dat$chrpos == pos & dat$non_unique == 1 & dat$F_MISS == miss_min]
+				min_miss_var<-dat$SNP[dat$CHRPOS == pos & dat$non_unique == 1 & dat$F_MISS == miss_min]
 				if(length(min_miss_var) == 1) {
-					dat$remove[dat$chrpos == pos & dat$non_unique == 1 & dat$SNP != min_miss_var]<-1
+					dat$remove[dat$CHRPOS == pos & dat$non_unique == 1 & dat$SNP != min_miss_var]<-1
 				} else {
-					dat$remove[dat$chrpos == pos & dat$non_unique == 1 & dat$SNP != min_miss_var[1]]<-1
+					dat$remove[dat$CHRPOS == pos & dat$non_unique == 1 & dat$SNP != min_miss_var[1]]<-1
 				}
 			} else {
 				max_maf_var<-dat$SNP[dat$SNP %in% highcall_vars & dat$MAF == maf_max]
@@ -103,9 +115,9 @@ if(nrow(dat) > 0) {
 				}
 			}
 		} else {
-			ref<-names(sort(table(c(dat$A1[dat$chrpos == pos],dat$A2[dat$chrpos == pos])),decreasing=T)[1])[1]
-			dat$ref[dat$chrpos == pos]<-ref
-			dat$flip[dat$chrpos == pos & dat$A2 == ref & dat$A1 != "-" & dat$A2 != "-"]<-1
+			ref<-names(sort(table(c(dat$A1[dat$CHRPOS == pos],dat$A2[dat$CHRPOS == pos])),decreasing=T)[1])[1]
+			dat$ref[dat$CHRPOS == pos]<-ref
+			dat$flip[dat$CHRPOS == pos & dat$A2 == ref & dat$A1 != "-" & dat$A2 != "-"]<-1
 		}
 	}
 	write.table(dat$SNP[dat$remove == 1],args$out,row.names=F,col.names=F,sep="\t",quote=F,append=F)
