@@ -64,7 +64,7 @@ def Prepare(array: String): Unit = {
 
   }
 
-  drmWith(imageName = s"$imgR34", cores = projectConfig.resources.prepareFindBestDuplicateVariants.cpus, mem = projectConfig.resources.prepareFindBestDuplicateVariants.mem, maxRunTime = projectConfig.resources.prepareFindBestDuplicateVariants.maxRunTime) {
+  drmWith(imageName = s"$imgTools", cores = projectConfig.resources.prepareFindBestDuplicateVariants.cpus, mem = projectConfig.resources.prepareFindBestDuplicateVariants.mem, maxRunTime = projectConfig.resources.prepareFindBestDuplicateVariants.maxRunTime) {
 
     cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --list-duplicate-vars 'ids-only' --out ${arrayStores(array).rawData.rawBase}.listdupvars --memory ${projectConfig.resources.prepareFindBestDuplicateVariants.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(array).rawData.data)
