@@ -65,23 +65,43 @@ def Prepare(array: String): Unit = {
   }
 
   drmWith(imageName = s"$imgR34", cores = projectConfig.resources.prepareFindBestDuplicateVariants.cpus, mem = projectConfig.resources.prepareFindBestDuplicateVariants.mem, maxRunTime = projectConfig.resources.prepareFindBestDuplicateVariants.maxRunTime) {
+
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --list-duplicate-vars 'ids-only' --out ${arrayStores(array).rawData.rawBase}.listdupvars --memory ${projectConfig.resources.prepareFindBestDuplicateVariants.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(array).rawData.data)
+      .out(arrayStores(array).rawData.dupVars)
+      .tag(s"${arrayStores(array).rawData.dupVars}".split("/").last)
+
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --extract ${arrayStores(array).rawData.dupVars} --make-bed --out ${arrayStores(array).rawData.dupVarsBase} --memory ${projectConfig.resources.prepareFindBestDuplicateVariants.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(array).rawData.data)
+      .out(arrayStores(array).rawData.dupVarsData)
+      .tag(s"${arrayStores(array).rawData.dupVarsBase}".split("/").last)
+
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.dupVarsBase} --allow-no-sex --freq --out ${arrayStores(array).rawData.dupVarsBase}.freq --memory ${projectConfig.resources.prepareFindBestDuplicateVariants.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(array).rawData.dupVarsData)
+      .out(arrayStores(array).rawData.dupVarsFreq)
+      .tag(s"${arrayStores(array).rawData.dupVarsBase}.freq".split("/").last)
+
+    cmd"""$binPlink --bfile ${arrayStores(array).rawData.dupVarsBase} --allow-no-sex --missing --out ${arrayStores(array).rawData.dupVarsBase}.missing --memory ${projectConfig.resources.prepareFindBestDuplicateVariants.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(array).rawData.dupVarsData)
+      .out(arrayStores(array).rawData.dupVarsImiss, arrayStores(array).rawData.dupVarsLmiss)
+      .tag(s"${arrayStores(array).rawData.dupVarsBase}.missing".split("/").last)
   
     cmd"""$binRscript --vanilla --verbose 
       $rFindBestDuplicateVariants
-      --bim-in ${arrayStores(array).rawData.base}.bim
-      --freq-in ${arrayStores(array).rawData.freq}
-      --miss-in ${arrayStores(array).rawData.lmiss}
-      --out ${arrayStores(array).rawData.dupRemove}"""
-      .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.freq :+ arrayStores(array).rawData.lmiss)
-      .out(arrayStores(array).rawData.dupRemove)
-      .tag(s"${arrayStores(array).rawData.dupRemove}".split("/").last)
+      --bim-in ${arrayStores(array).rawData.dupVarsBase}.bim
+      --freq-in ${arrayStores(array).rawData.dupVarsFreq}
+      --miss-in ${arrayStores(array).rawData.dupVarsLmiss}
+      --out ${arrayStores(array).rawData.dupVarsRemove}"""
+      .in(arrayStores(array).rawData.dupVarsData :+ arrayStores(array).rawData.dupVarsFreq :+ arrayStores(array).rawData.dupVarsLmiss)
+      .out(arrayStores(array).rawData.dupVarsRemove)
+      .tag(s"${arrayStores(array).rawData.dupVarsRemove}".split("/").last)
 
   }
 
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
 
-    cmd"""$shPlinkPrepare $binPlink ${arrayStores(array).rawData.base} ${arrayStores(array).preparedData.base} ${arrayStores(array).rawData.imissRemove} ${arrayStores(array).rawData.dupRemove} ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
-      .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove :+ arrayStores(array).rawData.dupRemove)
+    cmd"""$shPlinkPrepare $binPlink ${arrayStores(array).rawData.base} ${arrayStores(array).preparedData.base} ${arrayStores(array).rawData.imissRemove} ${arrayStores(array).rawData.dupVarsRemove} ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+      .in(arrayStores(array).rawData.data :+ arrayStores(array).rawData.imissRemove :+ arrayStores(array).rawData.dupVarsRemove)
       .out(arrayStores(array).preparedData.data)
       .tag(s"${arrayStores(array).preparedData.base}".split("/").last)
 

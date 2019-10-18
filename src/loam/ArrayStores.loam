@@ -14,7 +14,13 @@ final case class RawData(
   imissRemove: Store,
   freq: Store,
   mono: Store,
-  dupRemove: Store)
+  dupVars: Store,
+  dupVarsData: Seq[Store],
+  dupVarsBase: Path,
+  dupVarsFreq: Store,
+  dupVarsImiss: Store,
+  dupVarsLmiss: Store,
+  dupVarsRemove: Store)
 
 final case class PreparedData(
   data: Seq[Store],
@@ -221,6 +227,7 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
 
   val arrayCfg = projectConfig.Arrays.filter(_.id == array)(0)
   val rawBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw"
+  val rawDupVarsBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw.dup.vars"
   val preparedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
@@ -250,7 +257,13 @@ val arrayStores = projectConfig.Arrays.map(a => a.id).map { array =>
     imissRemove = store(localOutDir / s"${rawBaseString}.missing.imiss.remove"),
     freq = store(localOutDir / s"${rawBaseString}.freq.frq"),
     mono = store(localOutDir / s"${rawBaseString}.mono"),
-    dupRemove = store(localOutDir / s"${rawBaseString}.dup.remove"))
+    dupVars = store(localOutDir / s"${rawBaseString}.listdupvars.dupvar"),
+    dupVarsData = bedBimFam(localOutDir / rawDupVarsBaseString),
+    dupVarsBase = localOutDir / rawDupVarsBaseString,
+    dupVarsFreq = store(localOutDir / s"${rawDupVarsBaseString}.freq.frq"),
+    dupVarsImiss = store(localOutDir / s"${rawDupVarsBaseString}.missing.imiss"),
+    dupVarsLmiss = store(localOutDir / s"${rawDupVarsBaseString}.missing.lmiss"),
+    dupVarsRemove = store(localOutDir / s"${rawBaseString}.dup.vars.remove"))
 
   val preparedData = PreparedData(
     data = bedBimFam(localOutDir / preparedBaseString),
