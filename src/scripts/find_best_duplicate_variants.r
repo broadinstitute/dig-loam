@@ -58,10 +58,7 @@ if(nrow(dat) > 0) {
 		}
 		return(paste(comp,collapse=""))
 	}
-	names(dat)[2]<-"CHR"
-	names(dat)[4]<-"POS"
-	names(dat)[5]<-"A1"
-	names(dat)[6]<-"A2"
+	print("convert alleles to uppercase and define all allele combinations")
 	dat$A1<-toupper(dat$A1)
 	dat$A2<-toupper(dat$A2)
 	dat$ALLELES<-paste(dat$A1,dat$A2,sep="")
@@ -72,13 +69,14 @@ if(nrow(dat) > 0) {
 	dat$ALLELES_MONOA2<-paste("0",dat$A2,sep="")
 	dat$ALLELES_MONOCA1<-NA
 	dat$ALLELES_MONOCA2<-NA
-	for(i in 1:nrow(dat)) {
-		print(paste("   ... dup ",i," of ",nrow(dat),sep=""))
-		dat$ALLELES_C[i]<-compliment(dat$ALLELES[i])
-		dat$ALLELES_RC[i]<-compliment(dat$ALLELES_R[i])
-		dat$ALLELES_MONOCA1[i]<-paste(compliment(dat$A1[i]),"0",sep="")
-		dat$ALLELES_MONOCA2[i]<-paste("0",compliment(dat$A2[i]),sep="")
-	}
+
+	print("calculate complements of alleles")
+	dat$ALLELES_C<-lapply(dat$ALLELES, FUN=compliment)
+	dat$ALLELES_RC<-lapply(dat$ALLELES_R, FUN=compliment)
+	dat$ALLELES_MONOCA1<-paste0(lapply(dat$A1, FUN=compliment),"0")
+	dat$ALLELES_MONOCA2<-paste0("0",lapply(dat$A2, FUN=compliment))
+
+	print("identify duplicates to remove from each CHR:POS pair")
 	dat$non_unique<-0
 	dat$ref<-NA
 	dat$flip<-0
@@ -87,7 +85,16 @@ if(nrow(dat) > 0) {
 		i<-i+1
 		print(paste(i," of ",length(unique(dat$CHRPOS[dat$CHRPOS %in% dups])),sep=""))
 		for(snp in dat$SNP[dat$CHRPOS == pos]) {
-			if(dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_R[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_C[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_RC[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOA1[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOA2[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOCA1[dat$CHRPOS == pos & dat$SNP != snp] || dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOCA2[dat$CHRPOS == pos & dat$SNP != snp]) {
+			if(
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_R[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_C[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_RC[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOA1[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOA2[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOCA1[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOCA2[dat$CHRPOS == pos & dat$SNP != snp]
+			) {
 				dat$non_unique[dat$SNP == snp]<-1
 			}
 		}
