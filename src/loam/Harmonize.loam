@@ -36,7 +36,7 @@ def Harmonize(array: String): Unit = {
 
       drmWith(imageName = s"$imgTools", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
       
-        cmd"""$binGenotypeHarmonizer
+        cmd"""java -Xms${(projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000).toInt}m -Xmx${(projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000).toInt}m -jar $binGenotypeHarmonizer
         --input ${chrData.base}
         --inputType PLINK_BED
         --output ${chrData.mergedKgBase}

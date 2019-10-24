@@ -46,7 +46,7 @@ dat<-merge(dat,tbl,all.x=T)
 print(paste0("merged data contains ",nrow(dat)," rows"))
 
 if(nrow(dat) > 0) {
-	compliment <- function(x) {
+	complement <- function(x) {
 		comp<-c()
 		for(d in unlist(strsplit(toupper(x),split=""))) {
 			if(d == "A") comp <- c(comp,"T")
@@ -71,10 +71,10 @@ if(nrow(dat) > 0) {
 	dat$ALLELES_MONOCA2<-NA
 
 	print("calculate complements of alleles")
-	dat$ALLELES_C<-lapply(dat$ALLELES, FUN=compliment)
-	dat$ALLELES_RC<-lapply(dat$ALLELES_R, FUN=compliment)
-	dat$ALLELES_MONOCA1<-paste0(lapply(dat$A1, FUN=compliment),"0")
-	dat$ALLELES_MONOCA2<-paste0("0",lapply(dat$A2, FUN=compliment))
+	dat$ALLELES_C<-lapply(dat$ALLELES, FUN=complement)
+	dat$ALLELES_RC<-lapply(dat$ALLELES_R, FUN=complement)
+	dat$ALLELES_MONOCA1<-paste0(lapply(dat$A1, FUN=complement),"0")
+	dat$ALLELES_MONOCA2<-paste0("0",lapply(dat$A2, FUN=complement))
 
 	print("identify duplicates to remove from each CHR:POS pair")
 	dat$non_unique<-0
