@@ -13,13 +13,7 @@ def Kinship(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.kinshipKing.cpus, mem = projectConfig.resources.kinshipKing.mem, maxRunTime = projectConfig.resources.kinshipKing.maxRunTime) {
 
-    cmd"""${utils.binary.binKing}
-      -b ${arrayStores(array).filteredData.plink.base.local.get}.bed
-      --related
-      --degree 2
-      --prefix ${arrayStores(array).kinshipData.base}
-      --cpus ${projectConfig.resources.kinshipKing.cpus}
-      > ${arrayStores(array).kinshipData.log}"""
+    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${projectConfig.resources.kinshipKing.cpus} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0}"""
     .in(arrayStores(array).filteredData.plink.data.local.get)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin0)
     .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.binKing".split("/").last)

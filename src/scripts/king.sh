@@ -3,15 +3,16 @@
 king=$1
 bed=$2
 prefix=$3
-log=$4
-kin0=$5
-kin0Related=$6
-cpus=$7
+cpus=$4
+log=$5
+kin0=$6
 
-$king -b $bed --kinship --prefix $prefix --cpus $cpus > $log
-if [ -f $kin0 ]; then
-	(head -1 $kin0; sed '1d' $kin0 | awk '{if($8 >= 0.0884) print $0}' | sort -rn -k8,8) > $kin0Related
+$king -b $bed --related --degree 2 --prefix $prefix --cpus $cpus > $log
+
+if [ $? -eq 0 ]; then
+	if [ ! -f $kin0 ]; then
+		echo -e "FID1\tID1\tFID2\tID2\tN_SNP\tHetHet\tIBS0\tHetConc\tHomIBS0\tKinship\tIBD1Seg\tIBD2Seg\tPropIBD\tInfType" > $kin0
+	fi
 else
-	head -1 ${prefix}.kin > $kin0
-	cp $kin0 $kin0Related
+	exit $?
 fi
