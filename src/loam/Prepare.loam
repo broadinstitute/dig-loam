@@ -84,25 +84,25 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.plink.get.base} --allow-no-sex --list-duplicate-vars 'ids-only' --out ${arrayStores(array).rawData.rawBase.get}.listdupvars --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.plink.get.data)
-      .out(arrayStores(array).rawData.dupVars.get)
-      .tag(s"${arrayStores(array).rawData.dupVars.get}".split("/").last)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --list-duplicate-vars 'ids-only' --out ${arrayStores(arrayCfg).rawData.rawBase.get}.listdupvars --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.dupVars.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupVars.get}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.plink.get.base} --allow-no-sex --extract ${arrayStores(array).rawData.dupVars.get} --make-bed --out ${arrayStores(array).rawData.dupVarsPlink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.plink.get.data)
-      .out(arrayStores(array).rawData.dupVarsPlink.get.data)
-      .tag(s"${arrayStores(array).rawData.dupVarsPlink.get.base}".split("/").last)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --extract ${arrayStores(arrayCfg).rawData.dupVars.get} --make-bed --out ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).rawData.plink.get.data)
+      .out(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base}".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.dupVarsPlink.get.base} --allow-no-sex --freq --out ${arrayStores(array).rawData.dupVarsBase.get}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.dupVarsPlink.get.data)
-      .out(arrayStores(array).rawData.dupVarsFreq.get)
-      .tag(s"${arrayStores(array).rawData.dupVarsBase.get}.freq".split("/").last)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base} --allow-no-sex --freq --out ${arrayStores(arrayCfg).rawData.dupVarsBase.get}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data)
+      .out(arrayStores(arrayCfg).rawData.dupVarsFreq.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupVarsBase.get}.freq".split("/").last)
 
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.dupVarsPlink.get.base} --allow-no-sex --missing --out ${arrayStores(array).rawData.dupVarsBase.get}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.dupVarsPlink.get.data)
-      .out(arrayStores(array).rawData.dupVarsImiss.get, arrayStores(array).rawData.dupVarsLmiss.get)
-      .tag(s"${arrayStores(array).rawData.dupVarsBase.get}.missing".split("/").last)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base} --allow-no-sex --missing --out ${arrayStores(arrayCfg).rawData.dupVarsBase.get}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data)
+      .out(arrayStores(arrayCfg).rawData.dupVarsImiss.get, arrayStores(arrayCfg).rawData.dupVarsLmiss.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupVarsBase.get}.missing".split("/").last)
 
   }
 

@@ -14,14 +14,6 @@ def ExportCleanData(array: ConfigArray): Unit = {
   projectConfig.hailCloud match {
   
     case true =>
-
-      local {
-  
-        googleCopy(arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterQc.samplesExcludeGoogle.get)
-        googleCopy(arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.samplesExcludeGoogle.get)
-        googleCopy(arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
-  
-      }
   
       google {
       
@@ -48,7 +40,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
   
     case false =>
   
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.exportCleanHail.cpus, mem = projectConfig.resources.exportCleanHail.mem, maxRunTime = projectConfig.resources.exportCleanHail.maxRunTime) {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanData}
           --reference-genome ${projectConfig.referenceGenome}
@@ -63,6 +55,15 @@ def ExportCleanData(array: ConfigArray): Unit = {
       
       }
   
+  }
+
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabixClean.cpus, mem = projectConfig.resources.tabixClean.mem, maxRunTime = projectConfig.resources.tabixClean.maxRunTime) {
+
+    cmd"""${utils.binary.binTabix} -p vcf ${arrayStores(array).cleanData.get.vcf.data.local.get}"""
+      .in(arrayStores(array).cleanData.get.vcf.data.local.get)
+      .out(arrayStores(array).cleanData.get.vcf.tbi.local.get)
+      .tag(s"${arrayStores(array).cleanData.get.vcf.tbi.local.get}".split("/").last)
+
   }
 
 }

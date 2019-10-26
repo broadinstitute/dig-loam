@@ -57,8 +57,8 @@ final case class ConfigResources(
   sampleQcKlustakwikPca: ConfigMachine,
   sampleQcKlustakwikMetric: ConfigMachine,
   filterFinalHail: ConfigMachine,
-  filterFinalPlink: ConfigMachine,
-  filterFinalPcair: ConfigMachine,
+  exportCleanHail: ConfigMachine,
+  tabixClean: ConfigMachine,
   filterImputePlink: ConfigMachine,
   variantAssocHailAssoc: ConfigMachine,
   variantAssocGeneratePheno: ConfigMachine,
@@ -482,12 +482,12 @@ object ProjectConfig {
         val thisConfig = requiredObj(config = config, field = "filterFinalHail")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      filterFinalPlink = {
-        val thisConfig = requiredObj(config = config, field = "filterFinalPlink")
+      exportCleanHail = {
+        val thisConfig = requiredObj(config = config, field = "exportCleanHail")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      filterFinalPcair = {
-        val thisConfig = requiredObj(config = config, field = "filterFinalPcair")
+      tabixClean = {
+        val thisConfig = requiredObj(config = config, field = "tabixClean")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
       filterImputePlink = {
@@ -1051,6 +1051,7 @@ object ProjectConfig {
       hailCloud = hailCloud,
       cloudHome = cloudHome,
       cloudShare = cloudShare,
+      exportCleanData = exportCleanData,
       referenceGenome = referenceGenome,
       regionsExclude = regionsExclude,
       genePositions = genePositions,

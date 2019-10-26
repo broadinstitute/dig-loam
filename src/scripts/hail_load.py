@@ -124,17 +124,18 @@ def main(args=None):
 		if 'NALTT' not in gt_codes:
 			print("add NALTT")
 			mt = mt.annotate_entries(NALTT = hl.cond(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.cond(mt.GQ >= args.gq_threshold, mt.GT.n_alt_alleles(), hl.null(hl.tint32)), hl.null(hl.tint32)))
-		if 'DS' not in gt_codes:
-			print("add DS")
-			if 'PL' in gt_codes:
-				print("adding DS from PL")
-				mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.null(hl.tfloat64)))
-			elif 'GP' in gt_codes:
-				print("adding DS from GP")
-				mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.null(hl.tfloat64)))
-			else:
-				print("DS entry field not found and unable to calculate it due to missing PL and GP fields!")
-				return 1
+
+	if 'DS' not in gt_codes:
+		print("add DS")
+		if 'PL' in gt_codes:
+			print("adding DS from PL")
+			mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.null(hl.tfloat64)))
+		elif 'GP' in gt_codes:
+			print("adding DS from GP")
+			mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.null(hl.tfloat64)))
+		else:
+			print("unable to calculate DS due to missing PL and GP fields, using GT")
+			mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.GT), mt.GT.n_alt_alleles(), hl.null(hl.tint32)))
 
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
 	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')

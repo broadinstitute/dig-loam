@@ -50,7 +50,7 @@ def main(args=None):
 			mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=True)
 
 	print("write VCF file to disk")
-		hl.export_vcf(mt, args.vcf_out)
+	hl.export_vcf(mt, args.vcf_out)
 
 	if args.cloud:
 		hl.copy_log(args.log)

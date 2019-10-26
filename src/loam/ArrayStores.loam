@@ -18,7 +18,7 @@ final case class RawData(
   mono: Option[Store],
   dupVars: Option[Store],
   dupVarsPlink: Option[Plink],
-  dupVarsBase: Path,
+  dupVarsBase: Option[Path],
   dupVarsFreq: Option[Store],
   dupVarsImiss: Option[Store],
   dupVarsLmiss: Option[Store],
@@ -204,7 +204,7 @@ final case class FilterPostQc(
   hailLogGoogle: Option[Store])
 
 final case class CleanData(
-  vcf: Option[MultiPathVcf],
+  vcf: MultiPathVcf,
   hailLog: Store,
   hailLogGoogle: Option[Store])
 
@@ -303,7 +303,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     freq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.freq.frq")); case _ => None },
     mono = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.mono")); case _ => None },
     dupVars = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.listdupvars.dupvar")); case _ => None },
-    dupVarsPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupVarsBaseString, data = bedBimFam(path(checkPlinkPath(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawDupVarsBaseString}"))))); case _ => None },
+    dupVarsPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupVarsBaseString, data = bedBimFam(path(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawDupVarsBaseString}")))); case _ => None },
     dupVarsBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupVarsBaseString); case _ => None },
     dupVarsFreq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupVarsBaseString}.freq.frq")); case _ => None },
     dupVarsImiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupVarsBaseString}.missing.imiss")); case _ => None },
@@ -590,11 +590,17 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     case true =>
 
       Some(CleanData(
-        vcf = Some(MultiPathVcf(
-          base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).clean.local.get / cleanBaseString), google = Some(dirTree.dataArrayMap(arrayCfg).clean.google.get / cleanBaseString)),
-          data = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz")), google = Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.vcf.bgz"))),
+        vcf = MultiPathVcf(
+          base = MultiPath(
+            local = Some(dirTree.dataArrayMap(arrayCfg).clean.local.get / cleanBaseString),
+            google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).clean.google.get / cleanBaseString); case false => None }
+          ),
+          data = MultiStore(
+            local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz")),
+            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.vcf.bgz")); case false => None }
+          ),
           tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz.tbi")), google = None)
-        )),
+        ),
         hailLog = store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.hail.log"),
         hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.hail.log")); case false => None }
       ))
