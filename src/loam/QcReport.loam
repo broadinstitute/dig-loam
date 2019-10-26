@@ -16,7 +16,7 @@ def QcReport(): Unit = {
   val freqStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).rawData.freq.get.path}""").mkString(",") } }
   val indelStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).rawData.indel.get.path}""").mkString(",") } }
   val multiStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
-  val dupRemoveStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).rawData.dupRemove.get.path}""").mkString(",") } }
+  val dupVarsRemoveStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).rawData.dupVarsRemove.get.path}""").mkString(",") } }
 
   drmWith(imageName = s"${utils.image.imgR}") {
   
@@ -25,9 +25,9 @@ def QcReport(): Unit = {
       --freq-in ${freqStrings.mkString(" ")}
       --indel-in ${indelStrings.mkString(" ")}
       --multi-in ${multiStrings.mkString(" ")}
-      --dupl-in ${dupRemoveStrings.mkString(" ")}
+      --dupl-in ${dupVarsRemoveStrings.mkString(" ")}
       --out ${qcReportStores.tablesData.variantsSummary}"""
-      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.get.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupRemove.get).toSeq)
+      .in(arrayStores.map(e => e._2).map(e => e.rawData.freq.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData.get.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupVarsRemove.get).toSeq)
       .out(qcReportStores.tablesData.variantsSummary)
       .tag(s"${qcReportStores.tablesData.variantsSummary}".split("/").last)
 

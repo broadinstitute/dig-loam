@@ -94,6 +94,7 @@ def FilterArray(array: ConfigArray): Unit = {
 
         hail"""${utils.python.pyHailFilter} --
           --cloud
+          --reference-genome ${projectConfig.referenceGenome}
           --hail-utils ${ProjectStores.hailUtilsGoogle.get}
           ${sfilters}
           ${vfilters}
@@ -125,6 +126,7 @@ def FilterArray(array: ConfigArray): Unit = {
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
+          --reference-genome ${projectConfig.referenceGenome}
           ${sfilters}
           ${vfilters}
           --log ${arrayStores(array).filterPostQc.hailLog}

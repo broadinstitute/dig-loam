@@ -13,6 +13,7 @@ import Ancestry._
 import Pca._
 import SampleQc._
 import FilterArray._
+import ExportCleanData._
 import FilterCohort._
 import VariantAssoc._
 import CrossCohort._
@@ -69,6 +70,23 @@ for {
   Pca(array)
   SampleQc(array)
   FilterArray(array)
+
+}
+
+// Only proceed if exportCleanData is true
+projectConfig.exportCleanData match {
+
+  case true => 
+
+    for {
+      array <- projectConfig.Arrays
+    } yield {
+        
+      ExportCleanData(array)
+    
+    }
+
+  case _ => ()
 
 }
 

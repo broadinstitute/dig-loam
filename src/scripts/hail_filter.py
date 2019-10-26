@@ -58,7 +58,7 @@ def main(args=None):
 		print("remove variants (ie variants that failed previous qc steps)")
 		for variant_file in args.variants_remove.split(","):
 			try:
-				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>'}).key_by('f0', 'f1')
 			except:
 				print("skipping empty file " + variant_file)
 			else:
@@ -67,7 +67,7 @@ def main(args=None):
 	if args.variants_extract is not None:
 		print("extract variants")
 		try:
-			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>'}).key_by('f0', 'f1')
 		except:
 			print("skipping empty file " + args.variants_extract)
 		else:
@@ -227,6 +227,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--sfilter', nargs=3, action='append', help='column name followed by expression; include samples satisfying this expression')
 	parser.add_argument('--vfilter', nargs=3, action='append', help='column name followed by expression; include variants satisfying this expression')
 	parser.add_argument('--pheno-in', help='a phenotype file name')

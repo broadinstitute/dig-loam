@@ -1,0 +1,68 @@
+/**
+  * Export Clean Data Step
+  *  Description: Generate clean vcf file
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import ArrayStores._
+import ProjectStores._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def ExportCleanData(array: ConfigArray): Unit = {
+
+  projectConfig.hailCloud match {
+  
+    case true =>
+
+      local {
+  
+        googleCopy(arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterQc.samplesExcludeGoogle.get)
+        googleCopy(arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.samplesExcludeGoogle.get)
+        googleCopy(arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
+  
+      }
+  
+      google {
+      
+        hail"""${utils.python.pyHailExportCleanData} --
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --vcf-out ${arrayStores(array).cleanData.get.vcf.data.google.get}
+          --samples-remove ${arrayStores(array).filterQc.samplesExcludeGoogle.get},${arrayStores(array).filterPostQc.samplesExcludeGoogle.get}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}
+          --cloud
+          --log ${arrayStores(array).cleanData.get.hailLogGoogle.get}"""
+          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
+          .out(arrayStores(array).cleanData.get.vcf.data.google.get, arrayStores(array).cleanData.get.hailLogGoogle.get)
+          .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanData".split("/").last)
+      
+      }
+  
+      local {
+  
+        googleCopy(arrayStores(array).cleanData.get.vcf.data.google.get, arrayStores(array).cleanData.get.vcf.data.local.get)
+        googleCopy(arrayStores(array).cleanData.get.hailLogGoogle.get, arrayStores(array).cleanData.get.hailLog)
+  
+      }
+  
+    case false =>
+  
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
+      
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanData}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --vcf-out ${arrayStores(array).cleanData.get.vcf.data.local.get}
+          --samples-remove ${arrayStores(array).filterQc.samplesExclude},${arrayStores(array).filterPostQc.samplesExclude}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExclude}
+          --log ${arrayStores(array).cleanData.get.hailLog}"""
+          .in(arrayStores(array).refData.mt.get, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.variantsExclude)
+          .out(arrayStores(array).cleanData.get.vcf.data.local.get, arrayStores(array).cleanData.get.hailLog)
+          .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanData".split("/").last)
+      
+      }
+  
+  }
+
+}

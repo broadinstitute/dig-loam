@@ -18,7 +18,8 @@ final case class DirTreeDataArray(
   metrics: MultiPath,
   filter: MultiPath,
   filterQc: MultiPath,
-  filterPostQc: MultiPath) extends Debug
+  filterPostQc: MultiPath,
+  clean: MultiPath) extends Debug
 
 final case class DirTreeDataCohort(
   base: MultiPath,
@@ -106,7 +107,8 @@ object DirTree {
         metrics = appendSubDir(sampleqc, "metrics"),
         filter = filter,
         filterQc = appendSubDir(filter, "qc"),
-        filterPostQc = appendSubDir(filter, "postqc")
+        filterPostQc = appendSubDir(filter, "postqc"),
+        clean = appendSubDir(base, "clean")
       )
     }.toMap
 

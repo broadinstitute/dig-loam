@@ -16,7 +16,13 @@ final case class RawData(
   imissRemove: Option[Store],
   freq: Option[Store],
   mono: Option[Store],
-  dupRemove: Option[Store])
+  dupVars: Option[Store],
+  dupVarsPlink: Option[Plink],
+  dupVarsBase: Path,
+  dupVarsFreq: Option[Store],
+  dupVarsImiss: Option[Store],
+  dupVarsLmiss: Option[Store],
+  dupVarsRemove: Option[Store])
 
 final case class PreparedData(
   plink: Plink,
@@ -197,17 +203,10 @@ final case class FilterPostQc(
   hailLog: Store,
   hailLogGoogle: Option[Store])
 
-//final case class CleanData(
-//  plink: Plink,
-//  gds: Store,
-//  baseGoogle: Option[URI],
-//  vcf: Store,
-//  tbi: Store,
-//  vcfGoogle: Option[Store],
-//  mt: Option[Store],
-//  mtGoogle: Option[Store],
-//  pcaScores: Store,
-//  pcaLog: Store)
+final case class CleanData(
+  vcf: Option[MultiPathVcf],
+  hailLog: Store,
+  hailLogGoogle: Option[Store])
 
 final case class Array(
   rawData: RawData,
@@ -230,12 +229,13 @@ final case class Array(
   sampleQcPcaClusterData: SampleQcPcaClusterData,
   sampleQcMetricClusterData: Map[String, SampleQcMetricClusterData],
   filterQc: FilterQc,
-  filterPostQc: FilterPostQc)
-  //removed: cleanData: CleanData
+  filterPostQc: FilterPostQc,
+  cleanData: Option[CleanData])
 
 val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   val rawBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw"
+  val rawDupVarsBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw.dup.vars"
   val preparedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
@@ -252,6 +252,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val sampleQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.sampleqc"
   val filterQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.qc"
   val filterPostQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.postqc"
+  val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
   //val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
   val baseName = arrayCfg.filename.split("/").last
@@ -301,7 +302,14 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     imissRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.imiss.remove")); case _ => None },
     freq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.freq.frq")); case _ => None },
     mono = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.mono")); case _ => None },
-    dupRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.dup.remove")); case _ => None })
+    dupVars = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.listdupvars.dupvar")); case _ => None },
+    dupVarsPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupVarsBaseString, data = bedBimFam(path(checkPlinkPath(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawDupVarsBaseString}"))))); case _ => None },
+    dupVarsBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupVarsBaseString); case _ => None },
+    dupVarsFreq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupVarsBaseString}.freq.frq")); case _ => None },
+    dupVarsImiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupVarsBaseString}.missing.imiss")); case _ => None },
+    dupVarsLmiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupVarsBaseString}.missing.lmiss")); case _ => None },
+    dupVarsRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.dup.vars.remove")); case _ => None }
+  )
 
   val preparedData = arrayCfg.technology match {
 
@@ -577,17 +585,23 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     hailLog = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log"),
     hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None })
 
-  //val cleanData = CleanData(
-  //  plink = Plink(base = projectConfig.home / cleanBaseString, data = bedBimFam(projectConfig.home / cleanBaseString)),
-  //  gds = store(projectConfig.home / s"${cleanBaseString}.gds"),
-  //  baseGoogle = projectConfig.hailCloud match { case true => Some(projectConfig.cloudHome.get / cleanBaseString); case false => None },
-  //  vcf = store(projectConfig.home / s"${cleanBaseString}.vcf.bgz"),
-  //  tbi = store(projectConfig.home / s"${cleanBaseString}.vcf.bgz.tbi"),
-  //  vcfGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${cleanBaseString}.vcf.bgz")); case false => None },
-  //  mt = projectConfig.hailCloud match { case false => Some(store(projectConfig.home / s"${cleanBaseString}.mt")); case true => None },
-  //  mtGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudHome.get / s"${cleanBaseString}.mt")); case false => None },
-  //  pcaScores = store(projectConfig.home / s"${cleanBaseString}.pca.scores.tsv"),
-  //  pcaLog = store(projectConfig.home / s"${cleanBaseString}.pca.log"))
+  val cleanData = projectConfig.exportCleanData match {
+
+    case true =>
+
+      Some(CleanData(
+        vcf = Some(MultiPathVcf(
+          base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).clean.local.get / cleanBaseString), google = Some(dirTree.dataArrayMap(arrayCfg).clean.google.get / cleanBaseString)),
+          data = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz")), google = Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.vcf.bgz"))),
+          tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz.tbi")), google = None)
+        )),
+        hailLog = store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.hail.log"),
+        hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.hail.log")); case false => None }
+      ))
+
+    case _ => None
+
+  }
 
   arrayCfg -> Array(
     rawData = rawData,
@@ -610,7 +624,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     sampleQcPcaClusterData = sampleQcPcaClusterData,
     sampleQcMetricClusterData = sampleQcMetricClusterData,
     filterQc = filterQc,
-    filterPostQc = filterPostQc)
-    //removed: cleanData = cleanData
+    filterPostQc = filterPostQc,
+    cleanData = cleanData)
 
 }.toMap
