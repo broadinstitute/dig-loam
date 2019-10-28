@@ -242,6 +242,7 @@ final case class Binary(
   binFlashPca: Path) extends Debug
 
 final case class Python(
+  pyBimToUid: Path,
   pyHailUtils: Path,
   pyAlignNon1kgVariants: Path,
   pyHailLoad: Path,
@@ -1149,6 +1150,7 @@ object ProjectConfig {
     )
 
     val python = Python(
+      pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py"),
       pyHailLoad = path(s"${scriptsDir}/hail_load.py"),

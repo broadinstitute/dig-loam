@@ -16,12 +16,13 @@ final case class RawData(
   imissRemove: Option[Store],
   freq: Option[Store],
   mono: Option[Store],
-  dupPos: Option[Store],
-  dupPosPlink: Option[Plink],
-  dupPosBase: Option[Path],
-  dupPosFreq: Option[Store],
-  dupPosImiss: Option[Store],
-  dupPosLmiss: Option[Store],
+  uids: Option[Store],
+  possDupVars: Option[Store],
+  possDupPlink: Option[Plink],
+  possDupBase: Option[Path],
+  possDupFreq: Option[Store],
+  possDupImiss: Option[Store],
+  possDupLmiss: Option[Store],
   dupVarsRemove: Option[Store])
 
 final case class PreparedData(
@@ -235,7 +236,7 @@ final case class Array(
 val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   val rawBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw"
-  val rawDupPosBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw.dup.positions"
+  val rawPossibleDupBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.raw.possible.dup"
   val preparedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared"
   val annotatedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.prepared.annotated"
   val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.harmonized"
@@ -302,12 +303,13 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     imissRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.imiss.remove")); case _ => None },
     freq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.freq.frq")); case _ => None },
     mono = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.mono")); case _ => None },
-    dupPos = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupPosBaseString}.vars")); case _ => None },
-    dupPosPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupPosBaseString, data = bedBimFam(path(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawDupPosBaseString}")))); case _ => None },
-    dupPosBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawDupPosBaseString); case _ => None },
-    dupPosFreq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupPosBaseString}.freq.frq")); case _ => None },
-    dupPosImiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupPosBaseString}.missing.imiss")); case _ => None },
-    dupPosLmiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawDupPosBaseString}.missing.lmiss")); case _ => None },
+    uids = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.uids")); case _ => None },
+    possDupVars = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.vars")); case _ => None },
+    possDupPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString, data = bedBimFam(path(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawPossibleDupBaseString}")))); case _ => None },
+    possDupBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString); case _ => None },
+    possDupFreq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.freq.frq")); case _ => None },
+    possDupImiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.imiss")); case _ => None },
+    possDupLmiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.lmiss")); case _ => None },
     dupVarsRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.dup.vars.remove")); case _ => None }
   )
 
