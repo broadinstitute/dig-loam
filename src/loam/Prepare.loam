@@ -84,25 +84,25 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
 
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --list-duplicate-vars 'ids-only' --out ${arrayStores(arrayCfg).rawData.rawBase.get}.listdupvars --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+    cmd"""awk 'BEGIN { FS="\t" } { c[$$1":"$$4]++; l[$$1":"$$4,c[$$1":"$$4]]=$$0 } END { for (i in c) { if (c[i] > 1) for (j = 1; j <= c[i]; j++) print l[i,j] } }' ${arrayStores(arrayCfg).rawData.plink.get.base}.bim | awk '{print $$2}' > ${arrayStores(arrayCfg).rawData.dupPos.get}"""
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
-      .out(arrayStores(arrayCfg).rawData.dupVars.get)
-      .tag(s"${arrayStores(arrayCfg).rawData.dupVars.get}".split("/").last)
+      .out(arrayStores(arrayCfg).rawData.dupPos.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupPos.get}".split("/").last)
 
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --extract ${arrayStores(arrayCfg).rawData.dupVars.get} --make-bed --out ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --extract ${arrayStores(arrayCfg).rawData.dupPos.get} --make-bed --out ${arrayStores(arrayCfg).rawData.dupPosPlink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
-      .out(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data)
-      .tag(s"${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base}".split("/").last)
+      .out(arrayStores(arrayCfg).rawData.dupPosPlink.get.data)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupPosPlink.get.base}".split("/").last)
 
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base} --allow-no-sex --freq --out ${arrayStores(arrayCfg).rawData.dupVarsBase.get}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data)
-      .out(arrayStores(arrayCfg).rawData.dupVarsFreq.get)
-      .tag(s"${arrayStores(arrayCfg).rawData.dupVarsBase.get}.freq".split("/").last)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.dupPosPlink.get.base} --allow-no-sex --freq --out ${arrayStores(arrayCfg).rawData.dupPosBase.get}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).rawData.dupPosPlink.get.data)
+      .out(arrayStores(arrayCfg).rawData.dupPosFreq.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupPosBase.get}.freq".split("/").last)
 
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base} --allow-no-sex --missing --out ${arrayStores(arrayCfg).rawData.dupVarsBase.get}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data)
-      .out(arrayStores(arrayCfg).rawData.dupVarsImiss.get, arrayStores(arrayCfg).rawData.dupVarsLmiss.get)
-      .tag(s"${arrayStores(arrayCfg).rawData.dupVarsBase.get}.missing".split("/").last)
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.dupPosPlink.get.base} --allow-no-sex --missing --out ${arrayStores(arrayCfg).rawData.dupPosBase.get}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).rawData.dupPosPlink.get.data)
+      .out(arrayStores(arrayCfg).rawData.dupPosImiss.get, arrayStores(arrayCfg).rawData.dupPosLmiss.get)
+      .tag(s"${arrayStores(arrayCfg).rawData.dupPosBase.get}.missing".split("/").last)
 
   }
 
@@ -110,11 +110,11 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose 
       ${utils.r.rFindBestDuplicateVariants}
-      --bim-in ${arrayStores(arrayCfg).rawData.dupVarsPlink.get.base}.bim
-      --freq-in ${arrayStores(arrayCfg).rawData.dupVarsFreq.get}
-      --miss-in ${arrayStores(arrayCfg).rawData.dupVarsLmiss.get}
+      --bim-in ${arrayStores(arrayCfg).rawData.dupPosPlink.get.base}.bim
+      --freq-in ${arrayStores(arrayCfg).rawData.dupPosFreq.get}
+      --miss-in ${arrayStores(arrayCfg).rawData.dupPosLmiss.get}
       --out ${arrayStores(arrayCfg).rawData.dupVarsRemove.get}"""
-      .in(arrayStores(arrayCfg).rawData.dupVarsPlink.get.data :+ arrayStores(arrayCfg).rawData.dupVarsFreq.get :+ arrayStores(arrayCfg).rawData.dupVarsLmiss.get)
+      .in(arrayStores(arrayCfg).rawData.dupPosPlink.get.data :+ arrayStores(arrayCfg).rawData.dupPosFreq.get :+ arrayStores(arrayCfg).rawData.dupPosLmiss.get)
       .out(arrayStores(arrayCfg).rawData.dupVarsRemove.get)
       .tag(s"${arrayStores(arrayCfg).rawData.dupVarsRemove.get}".split("/").last)
 
