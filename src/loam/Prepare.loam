@@ -93,7 +93,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
 
-    cmd"""awk 'BEGIN { FS="\t" } { c[$$2]++; l[$$2,c[$$2]]=$$0 } END { for (i in c) { if (c[i] > 1) for (j = 1; j <= c[i]; j++) print l[i,j] } }' ${arrayStores(arrayCfg).rawData.uids.get} | awk '{print $$1}' > ${arrayStores(arrayCfg).rawData.possDupVars.get}"""
+    cmd"""awk 'BEGIN { FS="\t" } { s=length($$2)+length($$3); n=$$4":"s; c[n]++; l[n,c[n]]=$$0 } END { for (i in c) { if (c[i] > 1) for (j = 1; j <= c[i]; j++) print l[i,j] } }' ${arrayStores(arrayCfg).rawData.uids.get} | awk '{print $$1}' > ${arrayStores(arrayCfg).rawData.possDupVars.get}"""
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
       .out(arrayStores(arrayCfg).rawData.possDupVars.get)
       .tag(s"${arrayStores(arrayCfg).rawData.possDupVars.get}".split("/").last)

@@ -60,7 +60,7 @@ def main(args=None):
 		with open(args.out, 'w') as o:
 			for line in f.readlines():
 				chr, rsid, cm, pos, a1, a2 = line.rstrip().split()
-				o.write("\t".join([rsid, get_universal_variant_id(chr,pos,a1[0:10],a2[0:10],".")]) + "\n")
+				o.write("\t".join([rsid, a1, a2, get_universal_variant_id(chr,pos,a1[0:10],a2[0:10],".")]) + "\n")
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
