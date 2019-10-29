@@ -90,10 +90,10 @@ if(nrow(dat) > 0) {
 				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_R[dat$CHRPOS == pos & dat$SNP != snp] || 
 				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_C[dat$CHRPOS == pos & dat$SNP != snp] || 
 				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_RC[dat$CHRPOS == pos & dat$SNP != snp] || 
-				dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOA1[dat$CHRPOS == pos & dat$SNP != snp] || 
-				dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOA2[dat$CHRPOS == pos & dat$SNP != snp] || 
-				dat$ALLELES_MONOA1[dat$SNP == snp] %in% dat$ALLELES_MONOCA1[dat$CHRPOS == pos & dat$SNP != snp] || 
-				dat$ALLELES_MONOA2[dat$SNP == snp] %in% dat$ALLELES_MONOCA2[dat$CHRPOS == pos & dat$SNP != snp]
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_MONOA1[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_MONOA2[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_MONOCA1[dat$CHRPOS == pos & dat$SNP != snp] || 
+				dat$ALLELES[dat$SNP == snp] %in% dat$ALLELES_MONOCA2[dat$CHRPOS == pos & dat$SNP != snp]
 			) {
 				dat$non_unique[dat$SNP == snp]<-1
 			}
