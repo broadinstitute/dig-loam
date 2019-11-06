@@ -54,11 +54,14 @@ def main(args=None):
 		else:
 			mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=True)
 
+	print("key rows by locus, alleles and rsid")
+	mt = mt.key_rows_by('locus','alleles','rsid')
+
 	if args.variants_remove is not None:
 		print("remove variants (ie variants that failed previous qc steps)")
 		for variant_file in args.variants_remove.split(","):
 			try:
-				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
 			except:
 				print("skipping empty file " + variant_file)
 			else:
@@ -67,11 +70,14 @@ def main(args=None):
 	if args.variants_extract is not None:
 		print("extract variants")
 		try:
-			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
 		except:
 			print("skipping empty file " + args.variants_extract)
 		else:
 			mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=True)
+
+	print("key rows by locus, alleles and rsid")
+	mt = mt.key_rows_by('locus','alleles')
 
 	print("begin sample filtering")
 	print("filter to only non-vcf-filtered, well-called, non-monomorphic, autosomal variants for sample qc")
@@ -215,11 +221,11 @@ def main(args=None):
 	tbl.flatten().export(args.variants_stats_out, header=True)
 
 	print("write failed variants to file")
-	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select().export(args.variants_exclude_out, header=False)
+	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select('rsid').export(args.variants_exclude_out, header=False)
 
 	if args.variants_keep_out is not None:
 		print("write clean variants to file")
-		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select().export(args.variants_keep_out, header=False)
+		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select('rsid').export(args.variants_keep_out, header=False)
 
 	if args.cloud:
 		hl.copy_log(args.log)

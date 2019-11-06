@@ -74,6 +74,7 @@ final case class ConfigArray(
   format: String,
   technology: String,
   description: String,
+  keepIndels: Boolean,
   minPartitions: Option[Int],
   liftOver: Option[String] = None,
   sampleQcMetrics: Seq[String],
@@ -283,6 +284,7 @@ final case class Python(
   pyPhenoDistPlot: Path) extends Debug
 
 final case class Bash(
+  shFindPossibleDuplicateVariants: Path,
   shRegPlot: Path,
   shAnnotate: Path,
   shKing: Path,
@@ -722,6 +724,7 @@ object ProjectConfig {
           format = requiredStr(config = array, field = "format", regex = "plink|vcf"),
           technology = technology,
           description = requiredStr(config = array, field = "description"),
+          keepIndels = requiredBool(config = array, field = "keepIndels"),
           minPartitions = optionalInt(config = array, field = "minPartitions"),
           liftOver = optionalStr(config = array, field = "liftOver"),
           sampleQcMetrics = optionalStrList(config = array, field = "sampleQcMetrics") match { 
@@ -1192,6 +1195,7 @@ object ProjectConfig {
     )
 
     val bash = Bash(
+      shFindPossibleDuplicateVariants = path(s"${scriptsDir}/find_possible_duplicate_variants.sh"),
       shRegPlot = path(s"${scriptsDir}/regplot.sh"),
       shAnnotate = path(s"${scriptsDir}/annotate.sh"),
       shKing = path(s"${scriptsDir}/king.sh"),

@@ -30,11 +30,14 @@ def main(args=None):
 		else:
 			mt = mt.filter_cols(hl.is_defined(tbl[mt.s]), keep=True)
 
+	print("key rows by locus, alleles and rsid")
+	mt = mt.key_rows_by('locus','alleles','rsid')
+
 	if args.variants_remove is not None:
 		print("remove variants (ie variants that failed previous qc steps)")
 		for variant_file in args.variants_remove.split(","):
 			try:
-				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
 			except:
 				print("skipping empty file " + variant_file)
 			else:
@@ -43,11 +46,14 @@ def main(args=None):
 	if args.variants_extract is not None:
 		print("extract variants")
 		try:
-			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+			tbl = hl.import_table(args.variants_extract, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
 		except:
 			print("skipping empty file " + args.variants_extract)
 		else:
 			mt = mt.filter_rows(hl.is_defined(tbl[mt.row_key]), keep=True)
+
+	print("key rows by locus and alleles")
+	mt = mt.key_rows_by('locus','alleles')
 
 	print("write VCF file to disk")
 	hl.export_vcf(mt, args.vcf_out)

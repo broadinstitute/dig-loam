@@ -36,19 +36,29 @@ final case class PreparedData(
   liftedExtract: Option[Store] = None)
 
 final case class AnnotatedData(
-  plink: Plink)
+  plink: Plink,
+  snplist: Store)
 
 final case class AnnotatedChrData(
-  plink: Plink,
+  snpsPlink: Plink,
+  otherPlink: Option[Plink],
   mergedKgPlink: Plink,
   mergedKgHuRefPlink: Plink,
+  otherHuRefPlink: Option[Plink],
   mergedKgNonKgBase: Path,
+  otherNonKgBase: Option[Path],
   nonKgRemove: Store,
   nonKgIgnore: Store,
   nonKgMono: Store,
   nonKgNomatch: Store,
   nonKgFlip: Store,
   nonKgForceA1: Store,
+  otherRemove: Option[Store],
+  otherIgnore: Option[Store],
+  otherMono: Option[Store],
+  otherNomatch: Option[Store],
+  otherFlip: Option[Store],
+  otherForceA1: Option[Store],
   mergedKgVarIdUpdate: Store,
   mergedKgVarSnpLog: Store)
 
@@ -339,6 +349,10 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         plink = arrayCfg.liftOver match {
           case Some(s) => Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / annotatedBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).prepare.local.get / annotatedBaseString))
           case None => preparedData.get.plink
+        },
+        snplist = arrayCfg.liftOver match {
+          case Some(s) => store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${annotatedBaseString}.variants.snplist")
+          case None => store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${preparedBaseString}.variants.snplist")
         }
       ))
 
@@ -352,23 +366,41 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
       Some(expandChrList(arrayCfg.chrs).map { chr =>
 
-        val chrBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}"
-        
-        val mergedKgBaseString = s"${chrBaseString}.harmkg"
-        val mergedKgHuRefBaseString = s"${mergedKgBaseString}.huref"
-        val mergedKgNonKgBaseString = s"${mergedKgBaseString}.nonkg"
+        val chrSnpsBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}.snps"
+        val chrOtherBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}.other"
+        val mergedKgBaseString = s"${chrSnpsBaseString}.harmkg"
+        val mergedKgHuRefBaseString = s"${chrSnpsBaseString}.huref"
+        val mergedKgNonKgBaseString = s"${chrSnpsBaseString}.nonkg"
+        val otherHuRefBaseString = s"${chrOtherBaseString}.huref"
+        val otherNonKgBaseString = s"${chrOtherBaseString}.nonkg"
         
         chr -> AnnotatedChrData(
-          plink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrBaseString)),
+          snpsPlink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrSnpsBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrSnpsBaseString)),
+          otherPlink = arrayCfg.keepIndels match {
+            case true =>
+              Some(Plink(
+                base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrOtherBaseString,
+                data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrOtherBaseString)
+              ))
+            case false => None
+          },
           mergedKgPlink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgBaseString)),
           mergedKgHuRefPlink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgHuRefBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgHuRefBaseString)),
+          otherHuRefPlink = arrayCfg.keepIndels match { case true => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / otherHuRefBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / otherHuRefBaseString))); case false => None },
           mergedKgNonKgBase = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgNonKgBaseString,
+          otherNonKgBase = arrayCfg.keepIndels match { case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / otherNonKgBaseString); case false => None },
           nonKgRemove = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.remove"),
           nonKgIgnore = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.ignore"),
           nonKgMono = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.mono"),
           nonKgNomatch = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.nomatch"),
           nonKgFlip = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.flip"),
           nonKgForceA1 = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.force_a1"),
+          otherRemove = arrayCfg.keepIndels match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${otherNonKgBaseString}.remove")); case false => None },
+          otherIgnore = arrayCfg.keepIndels match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${otherNonKgBaseString}.ignore")); case false => None },
+          otherMono = arrayCfg.keepIndels match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${otherNonKgBaseString}.mono")); case false => None },
+          otherNomatch = arrayCfg.keepIndels match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${otherNonKgBaseString}.nomatch")); case false => None },
+          otherFlip = arrayCfg.keepIndels match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${otherNonKgBaseString}.flip")); case false => None },
+          otherForceA1 = arrayCfg.keepIndels match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${otherNonKgBaseString}.force_a1")); case false => None },
           mergedKgVarIdUpdate = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgBaseString}_idUpdates.txt"),
           mergedKgVarSnpLog = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgBaseString}_snpLog.log"))
 

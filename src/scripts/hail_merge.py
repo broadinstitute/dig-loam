@@ -24,13 +24,13 @@ def main(args=None):
 		tbl_temp = tbl_temp.filter(~ hl.is_missing(tbl_temp.pval))
 		tbl_temp = tbl_temp.rename({'#chr': 'chr'})
 		tbl_temp = tbl_temp.annotate(locus = hl.parse_locus(hl.str(tbl_temp.chr) + ":" + hl.str(tbl_temp.pos)), alleles =  [tbl_temp.ref, tbl_temp.alt])
-		tbl_temp = tbl_temp.key_by('locus', 'alleles')
+		tbl_temp = tbl_temp.key_by('locus', 'alleles', 'id')
 		tbl_temp = tbl_temp.drop(tbl_temp.chr, tbl_temp.pos, tbl_temp.ref, tbl_temp.alt)
 
 		if results[i][0] in exclusions:
 			print("importing exclusions for cohort " + results[i][0])
 			try:
-				tbl_exclude = hl.import_table(exclusions[results[i][0]], no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>'}).key_by('f0', 'f1')
+				tbl_exclude = hl.import_table(exclusions[results[i][0]], no_header=True, types={'f0': 'locus<GRCh37>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
 			except:
 				print("skipping empty file " + exclusions[results[i][0]])
 			else:

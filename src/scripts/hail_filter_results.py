@@ -21,7 +21,7 @@ def main(args=None):
 		hl.init(idempotent=True)
 
 	print("import variant stats table")
-	tbl = hl.import_table(args.stats_in, impute=True, types={'locus': 'locus<GRCh37>', 'alleles': 'array<str>'}).key_by('locus', 'alleles')
+	tbl = hl.import_table(args.stats_in, impute=True, types={'locus': 'locus<GRCh37>', 'alleles': 'array<str>', 'rsid': 'str'}).key_by('locus', 'alleles', 'rsid')
 
 	print("initialize variant filter table with exclude field")
 	tbl = tbl.annotate(ls_filters = hl.struct(exclude = 0))

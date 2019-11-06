@@ -93,25 +93,19 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
 
-    cmd"""awk 'BEGIN { FS="\t" } { s=length($$2)+length($$3); n=$$4":"s; c[n]++; l[n,c[n]]=$$0 } END { for (i in c) { if (c[i] > 1) for (j = 1; j <= c[i]; j++) print l[i,j] } }' ${arrayStores(arrayCfg).rawData.uids.get} | awk '{print $$1}' > ${arrayStores(arrayCfg).rawData.possDupVars.get}"""
+    cmd"""${utils.bash.shFindPossibleDuplicateVariants}
+      ${utils.binary.binPlink}
+      ${arrayStores(arrayCfg).rawData.uids.get}
+      ${arrayStores(arrayCfg).rawData.possDupVars.get}
+      ${arrayStores(arrayCfg).rawData.plink.get.base}
+      ${arrayStores(arrayCfg).rawData.possDupPlink.get.base}
+      ${arrayStores(arrayCfg).rawData.possDupBase.get}.freq
+      ${arrayStores(arrayCfg).rawData.possDupBase.get}.missing
+      ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}
+      """
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
-      .out(arrayStores(arrayCfg).rawData.possDupVars.get)
+      .out(arrayStores(arrayCfg).rawData.possDupPlink.get.data :+ arrayStores(arrayCfg).rawData.possDupVars.get :+ arrayStores(arrayCfg).rawData.possDupFreq.get :+ arrayStores(arrayCfg).rawData.possDupLmiss.get)
       .tag(s"${arrayStores(arrayCfg).rawData.possDupVars.get}".split("/").last)
-
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --extract ${arrayStores(arrayCfg).rawData.possDupVars.get} --make-bed --out ${arrayStores(arrayCfg).rawData.possDupPlink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(arrayCfg).rawData.plink.get.data :+ arrayStores(arrayCfg).rawData.possDupVars.get)
-      .out(arrayStores(arrayCfg).rawData.possDupPlink.get.data)
-      .tag(s"${arrayStores(arrayCfg).rawData.possDupPlink.get.base}".split("/").last)
-
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.possDupPlink.get.base} --allow-no-sex --freq --out ${arrayStores(arrayCfg).rawData.possDupBase.get}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(arrayCfg).rawData.possDupPlink.get.data)
-      .out(arrayStores(arrayCfg).rawData.possDupFreq.get)
-      .tag(s"${arrayStores(arrayCfg).rawData.possDupBase.get}.freq".split("/").last)
-
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.possDupPlink.get.base} --allow-no-sex --missing --out ${arrayStores(arrayCfg).rawData.possDupBase.get}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(arrayCfg).rawData.possDupPlink.get.data)
-      .out(arrayStores(arrayCfg).rawData.possDupImiss.get, arrayStores(arrayCfg).rawData.possDupLmiss.get)
-      .tag(s"${arrayStores(arrayCfg).rawData.possDupBase.get}.missing".split("/").last)
 
   }
 
