@@ -60,5 +60,12 @@ RUN mkdir -p rvtests_linux64 && \
 	ln -s /work/rvtests_linux64/executable/vcf2kinship /usr/local/bin/vcf2kinship && \
 	rm rvtests_linux64.tar.gz
 
+# install metal
+RUN wget http://csg.sph.umich.edu/abecasis/Metal/download/Linux-metal.tar.gz && \
+	tar zxvf Linux-metal.tar.gz && \
+	chmod +x generic-metal/metal && \
+	ln -s /work/generic-metal/metal /usr/local/bin/metal && \
+	rm Linux-metal.tar.gz
+
 # open /work directory permissions
 RUN chmod -R 777 /work
