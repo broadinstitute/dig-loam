@@ -55,7 +55,7 @@ def main(args=None):
 			fields = f[1].split(",")
 			absent = False
 			for field in fields:
-				if field not in mt.rows().row_value:
+				if field not in mt.rows().row_value.flatten():
 					absent = True
 				f[2] = f[2].replace(field,"mt." + field)
 			if not absent:

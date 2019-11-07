@@ -106,7 +106,7 @@ def main(args=None):
 				fields = f[1].split(",")
 				absent = False
 				for field in fields:
-					if field not in tbl.row_value:
+					if field not in tbl.row_value.flatten():
 						absent = True
 					f[2] = f[2].replace(field,"tbl." + field)
 				if not absent:
@@ -182,7 +182,7 @@ def main(args=None):
 				fields = f[1].split(",")
 				absent = False
 				for field in fields:
-					if field not in tbl.row_value:
+					if field not in tbl.row_value.flatten():
 						absent = True
 					f[2] = f[2].replace(field,"tbl." + field)
 				if not absent:
