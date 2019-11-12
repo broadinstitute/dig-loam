@@ -99,9 +99,6 @@ final case class ConfigCohort(
   ancestry: Seq[String],
   stratCol: Option[String],
   stratCodes: Option[Seq[String]],
-  cohortSampleFilters: Option[Seq[String]],
-  cohortVariantFilters: Option[Seq[String]],
-  resultsVariantFilters: Option[Seq[String]],
   minPartitions: Option[Int]) extends Debug
 
 final case class ConfigMeta(
@@ -116,14 +113,8 @@ final case class ConfigMerge(
 
 final case class ConfigPheno(
   id: String,
-  name: String) extends Debug
-
-final case class ConfigModel(
-  id: String,
-  pheno: String,
-  trans: String,
-  test: String,
-  covars: String) extends Debug
+  name: String,
+  desc: String) extends Debug
 
 final case class ConfigKnown(
   id: String,
@@ -135,14 +126,26 @@ final case class ConfigKnown(
   desc: String,
   citation: String) extends Debug
 
+final case class ConfigModel(
+  id: String,
+  pheno: String,
+  unrelatedOnly: Boolean,
+  trans: Option[String],
+  test: String,
+  covars: String,
+  design: String,
+  cohorts: Seq[String],
+  metas: Option[Seq[String]],
+  merges: Option[Seq[String]],
+  filters: Option[Seq[String]],
+  knockoutFilters: Option[Seq[String]],
+  masks: Option[Seq[String]],
+  knowns: Option[Seq[String]]) extends Debug
+
 final case class ConfigSection(
   id: String,
   title: String,
-  models: Seq[String],
-  cohorts: Option[Seq[String]],
-  metas: Option[Seq[String]],
-  merges: Option[Seq[String]],
-  knowns: Option[Seq[String]]) extends Debug
+  models: Seq[String]) extends Debug
 
 final case class ConfigReport(
   id: String,
@@ -767,67 +770,13 @@ object ProjectConfig {
           case false => throw new CfgException("cohorts.array: array '" + array + "' not found")
         }
 
-        val cohortSampleFilters = optionalStrList(config = cohort, field = "cohortSampleFilters") match {
-          case Some(s) =>
-            for {
-              f <- s
-            } yield {
-              f match {
-                case n if numericSampleFilters.map(e => e.id) contains n => ()
-                case b if booleanSampleFilters.map(e => e.id) contains b => ()
-                case c if categoricalSampleFilters.map(e => e.id) contains c => ()
-                case d if compoundSampleFilters.map(e => e.id) contains d => ()
-                case _ => throw new CfgException("cohorts.cohortSampleFilters: sample filter '" + f + "' not found")
-              }
-            }
-            Some(s)
-          case None => None
-        }
-
-        val cohortVariantFilters = optionalStrList(config = cohort, field = "cohortVariantFilters") match {
-          case Some(s) =>
-            for {
-              f <- s
-            } yield {
-              f match {
-                case n if numericVariantFilters.map(e => e.id) contains n => ()
-                case b if booleanVariantFilters.map(e => e.id) contains b => ()
-                case c if categoricalVariantFilters.map(e => e.id) contains c => ()
-                case d if compoundVariantFilters.map(e => e.id) contains d => ()
-                case _ => throw new CfgException("cohorts.cohortVariantFilters: variant filter '" + f + "' not found")
-              }
-            }
-            Some(s)
-          case None => None
-        }
-
-        val resultsVariantFilters = optionalStrList(config = cohort, field = "resultsVariantFilters") match {
-          case Some(s) =>
-            for {
-              f <- s
-            } yield {
-              f match {
-                case n if numericVariantFilters.map(e => e.id) contains n => ()
-                case b if booleanVariantFilters.map(e => e.id) contains b => ()
-                case c if categoricalVariantFilters.map(e => e.id) contains c => ()
-                case d if compoundVariantFilters.map(e => e.id) contains d => ()
-                case _ => throw new CfgException("cohorts.resultsVariantFilters: variant filter '" + f + "' not found")
-              }
-            }
-            Some(s)
-          case None => None
-        }
-
         ConfigCohort(
           id = requiredStr(config = cohort, field = "id"),
           array = array,
           ancestry = requiredStrList(config = cohort, field = "ancestry", regex = "EUR|AFR|AMR|SAS|EAS"),
           minPartitions = optionalInt(config = cohort, field = "minPartitions"),
           stratCol = optionalStr(config = cohort, field = "stratCol"),
-          stratCodes = optionalStrList(config = cohort, field = "stratCodes"),
-          cohortSampleFilters = cohortSampleFilters,
-          cohortVariantFilters = cohortVariantFilters,
-          resultsVariantFilters = resultsVariantFilters
+          stratCodes = optionalStrList(config = cohort, field = "stratCodes")
         )
     
       }
@@ -903,29 +852,6 @@ object ProjectConfig {
     
     }
 
-    val Models = {
-    
-      for {
-        model <- requiredObjList(config = config, field = "models")
-      } yield {
-
-        val pheno = requiredStr(config = model, field = "pheno")
-        Phenos.map(e => e.id) contains pheno match {
-          case true => ()
-          case false => throw new CfgException("models.pheno: pheno '" + pheno + "' not found")
-        }
-    
-        ConfigModel(
-          id = requiredStr(config = model, field = "id"),
-          pheno = pheno,
-          trans = requiredStr(config = model, field = "trans", regex = "log|invn|$^"),
-          test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm"),
-          covars = requiredStrList(config = model, field = "covars").mkString("+")
-        )
-      }
-    
-    }
-
     val Knowns = {
     
       for {
@@ -943,6 +869,149 @@ object ProjectConfig {
           citation = requiredStr(config = known, field = "citation")
         )
     
+      }
+    
+    }
+
+    val Models = {
+    
+      for {
+        model <- requiredObjList(config = config, field = "models")
+      } yield {
+
+        val pheno = requiredStr(config = model, field = "pheno")
+        Phenos.map(e => e.id) contains pheno match {
+          case true => ()
+          case false => throw new CfgException("models.pheno: pheno '" + pheno + "' not found")
+        }
+
+        val test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm|burden|skat")
+
+        val design = requiredStr(config = model, field = "design", regex = "full|strat|full_stratfilters")
+
+        val cohorts = requiredStrList(config = model, field = "cohorts")
+
+        val metas = optionalStrList(config = model, field = "metas") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if Metas.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.metas: meta '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val merges = optionalStrList(config = model, field = "merges") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if Merges.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.merges: merge '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val filters = optionalStrList(config = model, field = "filters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericVariantFilters.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.filters: numeric variant filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val knockoutFilters = optionalStrList(config = model, field = "knockoutFilters") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if numericVariantFilters.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.knockoutFilters: numeric variant filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val masks = optionalStrList(config = model, field = "masks") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if variantAnnotationFilters.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.masks: variant annotation filter '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        val knowns = optionalStrList(config = model, field = "knowns") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if Knowns.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.knowns: known '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        ConfigModel(
+          id = requiredStr(config = model, field = "id"),
+          pheno = pheno,
+          unrelatedOnly = requiredBool(config = model, field = "unrelatedOnly"),
+          trans = optionalStr(config = model, field = "trans", regex = "log|invn"),
+          test = test,
+          covars = requiredStrList(config = model, field = "covars").mkString("+"),
+          design = design,
+          cohorts = (design, cohorts.size > 1) match {
+            case ("strat", false) => throw new CfgException("models.cohorts: 'strat' design requires more than 1 cohort")
+            case ("full_stratfilters", false) => throw new CfgException("models.cohorts: 'full_stratfilters' design requires more than 1 cohort")
+            case _ => cohorts
+          },
+          metas = (design, metas) match {
+            case ("full", Some(s)) => throw new CfgException("models.metas: 'full' design and metas are not allowed")
+            case ("full_stratfilters", Some(s)) => throw new CfgException("models.metas: 'full_stratfilters' design and metas are not allowed")
+            case _ => metas
+          },
+          merges = (design, merges) match {
+            case ("full", Some(s)) => throw new CfgException("models.merges: 'full' design and merges are not allowed")
+            case ("full_stratfilters", Some(s)) => throw new CfgException("models.merges: 'full_stratfilters' design and merges are not allowed")
+            case _ => merges
+          },
+          filters = filters,
+          knockoutFilters = (design, knockoutFilters) match {
+            case ("full", Some(s)) => throw new CfgException("models.knockoutFilters: 'full' design and knockoutFilters are not allowed")
+            case ("strat", Some(s)) => throw new CfgException("models.knockoutFilters: 'strat' design and knockoutFilters are not allowed")
+            case _ => knockoutFilters
+          },
+          masks = (test, masks) match {
+            case ("burden", Some(s)) | ("skat", Some(s)) => Some(s)
+            case (_, None) => None
+            case _ => throw new CfgException("models.masks: masks are only allowed for collapsing variant tests (ie burden|skat)")
+          },
+          knowns = knowns
+        )
+
       }
     
     }
@@ -968,71 +1037,11 @@ object ProjectConfig {
                 case false => throw new CfgException("reports.sections.models: model '" + m + "' not found")
               }
             }
-
-            val cohorts = optionalStrList(config = section, field = "cohorts") match {
-              case Some(s) =>
-                for {
-                  f <- s
-                } yield {
-                  f match {
-			        case n if Cohorts.map(e => e.id) contains n => ()
-                    case _ => throw new CfgException("reports.sections.cohorts: cohort '" + f + "' not found")
-                  }
-                }
-                Some(s)
-              case None => None
-            }
-
-            val metas = optionalStrList(config = section, field = "metas") match {
-              case Some(s) =>
-                for {
-                  f <- s
-                } yield {
-                  f match {
-                    case n if Metas.map(e => e.id) contains n => ()
-                    case _ => throw new CfgException("reports.sections.metas: meta '" + f + "' not found")
-                  }
-                }
-                Some(s)
-              case None => None
-            }
-
-            val merges = optionalStrList(config = section, field = "merges") match {
-              case Some(s) =>
-                for {
-                  f <- s
-                } yield {
-                  f match {
-                    case n if Merges.map(e => e.id) contains n => ()
-                    case _ => throw new CfgException("reports.sections.merges: merge '" + f + "' not found")
-                  }
-                }
-                Some(s)
-              case None => None
-            }
-
-            val knowns = optionalStrList(config = section, field = "knowns") match {
-              case Some(s) =>
-                for {
-                  f <- s
-                } yield {
-                  f match {
-                    case n if Knowns.map(e => e.id) contains n => ()
-                    case _ => throw new CfgException("reports.sections.knowns: known '" + f + "' not found")
-                  }
-                }
-                Some(s)
-              case None => None
-            }
     
             ConfigSection(
               id = requiredStr(config = section, field = "id"),
               title = requiredStr(config = section, field = "title"),
-              models = models,
-              cohorts = cohorts,
-              metas = metas,
-              merges = merges,
-              knowns = knowns
+              models = models
             )
           
           }
@@ -1113,8 +1122,8 @@ object ProjectConfig {
       Metas = Metas,
       Merges = Merges,
       Phenos = Phenos,
-      Models = Models,
       Knowns = Knowns,
+      Models = Models,
       Reports = Reports
 
     )

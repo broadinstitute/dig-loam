@@ -101,12 +101,15 @@ def requiredStrList(config: loamstream.conf.DataConfig, field: String, regex: St
           case true  => ()
         }
       }
-      o 
+      o.size match {
+        case x if(x >= 1) => o
+        case _ => throw new CfgException("requiredStrList: field " + field + " list must have at least 1 element")
+      }
     case Failure(NonFatal(e)) => 
       default match {
         case Some(s) =>
           s.toString.matches(regex) match {
-            case false => throw new CfgException("optionalInt: field " + field + " value " + s.toString + " does not match regex format " + regex)
+            case false => throw new CfgException("requiredStrList: field " + field + " value " + s.toString + " does not match regex format " + regex)
             case true  => s
           }
         case None    => throw new CfgException("requiredStrList: field '" + field + "' not found")
@@ -117,7 +120,11 @@ def requiredStrList(config: loamstream.conf.DataConfig, field: String, regex: St
 
 def optionalStrList(config: loamstream.conf.DataConfig, field: String): Option[Seq[String]] = {
   Try(config.getStrList(field)) match {
-    case Success(o)           => Some(o)
+    case Success(o)           => 
+      o.size match {
+        case x if(x >= 1) => Some(o)
+        case _ => None
+      }
     case Failure(NonFatal(e)) => None
     case Failure(_)           => throw new CfgException("optionalStrList: field '" + field + "' fatal error")
   }
