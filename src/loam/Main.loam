@@ -14,7 +14,7 @@ import Pca._
 import SampleQc._
 import FilterArray._
 import ExportCleanData._
-import FilterCohort._
+import PrepareCohort._
 //import VariantAssoc._
 //import CrossCohort._
 //import Meta._
@@ -110,12 +110,12 @@ ProjectStores.phenoFile match {
 
   case _ =>
 
-    // Cohort level filtering
+    // Prepare cohorts
     for {
       cohort <- projectConfig.Cohorts
     } yield {
     
-      FilterCohort(cohort = cohort)
+      PrepareCohort(cohort = cohort)
     
     }
 

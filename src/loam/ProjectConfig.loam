@@ -983,9 +983,11 @@ object ProjectConfig {
           test = test,
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
-          cohorts = (design, cohorts.size > 1) match {
-            case ("strat", false) => throw new CfgException("models.cohorts: 'strat' design requires more than 1 cohort")
-            case ("full_stratfilters", false) => throw new CfgException("models.cohorts: 'full_stratfilters' design requires more than 1 cohort")
+          cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
+            case ("strat", false, _) => throw new CfgException("models.cohorts: 'strat' design requires more than 1 cohort")
+            case ("full_stratfilters", false, false) => throw new CfgException("models.cohorts: 'full_stratfilters' design requires more than 1 cohort")
+            case ("full_stratfilters", true, true) => throw new CfgException("models.cohorts: 'full_stratfilters' design requires cohorts from same array")
+            case ("full", true, true) => throw new CfgException("models.cohorts: 'full' design requires cohorts from same array")
             case _ => cohorts
           },
           metas = (design, metas) match {

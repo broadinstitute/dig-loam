@@ -43,8 +43,8 @@ final case class DirTree(
   data: MultiPath,
   dataArray: MultiPath,
   dataArrayMap: Map[ConfigArray, DirTreeDataArray],
-  dataCohort: MultiPath,
-  dataCohortMap: Map[ConfigCohort, DirTreeDataCohort],
+  //dataCohort: MultiPath,
+  //dataCohortMap: Map[ConfigCohort, DirTreeDataCohort],
   dataGlobal: MultiPath,
   dataGlobalAncestry: MultiPath,
   dataGlobalKinship: MultiPath,
@@ -80,7 +80,7 @@ object DirTree {
 
     val data = appendSubDir(base, "data")
     val dataArray = appendSubDir(data, "array")
-    val dataCohort = appendSubDir(data, "cohort")
+    //val dataCohort = appendSubDir(data, "cohort")
     val dataGlobal = appendSubDir(data, "global")
     val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
     val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
@@ -112,14 +112,14 @@ object DirTree {
       )
     }.toMap
 
-    val dataCohortMap = cfg.Cohorts.map { cohort =>
-      val base = appendSubDir(dataCohort, cohort.id)
-      val filter = appendSubDir(base, "filter")
-      cohort -> DirTreeDataCohort(
-        base = base,
-        filter = filter
-      )
-    }.toMap
+    //val dataCohortMap = cfg.Cohorts.map { cohort =>
+    //  val base = appendSubDir(dataCohort, cohort.id)
+    //  val filter = appendSubDir(base, "filter")
+    //  cohort -> DirTreeDataCohort(
+    //    base = base,
+    //    filter = filter
+    //  )
+    //}.toMap
 
     val dataGlobalKinshipMap = metasReport.map { meta =>
       meta -> appendSubDir(dataGlobalKinship, meta.id)
@@ -165,8 +165,6 @@ object DirTree {
       data = data,
       dataArray = dataArray,
       dataArrayMap = dataArrayMap,
-      dataCohort = dataCohort,
-      dataCohortMap = dataCohortMap,
       dataGlobal = dataGlobal,
       dataGlobalAncestry = dataGlobalAncestry,
       dataGlobalKinship = dataGlobalKinship,
