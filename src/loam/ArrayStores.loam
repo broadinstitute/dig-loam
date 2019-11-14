@@ -21,7 +21,6 @@ final case class RawData(
   possDupPlink: Option[Plink],
   possDupBase: Option[Path],
   possDupFreq: Option[Store],
-  possDupImiss: Option[Store],
   possDupLmiss: Option[Store],
   dupVarsRemove: Option[Store])
 
@@ -118,8 +117,7 @@ final case class Ref1kgData(
   hailLog: Store,
   hailLogGoogle: Option[Store],
   kgSamples: Store,
-  kgSamplesGoogle: Option[Store],
-  gds: Store)
+  kgSamplesGoogle: Option[Store])
 
 final case class AncestryData(
   inferred: Store)
@@ -160,9 +158,7 @@ final case class SexcheckData(
   sexcheck: Store,
   sexcheckGoogle: Option[Store],
   problems: Store,
-  problemsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store])
+  problemsGoogle: Option[Store])
 
 final case class SampleQcData(
   stats: Store,
@@ -318,7 +314,6 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     possDupPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString, data = bedBimFam(path(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawPossibleDupBaseString}")))); case _ => None },
     possDupBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString); case _ => None },
     possDupFreq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.freq.frq")); case _ => None },
-    possDupImiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.imiss")); case _ => None },
     possDupLmiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.lmiss")); case _ => None },
     dupVarsRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.dup.vars.remove")); case _ => None }
   )
@@ -519,8 +514,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     hailLog = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.hail.log"),
     hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.hail.log")); case false => None },
     kgSamples = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.kgsamples.tsv"),
-    kgSamplesGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None },
-    gds = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.gds"))
+    kgSamplesGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None })
 
   val ancestryData = AncestryData(
     inferred = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryBaseString}.inferred.tsv"))
@@ -561,9 +555,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     sexcheck = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.tsv"),
     sexcheckGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None },
     problems = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None },
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.hail.log")); case false => None })
+    problemsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None })
 
   val sampleQcData = SampleQcData(
     stats = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.tsv"),
