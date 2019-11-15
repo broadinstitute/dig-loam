@@ -1,7 +1,7 @@
 /**
   * Ancestry PCA Step
   *  Description: Calculate PCs combined with 1KG Phase 3 Purcell 5k data
-  *  Requires: Hail, R, ${utils.r.rPlotAncestryPca}
+  *  Requires: Hail, R
   *  Notes:
   *     To perform ancestry inference and clustering with 1KG data, we must combine on common variants with reference data (clustering does not work when only using PCA loadings and projecting)
   */
