@@ -1,14 +1,10 @@
-library(GENESIS)
-library(SNPRelate)
-library(GWASTools)
-library(gdsfmt)
-library(pryr)
 library(argparse)
 
 set.seed(1)
 
 parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
+parser$add_argument("--fam-in", dest="fam_in", type="character", help="a fam file")
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
 parser$add_argument("--ancestry-keep", dest="ancestry_keep", type="character", help="a comma separated list of population groups to keep (ie. EUR,AFR)")
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
@@ -19,7 +15,6 @@ parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help=
 parser$add_argument("--kinship-in", dest="kinship_in", type="character", help="a kinship file containing related pairs")
 parser$add_argument("--samples-exclude-qc", dest="samples_exclude_qc", type="character", help="a list of sample IDs to exclude based on sample qc")
 parser$add_argument("--samples-exclude-postqc", dest="samples_exclude_postqc", type="character", help="a list of sample IDs to exclude based on postqc filters")
-parser$add_argument("--variants-exclude-postqc", dest="variants_exclude_postqc", default=NULL, type="character", help="a list of variant IDs to exclude based on post-qc filtering")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
@@ -31,9 +26,20 @@ print(args)
 cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
-cat("extracting model specific columns from phenotype file\n")
+cat("read in pheno file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
-cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
+
+if(! is.null(args$strat_col) & ! is.null(args$strat_codes)) {
+	cat("filter based on strat column\n")
+	if(! args$strat_col %in% names(pheno)) {
+		cat("exiting due to strat col missing from pheno file\n")
+		quit(status=1)
+	}
+	pheno<-pheno[which(pheno[,args$strat_col] %in% unlist(strsplit(args$strat_codes,split=","))),]
+	cat(paste0("extracted ",as.character(nrow(pheno))," samples with ",args$strat_codes," in strat col ",args$strat_col),"\n")
+}
+
+cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 out_cols<-colnames(pheno)
 
@@ -44,9 +50,13 @@ names(ancestry)[2]<-"ANCESTRY_INFERRED"
 pheno<-merge(pheno,ancestry,all.x=T)
 if(! is.null(args$ancestry_keep)) {
 	anc_keep = unlist(strsplit(args$ancestry_keep,","))
-	cat(paste("keeping populations group/s",paste(anc_keep,collapse="+"),"for analysis",sep=" "),"\n")
 	pheno <- pheno[pheno$ANCESTRY_INFERRED %in% anc_keep,]
+	cat(paste0("extracted ",as.character(nrow(pheno))," samples in inferred population group/s ",paste(anc_keep,collapse="+")),"\n")
 }
+
+cat("reading in genotyped samples IDs from pre-qc plink files\n")
+fam<-read.table(args$fam_in,header=F,as.is=T,stringsAsFactors=F,sep="\t")
+iids<-fam$V2
 
 id_map <- data.frame(ID = pheno[,args$iid_col])
 id_map$removed_nogeno <- 0
@@ -76,7 +86,8 @@ if(args$samples_exclude_postqc != "") {
 cat("reading in kinship values for related pairs\n")
 kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kinship_in$ID2 %in% pheno[,args$iid_col])),]
-kinship_in <- kinship_in[which((! kinship_in$ID1 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_postqc_filters == 1) | (! kinship_in$ID2 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_postqc_filters == 1))])),]
+kinship_in <- kinship_in[which((! kinship_in$ID1 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_postqc_filters == 1))]) & (! kinship_in$ID2 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_postqc_filters == 1))])),]
+
 if(nrow(kinship_in) > 0) {
 	kinship_in$pair_idx <- row.names(kinship_in)
 	kinship_in$rand_choice <- sample.int(2, replace = TRUE, size = nrow(kinship_in))
@@ -139,17 +150,7 @@ pheno <- pheno[complete.cases(pheno),]
 id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
-cat("read post-qc variant exclusion list\n")
-variants_excl <- c()
-variants_excl_postqc <- try(read.table(args$variants_exclude_postqc,header=FALSE, as.is=TRUE, stringsAsFactors=FALSE, sep="\t"), silent=TRUE)
-if(! inherits(variants_excl_postqc, "try-error")) {
-	variants_excl <- c(variants_excl,variants_excl_postqc$V1)
-}
-variants_excl<-unique(variants_excl)
-
-variants_incl<-geno_snps$idx[! as.character(geno_snps$name) %in% variants_excl]
-samples_incl<-pheno[,args$iid_col]
-
+cat("checking covariates for zero variance\n")
 failed <- FALSE
 if(length(unique(pheno[,args$pheno_col])) == 1) {
 	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
@@ -182,10 +183,7 @@ if(failed) {
 	cat("exiting due to invalid model\n")
 	quit(status=1)
 }
-covars_analysis<-paste(c(covars_factors,"1"),collapse="+")
-out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
 
 write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
-cat("writing phenotype file","\n")
-write.table(out[,out_cols],args$out_pheno,row.names=F,col.names=T,quote=F,sep="\t",append=F, na="NA")
+write.table(pheno[,args$iid_col],args$out,row.names=F,col.names=F,quote=F,sep="\t",append=F)

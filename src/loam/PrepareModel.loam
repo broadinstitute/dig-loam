@@ -1,0 +1,65 @@
+/**
+ * Prepare Model Cohorts
+ * 
+ */
+import ProjectConfig._
+import ArrayStores._
+import ProjectStores._
+import ModelStores._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def PrepareModel(model: ConfigModel): Unit = {
+
+  for {
+
+    cohort <- projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id))
+
+  } yield {
+  
+    val array = projectConfig.Arrays.filter(e => e.id == cohort.array).head
+
+    val stratCol = {
+      cohort.stratCol match {
+        case Some(a) => "--strat-col " + a
+        case _ => ""
+      }
+    }
+  
+    val stratCodes = {
+      cohort.stratCodes match {
+        case Some(a) => "--strat-codes " + a.mkString(",")
+        case _ => ""
+      }
+    }
+    
+    drmWith(imageName = s"${utils.image.imgR}") {
+
+      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        ${utils.r.rModelCohortSamplesAvailable}
+        --pheno-in ${ProjectStores.phenoFile.get}
+        --fam-in ${arrayStores(array).filteredData.plink.base.local.get}.fam
+        --ancestry-in ${ProjectStores.ancestryInferred}
+        --ancestry-keep ${cohort.ancestry.mkString(",")}
+        ${stratCol}
+        ${stratCodes}
+        --pheno-col ${model.pheno}
+        --iid-col ${projectConfig.phenoFileId}
+        --sampleqc-in ${arrayStores(array).sampleQcData.stats}
+        --kinship-in ${arrayStores(array).kinshipData.kin0}
+        --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude}
+        --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
+        --test ${model.test}
+        --covars "${model.covars}"
+        --out-id-map ${modelStores((model, cohort)).samplesMap}
+        --out ${modelStores((model, cohort)).samplesAvailable}
+        > ${modelStores((model, cohort)).samplesAvailableLog}"""
+        .in(arrayStores(array).filteredData.plink.data.local.get :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude)
+        .out(modelStores((model, cohort)).samplesMap, modelStores((model, cohort)).samplesAvailable, modelStores((model, cohort)).samplesAvailableLog)
+        .tag(s"${modelStores((model, cohort)).samplesAvailable}".split("/").last)
+    
+    }
+  
+  }
+
+}

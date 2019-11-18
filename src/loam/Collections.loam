@@ -1,0 +1,37 @@
+import ProjectConfig._
+
+final case class ModelCohort(
+    model: ConfigModel,
+    cohort: ConfigCohort) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohort]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelCohort => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result
+  }
+}
+
+val modelCohorts: Seq[ModelCohort] = {
+
+  for {
+    model <- projectConfig.Models
+  } yield {
+   
+    for {
+      cohort <- projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id))
+    } yield {
+      ModelCohort(
+        model = model,
+        cohort = cohort
+      )
+    }
+  
+  }
+
+}.flatten.distinct

@@ -256,9 +256,9 @@ final case class Python(
   pyHailExportCleanData: Path,
   pyMakeSamplesRestoreTable: Path,
   pyCompileExclusions: Path,
-  pyMergeVariantLists: Path
-  //pyBimToUid: Path,
-  //pyHailUtils: Path,
+  pyMergeVariantLists: Path,
+  pyBimToUid: Path,
+  pyHailUtils: Path
   //pyHailFilterResults: Path,
   //pyHailAssoc: Path,
   //pyHailMerge: Path,
@@ -1212,9 +1212,9 @@ object ProjectConfig {
       pyHailFilter = path(s"${scriptsDir}/hail_filter.py"),
       pyMakeSamplesRestoreTable = path(s"${scriptsDir}/make_samples_restore_table.py"),
       pyCompileExclusions = path(s"${scriptsDir}/compile_exclusions.py"),
-      pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py")
-      //pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
-      //pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
+      pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
+      pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
+      pyHailUtils = path(s"${scriptsDir}/hail_utils.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
