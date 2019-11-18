@@ -1,5 +1,5 @@
 import ProjectConfig._
-//import Collections._
+import Collections._
 import ProjectStores._
 import ArrayStores._
 import Upload._
@@ -15,8 +15,8 @@ import SampleQc._
 import FilterArray._
 import ExportCleanData._
 import PrepareModel._
+import CrossCohort._
 //import VariantAssoc._
-//import CrossCohort._
 //import Meta._
 //import Merge._
 //import ResultsSummary._
@@ -33,75 +33,74 @@ import loamstream.util.CanBeClosed.enclosed
 
 //throw new Exception(s"${ProjectStores.regionsExcludeGoogle.get.uri}")
 
-// Upload input files to Google Cloud
-Upload()
-
-// Array specific QC steps up to ancestry inferrence
-for {
-  array <- projectConfig.Arrays if array.technology == "gwas"
-} yield {
-    
-  Prepare(array)
-  Harmonize(array)
-
-}
-
-for {
-  array <- projectConfig.Arrays
-} yield {
-
-  Load(array)
-  ExportQcData(array)
-  Annotate(array)
-  Kinship(array)
-  AncestryPca(array)
-  AncestryCluster(array)
-
-}
-
-// Reconcile inferred ancestry
-MergeInferredAncestry()
-
-// Array specific QC steps post ancestry inference
-for {
-  array <- projectConfig.Arrays
-} yield { 
-
-  Pca(array)
-  SampleQc(array)
-  FilterArray(array)
-
-}
-
-// Only proceed if exportCleanData is true
-projectConfig.exportCleanData match {
-
-  case true => 
-
-    for {
-      array <- projectConfig.Arrays
-    } yield {
-        
-      ExportCleanData(array)
-    
-    }
-
-  case _ => ()
-
-}
-
-//// QC Report
-//QcReport()
-
-//// Generate imputation ready data files
+//// Upload input files to Google Cloud
+//Upload()
+//
+//// Array specific QC steps up to ancestry inferrence
+//for {
+//  array <- projectConfig.Arrays if array.technology == "gwas"
+//} yield {
+//    
+//  Prepare(array)
+//  Harmonize(array)
+//
+//}
+//
+//for {
+//  array <- projectConfig.Arrays
+//} yield {
+//
+//  Load(array)
+//  ExportQcData(array)
+//  Annotate(array)
+//  Kinship(array)
+//  AncestryPca(array)
+//  AncestryCluster(array)
+//
+//}
+//
+//// Reconcile inferred ancestry
+//MergeInferredAncestry()
+//
+//// Array specific QC steps post ancestry inference
 //for {
 //  array <- projectConfig.Arrays
 //} yield { 
 //
-//  FilterImpute(array.id)
+//  Pca(array)
+//  SampleQc(array)
+//  FilterArray(array)
 //
 //}
-
+//
+//// Only proceed if exportCleanData is true
+//projectConfig.exportCleanData match {
+//
+//  case true => 
+//
+//    for {
+//      array <- projectConfig.Arrays
+//    } yield {
+//        
+//      ExportCleanData(array)
+//    
+//    }
+//
+//  case _ => ()
+//
+//}
+//
+////// QC Report
+////QcReport()
+//
+////// Generate imputation ready data files
+////for {
+////  array <- projectConfig.Arrays
+////} yield { 
+////
+////  FilterImpute(array.id)
+////
+////}
 
 // Only proceed if phenoFile is defined
 ProjectStores.phenoFile match {
@@ -110,15 +109,62 @@ ProjectStores.phenoFile match {
 
   case _ =>
 
-    // Prepare strat models
+    // Meta-analysis cross-cohort common variants search
     for {
-      model <- projectConfig.Models
+      meta <- projectConfig.Metas
     } yield {
     
-      PrepareModel(model = model)
+      CrossCohortCommonVars(configMeta = meta)
     
     }
 
+    // Meta-analysis cross-cohort qc prep
+    for {
+      meta <- projectConfig.Metas
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
+    } yield {
+    
+      CrossCohortPrep(configMeta = meta, configCohort = cohort)
+    
+    }
+    
+    // Meta-analysis cross-array kinship
+    for {
+      meta <- projectConfig.Metas
+    } yield {
+    
+      CrossCohortKinship(meta)
+    
+    }
+    
+    //// Meta-analysis calculate cross-cohort kinship sample exclusions
+    //for {
+    //  meta <- projectConfig.Metas
+    //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
+    //} yield {
+    //
+    //  CrossCohortExclude(configMeta = meta, configCohort = cohort)
+    //
+    //}
+
+    // Prepare standard cohort model
+    for {
+      x <- modelCohorts
+    } yield {
+    
+      PrepareModel(configModel = x.model, configCohort= x.cohort, configMeta = None)
+
+    }
+
+    // Prepare meta cohort model
+    for {
+      x <- modelMetaCohorts
+    } yield {
+    
+      PrepareModel(configModel = x.model, configCohort= x.cohort, configMeta = Some(x.meta))
+
+    }
+    
     //// Cohort variant association
     //for {
     //  x <- modelCohorts
@@ -143,44 +189,6 @@ ProjectStores.phenoFile match {
     //} yield {
     //
     //  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = None)
-    //
-    //}
-    //
-    //// Meta-analysis cross-cohort common variants search
-    //for {
-    //  meta <- metas
-    //} yield {
-    //
-    //  CrossCohortCommonVars(configMeta = meta)
-    //
-    //}
-    //
-    //// Meta-analysis cross-cohort qc prep
-    //for {
-    //  meta <- metas
-    //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-    //} yield {
-    //
-    //  CrossCohortPrep(configMeta = meta, configCohort = cohort)
-    //
-    //}
-    //
-    //// Meta-analysis cross-array kinship
-    //for {
-    //  meta <- metas
-    //} yield {
-    //
-    //  CrossCohortKinship(meta)
-    //
-    //}
-    //
-    //// Meta-analysis calculate cross-cohort kinship sample exclusions
-    //for {
-    //  meta <- metas
-    //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts contains e.id)
-    //} yield {
-    //
-    //  CrossCohortExclude(configMeta = meta, configCohort = cohort)
     //
     //}
     //

@@ -32,7 +32,6 @@ final case class DirTreeAnalysisModel(
   base_merge: Option[MultiPath],
   merges: Map[ConfigMerge, MultiPath],
   metas: Map[ConfigMeta, MultiPath],
-  metas_kinship: Map[ConfigMeta, MultiPath],
   cohorts: Map[ConfigCohort, MultiPath]) extends Debug
 
 final case class DirTreeAnalysisPheno(
@@ -46,6 +45,8 @@ final case class DirTree(
   dataArrayMap: Map[ConfigArray, DirTreeDataArray],
   dataGlobal: MultiPath,
   dataGlobalAncestry: MultiPath,
+  dataGlobalKinship: MultiPath,
+  dataGlobalKinshipMap: Map[ConfigMeta, MultiPath],
   analysis: MultiPath,
   analysisPhenoMap: Map[ConfigPheno, DirTreeAnalysisPheno],
   report: MultiPath,
@@ -79,6 +80,7 @@ object DirTree {
     val dataArray = appendSubDir(data, "array")
     val dataGlobal = appendSubDir(data, "global")
     val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
+    val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
     val analysis = appendSubDir(base, "analysis")
     val report = appendSubDir(base, "report")
     val reportQc = appendSubDir(report, "qc")
@@ -105,6 +107,10 @@ object DirTree {
         filterPostQc = appendSubDir(filter, "postqc"),
         clean = appendSubDir(base, "clean")
       )
+    }.toMap
+
+    val dataGlobalKinshipMap = projectConfig.Metas.map { meta =>
+      meta -> appendSubDir(dataGlobalKinship, meta.id)
     }.toMap
 
     val analysisPhenoMap = projectConfig.Phenos.filter(e => projectConfig.Models.map(e => e.pheno).contains(e.id)).map { pheno =>
@@ -146,13 +152,6 @@ object DirTree {
                 }.toMap
               case None => Map[ConfigMeta, MultiPath]()
             },
-            metas_kinship = base_meta match {
-              case Some(s) => 
-                projectConfig.Metas.filter(e => model.metas.get.contains(e.id)).map { meta =>
-                  meta -> appendSubDir(s, "kinship")
-                }.toMap
-              case None => Map[ConfigMeta, MultiPath]()
-            },
             cohorts = base_cohort match {
               case Some(s) => 
                 projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
@@ -177,6 +176,8 @@ object DirTree {
       dataArrayMap = dataArrayMap,
       dataGlobal = dataGlobal,
       dataGlobalAncestry = dataGlobalAncestry,
+      dataGlobalKinship = dataGlobalKinship,
+      dataGlobalKinshipMap = dataGlobalKinshipMap,
       analysis = analysis,
       analysisPhenoMap = analysisPhenoMap,
       report = report,

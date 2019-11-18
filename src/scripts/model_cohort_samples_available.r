@@ -1,7 +1,5 @@
 library(argparse)
 
-set.seed(1)
-
 parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
 parser$add_argument("--fam-in", dest="fam_in", type="character", help="a fam file")
@@ -15,6 +13,11 @@ parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help=
 parser$add_argument("--kinship-in", dest="kinship_in", type="character", help="a kinship file containing related pairs")
 parser$add_argument("--samples-exclude-qc", dest="samples_exclude_qc", type="character", help="a list of sample IDs to exclude based on sample qc")
 parser$add_argument("--samples-exclude-postqc", dest="samples_exclude_postqc", type="character", help="a list of sample IDs to exclude based on postqc filters")
+parser$add_argument("--samples-exclude-cckinship", dest="samples_exclude_cckinship", type="character", help="a list of sample IDs to exclude based on cross cohort kinship (ie for meta analysis)")
+parser$add_argument("--cckinship", dest="cckinship", type="character", help="a cross cohort kinship file")
+parser$add_argument("--meta-prior-samples", dest="meta_prior_samples", type="character", help="a comma separated list of samples available to previous meta cohorts")
+parser$add_argument("--meta-cohorts", dest="meta_cohorts", type="character", help="A comma separated list of meta cohorts")
+parser$add_argument("--cohort", dest="cohort", type="character", help="A cohort")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
@@ -64,6 +67,7 @@ id_map$removed_sampleqc <- 0
 id_map$removed_postqc_filters <- 0
 id_map$removed_incomplete_obs <- 0
 id_map$removed_kinship <- 0
+id_map$removed_cckinship <- 0
 id_map$removed_nogeno[which(! id_map$ID %in% iids)] <- 1
 pheno <- pheno[which(pheno[,args$iid_col] %in% iids),]
 
@@ -143,6 +147,37 @@ if(nrow(kinship_in) > 0) {
 	}
 } else {
 	cat(paste0("removed 0 samples due to kinship"),"\n")
+}
+
+cat("reading in cross-cohort kinship samples to remove\n")
+if(! is.null(args$cckinship)) {
+	if(! is.null(args$meta_cohorts)) {
+		meta<-unlist(strsplit(args$meta_cohorts,","))
+	} else {
+		cat("exiting because --cckinship was provided, but --meta-cohorts was not provided\n")
+		quit(status=1)
+	}
+	k <- read.table(args$cckinship, header=T, as.is=T, stringsAsFactors=F)
+	k$id1<-colsplit(k$ID1,"_",names=c("id1","X"))$id1
+	k$id2<-colsplit(k$ID2,"_",names=c("id2","X"))$id2
+	k$c1<-colsplit(k$ID1,"_",names=c("X","c1"))$c1
+	k$c2<-colsplit(k$ID2,"_",names=c("X","c2"))$c2
+	i <- 0
+	if(! is.null(args$meta_prior_samples)) {
+		samples_excl <- c()
+		for(mps in unlist(strsplit(args$meta_prior_samples,","))) {
+			i <- i + 1
+			prior_samples <- scan(file=mps,what="character")
+			k <- k[which(k$c1 == args$cohort | k$c2 == args$cohort),]
+			k <- k[which(((k$c1 == meta[i]) && (k$id1 %in% prior_samples)) | ((k$c2 == meta[i]) && (k$id2 %in% prior_samples))),]
+			samples_excl <- c(samples_excl, unique(c(k$id1[k$c1 == args$cohort], k$id2[k$c2 == args$cohort])))
+		}
+	} else {
+		cat("exiting because --cckinship and --meta-cohorts were provided, but --meta-prior-samples was not provided\n")
+		quit(status=1)
+	}
+	id_map$removed_cckinship[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_kinship == 0) & (id_map$ID %in% samples_excl))] <- 1
+	cat(paste0("removed ",as.character(length(id_map$removed_cckinship[which(id_map$removed_cckinship == 1)]))," samples due to cross cohort kinship"),"\n")
 }
 
 cat("extracting only complete observations\n")

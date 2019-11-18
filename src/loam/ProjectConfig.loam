@@ -294,10 +294,9 @@ final case class Bash(
   shPlinkPrepare: Path,
   shPlinkToVcfNoHalfCalls: Path,
   shKlustakwikPca: Path,
-  shKlustakwikMetric: Path
+  shKlustakwikMetric: Path,
+  shCrossCohortCommonVariants: Path
   //shRegPlot: Path,
-  //shCrossCohortCommonVariants: Path,
-  //shMetaCohortSamples: Path,
   //shTop1000Genes: Path
   ) extends Debug
 
@@ -311,10 +310,11 @@ final case class R(
   rIstatsAdjGmmPlotMetrics: Path,
   rCalcIstatsAdj: Path,
   rIstatsAdjPca: Path,
-  rModelCohortSamplesAvailable: Path
+  rModelCohortSamplesAvailable: Path,
+  rMetaCohortSamples: Path,
+  rExcludeCrossArray: Path
   //rAncestryClusterTable: Path,
   //rPcair: Path,
-  //rExcludeCrossArray: Path,
   //rGeneratePheno: Path,
   //rVariantsSummaryTable: Path,
   //rUpsetplotBimFam: Path,
@@ -1250,10 +1250,9 @@ object ProjectConfig {
       shPlinkPrepare = path(s"${scriptsDir}/plink_prepare.sh"),
       shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh"),
       shKlustakwikPca = path(s"${scriptsDir}/klustakwik_pca.sh"),
-      shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh")
+      shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh"),
+      shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh")
       //shRegPlot = path(s"${scriptsDir}/regplot.sh"),
-      //shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh"),
-      //shMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.sh"),
       //shTop1000Genes = path(s"${scriptsDir}/top1000_genes.sh")
     )
 
@@ -1268,9 +1267,10 @@ object ProjectConfig {
       rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
       rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
       rModelCohortSamplesAvailable = path(s"${scriptsDir}/model_cohort_samples_available.r"),
+      rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
+      rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r")
       //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
       //rPcair = path(s"${scriptsDir}/pcair.r"),
-      //rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
       //rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
       //rVariantsSummaryTable = path(s"${scriptsDir}/variants_summary_table.r"),
       //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
