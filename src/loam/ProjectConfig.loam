@@ -61,7 +61,7 @@ final case class ConfigResources(
   tabixClean: ConfigMachine,
   filterImputePlink: ConfigMachine,
   variantAssocHailAssoc: ConfigMachine,
-  variantAssocGeneratePheno: ConfigMachine,
+  generatePheno: ConfigMachine,
   crossCohortPrepPlink: ConfigMachine,
   crossCohortKinshipPlink: ConfigMachine,
   crossCohortKinshipKing: ConfigMachine,
@@ -138,6 +138,7 @@ final case class ConfigModel(
   metas: Option[Seq[String]],
   merges: Option[Seq[String]],
   filters: Option[Seq[String]],
+  maxPcaOutlierIterations: Int,
   knockoutFilters: Option[Seq[String]],
   masks: Option[Seq[String]],
   knowns: Option[Seq[String]]) extends Debug
@@ -295,7 +296,8 @@ final case class Bash(
   shPlinkToVcfNoHalfCalls: Path,
   shKlustakwikPca: Path,
   shKlustakwikMetric: Path,
-  shCrossCohortCommonVariants: Path
+  shCrossCohortCommonVariants: Path,
+  shFlashPca: Path
   //shRegPlot: Path,
   //shTop1000Genes: Path
   ) extends Debug
@@ -312,10 +314,10 @@ final case class R(
   rIstatsAdjPca: Path,
   rModelCohortSamplesAvailable: Path,
   rMetaCohortSamples: Path,
-  rExcludeCrossArray: Path
+  rExcludeCrossArray: Path,
+  rGeneratePheno: Path
   //rAncestryClusterTable: Path,
   //rPcair: Path,
-  //rGeneratePheno: Path,
   //rVariantsSummaryTable: Path,
   //rUpsetplotBimFam: Path,
   //rMakeOutlierTable: Path,
@@ -508,8 +510,8 @@ object ProjectConfig {
         val thisConfig = requiredObj(config = config, field = "variantAssocHailAssoc")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      variantAssocGeneratePheno = {
-        val thisConfig = requiredObj(config = config, field = "variantAssocGeneratePheno")
+      generatePheno = {
+        val thisConfig = requiredObj(config = config, field = "generatePheno")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
       crossCohortPrepPlink = {
@@ -1014,7 +1016,7 @@ object ProjectConfig {
           id = id,
           pheno = pheno,
           unrelatedOnly = requiredBool(config = model, field = "unrelatedOnly"),
-          trans = optionalStr(config = model, field = "trans", regex = "log|invn|^$"),
+          trans = optionalStr(config = model, field = "trans", regex = "log|invn"),
           test = test,
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
@@ -1036,6 +1038,7 @@ object ProjectConfig {
             case _ => merges
           },
           filters = filters,
+          maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
           knockoutFilters = (design, knockoutFilters) match {
             case ("full", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'full' design and knockoutFilters are not allowed")
             case ("strat", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'strat' design and knockoutFilters are not allowed")
@@ -1251,7 +1254,8 @@ object ProjectConfig {
       shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh"),
       shKlustakwikPca = path(s"${scriptsDir}/klustakwik_pca.sh"),
       shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh"),
-      shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh")
+      shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh"),
+      shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
       //shRegPlot = path(s"${scriptsDir}/regplot.sh"),
       //shTop1000Genes = path(s"${scriptsDir}/top1000_genes.sh")
     )
@@ -1268,10 +1272,10 @@ object ProjectConfig {
       rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
       rModelCohortSamplesAvailable = path(s"${scriptsDir}/model_cohort_samples_available.r"),
       rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
-      rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r")
+      rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
+      rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r")
       //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
       //rPcair = path(s"${scriptsDir}/pcair.r"),
-      //rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
       //rVariantsSummaryTable = path(s"${scriptsDir}/variants_summary_table.r"),
       //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
       //rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),

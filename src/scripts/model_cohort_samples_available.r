@@ -1,4 +1,5 @@
 library(argparse)
+library(reshape2)
 
 parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
@@ -21,6 +22,7 @@ parser$add_argument("--cohort", dest="cohort", type="character", help="A cohort"
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
+parser$add_argument("--out-pheno-prelim", dest="out_pheno_prelim", type="character", help="a preliminary pheno file output name")
 parser$add_argument("--out", dest="out", type="character", help="a sample list filename")
 args<-parser$parse_args()
 
@@ -185,39 +187,7 @@ pheno <- pheno[complete.cases(pheno),]
 id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
-cat("checking covariates for zero variance\n")
-failed <- FALSE
-if(length(unique(pheno[,args$pheno_col])) == 1) {
-	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
-	failed <- TRUE
-}
-covars_factors <- unlist(strsplit(args$covars,split="\\+"))
-for(cv in covars_factors) {
-	cvv <- unlist(strsplit(cv,split=""))
-	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
-		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		if(length(unique(pheno[,cvb])) == 1) {
-			cat(paste0("covariate ",cvb," has zero variance\n"))
-			failed <- TRUE
-		} else {
-			for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-				pheno[,paste0(cvb,val)] <- 0
-				pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-				covars_factors <- c(covars_factors,paste0(cvb,val))
-			}
-		}
-		covars_factors <- covars_factors[covars_factors != cv]
-	} else {
-		if(length(unique(pheno[,cv])) == 1) {
-			cat(paste0("covariate ",cv," has zero variance\n"))
-			failed <- TRUE
-		}
-	}
-}
-if(failed) {
-	cat("exiting due to invalid model\n")
-	quit(status=1)
-}
+write.table(pheno, args$out_pheno_prelim, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
 write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 

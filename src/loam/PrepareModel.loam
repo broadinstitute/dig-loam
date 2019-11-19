@@ -31,12 +31,12 @@ def PrepareModel(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   val metaPriorSamplesString = configMeta match {
     case Some(s) =>
       val x = for {
-        m <- configModel.metas.get.takeWhile(_ != configMeta.get.id)
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohort.id)
       } yield {
-        s"${modelStores((configModel, configCohort, Some(projectConfig.Metas.filter(e => e.id == m).head))).samplesAvailable.toString.split("@")(1)}"
+        s"${modelStores((configModel, projectConfig.Cohorts.filter(e => e.id == c).head, configMeta)).samplesAvailable.toString.split("@")(1)}"
       }
       x.size match {
-        case n if n > 0 => "--meta-prior-samples " + x.mkString(",") + "--meta-cohorts " + s"${configMeta.get.cohorts}".mkString(",") + "--cckinship " + s"${metaKinshipStores(configMeta.get).kin0}"
+        case n if n > 0 => "--meta-prior-samples " + x.mkString(",") + " --meta-cohorts " + configMeta.get.cohorts.mkString(",") + " --cckinship " + s"${metaKinshipStores(configMeta.get).kin0.toString.split("@")(1)}"
         case _ => ""
       }
     case None => ""
@@ -45,9 +45,9 @@ def PrepareModel(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   val modelCohortSamplesAvailableIn = configMeta match {
     case Some(s) => 
       val x = for {
-        m <- configModel.metas.get.takeWhile(_ != configMeta.get.id)
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohort.id)
       } yield {
-        modelStores((configModel, configCohort, Some(projectConfig.Metas.filter(e => e.id == m).head))).samplesAvailable
+        modelStores((configModel, projectConfig.Cohorts.filter(e => e.id == c).head, configMeta)).samplesAvailable
       }
       (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
     case None =>
@@ -74,12 +74,55 @@ def PrepareModel(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
       --test ${configModel.test}
       --covars "${configModel.covars}"
+      --out-pheno-prelim ${modelStores((configModel, configCohort, configMeta)).phenoPrelim}
       --out-id-map ${modelStores((configModel, configCohort, configMeta)).samplesMap}
       --out ${modelStores((configModel, configCohort, configMeta)).samplesAvailable}
       > ${modelStores((configModel, configCohort, configMeta)).samplesAvailableLog}"""
       .in(modelCohortSamplesAvailableIn)
-      .out(modelStores((configModel, configCohort, configMeta)).samplesMap, modelStores((configModel, configCohort, configMeta)).samplesAvailable, modelStores((configModel, configCohort, configMeta)).samplesAvailableLog)
+      .out(modelStores((configModel, configCohort, configMeta)).samplesMap, modelStores((configModel, configCohort, configMeta)).phenoPrelim, modelStores((configModel, configCohort, configMeta)).samplesAvailable, modelStores((configModel, configCohort, configMeta)).samplesAvailableLog)
       .tag(s"${modelStores((configModel, configCohort, configMeta)).samplesAvailable}".split("/").last)
+  
+  }
+
+  val trans = configModel.trans match {
+    case Some(s) => configModel.trans.get
+    case None => "N/A"
+  }
+
+  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.generatePheno.cpus, mem = projectConfig.resources.generatePheno.mem, maxRunTime = projectConfig.resources.generatePheno.maxRunTime) {
+  
+    cmd"""${utils.bash.shFlashPca}
+      ${utils.binary.binFlashPca}
+      ${utils.binary.binRscript}
+      ${utils.binary.binPlink}
+      ${utils.r.rGeneratePheno}
+      ${projectConfig.resources.generatePheno.cpus}
+      ${arrayStores(array).prunedData.plink.base}
+      ${modelStores((configModel, configCohort, configMeta)).samplesAvailable}
+      ${modelStores((configModel, configCohort, configMeta)).pcaBase}
+      ${modelStores((configModel, configCohort, configMeta)).pcaScores}
+      ${modelStores((configModel, configCohort, configMeta)).pcaEigenVecs}
+      ${modelStores((configModel, configCohort, configMeta)).pcaLoadings}
+      ${modelStores((configModel, configCohort, configMeta)).pcaEigenVals}
+      ${modelStores((configModel, configCohort, configMeta)).pcaPve}
+      ${modelStores((configModel, configCohort, configMeta)).pcaMeansd}
+      ${configModel.maxPcaOutlierIterations}
+      ${modelStores((configModel, configCohort, configMeta)).phenoPrelim}
+      ${configModel.pheno}
+      ${projectConfig.phenoFileId}
+      ${configModel.test}
+      "${trans}"
+      "${configModel.covars}"
+      ${projectConfig.minPCs}
+      ${projectConfig.maxPCs}
+      ${projectConfig.nStddevs}
+      ${modelStores((configModel, configCohort, configMeta)).pheno}
+      ${modelStores((configModel, configCohort, configMeta)).pcsInclude}
+      ${modelStores((configModel, configCohort, configMeta)).outliers}
+      > ${modelStores((configModel, configCohort, configMeta)).pcaLog}"""
+      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configCohort, configMeta)).samplesAvailable :+ modelStores((configModel, configCohort, configMeta)).phenoPrelim :+ ProjectStores.phenoFile.get)
+      .out(modelStores((configModel, configCohort, configMeta)).pcaScores, modelStores((configModel, configCohort, configMeta)).pcaEigenVecs, modelStores((configModel, configCohort, configMeta)).pcaLoadings, modelStores((configModel, configCohort, configMeta)).pcaEigenVals, modelStores((configModel, configCohort, configMeta)).pcaPve, modelStores((configModel, configCohort, configMeta)).pcaMeansd, modelStores((configModel, configCohort, configMeta)).pheno, modelStores((configModel, configCohort, configMeta)).pcsInclude, modelStores((configModel, configCohort, configMeta)).outliers, modelStores((configModel, configCohort, configMeta)).pcaLog)
+      .tag(s"${modelStores((configModel, configCohort, configMeta)).pheno}".split("/").last)
   
   }
 
