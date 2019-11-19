@@ -16,13 +16,13 @@ import FilterArray._
 import ExportCleanData._
 import PrepareModel._
 import CrossCohort._
-//import VariantAssoc._
+import VariantAssoc._
+//import AssocStores._
 //import Meta._
 //import Merge._
 //import ResultsSummary._
 //import QcReport._
 //import Impute._
-//import AssocStores._
 //import Phenotype._
 //import AnalysisReport._
 
@@ -117,7 +117,7 @@ ProjectStores.phenoFile match {
       CrossCohortCommonVars(configMeta = meta)
     
     }
-
+    
     // Meta-analysis cross-cohort qc prep
     for {
       meta <- projectConfig.Metas
@@ -137,32 +137,22 @@ ProjectStores.phenoFile match {
     
     }
     
-    //// Meta-analysis calculate cross-cohort kinship sample exclusions
-    //for {
-    //  meta <- projectConfig.Metas
-    //  cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
-    //} yield {
-    //
-    //  CrossCohortExclude(configMeta = meta, configCohort = cohort)
-    //
-    //}
-
     // Prepare standard cohort model
     for {
       x <- modelCohorts
     } yield {
     
       PrepareModel(configModel = x.model, configCohort= x.cohort, configMeta = None)
-
+    
     }
-
+    
     // Prepare meta cohort model
     for {
       x <- modelMetaCohorts
     } yield {
     
       PrepareModel(configModel = x.model, configCohort= x.cohort, configMeta = Some(x.meta))
-
+    
     }
     
     //// Cohort variant association
@@ -170,25 +160,7 @@ ProjectStores.phenoFile match {
     //  x <- modelCohorts
     //} yield {
     //
-    //  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None)
-    //
-    //}
-    //
-	//// Meta-analysis specific cohort variant association
-    //for {
-    //  x <- modelCohortMetas
-    //} yield { 
-    //
-    //  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta))
-    //
-    //}
-    //
-    //// Copy known results to Google Cloud
-    //for {
-    //  x <- ProjectStores.knownStores.keys
-    //} yield {
-    //
-    //  KnownLociToGoogle(configKnown = x)
+    //  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None, configKnown = None)
     //
     //}
     //
@@ -197,7 +169,34 @@ ProjectStores.phenoFile match {
     //  x <- modelCohortKnowns
     //} yield {
     //
-    //  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = None)
+    //  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None, configKnown = Some(x.known))
+    //
+    //}
+    //
+	//// Meta-analysis specific cohort variant association
+    //for {
+    //  x <- modelMetaCohorts
+    //} yield { 
+    //
+    //  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
+    //
+    //}
+    //
+    //// Meta-analysis specific cohort variant association for known loci
+    //for {
+    //  x <- modelMetaCohortKnowns
+    //} yield { 
+    //
+    //  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
+    //
+    //}
+    
+    //// Copy known results to Google Cloud
+    //for {
+    //  x <- ProjectStores.knownStores.keys
+    //} yield {
+    //
+    //  KnownLociToGoogle(configKnown = x)
     //
     //}
     //

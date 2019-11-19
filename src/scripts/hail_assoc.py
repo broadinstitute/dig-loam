@@ -16,7 +16,6 @@ def main(args=None):
 	else:
 		import hail_utils
 
-
 	if not args.cloud:
 		hl.init(log = args.log, idempotent=True)
 	else:

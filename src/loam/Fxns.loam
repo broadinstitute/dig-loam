@@ -162,6 +162,18 @@ def requiredObjList(config: loamstream.conf.DataConfig, field: String, default: 
   }
 }
 
+def optionalObjList(config: loamstream.conf.DataConfig, field: String): Option[Seq[loamstream.conf.DataConfig]] = {
+  Try(config.getObjList(field)) match {
+    case Success(o)           => 
+      o.size match {
+        case x if(x >= 1) => Some(o)
+        case _ => None
+      }
+    case Failure(NonFatal(e)) => None
+    case Failure(_)           => throw new CfgException("optionalObjList: field '" + field + "' fatal error")
+  }
+}
+
 def checkPath(s: String): String = {
   Files.exists(Paths.get(s)) match {
     case false => throw new CfgException("checkPath: " + s + " not found")

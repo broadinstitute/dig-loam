@@ -17,6 +17,25 @@ final case class ModelCohort(
   }
 }
 
+final case class ModelCohortKnown(
+    model: ConfigModel,
+    cohort: ConfigCohort,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelCohortKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + known.id.hashCode
+      result
+  }
+}
+
 final case class ModelMetaCohort(
     model: ConfigModel,
     meta: ConfigMeta,
@@ -32,6 +51,27 @@ final case class ModelMetaCohort(
       result = prime * result + model.id.hashCode
       result = prime * result + meta.id.hashCode
       result = prime * result + cohort.id.hashCode
+      result
+  }
+}
+
+final case class ModelMetaCohortKnown(
+    model: ConfigModel,
+    meta: ConfigMeta,
+    cohort: ConfigCohort,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelMetaCohortKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelMetaCohortKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + known.id.hashCode
       result
   }
 }
@@ -82,6 +122,62 @@ val modelMetaCohorts: Seq[ModelMetaCohort] = {
       model = model,
       meta = meta,
       cohort = cohort
+    )
+  }
+}.distinct
+
+val modelCohortKnowns: Seq[ModelCohortKnown] = {
+  val x = for {
+    model <- projectConfig.Models.filter(e => ! e.metas.isDefined && e.knowns.isDefined)
+    cohort <- projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id))
+    known <- projectConfig.Knowns.filter(e => model.knowns.contains(e.id))
+  } yield {
+    ModelCohortKnown(
+      model = model,
+      cohort = cohort,
+      known = known
+    )
+  }
+  val y = for {
+    model <- projectConfig.Models.filter(e => e.metas.isDefined && e.knowns.isDefined)
+  } yield {
+    val cohorts = for {
+      cohort <- projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id))
+    } yield {
+      cohort
+    }
+    val metaCohorts = for {
+      meta <- projectConfig.Metas.filter(e => model.metas.get.contains(e.id))
+      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
+    } yield {
+      cohort
+    }
+    for {
+      cohort <- cohorts diff metaCohorts
+      known <- projectConfig.Knowns.filter(e => model.knowns.contains(e.id))
+    } yield {
+      ModelCohortKnown(
+        model = model,
+        cohort = cohort,
+        known = known
+      )
+    }
+  }
+  x ++ y.flatten
+}.distinct
+
+val modelMetaCohortKnowns: Seq[ModelMetaCohortKnown] = {
+  for {
+    model <- projectConfig.Models.filter(e => e.metas.isDefined && e.knowns.isDefined)
+    meta <- projectConfig.Metas.filter(e => model.metas.get.contains(e.id))
+    cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
+    known <- projectConfig.Knowns.filter(e => model.knowns.contains(e.id))
+  } yield {
+    ModelMetaCohortKnown(
+      model = model,
+      meta = meta,
+      cohort = cohort,
+      known = known
     )
   }
 }.distinct

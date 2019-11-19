@@ -126,6 +126,10 @@ final case class ConfigKnown(
   desc: String,
   citation: String) extends Debug
 
+final case class CohortFilter(
+  cohort: String,
+  filters: Seq[String])
+
 final case class ConfigModel(
   id: String,
   pheno: String,
@@ -139,7 +143,8 @@ final case class ConfigModel(
   merges: Option[Seq[String]],
   filters: Option[Seq[String]],
   maxPcaOutlierIterations: Int,
-  knockoutFilters: Option[Seq[String]],
+  cohortFilters: Option[Seq[CohortFilter]],
+  knockoutFilters: Option[Seq[CohortFilter]],
   masks: Option[Seq[String]],
   knowns: Option[Seq[String]]) extends Debug
 
@@ -896,7 +901,7 @@ object ProjectConfig {
 
         val test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm|burden|skat")
 
-        val design = requiredStr(config = model, field = "design", regex = "full|strat|full_stratfilters")
+        val design = requiredStr(config = model, field = "design", regex = "full|strat")
 
         val cohorts = requiredStrList(config = model, field = "cohorts")
 
@@ -964,20 +969,53 @@ object ProjectConfig {
           case None => None
         }
 
-        val knockoutFilters = optionalStrList(config = model, field = "knockoutFilters") match {
+        val cohortFilters = optionalObjList(config = model, field = "cohortFilters") match {
           case Some(s) =>
-            for {
-              f <- s
+            val x = for {
+              cf <- s
             } yield {
-              f match {
-                case n if numericVariantFilters.map(e => e.id) contains n => ()
-                case o if booleanVariantFilters.map(e => e.id) contains o => ()
-                case p if categoricalVariantFilters.map(e => e.id) contains p => ()
-                case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                case _ => throw new CfgException("models.knockoutFilters: model " + id + " variant filter '" + f + "' not found")
+              for {
+                f <- requiredStrList(config = cf, field = "filters")
+              } yield {
+                f match {
+                  case n if numericVariantFilters.map(e => e.id) contains n => ()
+                  case o if booleanVariantFilters.map(e => e.id) contains o => ()
+                  case p if categoricalVariantFilters.map(e => e.id) contains p => ()
+                  case q if compoundVariantFilters.map(e => e.id) contains q => ()
+                  case _ => throw new CfgException("models.cohortFilters: model " + id + " cohort filter '" + f + "' not found")
+                }
               }
+              CohortFilter(
+                cohort = requiredStr(config = cf, field = "cohort"),
+                filters = requiredStrList(config = cf, field = "filters")
+              )
             }
-            Some(s)
+            Some(x)
+          case None => None
+        }
+
+        val knockoutFilters = optionalObjList(config = model, field = "knockoutFilters") match {
+          case Some(s) =>
+            val x = for {
+              cf <- s
+            } yield {
+              for {
+                f <- requiredStrList(config = cf, field = "filters")
+              } yield {
+                f match {
+                  case n if numericVariantFilters.map(e => e.id) contains n => ()
+                  case o if booleanVariantFilters.map(e => e.id) contains o => ()
+                  case p if categoricalVariantFilters.map(e => e.id) contains p => ()
+                  case q if compoundVariantFilters.map(e => e.id) contains q => ()
+                  case _ => throw new CfgException("models.knockoutFilters: model " + id + " knockout filter '" + f + "' not found")
+                }
+              }
+              CohortFilter(
+                cohort = requiredStr(config = cf, field = "cohort"),
+                filters = requiredStrList(config = cf, field = "filters")
+              )
+            }
+            Some(x)
           case None => None
         }
 
@@ -1022,25 +1060,21 @@ object ProjectConfig {
           design = design,
           cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
             case ("strat", false, _) => throw new CfgException("models.cohorts: model " + id + " 'strat' design requires more than 1 cohort")
-            case ("full_stratfilters", false, false) => throw new CfgException("models.cohorts: model " + id + " 'full_stratfilters' design requires more than 1 cohort")
-            case ("full_stratfilters", true, true) => throw new CfgException("models.cohorts: model " + id + " 'full_stratfilters' design requires cohorts from same array")
             case ("full", true, true) => throw new CfgException("models.cohorts: model " + id + " 'full' design requires cohorts from same array")
             case _ => cohorts
           },
           metas = (design, metas) match {
             case ("full", Some(s)) => throw new CfgException("models.metas: model " + id + " 'full' design and metas are not allowed")
-            case ("full_stratfilters", Some(s)) => throw new CfgException("models.metas: model " + id + " 'full_stratfilters' design and metas are not allowed")
             case _ => metas
           },
           merges = (design, merges) match {
             case ("full", Some(s)) => throw new CfgException("models.merges: model " + id + " 'full' design and merges are not allowed")
-            case ("full_stratfilters", Some(s)) => throw new CfgException("models.merges: model " + id + " 'full_stratfilters' design and merges are not allowed")
             case _ => merges
           },
           filters = filters,
           maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
+          cohortFilters = cohortFilters,
           knockoutFilters = (design, knockoutFilters) match {
-            case ("full", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'full' design and knockoutFilters are not allowed")
             case ("strat", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'strat' design and knockoutFilters are not allowed")
             case _ => knockoutFilters
           },

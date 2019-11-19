@@ -20,7 +20,9 @@ final case class Model(
   outliers: Store, 
   pcaLog: Store,
   pheno: Store,
-  pcsInclude: Store)
+  phenoGoogle: Option[Store],
+  pcsInclude: Store,
+  pcsIncludeGoogle: Option[Store])
 
 val modelStores = (
   (for {
@@ -43,67 +45,29 @@ val modelStores = (
     case None => s"${projectConfig.projectId}.${model.id}.${cohort.id}"
   }
 
+  val model_dir = model.design match {
+      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
+      case _ => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
+  }
+
   sm -> Model(
-    samplesMap = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.samples.map.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.samples.map.tsv")
-    },
-    phenoPrelim = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pheno.prelim.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pheno.prelim.tsv")
-    },
-    samplesAvailable = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.samples.available.txt")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.samples.available.txt")
-    },
-    samplesAvailableLog = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.samples.available.log")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.samples.available.log")
-    },
-    pcaBase = model.design match {
-      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca"
-      case _ => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca"
-    },
-    pcaScores = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.scores.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.scores.tsv")
-    },
-    pcaEigenVecs = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.eigenvecs.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.eigenvecs.tsv")
-    },
-    pcaLoadings = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.loadings.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.loadings.tsv")
-    },
-    pcaEigenVals = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.eigenvals.txt")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.eigenvals.txt")
-    },
-    pcaPve = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.pve.txt")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.pve.txt")
-    },
-    pcaMeansd = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.meansd.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.meansd.tsv")
-    },
-    outliers = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.outliers.txt")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.outliers.txt")
-    },
-    pcaLog = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pca.log")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pca.log")
-    },
-    pheno = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pheno.tsv")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pheno.tsv")
-    },
-    pcsInclude = model.design match {
-      case "strat" => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get / s"${baseString}.pcs.include.txt")
-      case _ => store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get / s"${baseString}.pcs.include.txt")
-    }
+    samplesMap = store(model_dir / s"${baseString}.samples.map.tsv"),
+    phenoPrelim = store(model_dir / s"${baseString}.pheno.prelim.tsv"),
+    samplesAvailable = store(model_dir / s"${baseString}.samples.available.txt"),
+    samplesAvailableLog = store(model_dir / s"${baseString}.samples.available.log"),
+    pcaBase = model_dir / s"${baseString}.pca",
+    pcaScores = store(model_dir / s"${baseString}.pca.scores.tsv"),
+    pcaEigenVecs = store(model_dir / s"${baseString}.pca.eigenvecs.tsv"),
+    pcaLoadings = store(model_dir / s"${baseString}.pca.loadings.tsv"),
+    pcaEigenVals = store(model_dir / s"${baseString}.pca.eigenvals.txt"),
+    pcaPve = store(model_dir / s"${baseString}.pca.pve.txt"),
+    pcaMeansd = store(model_dir / s"${baseString}.pca.meansd.tsv"),
+    outliers = store(model_dir / s"${baseString}.pca.outliers.txt"),
+    pcaLog = store(model_dir / s"${baseString}.pca.log"),
+    pheno = store(model_dir / s"${baseString}.pheno.tsv"),
+    phenoGoogle = projectConfig.hailCloud match { case true => Some(store(model_dir / s"${baseString}.pheno.tsv")); case false => None },
+    pcsInclude = store(model_dir / s"${baseString}.pcs.include.txt"),
+    pcsIncludeGoogle = projectConfig.hailCloud match { case true => Some(store(model_dir / s"${baseString}.pcs.include.txt")); case false => None }
   )
 
 }.toMap

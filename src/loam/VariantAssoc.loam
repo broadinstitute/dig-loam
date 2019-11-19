@@ -1,0 +1,414 @@
+/**
+  * Association Step
+  *  Description: Run association tests
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import ArrayStores._
+import ModelStores._
+import AssocStores._
+import ProjectStores._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMeta: Option[ConfigMeta] = None, configKnown: Option[ConfigKnown] = None): Unit = {
+
+  val model = modelStores((configModel, configCohort, configMeta))
+
+  val assoc = assocStores((configModel, configCohort, configMeta, configKnown))
+
+  val array = projectConfig.Arrays.filter(e => e.id == configCohort.array).head
+
+  // designs: 
+  //   full: run pooled cohorts
+  //     make variant stats for all samples as well as each cohort listed in model cohorts
+  //   strat: run each cohort
+  //     make variant stats for all samples
+
+  // if configModel.knockoutFilters =>
+  //   read in cohort samplesAvailable files
+  //   apply knockouts for each cohort
+  // if configModel.masks =>
+  //   apply masks to all samples
+
+  projectConfig.hailCloud match {
+
+    case true =>
+
+      val Seq(_, prunedBim, _) = arrayStores(array).prunedData.plink.data
+
+      configKnown match {
+        case Some(s) =>
+          local {
+            googleCopy(ProjectStores.knownStores(configKnown).hiLd, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+          }
+        case None => ()
+      }
+  
+      local {
+      
+        googleCopy(model.pheno, model.phenoGoogle.get)
+        googleCopy(model.pcsInclude, model.pcsIncludeGoogle.get)
+        googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle.get)
+      
+      }
+
+      val knownHiLdString = configKnown match {
+        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(configKnown).hiLdGoogle.get.toString.split("@")(1)}"
+        case None => ""
+      }
+
+      val variantsStatsString = configKnown match {
+        case Some(s) => ""
+        case None => "--variants-stats-out " + s"${assoc.variantsStatsGoogle.get.toString.split("@")(1)}"
+      }
+
+      val hailAssocIn = configKnown match {
+        case Some(s) =>
+          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+        case None =>
+          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get)
+      }
+
+      val hailAssocOut = configKnown match {
+        case Some(s) =>
+          Seq(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
+        case None =>
+          Seq(assoc.resultsGoogle.get, assoc.variantsStatsGoogle.get, assoc.resultsHailLogGoogle.get)
+      }
+      
+      google {
+      
+        hail"""${utils.python.pyHailAssoc} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+          --pheno-in ${model.phenoGoogle.get}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${model.pcsIncludeGoogle.get}
+          ${knownHiLdString}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.resultsGoogle.get}
+          ${variantsStatsString}
+          --cloud
+          --log ${assoc.resultsHailLogGoogle.get}"""
+            .in(hailAssocIn)
+            .out(hailAssocOut)
+            .tag(s"${assoc.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(assoc.resultsGoogle.get, assoc.results)
+        googleCopy(assoc.variantsStatsGoogle.get, assoc.variantsStats.get)
+        googleCopy(assoc.resultsHailLogGoogle.get, assoc.resultsHailLog)
+      
+      }
+
+    case false =>
+
+      val knownHiLdString = configKnown match {
+        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(configKnown).hiLd.toString.split("@")(1)}"
+        case None => ""
+      }
+
+      val variantsStatsString = configKnown match {
+        case Some(s) => ""
+        case None => "--variants-stats-out " + s"${assoc.variantsStats.get.toString.split("@")(1)}"
+      }
+
+      val hailAssocIn = configKnown match {
+        case Some(s) =>
+          Seq(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(configKnown).hiLd)
+        case None =>
+          Seq(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude)
+      }
+
+      val hailAssocOut = configKnown match {
+        case Some(s) =>
+          Seq(assoc.results, assoc.resultsHailLog)
+        case None =>
+          Seq(assoc.results, assoc.variantsStats.get, assoc.resultsHailLog)
+      }
+
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
+
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --bim-in ${arrayStores(array).prunedData.plink.base}.bim
+          --pheno-in ${model.pheno}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${model.pcsInclude}
+          ${knownHiLd}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          --out ${assoc.results}
+          --variants-stats-out ${assoc.variantsStats.get}
+          --log ${assoc.resultsHailLog}"""
+            .in(hailAssocIn)
+            .out(hailAssocOut)
+            .tag(s"${assoc.results}".split("/").last)
+
+      }
+
+  }
+  
+  drmWith(imageName = s"${utils.image.imgTools}") {
+
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${assoc.results}"""
+      .in(assoc.results)
+      .out(assoc.tbi)
+      .tag(s"${assoc.tbi}".split("/").last)
+
+  }
+
+  //configKnown match {
+  //
+  //  case Some(s) => ()
+  //
+  //  case None =>
+  //
+  //    configCohort.resultsVariantFilters match {
+  //    
+  //      case Some(a) =>
+  //    
+  //        val vfilters = {
+  //          for {
+  //            f <- a
+  //          } yield {
+  //            f match {
+  //              case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+  //                "--vfilter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+  //              case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+  //                "--vfilter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+  //              case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+  //                "--vfilter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+  //              case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+  //                val ids = for {
+  //                  ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+  //                } yield {
+  //                  ff match {
+  //                    case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+  //                      projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+  //                    case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+  //                      projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+  //                    case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+  //                      projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+  //                    case _ => throw new CfgException("VariantAssoc: vfilters '" + ff + "' not found")
+  //                  }
+  //                }
+  //                "--vfilter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+  //              case _ => throw new CfgException("VariantAssoc: vfilters '" + f + "' not found")
+  //            }
+  //          }
+  //        }.mkString(" ")
+  //        
+  //        projectConfig.hailCloud match {
+  //        
+  //          case true =>
+  //        
+  //            google {
+  //        
+  //              hail"""${utils.python.pyHailFilterResults} --
+  //                --cloud
+  //                --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+  //                ${vfilters}
+  //                --log ${assoc.variantsFilterHailLogGoogle.get}
+  //                --stats-in ${assoc.variantsStatsGoogle.get}
+  //                --variants-filters-out ${assoc.variantsFilterGoogle.get}
+  //                --variants-exclude-out ${assoc.variantsExcludeGoogle.get}"""
+  //                .in(ProjectStores.hailUtilsGoogle.get, assoc.variantsStatsGoogle.get)
+  //                .out(assoc.variantsFilterGoogle.get, assoc.variantsExcludeGoogle.get, assoc.variantsFilterHailLogGoogle.get)
+  //                .tag(s"${assoc.variantsStats.get}.pyHailFilterResults.google".split("/").last)
+  //        
+  //            }
+  //            
+  //            local {
+  //            
+  //              googleCopy(assoc.variantsFilterGoogle.get, assoc.variantsFilter.get)
+  //              googleCopy(assoc.variantsExcludeGoogle.get, assoc.variantsExclude.get)
+  //              googleCopy(assoc.variantsFilterHailLogGoogle.get, assoc.variantsFilterHailLog.get)
+  //            
+  //            }
+  //        
+  //          case false =>
+  //        
+  //            drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
+  //        
+  //              cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterResults}
+  //                ${vfilters}
+  //                --log ${assoc.variantsFilterHailLog.get}
+  //                --stats-in ${assoc.variantsStats.get}
+  //                --variants-filters-out ${assoc.variantsFilter.get}
+  //                --variants-exclude-out ${assoc.variantsExclude.get}"""
+  //                .in(assoc.variantsStats.get)
+  //                .out(assoc.variantsFilter.get, assoc.variantsExclude.get, assoc.variantsFilterHailLog.get)
+  //                .tag(s"${assoc.variantsStats.get}.pyHailFilterResults".split("/").last)
+  //        
+  //            }
+  //        
+  //        }
+  //    
+  //      case _ => ()
+  //    
+  //    }
+  //
+  //}
+
+}
+
+//def KnownLociToGoogle(configKnown: ConfigKnown): Unit = {
+//
+//  projectConfig.hailCloud match {
+//
+//    case true =>
+//
+//      local {
+//
+//        googleCopy(ProjectStores.knownStores(configKnown).hiLd, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+//
+//      }
+//
+//    case false => ()
+//
+//  }
+//
+//}
+//
+//def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configKnown: ConfigKnown, configMeta: Option[ConfigMeta] = None): Unit = {
+//
+//  val known = knownLociStores((configModel, configCohort, configKnown, configMeta))
+//
+//  val array = projectConfig.Arrays.filter(e => e.id == configCohort.array).head
+//
+//  val excludeCrossArrayString = configMeta match {
+//
+//    case Some(s) => s"""${metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude.toString.split("@")(1)}"""
+//    case None => ""
+//
+//  }
+//
+//  val generatePhenoIn = configMeta match {
+//
+//    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
+//    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
+//
+//  }
+//  
+//  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
+//
+//    cmd"""${utils.binary.binRscript} --vanilla --verbose
+//      ${utils.r.rGeneratePheno}
+//      --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
+//      --pheno-in ${ProjectStores.phenoFile.get}
+//      --ancestry-in ${ProjectStores.ancestryInferred}
+//      --ancestry-keep ${configCohort.ancestry.mkString(",")}
+//      --pheno-col ${configModel.pheno}
+//      --iid-col ${projectConfig.phenoFileId}
+//      --sampleqc-in ${arrayStores(array).sampleQcData.stats}
+//      --kinship-in ${arrayStores(array).kinshipData.kin0}
+//      --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude}
+//      --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
+//      --samples-exclude-cohort ${cohortStores(configCohort).samplesExclude}
+//      --samples-exclude-cross-array "${excludeCrossArrayString}"
+//      --variants-exclude-postqc ${arrayStores(array).filterPostQc.variantsExclude}
+//      --test ${configModel.test}
+//      --trans "${configModel.trans}"
+//      --covars "${configModel.covars}"
+//      --min-pcs ${projectConfig.minPCs}
+//      --max-pcs ${projectConfig.maxPCs}
+//      --n-stddevs ${projectConfig.nStddevs}
+//      --out-id-map ${known.idMap}
+//      --out-pheno ${known.pheno}
+//      --out-pcs ${known.pcs}
+//      > ${known.phenoLog}"""
+//      .in(generatePhenoIn)
+//      .out(known.idMap, known.pheno, known.pcs, known.phenoLog)
+//      .tag(s"${known.pheno}".split("/").last)
+//
+//  }
+//
+//  projectConfig.hailCloud match {
+//
+//    case true =>
+//  
+//      local {
+//      
+//        googleCopy(known.pheno, known.phenoGoogle.get)
+//        googleCopy(known.pcs, known.pcsGoogle.get)
+//      
+//      }
+//      
+//      google {
+//      
+          --variants-stats-out ${assoc.variantsStatsGoogle.get}
+
+//        hail"""${utils.python.pyHailAssoc} --
+//          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+//          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+//          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+//          --pheno-in ${known.phenoGoogle.get}
+//          --iid-col ${projectConfig.phenoFileId}
+//          --pheno-col ${configModel.pheno}
+//          --pcs-include ${known.pcsGoogle.get}
+          --extract-ld ${ProjectStores.knownStores(configKnown).hiLdGoogle.get}
+//          --test ${configModel.test}
+//          --trans "${configModel.trans}"
+//          --covars "${configModel.covars}"
+//          --out ${known.resultsGoogle.get}
+//          --cloud
+//          --log ${known.resultsHailLogGoogle.get}"""
+//            .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+//            .out(known.resultsGoogle.get, known.resultsHailLogGoogle.get)
+//            .tag(s"${known.results}.google".split("/").last)
+//      
+//      }
+//      
+//      local {
+//      
+//        googleCopy(known.resultsGoogle.get, known.results)
+//        googleCopy(known.resultsHailLogGoogle.get, known.resultsHailLog)
+//      
+//      }
+//
+//    case false =>
+//
+//      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
+//
+//        cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+//          --mt-in ${arrayStores(array).refData.mt.get}
+//          --bim-in ${arrayStores(array).prunedData.plink.base}.bim
+//          --pheno-in ${known.pheno}
+//          --iid-col ${projectConfig.phenoFileId}
+//          --pheno-col ${configModel.pheno}
+//          --pcs-include ${known.pcs}
+//          --extract-ld ${ProjectStores.knownStores(configKnown).hiLd}
+//          --test ${configModel.test}
+//          --trans "${configModel.trans}"
+//          --covars "${configModel.covars}"
+//          --out ${known.results}
+//          --log ${known.resultsHailLog}"""
+//            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
+//            .out(known.results, known.resultsHailLog)
+//            .tag(s"${known.results}".split("/").last)
+//
+//      }
+//
+//  }
+//  
+//  drmWith(imageName = s"${utils.image.imgTools}") {
+//
+//    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${known.results}"""
+//      .in(known.results)
+//      .out(known.tbi)
+//      .tag(s"${known.tbi}".split("/").last)
+//
+//  }
+//
+//}
