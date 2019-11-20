@@ -28,26 +28,34 @@ val modelStores = (
   (for {
     x <- modelCohorts
   } yield {
-    (x.model, x.cohort, None)
+    (x.model, x.cohorts, None)
   }) ++
   (for {
     x <- modelMetaCohorts
   } yield {
-    (x.model, x.cohort, Some(x.meta))
+    (x.model, x.cohorts, Some(x.meta))
   })).map { sm =>
 
   val model = sm._1
-  val cohort = sm._2
+  val cohorts = sm._2
   val meta: Option[ConfigMeta] = sm._3
 
   val baseString = meta match {
-    case Some(s) => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohort.id}"
-    case None => s"${projectConfig.projectId}.${model.id}.${cohort.id}"
+    case Some(s) =>
+      model.design match {
+        case "full" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}"
+        case "strat" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohorts.head.id}"
+      }
+    case None =>
+      model.design match {
+        case "full" => s"${projectConfig.projectId}.${model.id}"
+        case "strat" => s"${projectConfig.projectId}.${model.id}.${cohorts.head.id}"
+      }
   }
 
   val model_dir = model.design match {
-      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
-      case _ => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
+      case "full" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
+      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).local.get
   }
 
   sm -> Model(

@@ -54,60 +54,75 @@ val assocStores = (
       for {
 		x <- modelCohorts
       } yield {
-        (x.model, x.cohort, None, None)
+        (x.model, x.cohorts, None, None)
       } 
     ) ++
     (
       for {
         x <- modelMetaCohorts
       } yield {
-        (x.model, x.cohort, Some(x.meta), None)
+        (x.model, x.cohorts, Some(x.meta), None)
       }
     ) ++
     (
       for {
 		x <- modelCohortKnowns
       } yield {
-        (x.model, x.cohort, None, Some(x.known))
+        (x.model, x.cohorts, None, Some(x.known))
       } 
     ) ++
     (
       for {
         x <- modelMetaCohortKnowns
       } yield {
-        (x.model, x.cohort, Some(x.meta), Some(x.known))
+        (x.model, x.cohorts, Some(x.meta), Some(x.known))
       }
     )
   ).map { assoc => 
 
     val model = assoc._1
-    val cohort = assoc._2
+    val cohorts = assoc._2
     val meta: Option[ConfigMeta] = assoc._3
     val known: Option[ConfigKnown] = assoc._4
     
     val prefix = meta match {
       case Some(s) => 
         known match {
-          case Some(t) => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohort.id}.${known.get.id}"
-          case None => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohort.id}"
+          case Some(t) =>
+            model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohorts.head.id}.${known.get.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${known.get.id}"
+            }
+          case None => model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohorts.head.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}"
+          }
         }
       case None =>
         known match {
-          case Some(t) => s"${projectConfig.projectId}.${model.id}.${cohort.id}.${known.get.id}"
-          case None => s"${projectConfig.projectId}.${model.id}.${cohort.id}"
+          case Some(t) =>
+            model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${cohorts.head.id}.${known.get.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}.${known.get.id}"
+            }
+          case None =>
+            model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${cohorts.head.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}"
+            }
         }
     }
 
     val local_dir = model.design match {
-      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
-      case _ => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
+      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).local.get
+      case "full" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
     }
 
     val cloud_dir = projectConfig.hailCloud match {
       case true => 
         model.design match {
-          case "strat" => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get)
-          case _ => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.google.get)
+          case "strat" => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).google.get)
+          case "full" => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.google.get)
         }
       case false => None
     }

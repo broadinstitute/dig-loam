@@ -5,20 +5,17 @@ parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
 parser$add_argument("--fam-in", dest="fam_in", type="character", help="a fam file")
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
-parser$add_argument("--ancestry-keep", dest="ancestry_keep", type="character", help="a comma separated list of population groups to keep (ie. EUR,AFR)")
+parser$add_argument("--strat", nargs=3, action = 'append', dest="strat", type="character", help="ancestry, strat column, and strat codes")
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
-parser$add_argument("--strat-col", dest="strat_col", type="character", help="a phenotype file column name")
-parser$add_argument("--strat-codes", dest="strat_codes", type="character", help="a list of values in --strat-col")
 parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
 parser$add_argument("--kinship-in", dest="kinship_in", type="character", help="a kinship file containing related pairs")
 parser$add_argument("--samples-exclude-qc", dest="samples_exclude_qc", type="character", help="a list of sample IDs to exclude based on sample qc")
 parser$add_argument("--samples-exclude-postqc", dest="samples_exclude_postqc", type="character", help="a list of sample IDs to exclude based on postqc filters")
-parser$add_argument("--samples-exclude-cckinship", dest="samples_exclude_cckinship", type="character", help="a list of sample IDs to exclude based on cross cohort kinship (ie for meta analysis)")
+parser$add_argument("--cohorts", dest="cohorts", type="character", help="A comma separated list of cohorts")
 parser$add_argument("--cckinship", dest="cckinship", type="character", help="a cross cohort kinship file")
 parser$add_argument("--meta-prior-samples", dest="meta_prior_samples", type="character", help="a comma separated list of samples available to previous meta cohorts")
 parser$add_argument("--meta-cohorts", dest="meta_cohorts", type="character", help="A comma separated list of meta cohorts")
-parser$add_argument("--cohort", dest="cohort", type="character", help="A cohort")
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
@@ -34,30 +31,39 @@ covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+")))
 cat("read in pheno file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 
-if(! is.null(args$strat_col) & ! is.null(args$strat_codes)) {
-	cat("filter based on strat column\n")
-	if(! args$strat_col %in% names(pheno)) {
-		cat("exiting due to strat col missing from pheno file\n")
-		quit(status=1)
-	}
-	pheno<-pheno[which(pheno[,args$strat_col] %in% unlist(strsplit(args$strat_codes,split=","))),]
-	cat(paste0("extracted ",as.character(nrow(pheno))," samples with ",args$strat_codes," in strat col ",args$strat_col),"\n")
-}
-
-cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
-pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
-out_cols<-colnames(pheno)
-
 cat("reading inferred ancestry from file\n")
 ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 names(ancestry)[1]<-args$iid_col
 names(ancestry)[2]<-"ANCESTRY_INFERRED"
 pheno<-merge(pheno,ancestry,all.x=T)
-if(! is.null(args$ancestry_keep)) {
-	anc_keep = unlist(strsplit(args$ancestry_keep,","))
-	pheno <- pheno[pheno$ANCESTRY_INFERRED %in% anc_keep,]
-	cat(paste0("extracted ",as.character(nrow(pheno))," samples in inferred population group/s ",paste(anc_keep,collapse="+")),"\n")
+
+anc_keep <- c()
+samples_keep <- c()
+for(i in 1:nrow(args$strat)) {
+	s <- args$strat[i,]
+	anc <- unlist(strsplit(s[1],","))
+    stratcol <- s[2]
+	stratcol_vals <- unlist(strsplit(s[3],split=","))
+	anc_keep <- c(anc_keep, anc)
+	if(stratcol != "N/A" & stratcol_vals != "N/A") {
+		if(! stratcol %in% names(pheno)) {
+			cat(paste0("exiting due to strat col ", stratcol, " missing from pheno file"),"\n")
+			quit(status=1)
+		}
+		extract <- pheno[,args$iid_col][which((pheno$ANCESTRY_INFERRED %in% anc) & (pheno[,stratcol] %in% stratcol_vals))]
+		cat(paste0("found ",as.character(length(extract))," samples with inferred ancestry in ",paste(anc,collapse=",")," and ",paste(stratcol_vals,collapse="")," in strat col ",stratcol),"\n")
+	} else {
+		extract <- pheno[,args$iid_col][which((pheno$ANCESTRY_INFERRED %in% anc))]
+		cat(paste0("found ",as.character(length(extract))," samples with inferred ancestry in ",paste(anc,collapse=",")),"\n")
+	}
+	samples_keep <- c(samples_keep, extract)
 }
+pheno <- pheno[pheno[,args$iid_col] %in% samples_keep,]
+cat(paste0("extracted ",as.character(nrow(pheno))," samples for this model"),"\n")
+
+cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
+pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
+out_cols<-colnames(pheno)
 
 cat("reading in genotyped samples IDs from pre-qc plink files\n")
 fam<-read.table(args$fam_in,header=F,as.is=T,stringsAsFactors=F,sep="\t")
@@ -151,8 +157,14 @@ if(nrow(kinship_in) > 0) {
 	cat(paste0("removed 0 samples due to kinship"),"\n")
 }
 
-cat("reading in cross-cohort kinship samples to remove\n")
 if(! is.null(args$cckinship)) {
+	cat("reading in cross-cohort kinship samples to remove\n")
+	if(! is.null(args$cohorts)) {
+		cohorts <- unlist(strsplit(args$cohorts,","))
+	} else {
+		cat("exiting because --cckinship was provided, but --cohorts was not provided\n")
+		quit(status=1)
+	}
 	if(! is.null(args$meta_cohorts)) {
 		meta<-unlist(strsplit(args$meta_cohorts,","))
 	} else {
@@ -170,9 +182,9 @@ if(! is.null(args$cckinship)) {
 		for(mps in unlist(strsplit(args$meta_prior_samples,","))) {
 			i <- i + 1
 			prior_samples <- scan(file=mps,what="character")
-			k <- k[which(k$c1 == args$cohort | k$c2 == args$cohort),]
+			k <- k[which(k$c1 %in% cohorts | k$c2 %in% cohorts),]
 			k <- k[which(((k$c1 == meta[i]) && (k$id1 %in% prior_samples)) | ((k$c2 == meta[i]) && (k$id2 %in% prior_samples))),]
-			samples_excl <- c(samples_excl, unique(c(k$id1[k$c1 == args$cohort], k$id2[k$c2 == args$cohort])))
+			samples_excl <- c(samples_excl, unique(c(k$id1[k$c1 %in% cohorts], k$id2[k$c2 %in% cohorts])))
 		}
 	} else {
 		cat("exiting because --cckinship and --meta-cohorts were provided, but --meta-prior-samples was not provided\n")

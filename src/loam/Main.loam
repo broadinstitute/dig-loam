@@ -108,7 +108,7 @@ ProjectStores.phenoFile match {
   case None => ()
 
   case _ =>
-
+ 
     // Meta-analysis cross-cohort common variants search
     for {
       meta <- projectConfig.Metas
@@ -136,13 +136,13 @@ ProjectStores.phenoFile match {
       CrossCohortKinship(meta)
     
     }
-    
+
     // Prepare standard cohort model
     for {
       x <- modelCohorts
     } yield {
     
-      PrepareModel(configModel = x.model, configCohort= x.cohort, configMeta = None)
+      PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = None)
     
     }
     
@@ -151,7 +151,7 @@ ProjectStores.phenoFile match {
       x <- modelMetaCohorts
     } yield {
     
-      PrepareModel(configModel = x.model, configCohort= x.cohort, configMeta = Some(x.meta))
+      PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
     
     }
     
@@ -160,7 +160,7 @@ ProjectStores.phenoFile match {
     //  x <- modelCohorts
     //} yield {
     //
-    //  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None, configKnown = None)
+    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
     //
     //}
     //
@@ -169,7 +169,7 @@ ProjectStores.phenoFile match {
     //  x <- modelCohortKnowns
     //} yield {
     //
-    //  VariantAssoc(configModel = x.model, configCohort = x.cohort, configMeta = None, configKnown = Some(x.known))
+    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = Some(x.known))
     //
     //}
     //
@@ -178,7 +178,7 @@ ProjectStores.phenoFile match {
     //  x <- modelMetaCohorts
     //} yield { 
     //
-    //  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
+    //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
     //
     //}
     //
@@ -187,7 +187,7 @@ ProjectStores.phenoFile match {
     //  x <- modelMetaCohortKnowns
     //} yield { 
     //
-    //  VariantAssoc(configCohort = x.cohort, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
+    //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
     //
     //}
     
@@ -205,7 +205,7 @@ ProjectStores.phenoFile match {
     //  x <- modelCohortMetaKnowns
     //} yield { 
     //
-    //  KnownLociAssoc(configModel = x.model, configCohort = x.cohort, configKnown = x.known, configMeta = Some(x.meta))
+    //  KnownLociAssoc(configModel = x.model, configCohorts = x.cohorts, configKnown = x.known, configMeta = Some(x.meta))
     //
     //}
     //
