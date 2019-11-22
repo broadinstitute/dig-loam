@@ -274,8 +274,8 @@ def intervalToExpression(s: String, i: String): String = {
 
 def booleanToExpression(s: String, i: String): String = {
   i match {
-    case "true" => s + " == True"
-    case "false" => s + " == False"
+    case "true" => s + " != True"
+    case "false" => s + " != False"
     case _ => throw new CfgException("booleanToExpression: user supplied value " + i + " for " + s + " is not currently supported... true and false are currently supported")
   }
 }
@@ -283,8 +283,8 @@ def booleanToExpression(s: String, i: String): String = {
 def categoricalToExpression(s: String, i: Seq[String]): String = {
   s match {
     case "chr" =>
-      "hl.literal({'" + expandChrList(i).mkString("','") + "'}).contains(" + s + ")"
+      "! hl.literal({'" + expandChrList(i).mkString("','") + "'}).contains(" + s + ")"
     case _ =>
-      "hl.literal({'" + i.mkString("','") + "'}).contains(" + s + ")"
+      "! hl.literal({'" + i.mkString("','") + "'}).contains(" + s + ")"
   }
 }

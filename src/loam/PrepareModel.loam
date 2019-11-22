@@ -18,7 +18,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
     for {
       cohort <- configCohorts
     } yield {
-      var s = "--strat " + cohort.ancestry.mkString(",")
+      var s = "--strat " + cohort.id + " " + cohort.ancestry.mkString(",")
       cohort.stratCol match {
         case Some(a) => s = s + " " + a
         case None => s = s + " " + """"N/A""""
@@ -78,6 +78,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       --covars "${configModel.covars}"
       --out-pheno-prelim ${modelStores((configModel, configCohorts, configMeta)).phenoPrelim}
       --out-id-map ${modelStores((configModel, configCohorts, configMeta)).samplesMap}
+      --out-cohorts-map ${modelStores((configModel, configCohorts, configMeta)).cohortsMap}
       --out ${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}
       > ${modelStores((configModel, configCohorts, configMeta)).samplesAvailableLog}"""
       .in(modelCohortSamplesAvailableIn)

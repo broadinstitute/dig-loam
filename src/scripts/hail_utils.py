@@ -338,3 +338,37 @@ def add_sample_qc_stats(mt: hl.MatrixTable, sample_qc: hl.tstr, variant_qc: hl.t
 			het_high = mt[sample_qc].n_het_high / mt[sample_qc].n_called_high
 		)}
 	)
+
+def add_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
+	mt = mt.annotate_rows(**{struct_name: hl.struct(exclude = 0)})
+	for f in filters:
+		absent = False
+		for field in f[1].split(","):
+			if field not in mt.rows().row_value.flatten():
+				absent = True
+			f[2] = f[2].replace(field,"mt." + field)
+		if not absent:
+			print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
+			mt = mt.annotate_rows(
+				**{struct_name: mt[struct_name].annotate(
+					**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+				)}
+			)
+		else:
+			print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+			mt = mt.annotate_rows(
+				**{struct_name: mt[struct_name].annotate(
+					**{f[0]: 0}
+				)}
+			)
+		print("update exclusion column based on " + f[0])
+		mt = mt.annotate_rows(
+			**{struct_name: mt[struct_name].annotate(
+				exclude = hl.cond(
+					mt[struct_name][f[0]] == 1,
+					1,
+					mt[struct_name].exclude
+				)
+			)}
+		)
+	return mt

@@ -135,7 +135,7 @@ val modelMetaCohorts: Seq[ModelMetaCohort] = {
 val modelCohortKnowns: Seq[ModelCohortKnown] = {
   val x = for {
     model <- projectConfig.Models.filter(e => ! e.metas.isDefined && e.knowns.isDefined)
-    known <- projectConfig.Knowns.filter(e => model.knowns.contains(e.id))
+    known <- projectConfig.Knowns.filter(e => model.knowns.get.contains(e.id))
   } yield {
     model.design match {
       case "full" =>
@@ -167,7 +167,7 @@ val modelCohortKnowns: Seq[ModelCohortKnown] = {
     }
     for {
       cohort <- projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)) diff metaCohorts
-      known <- projectConfig.Knowns.filter(e => model.knowns.contains(e.id))
+      known <- projectConfig.Knowns.filter(e => model.knowns.get.contains(e.id))
     } yield {
       ModelCohortKnown(
         model = model,
@@ -183,7 +183,7 @@ val modelMetaCohortKnowns: Seq[ModelMetaCohortKnown] = {
   for {
     model <- projectConfig.Models.filter(e => e.metas.isDefined && e.knowns.isDefined && e.design == "strat")
     meta <- projectConfig.Metas.filter(e => model.metas.get.contains(e.id))
-    known <- projectConfig.Knowns.filter(e => model.knowns.contains(e.id))
+    known <- projectConfig.Knowns.filter(e => model.knowns.get.contains(e.id))
     cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
   } yield {
     ModelMetaCohortKnown(

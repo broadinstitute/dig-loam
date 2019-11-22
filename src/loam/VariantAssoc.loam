@@ -11,13 +11,13 @@ import ProjectStores._
 
 final case class CfgException(s: String) extends Exception(s)
 
-def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMeta: Option[ConfigMeta] = None, configKnown: Option[ConfigKnown] = None): Unit = {
+def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None, configKnown: Option[ConfigKnown] = None): Unit = {
 
-  val model = modelStores((configModel, configCohort, configMeta))
+  val model = modelStores((configModel, configCohorts, configMeta))
 
-  val assoc = assocStores((configModel, configCohort, configMeta, configKnown))
+  val assoc = assocStores((configModel, configCohorts, configMeta, configKnown))
 
-  val array = projectConfig.Arrays.filter(e => e.id == configCohort.array).head
+  val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
   // designs: 
   //   full: run pooled cohorts
@@ -31,6 +31,190 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   // if configModel.masks =>
   //   apply masks to all samples
 
+  val filters = {
+    configModel.test match {
+      case "burden" | "skat" => 
+        configKnown match {
+          case Some(s) => List("")
+          case None =>
+            configModel.filters match {
+              case Some(l) =>
+                for {
+                  f <- l
+                } yield {
+                  f match {
+                    case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+                      "--filter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+                    case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+                      "--filter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+                    case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+                      "--filter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+                    case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+                      val ids = for {
+                        ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+                      } yield {
+                        ff match {
+                          case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+                            projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+                          case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+                            projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+                          case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+                            projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+                          case _ => throw new CfgException("VariantAssoc: filters '" + ff + "' not found")
+                        }
+                      }
+                      "--filter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+                    case _ => throw new CfgException("VariantAssoc: filters '" + f + "' not found")
+                  }
+                }
+              case None => List("")
+            }
+        }
+      case _ => List("")
+    }
+  }.mkString(" ")
+
+  val cohortFilters = {
+    configModel.test match {
+      case "burden" | "skat" =>
+        configKnown match {
+          case Some(s) => List(List(""))
+          case None =>
+            configModel.cohortFilters match {
+              case Some(l) =>
+                for {
+                  cf <- l
+                } yield {
+                  for {
+                    f <- cf.filters
+                  } yield {
+                   f match {
+                     case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+                       "--cohort-filter " + cf.cohort + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+                     case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+                       "--cohort-filter " + cf.cohort + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+                     case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+                       "--cohort-filter " + cf.cohort + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+                     case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+                       val ids = for {
+                         ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+                       } yield {
+                         ff match {
+                           case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+                             projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+                           case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+                             projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+                           case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+                             projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+                           case _ => throw new CfgException("VariantAssoc: cohort filters '" + ff + "' not found")
+                         }
+                       }
+                       "--cohort-filter " + cf.cohort + " " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+                     case _ => throw new CfgException("VariantAssoc: cohort filters '" + f + "' not found")
+                   }
+                  }
+                }
+              case None => List(List(""))
+            }
+        }
+      case _ => List(List(""))
+    }
+  }.flatten.mkString(" ")
+
+  val knockoutFilters = {
+    configModel.test match {
+      case "burden" | "skat" =>
+        configKnown match {
+          case Some(s) => List(List(""))
+          case None =>
+            configModel.knockoutFilters match {
+              case Some(l) =>
+                for {
+                  cf <- l
+                } yield {
+                  for {
+                    f <- cf.filters
+                  } yield {
+                   f match {
+                     case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+                       "--knockout-filter " + cf.cohort + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+                     case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+                       "--knockout-filter " + cf.cohort + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+                     case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+                       "--knockout-filter " + cf.cohort + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+                     case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+                       val ids = for {
+                         ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+                       } yield {
+                         ff match {
+                           case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+                             projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+                           case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+                             projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+                           case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+                             projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+                           case _ => throw new CfgException("VariantAssoc: knockout filters '" + ff + "' not found")
+                         }
+                       }
+                       "--knockout-filter " + cf.cohort + " " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+                     case _ => throw new CfgException("VariantAssoc: knockout filters '" + f + "' not found")
+                   }
+                  }
+                }
+              case None => List(List(""))
+            }
+        }
+      case _ => List(List(""))
+    }
+  }.flatten.mkString(" ")
+
+  val masks = {
+    configModel.test match {
+      case "burden" | "skat" =>
+        configKnown match {
+          case Some(s) => List(List(""))
+          case None =>
+            configModel.masks match {
+              case Some(l) =>
+                for {
+                  mf <- l
+                } yield {
+                  for {
+                    f <- mf.filters
+                  } yield {
+                   f match {
+                     case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+                       "--mask " + mf.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+                     case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+                       "--mask " + mf.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+                     case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+                       "--mask " + mf.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+                     case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+                       val ids = for {
+                         ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+                       } yield {
+                         ff match {
+                           case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+                             projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+                           case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+                             projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+                           case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+                             projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+                           case _ => throw new CfgException("VariantAssoc: mask filters '" + ff + "' not found")
+                         }
+                       }
+                       "--mask " + mf.id + " " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+                     case _ => throw new CfgException("VariantAssoc: mask filters '" + f + "' not found")
+                   }
+                  }
+                }
+              case None => List(List(""))
+            }
+        }
+      case _ => List(List(""))
+    }
+  }.flatten.mkString(" ")
+
   projectConfig.hailCloud match {
 
     case true =>
@@ -40,7 +224,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       configKnown match {
         case Some(s) =>
           local {
-            googleCopy(ProjectStores.knownStores(configKnown).hiLd, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+            googleCopy(ProjectStores.knownStores(s).hiLd, ProjectStores.knownStores(s).hiLdGoogle.get)
           }
         case None => ()
       }
@@ -54,7 +238,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
       }
 
       val knownHiLdString = configKnown match {
-        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(configKnown).hiLdGoogle.get.toString.split("@")(1)}"
+        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(s).hiLdGoogle.get.toString.split("@")(1)}"
         case None => ""
       }
 
@@ -65,9 +249,9 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
       val hailAssocIn = configKnown match {
         case Some(s) =>
-          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
+          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(s).hiLdGoogle.get, model.cohortsMap)
         case None =>
-          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get)
+          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, model.cohortsMap)
       }
 
       val hailAssocOut = configKnown match {
@@ -87,10 +271,15 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --iid-col ${projectConfig.phenoFileId}
           --pheno-col ${configModel.pheno}
           --pcs-include ${model.pcsIncludeGoogle.get}
+          --cohorts-map-in ${model.cohortsMap}
           ${knownHiLdString}
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
+          ${filters}
+          ${cohortFilters}
+          ${knockoutFilters}
+          ${masks}
           --out ${assoc.resultsGoogle.get}
           ${variantsStatsString}
           --cloud
@@ -112,7 +301,7 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
     case false =>
 
       val knownHiLdString = configKnown match {
-        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(configKnown).hiLd.toString.split("@")(1)}"
+        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(s).hiLd.toString.split("@")(1)}"
         case None => ""
       }
 
@@ -123,9 +312,9 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
 
       val hailAssocIn = configKnown match {
         case Some(s) =>
-          Seq(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(configKnown).hiLd)
+          arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(s).hiLd :+ model.cohortsMap
         case None =>
-          Seq(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude)
+          arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ model.cohortsMap
       }
 
       val hailAssocOut = configKnown match {
@@ -144,12 +333,17 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
           --iid-col ${projectConfig.phenoFileId}
           --pheno-col ${configModel.pheno}
           --pcs-include ${model.pcsInclude}
-          ${knownHiLd}
+          --cohorts-map-in ${model.cohortsMap}
+          ${knownHiLdString}
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
+          ${filters}
+          ${cohortFilters}
+          ${knockoutFilters}
+          ${masks}
           --out ${assoc.results}
-          --variants-stats-out ${assoc.variantsStats.get}
+          ${variantsStatsString}
           --log ${assoc.resultsHailLog}"""
             .in(hailAssocIn)
             .out(hailAssocOut)
@@ -262,153 +456,3 @@ def VariantAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configMet
   //}
 
 }
-
-//def KnownLociToGoogle(configKnown: ConfigKnown): Unit = {
-//
-//  projectConfig.hailCloud match {
-//
-//    case true =>
-//
-//      local {
-//
-//        googleCopy(ProjectStores.knownStores(configKnown).hiLd, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
-//
-//      }
-//
-//    case false => ()
-//
-//  }
-//
-//}
-//
-//def KnownLociAssoc(configModel: ConfigModel, configCohort: ConfigCohort, configKnown: ConfigKnown, configMeta: Option[ConfigMeta] = None): Unit = {
-//
-//  val known = knownLociStores((configModel, configCohort, configKnown, configMeta))
-//
-//  val array = projectConfig.Arrays.filter(e => e.id == configCohort.array).head
-//
-//  val excludeCrossArrayString = configMeta match {
-//
-//    case Some(s) => s"""${metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude.toString.split("@")(1)}"""
-//    case None => ""
-//
-//  }
-//
-//  val generatePhenoIn = configMeta match {
-//
-//    case Some(s) => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude, metaKinshipStores(s).metaCohort(configCohort).kinshipSamplesExclude)
-//    case None => Seq(ProjectStores.phenoFile.get, ProjectStores.ancestryInferred, arrayStores(array).sampleQcData.stats, arrayStores(array).kinshipData.kin0, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, cohortStores(configCohort).samplesExclude)
-//
-//  }
-//  
-//  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.variantAssocGeneratePheno.cpus, mem = projectConfig.resources.variantAssocGeneratePheno.mem, maxRunTime = projectConfig.resources.variantAssocGeneratePheno.maxRunTime) {
-//
-//    cmd"""${utils.binary.binRscript} --vanilla --verbose
-//      ${utils.r.rGeneratePheno}
-//      --cpus ${projectConfig.resources.variantAssocGeneratePheno.cpus}
-//      --pheno-in ${ProjectStores.phenoFile.get}
-//      --ancestry-in ${ProjectStores.ancestryInferred}
-//      --ancestry-keep ${configCohort.ancestry.mkString(",")}
-//      --pheno-col ${configModel.pheno}
-//      --iid-col ${projectConfig.phenoFileId}
-//      --sampleqc-in ${arrayStores(array).sampleQcData.stats}
-//      --kinship-in ${arrayStores(array).kinshipData.kin0}
-//      --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude}
-//      --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
-//      --samples-exclude-cohort ${cohortStores(configCohort).samplesExclude}
-//      --samples-exclude-cross-array "${excludeCrossArrayString}"
-//      --variants-exclude-postqc ${arrayStores(array).filterPostQc.variantsExclude}
-//      --test ${configModel.test}
-//      --trans "${configModel.trans}"
-//      --covars "${configModel.covars}"
-//      --min-pcs ${projectConfig.minPCs}
-//      --max-pcs ${projectConfig.maxPCs}
-//      --n-stddevs ${projectConfig.nStddevs}
-//      --out-id-map ${known.idMap}
-//      --out-pheno ${known.pheno}
-//      --out-pcs ${known.pcs}
-//      > ${known.phenoLog}"""
-//      .in(generatePhenoIn)
-//      .out(known.idMap, known.pheno, known.pcs, known.phenoLog)
-//      .tag(s"${known.pheno}".split("/").last)
-//
-//  }
-//
-//  projectConfig.hailCloud match {
-//
-//    case true =>
-//  
-//      local {
-//      
-//        googleCopy(known.pheno, known.phenoGoogle.get)
-//        googleCopy(known.pcs, known.pcsGoogle.get)
-//      
-//      }
-//      
-//      google {
-//      
-          --variants-stats-out ${assoc.variantsStatsGoogle.get}
-
-//        hail"""${utils.python.pyHailAssoc} --
-//          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
-//          --mt-in ${arrayStores(array).refData.mtGoogle.get}
-//          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
-//          --pheno-in ${known.phenoGoogle.get}
-//          --iid-col ${projectConfig.phenoFileId}
-//          --pheno-col ${configModel.pheno}
-//          --pcs-include ${known.pcsGoogle.get}
-          --extract-ld ${ProjectStores.knownStores(configKnown).hiLdGoogle.get}
-//          --test ${configModel.test}
-//          --trans "${configModel.trans}"
-//          --covars "${configModel.covars}"
-//          --out ${known.resultsGoogle.get}
-//          --cloud
-//          --log ${known.resultsHailLogGoogle.get}"""
-//            .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, known.phenoGoogle.get, known.pcsGoogle.get, ProjectStores.knownStores(configKnown).hiLdGoogle.get)
-//            .out(known.resultsGoogle.get, known.resultsHailLogGoogle.get)
-//            .tag(s"${known.results}.google".split("/").last)
-//      
-//      }
-//      
-//      local {
-//      
-//        googleCopy(known.resultsGoogle.get, known.results)
-//        googleCopy(known.resultsHailLogGoogle.get, known.resultsHailLog)
-//      
-//      }
-//
-//    case false =>
-//
-//      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
-//
-//        cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
-//          --mt-in ${arrayStores(array).refData.mt.get}
-//          --bim-in ${arrayStores(array).prunedData.plink.base}.bim
-//          --pheno-in ${known.pheno}
-//          --iid-col ${projectConfig.phenoFileId}
-//          --pheno-col ${configModel.pheno}
-//          --pcs-include ${known.pcs}
-//          --extract-ld ${ProjectStores.knownStores(configKnown).hiLd}
-//          --test ${configModel.test}
-//          --trans "${configModel.trans}"
-//          --covars "${configModel.covars}"
-//          --out ${known.results}
-//          --log ${known.resultsHailLog}"""
-//            .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ known.pheno :+ known.pcs :+ ProjectStores.knownStores(configKnown).hiLd)
-//            .out(known.results, known.resultsHailLog)
-//            .tag(s"${known.results}".split("/").last)
-//
-//      }
-//
-//  }
-//  
-//  drmWith(imageName = s"${utils.image.imgTools}") {
-//
-//    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${known.results}"""
-//      .in(known.results)
-//      .out(known.tbi)
-//      .tag(s"${known.tbi}".split("/").last)
-//
-//  }
-//
-//}

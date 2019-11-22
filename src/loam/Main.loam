@@ -155,41 +155,41 @@ ProjectStores.phenoFile match {
     
     }
     
-    //// Cohort variant association
-    //for {
-    //  x <- modelCohorts
-    //} yield {
-    //
-    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
-    //
-    //}
-    //
-    //// Cohort variant association for known loci
-    //for {
-    //  x <- modelCohortKnowns
-    //} yield {
-    //
-    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = Some(x.known))
-    //
-    //}
-    //
-	//// Meta-analysis specific cohort variant association
-    //for {
-    //  x <- modelMetaCohorts
-    //} yield { 
-    //
-    //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
-    //
-    //}
-    //
-    //// Meta-analysis specific cohort variant association for known loci
-    //for {
-    //  x <- modelMetaCohortKnowns
-    //} yield { 
-    //
-    //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
-    //
-    //}
+    // Cohort variant association
+    for {
+      x <- modelCohorts
+    } yield {
+    
+      VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
+    
+    }
+
+    // Cohort variant association for known loci
+    for {
+      x <- modelCohortKnowns
+    } yield {
+    
+      VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = Some(x.known))
+    
+    }
+    
+	// Meta-analysis specific cohort variant association
+    for {
+      x <- modelMetaCohorts
+    } yield { 
+    
+      VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
+    
+    }
+    
+    // Meta-analysis specific cohort variant association for known loci
+    for {
+      x <- modelMetaCohortKnowns
+    } yield { 
+    
+      VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
+    
+    }
     
     //// Copy known results to Google Cloud
     //for {

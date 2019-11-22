@@ -130,6 +130,10 @@ final case class CohortFilter(
   cohort: String,
   filters: Seq[String])
 
+final case class MaskFilter(
+  id: String,
+  filters: Seq[String])
+
 final case class ConfigModel(
   id: String,
   pheno: String,
@@ -145,7 +149,7 @@ final case class ConfigModel(
   maxPcaOutlierIterations: Int,
   cohortFilters: Option[Seq[CohortFilter]],
   knockoutFilters: Option[Seq[CohortFilter]],
-  masks: Option[Seq[String]],
+  masks: Option[Seq[MaskFilter]],
   knowns: Option[Seq[String]]) extends Debug
 
 final case class ConfigSection(
@@ -264,9 +268,9 @@ final case class Python(
   pyCompileExclusions: Path,
   pyMergeVariantLists: Path,
   pyBimToUid: Path,
-  pyHailUtils: Path
+  pyHailUtils: Path,
+  pyHailAssoc: Path
   //pyHailFilterResults: Path,
-  //pyHailAssoc: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
   //pyQqPlot: Path,
@@ -1019,20 +1023,28 @@ object ProjectConfig {
           case None => None
         }
 
-        val masks = optionalStrList(config = model, field = "masks") match {
+        val masks = optionalObjList(config = model, field = "masks") match {
           case Some(s) =>
-            for {
-              f <- s
+            val x = for {
+              cf <- s
             } yield {
-              f match {
-                case n if numericVariantFilters.map(e => e.id) contains n => ()
-                case o if booleanVariantFilters.map(e => e.id) contains o => ()
-                case p if categoricalVariantFilters.map(e => e.id) contains p => ()
-                case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                case _ => throw new CfgException("models.masks: model " + id + " variant filter '" + f + "' not found")
+              for {
+                f <- requiredStrList(config = cf, field = "filters")
+              } yield {
+                f match {
+                  case n if numericVariantFilters.map(e => e.id) contains n => ()
+                  case o if booleanVariantFilters.map(e => e.id) contains o => ()
+                  case p if categoricalVariantFilters.map(e => e.id) contains p => ()
+                  case q if compoundVariantFilters.map(e => e.id) contains q => ()
+                  case _ => throw new CfgException("models.masks: model " + id + " mask filter '" + f + "' not found")
+                }
               }
+              MaskFilter(
+                id = requiredStr(config = cf, field = "id"),
+                filters = requiredStrList(config = cf, field = "filters")
+              )
             }
-            Some(s)
+            Some(x)
           case None => None
         }
 
@@ -1251,9 +1263,9 @@ object ProjectConfig {
       pyCompileExclusions = path(s"${scriptsDir}/compile_exclusions.py"),
       pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
       pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
-      pyHailUtils = path(s"${scriptsDir}/hail_utils.py")
+      pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
+      pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
-      //pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
       //pyQqPlot = path(s"${scriptsDir}/qqplot.py"),

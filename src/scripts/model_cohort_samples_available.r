@@ -5,7 +5,7 @@ parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phenotype file")
 parser$add_argument("--fam-in", dest="fam_in", type="character", help="a fam file")
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
-parser$add_argument("--strat", nargs=3, action = 'append', dest="strat", type="character", help="ancestry, strat column, and strat codes")
+parser$add_argument("--strat", nargs=4, action = 'append', dest="strat", type="character", help="ancestry, strat column, and strat codes")
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
 parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
@@ -19,6 +19,7 @@ parser$add_argument("--meta-cohorts", dest="meta_cohorts", type="character", hel
 parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
+parser$add_argument("--out-cohorts-map", dest="out_cohorts_map", type="character", help="an output filename for the cohort sample map")
 parser$add_argument("--out-pheno-prelim", dest="out_pheno_prelim", type="character", help="a preliminary pheno file output name")
 parser$add_argument("--out", dest="out", type="character", help="a sample list filename")
 args<-parser$parse_args()
@@ -39,13 +40,16 @@ pheno<-merge(pheno,ancestry,all.x=T)
 
 anc_keep <- c()
 samples_keep <- c()
+cohorts_map <- data.frame(IID = pheno[,args$iid_col], cohort = NA)
+names(cohorts_map)[1] <- args$iid_col
 for(i in 1:nrow(args$strat)) {
 	s <- args$strat[i,]
-	anc <- unlist(strsplit(s[1],","))
-    stratcol <- s[2]
-	stratcol_vals <- unlist(strsplit(s[3],split=","))
+	cohort <- s[1]
+	anc <- unlist(strsplit(s[2],","))
+    stratcol <- s[3]
+	stratcol_vals <- unlist(strsplit(s[4],split=","))
 	anc_keep <- c(anc_keep, anc)
-	if(stratcol != "N/A" & stratcol_vals != "N/A") {
+	if(stratcol != "N/A" & paste(stratcol_vals, collapse=",") != "N/A") {
 		if(! stratcol %in% names(pheno)) {
 			cat(paste0("exiting due to strat col ", stratcol, " missing from pheno file"),"\n")
 			quit(status=1)
@@ -57,6 +61,7 @@ for(i in 1:nrow(args$strat)) {
 		cat(paste0("found ",as.character(length(extract))," samples with inferred ancestry in ",paste(anc,collapse=",")),"\n")
 	}
 	samples_keep <- c(samples_keep, extract)
+	cohorts_map$cohort[cohorts_map[,args$iid_col] %in% extract] <- cohort
 }
 pheno <- pheno[pheno[,args$iid_col] %in% samples_keep,]
 cat(paste0("extracted ",as.character(nrow(pheno))," samples for this model"),"\n")
@@ -76,6 +81,7 @@ id_map$removed_postqc_filters <- 0
 id_map$removed_incomplete_obs <- 0
 id_map$removed_kinship <- 0
 id_map$removed_cckinship <- 0
+id_map$cohort <- NA
 id_map$removed_nogeno[which(! id_map$ID %in% iids)] <- 1
 pheno <- pheno[which(pheno[,args$iid_col] %in% iids),]
 
@@ -199,8 +205,12 @@ pheno <- pheno[complete.cases(pheno),]
 id_map$removed_incomplete_obs[which((id_map$removed_nogeno == 0) & (id_map$removed_sampleqc == 0) & (id_map$removed_postqc_filters == 0) & (id_map$removed_kinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
+cohorts_map <- cohorts_map[cohorts_map[,args$iid_col] %in% pheno[,args$iid_col],]
+
 write.table(pheno, args$out_pheno_prelim, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
+
+write.table(cohorts_map, args$out_cohorts_map, row.names=FALSE, col.names=FALSE, quote=FALSE, append=FALSE, sep="\t")
 
 write.table(id_map, args$out_id_map, row.names=FALSE, col.names=TRUE, quote=FALSE, append=FALSE, sep="\t")
 
-write.table(pheno[,args$iid_col],args$out,row.names=F,col.names=F,quote=F,sep="\t",append=F)
+write.table(pheno[,args$iid_col],args$out, row.names=FALSE, col.names=FALSE, quote=FALSE, append=FALSE, sep="\t")
