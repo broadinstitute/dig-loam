@@ -62,7 +62,7 @@ def main(args=None):
 				print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 				mt = mt.annotate_rows(
 					ls_filters = mt.ls_filters.annotate(
-						**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+						**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
 					)
 				)
 			else:

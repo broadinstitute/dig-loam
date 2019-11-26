@@ -6,6 +6,7 @@
 import ProjectConfig._
 import ArrayStores._
 import ProjectStores._
+import Fxns._
 
 final case class CfgException(s: String) extends Exception(s)
 
@@ -14,37 +15,12 @@ def ExportQcData(array: ConfigArray): Unit = {
   val vfilters = {
     array.qcVariantFilters match {
       case Some(l) =>
-        for {
-          f <- l
-        } yield {
-          f match {
-            case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-              "--vfilter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-            case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-              "--vfilter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-            case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-              "--vfilter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-            case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-              val ids = for {
-                ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-              } yield {
-                ff match {
-                  case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                    projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                  case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                    projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                  case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                    projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                  case _ => throw new CfgException("ExportQcData: vfilters '" + ff + "' not found")
-                }
-              }
-              "--vfilter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == d).head.expression + "\""
-            case _ => throw new CfgException("ExportQcData: vfilters '" + f + "' not found")
-          }
-        }
-      case None => List("")
+        filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--vfilter")
+      case None => ""
     }
-  }.mkString(" ")
+  }
+
+  throw new CfgException(s"${vfilters}")
 
   val sampleN = array.qcVariantSampleN.getOrElse("") match {
     case "" => ""

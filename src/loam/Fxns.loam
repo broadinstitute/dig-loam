@@ -2,6 +2,7 @@ import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
 import java.nio.file.{Paths, Files}
 import scala.sys.process._
+import ProjectConfig._
 
 final case class CfgException(s: String) extends Exception(s)
 
@@ -287,4 +288,49 @@ def categoricalToExpression(s: String, i: Seq[String]): String = {
     case _ =>
       "! hl.literal({'" + i.mkString("','") + "'}).contains(" + s + ")"
   }
+}
+
+def filtersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOption: String, id: Option[String] = None): String = {
+
+  val id_string = id match {
+    case Some(s) => s + " "
+    case None => " "
+  }
+
+  val id_exc = id match {
+    case Some(s) => s + ": "
+    case None => ""
+  }
+
+  val x = {
+    for {
+      f <- filters
+    } yield {
+      f match {
+        case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
+          cliOption + " " + id_string + cfg.numericVariantFilters.filter(e => e.id == n).head.id + " " + cfg.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + cfg.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+        case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
+          cliOption + " " + id_string + cfg.booleanVariantFilters.filter(e => e.id == b).head.id + " " + cfg.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + cfg.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+        case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
+          cliOption + " " + id_string + cfg.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + cfg.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+        case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
+          val ids = for {
+            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+          } yield {
+            ff match {
+              case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
+                cfg.numericVariantFilters.filter(e => e.id == nn).head.field
+              case bb if cfg.booleanVariantFilters.map(e => e.id) contains bb =>
+                cfg.booleanVariantFilters.filter(e => e.id == bb).head.field
+              case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
+                cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field
+              case _ => throw new CfgException("VariantAssoc.filtersToCliString: " + id_exc + " filters '" + ff + "' not found")
+            }
+          }
+          cliOption + " " + id_string + cfg.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + cfg.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+        case _ => throw new CfgException("VariantAssoc.filtersToCliString: " + id_exc + " filters '" + f + "' not found")
+      }
+    }
+  }
+  x.mkString(" ")
 }

@@ -8,6 +8,7 @@ import ArrayStores._
 import ModelStores._
 import AssocStores._
 import ProjectStores._
+import Fxns._
 
 final case class CfgException(s: String) extends Exception(s)
 
@@ -31,189 +32,77 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   // if configModel.masks =>
   //   apply masks to all samples
 
-  val filters = {
-    configModel.test match {
-      case "burden" | "skat" => 
-        configKnown match {
-          case Some(s) => List("")
-          case None =>
-            configModel.filters match {
-              case Some(l) =>
-                for {
-                  f <- l
-                } yield {
-                  f match {
-                    case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-                      "--filter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-                    case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-                      "--filter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-                    case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-                      "--filter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-                    case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-                      val ids = for {
-                        ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-                      } yield {
-                        ff match {
-                          case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                            projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                          case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                            projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                          case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                            projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                          case _ => throw new CfgException("VariantAssoc: filters '" + ff + "' not found")
-                        }
-                      }
-                      "--filter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
-                    case _ => throw new CfgException("VariantAssoc: filters '" + f + "' not found")
-                  }
-                }
-              case None => List("")
-            }
-        }
-      case _ => List("")
-    }
-  }.mkString(" ")
+  val filters = configModel.test match {
+    case "burden" | "skat" => 
+      configKnown match {
+        case Some(s) => ""
+        case None =>
+          configModel.filters match {
+            case Some(l) => filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--filter")
+            case None => ""
+          }
+      }
+    case _ => ""
+  }
 
-  val cohortFilters = {
-    configModel.test match {
-      case "burden" | "skat" =>
-        configKnown match {
-          case Some(s) => List(List(""))
-          case None =>
-            configModel.cohortFilters match {
-              case Some(l) =>
-                for {
-                  cf <- l
-                } yield {
-                  for {
-                    f <- cf.filters
-                  } yield {
-                   f match {
-                     case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-                       "--cohort-filter " + cf.cohort + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-                     case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-                       "--cohort-filter " + cf.cohort + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-                     case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-                       "--cohort-filter " + cf.cohort + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-                     case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-                       val ids = for {
-                         ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-                       } yield {
-                         ff match {
-                           case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                             projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                           case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                             projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                           case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                             projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                           case _ => throw new CfgException("VariantAssoc: cohort filters '" + ff + "' not found")
-                         }
-                       }
-                       "--cohort-filter " + cf.cohort + " " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
-                     case _ => throw new CfgException("VariantAssoc: cohort filters '" + f + "' not found")
-                   }
-                  }
-                }
-              case None => List(List(""))
-            }
-        }
-      case _ => List(List(""))
-    }
-  }.flatten.mkString(" ")
+  val cohortFilters = configModel.test match {
+    case "burden" | "skat" =>
+      configKnown match {
+        case Some(s) => ""
+        case None =>
+          configModel.cohortFilters match {
+            case Some(l) =>
+              { for {
+                cf <- l
+              } yield {
+                filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
+              } }.mkString(" ")
+            case None => ""
+          }
+      }
+    case _ => ""
+  }
 
-  val knockoutFilters = {
-    configModel.test match {
-      case "burden" | "skat" =>
-        configKnown match {
-          case Some(s) => List(List(""))
-          case None =>
-            configModel.knockoutFilters match {
-              case Some(l) =>
-                for {
-                  cf <- l
-                } yield {
-                  for {
-                    f <- cf.filters
-                  } yield {
-                   f match {
-                     case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-                       "--knockout-filter " + cf.cohort + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-                     case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-                       "--knockout-filter " + cf.cohort + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-                     case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-                       "--knockout-filter " + cf.cohort + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-                     case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-                       val ids = for {
-                         ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-                       } yield {
-                         ff match {
-                           case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                             projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                           case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                             projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                           case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                             projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                           case _ => throw new CfgException("VariantAssoc: knockout filters '" + ff + "' not found")
-                         }
-                       }
-                       "--knockout-filter " + cf.cohort + " " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
-                     case _ => throw new CfgException("VariantAssoc: knockout filters '" + f + "' not found")
-                   }
-                  }
-                }
-              case None => List(List(""))
-            }
-        }
-      case _ => List(List(""))
-    }
-  }.flatten.mkString(" ")
+  val knockoutFilters = configModel.test match {
+    case "burden" | "skat" =>
+      configKnown match {
+        case Some(s) => ""
+        case None =>
+          configModel.knockoutFilters match {
+            case Some(l) =>
+              { for {
+                cf <- l
+              } yield {
+                filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
+              } }.mkString(" ")
+            case None => ""
+          }
+      }
+    case _ => ""
+  }
 
-  val masks = {
-    configModel.test match {
-      case "burden" | "skat" =>
-        configKnown match {
-          case Some(s) => List(List(""))
-          case None =>
-            configModel.masks match {
-              case Some(l) =>
-                for {
-                  mf <- l
-                } yield {
-                  for {
-                    f <- mf.filters
-                  } yield {
-                   f match {
-                     case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-                       "--mask " + mf.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-                     case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-                       "--mask " + mf.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-                     case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-                       "--mask " + mf.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-                     case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-                       val ids = for {
-                         ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-                       } yield {
-                         ff match {
-                           case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                             projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                           case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                             projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                           case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                             projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                           case _ => throw new CfgException("VariantAssoc: mask filters '" + ff + "' not found")
-                         }
-                       }
-                       "--mask " + mf.id + " " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
-                     case _ => throw new CfgException("VariantAssoc: mask filters '" + f + "' not found")
-                   }
-                  }
-                }
-              case None => List(List(""))
-            }
-        }
-      case _ => List(List(""))
-    }
-  }.flatten.mkString(" ")
+  val masks = configModel.test match {
+    case "burden" | "skat" =>
+      configKnown match {
+        case Some(s) => ""
+        case None =>
+          configModel.masks match {
+            case Some(l) =>
+              { for {
+                mf <- l
+              } yield {
+                filtersToCliString(cfg = projectConfig, filters = mf.filters, cliOption = "--mask", id = Some(mf.id))
+              } }.mkString(" ")
+            case None => ""
+          }
+      }
+    case _ => ""
+  }
+
+  masks match {
+    case "" => ()
+    case _ => throw new CfgException(s"${masks}")
+  }
 
   projectConfig.hailCloud match {
 

@@ -351,7 +351,7 @@ def add_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) ->
 			print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 			mt = mt.annotate_rows(
 				**{struct_name: mt[struct_name].annotate(
-					**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+					**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
 				)}
 			)
 		else:
