@@ -324,13 +324,47 @@ def filtersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOption: Stri
                 cfg.booleanVariantFilters.filter(e => e.id == bb).head.field
               case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
                 cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field
-              case _ => throw new CfgException("VariantAssoc.filtersToCliString: " + id_exc + " filters '" + ff + "' not found")
+              case _ => throw new CfgException("filtersToCliString: " + id_exc + " filters '" + ff + "' not found")
             }
           }
           cliOption + " " + id_string + cfg.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + cfg.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
-        case _ => throw new CfgException("VariantAssoc.filtersToCliString: " + id_exc + " filters '" + f + "' not found")
+        case _ => throw new CfgException("filtersToCliString: " + id_exc + " filters '" + f + "' not found")
       }
     }
   }
   x.mkString(" ")
+
+}
+
+def getFilterFields(cfg: ProjectConfig, filters: Seq[String]): Seq[String] = {
+
+  var x = Seq[String]()
+  for {
+    f <- filters
+  } yield {
+    f match {
+      case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
+        x = x ++ Seq(cfg.numericVariantFilters.filter(e => e.id == n).head.field)
+      case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
+        x = x ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == b).head.field)
+      case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
+        x = x ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.field)
+      case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
+        for {
+          ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+        } yield {
+          ff match {
+            case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
+              x = x ++ Seq(cfg.numericVariantFilters.filter(e => e.id == nn).head.field)
+            case bb if cfg.booleanVariantFilters.map(e => e.id) contains bb =>
+              x = x ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == bb).head.field)
+            case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
+              x = x ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field)
+            case _ => throw new CfgException("getFilterFields: filters '" + ff + "' not found")
+          }
+        }
+      case _ => throw new CfgException("getFilterFields: filters '" + f + "' not found")
+    }
+  }
+  x
 }

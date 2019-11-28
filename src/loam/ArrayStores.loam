@@ -88,7 +88,13 @@ final case class RefData(
   sitesVcf: Store,
   sitesVcfGoogle: Option[Store],
   annotations: Store,
-  annotationWarnings: Store)
+  annotationsGoogle: Option[Store],
+  annotationsHt: Store,
+  annotationsHtGoogle: Option[Store],
+  annotationsHailLog: Store,
+  annotationsHailLogGoogle: Option[Store],
+  annotationWarnings: Store,
+  annotationHeader: Store)
 
 final case class ImputeData(
   data: Seq[Store],
@@ -485,7 +491,13 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     sitesVcf = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz"),
     sitesVcfGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None },
     annotations = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.bgz"),
-    annotationWarnings = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.warnings"))
+    annotationsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.bgz")); case false => None },
+    annotationsHt = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.ht"),
+    annotationsHtGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht")); case false => None },
+    annotationsHailLog = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.hail.log"),
+    annotationsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.hail.log")); case false => None },
+    annotationWarnings = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.warnings"),
+    annotationHeader = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.header"))
 
   val imputeData = ImputeData(
     data = bedBimFam(dirTree.dataArrayMap(arrayCfg).impute.local.get / imputeBaseString),

@@ -32,92 +32,65 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   // if configModel.masks =>
   //   apply masks to all samples
 
-  val filters = configModel.test match {
+  var filters = ""
+  var filterFields = Seq[String]()
+  configModel.test match {
     case "burden" | "skat" => 
       configKnown match {
-        case Some(s) => ""
+        case Some(s) => ()
         case None =>
           configModel.filters match {
-            case Some(l) => filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--filter")
-            case None => ""
+            case Some(l) =>
+              filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--filter")
+              filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
+            case None => ()
           }
-      }
-    case _ => ""
-  }
-
-  val cohortFilters = configModel.test match {
-    case "burden" | "skat" =>
-      configKnown match {
-        case Some(s) => ""
-        case None =>
           configModel.cohortFilters match {
             case Some(l) =>
-              { for {
+              for {
                 cf <- l
               } yield {
-                filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
-              } }.mkString(" ")
-            case None => ""
+                filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
+                filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+              }
+            case None => ()
           }
-      }
-    case _ => ""
-  }
-
-  val knockoutFilters = configModel.test match {
-    case "burden" | "skat" =>
-      configKnown match {
-        case Some(s) => ""
-        case None =>
           configModel.knockoutFilters match {
             case Some(l) =>
-              { for {
+              for {
                 cf <- l
               } yield {
-                filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
-              } }.mkString(" ")
-            case None => ""
+                filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
+                filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+              }
+            case None => ()
           }
-      }
-    case _ => ""
-  }
-
-  val masks = configModel.test match {
-    case "burden" | "skat" =>
-      configKnown match {
-        case Some(s) => ""
-        case None =>
           configModel.masks match {
             case Some(l) =>
-              { for {
+              for {
                 mf <- l
               } yield {
-                filtersToCliString(cfg = projectConfig, filters = mf.filters, cliOption = "--mask", id = Some(mf.id))
-              } }.mkString(" ")
-            case None => ""
+                filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = mf.filters, cliOption = "--mask", id = Some(mf.id))
+                filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
+              }
+            case None => ()
           }
       }
-    case _ => ""
+    case _ => ()
   }
 
-  masks match {
-    case "" => ()
-    case _ => throw new CfgException(s"${masks}")
-  }
+  var annotateCli = ""
+  var knownHiLdString = ""
+  var variantsStatsString = ""
+  var hailAssocIn = Seq[Store]()
+  var hailAssocOut = Seq[Store]()
+
+  val Seq(_, prunedBim, _) = arrayStores(array).prunedData.plink.data
 
   projectConfig.hailCloud match {
 
     case true =>
 
-      val Seq(_, prunedBim, _) = arrayStores(array).prunedData.plink.data
-
-      configKnown match {
-        case Some(s) =>
-          local {
-            googleCopy(ProjectStores.knownStores(s).hiLd, ProjectStores.knownStores(s).hiLdGoogle.get)
-          }
-        case None => ()
-      }
-  
       local {
       
         googleCopy(model.pheno, model.phenoGoogle.get)
@@ -126,30 +99,36 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       
       }
 
-      val knownHiLdString = configKnown match {
-        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(s).hiLdGoogle.get.toString.split("@")(1)}"
-        case None => ""
-      }
+      configKnown match {
 
-      val variantsStatsString = configKnown match {
-        case Some(s) => ""
-        case None => "--variants-stats-out " + s"${assoc.variantsStatsGoogle.get.toString.split("@")(1)}"
-      }
-
-      val hailAssocIn = configKnown match {
         case Some(s) =>
-          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(s).hiLdGoogle.get, model.cohortsMap)
+          
+          local {
+            googleCopy(ProjectStores.knownStores(s).hiLd, ProjectStores.knownStores(s).hiLdGoogle.get)
+          }
+                    
+          knownHiLdString = knownHiLdString + "--extract-ld " + s"${ProjectStores.knownStores(s).hiLdGoogle.get.toString.split("@")(1)}"
+          
+          hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(s).hiLdGoogle.get, model.cohortsMap)
+          
+          hailAssocOut = hailAssocOut ++ Seq(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
+
         case None =>
-          Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, model.cohortsMap)
+
+          filterFields.filter(e => e.startsWith("annotation.")).size match {
+            case n if n > 0 =>
+              annotateCli = annotateCli + "--annotation ${arrayStores(array).refData.annotationsHtGoogle.get}"
+            case _ => ()
+          }
+
+          variantsStatsString = variantsStatsString + "--variants-stats-out " + s"${assoc.variantsStatsGoogle.get.toString.split("@")(1)}"
+
+          hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, model.cohortsMap, arrayStores(array).refData.annotationsHtGoogle.get)
+
+          hailAssocOut = hailAssocOut ++ Seq(assoc.resultsGoogle.get, assoc.variantsStatsGoogle.get, assoc.resultsHailLogGoogle.get)
+
       }
 
-      val hailAssocOut = configKnown match {
-        case Some(s) =>
-          Seq(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
-        case None =>
-          Seq(assoc.resultsGoogle.get, assoc.variantsStatsGoogle.get, assoc.resultsHailLogGoogle.get)
-      }
-      
       google {
       
         hail"""${utils.python.pyHailAssoc} --
@@ -165,10 +144,8 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
+          ${annotateCli}
           ${filters}
-          ${cohortFilters}
-          ${knockoutFilters}
-          ${masks}
           --out ${assoc.resultsGoogle.get}
           ${variantsStatsString}
           --cloud
@@ -189,28 +166,29 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
     case false =>
 
-      val knownHiLdString = configKnown match {
-        case Some(s) => "--extract-ld " + s"${ProjectStores.knownStores(s).hiLd.toString.split("@")(1)}"
-        case None => ""
-      }
+      configKnown match {
 
-      val variantsStatsString = configKnown match {
-        case Some(s) => ""
-        case None => "--variants-stats-out " + s"${assoc.variantsStats.get.toString.split("@")(1)}"
-      }
-
-      val hailAssocIn = configKnown match {
         case Some(s) =>
-          arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(s).hiLd :+ model.cohortsMap
-        case None =>
-          arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ model.cohortsMap
-      }
 
-      val hailAssocOut = configKnown match {
-        case Some(s) =>
-          Seq(assoc.results, assoc.resultsHailLog)
+          knownHiLdString = knownHiLdString + "--extract-ld " + s"${ProjectStores.knownStores(s).hiLd.toString.split("@")(1)}"
+
+          hailAssocIn = (hailAssocIn ++ arrayStores(array).prunedData.plink.data) :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(s).hiLd :+ model.cohortsMap
+
+          hailAssocOut = hailAssocOut ++ Seq(assoc.results, assoc.resultsHailLog)
+
         case None =>
-          Seq(assoc.results, assoc.variantsStats.get, assoc.resultsHailLog)
+
+          filterFields.filter(e => e.startsWith("annotation.")).size match {
+            case n if n > 0 =>
+              annotateCli = annotateCli + "--annotation ${arrayStores(array).refData.annotationsHt}"
+            case _ => ()
+          }
+
+          variantsStatsString = variantsStatsString + "--variants-stats-out " + s"${assoc.variantsStats.get.toString.split("@")(1)}"
+
+          hailAssocIn = (hailAssocIn ++ arrayStores(array).prunedData.plink.data) :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ model.cohortsMap :+ arrayStores(array).refData.annotationsHt
+
+          hailAssocOut = hailAssocOut ++ Seq(assoc.results, assoc.variantsStats.get, assoc.resultsHailLog)
       }
 
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
@@ -227,10 +205,8 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           --test ${configModel.test}
           --trans "${configModel.trans}"
           --covars "${configModel.covars}"
+          ${annotateCli}
           ${filters}
-          ${cohortFilters}
-          ${knockoutFilters}
-          ${masks}
           --out ${assoc.results}
           ${variantsStatsString}
           --log ${assoc.resultsHailLog}"""

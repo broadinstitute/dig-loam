@@ -12,10 +12,53 @@ def Annotate(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.annotate.cpus, mem = projectConfig.resources.annotate.mem, maxRunTime = projectConfig.resources.annotate.maxRunTime) {
 
-    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf} ${projectConfig.resources.annotate.cpus} ${ProjectStores.fasta} ${ProjectStores.vepCacheDir} ${ProjectStores.vepPluginsDir} ${ProjectStores.dbNSFP} ${arrayStores(array).refData.annotations} ${arrayStores(array).refData.annotationWarnings}"""
+    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf} ${projectConfig.resources.annotate.cpus} ${ProjectStores.fasta} ${ProjectStores.vepCacheDir} ${ProjectStores.vepPluginsDir} ${ProjectStores.dbNSFP} ${arrayStores(array).refData.annotations} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
     .in(arrayStores(array).refData.sitesVcf, ProjectStores.fasta, ProjectStores.vepCacheDir, ProjectStores.vepPluginsDir, ProjectStores.dbNSFP)
-    .out(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationWarnings)
+    .out(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationWarnings, arrayStores(array).refData.annotationHeader)
     .tag(s"${arrayStores(array).refData.annotations}".split("/").last)
+
+  }
+
+  val minPartitions =  array.minPartitions.getOrElse("") match { case "" => ""; case _ => s"--min-partitions ${array.minPartitions.get}" }
+
+  projectConfig.hailCloud match {
+
+    case true =>
+
+      local {
+        googleCopy(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationsGoogle.get)
+      }
+
+      google {
+      
+        hail"""${utils.python.pyHailLoadAnnotations} --
+          --annotations ${arrayStores(array).refData.annotationsGoogle.get}
+          --out ${arrayStores(array).refData.annotationsHtGoogle.get}
+          ${minPartitions}
+          --reference-genome ${projectConfig.referenceGenome}
+          --cloud
+          --log ${arrayStores(array).refData.annotationsHailLogGoogle.get}"""
+            .in(arrayStores(array).refData.annotationsGoogle.get)
+            .out(arrayStores(array).refData.annotationsHtGoogle.get, arrayStores(array).refData.annotationsHailLogGoogle.get)
+            .tag(s"${arrayStores(array).refData.annotationsHt}.google".split("/").last)
+      
+      }
+
+    case false =>
+
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.annotateHailLoad.cpus, mem = projectConfig.resources.annotateHailLoad.mem, maxRunTime = projectConfig.resources.annotateHailLoad.maxRunTime) {
+
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailLoadAnnotations}
+          --annotations ${arrayStores(array).refData.annotations}
+          --out ${arrayStores(array).refData.annotationsHt}
+          ${minPartitions}
+          --reference-genome ${projectConfig.referenceGenome}
+          --log ${arrayStores(array).refData.annotationsHailLog}"""
+            .in(arrayStores(array).refData.annotations)
+            .out(arrayStores(array).refData.annotationsHt, arrayStores(array).refData.annotationsHailLog)
+            .tag(s"${arrayStores(array).refData.annotationsHt}".split("/").last)
+
+      }
 
   }
 

@@ -47,6 +47,7 @@ final case class ConfigResources(
   filterHail: ConfigMachine,
   prunePlink: ConfigMachine,
   annotate: ConfigMachine,
+  annotateHailLoad: ConfigMachine,
   kinshipKing: ConfigMachine,
   ancestryPcaHail: ConfigMachine,
   ancestryPcaPlink: ConfigMachine,
@@ -258,6 +259,7 @@ final case class Binary(
 final case class Python(
   pyAlignNon1kgVariants: Path,
   pyHailLoad: Path,
+  pyHailLoadAnnotations: Path,
   pyHailExportQcData: Path,
   pyHailFilter: Path,
   pyHailAncestryPcaMerge1kg: Path,
@@ -461,6 +463,10 @@ object ProjectConfig {
       },
       annotate = {
         val thisConfig = requiredObj(config = config, field = "annotate")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      annotateHailLoad = {
+        val thisConfig = requiredObj(config = config, field = "annotateHailLoad")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
       kinshipKing = {
@@ -1253,6 +1259,7 @@ object ProjectConfig {
     val python = Python(
       pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py"),
       pyHailLoad = path(s"${scriptsDir}/hail_load.py"),
+      pyHailLoadAnnotations = path(s"${scriptsDir}/hail_load_annotations.py"),
       pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py"),
       pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py"),
       pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py"),

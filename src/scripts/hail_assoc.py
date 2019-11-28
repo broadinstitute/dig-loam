@@ -111,15 +111,21 @@ def main(args=None):
 	mt = hl.variant_qc(mt, name="variant_qc")
 	if args.test == 'lm':
 		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
-	elif args.test in ['wald','firth','lrt','score']:
-		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
 	else:
-		print("test " + args.test + " not currently supported!")
-		return 1
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
+
+	if args.annotation:
+		print("add vep annotations")
+		tbl = hl.read_table(args.annotation)
+		tbl = tbl.key_by('Uploaded_variation')
+		mt = mt.annotate_rows(annotation = tbl[mt.rsid])
 
 	cohorts = []
+	exclude_any_fields = []
+	knockout_fields = []
 	if args.filter:
 		mt = hail_utils.add_filters(mt, args.filter, 'ls_filters')
+		exclude_any_fields = exclude_any_fields + ['ls_filters.exclude']
 	if args.cohort_filter:
 		cohorts = cohorts + [x[0] for x in args.cohort_filter]
 	if args.knockout_filter:
@@ -134,64 +140,79 @@ def main(args=None):
 			cohort_mt = hl.variant_qc(cohort_mt, name = 'variant_qc_' + cohort)
 			if args.test == 'lm':
 				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort)
-			elif args.test in ['wald','firth','lrt','score']:
-				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort, is_case = pheno_analyzed)
 			else:
-				print("test " + args.test + " not currently supported!")
-				return 1
+				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort, is_case = pheno_analyzed)
 			mt = mt.annotate_rows(**{'variant_qc_' + cohort: cohort_mt.rows()[mt.row_key]['variant_qc_' + cohort]})
 			if len(cohorts) > 1:
 				mt = mt.annotate_rows(**{'variant_qc': mt['variant_qc'].annotate(max_cohort_maf = hl.cond( mt['variant_qc'].max_cohort_maf < mt['variant_qc_' + cohort].MAF, mt['variant_qc_' + cohort].MAF,  mt['variant_qc'].max_cohort_maf))})
 			if args.cohort_filter:
 				mt = hail_utils.add_filters(mt, [[x[1],x[2].replace('variant_qc','variant_qc_' + cohort),x[3].replace('variant_qc','variant_qc_' + cohort)] for x in args.cohort_filter], 'ls_filters_' + cohort)
+				exclude_any_fields = exclude_any_fields + ['ls_filters_' + cohort + '.exclude']
 			if args.knockout_filter:
 				mt = hail_utils.add_filters(mt, [[x[1],x[2].replace('variant_qc','variant_qc_' + cohort),x[3].replace('variant_qc','variant_qc_' + cohort)] for x in args.knockout_filter], 'ls_knockouts_' + cohort)
+				knockout_fields = knockout_fields + ['ls_knockouts_' + cohort + '.exclude']
 
+	mask_fields = []
 	if args.mask:
 		masks = [x[0] for x in args.mask]
 		for m in set(masks):
 			masks_row = [x for x in args.mask if x[0] == m]
 			mt = hail_utils.add_filters(mt, [[x[1],x[2],x[3]] for x in masks_row], 'ls_mask_' + m)
+			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
 
+	mt = mt.annotate_rows(ls_global_exclude = 0)
+	for f in exclude_any_fields:
+		print("update global exclusion column based on " + f)
+		mt = mt.annotate_rows(ls_global_exclude = hl.cond(mt[f] == 1, 1, mt.ls_global_exclude))
+    
 	if args.variants_stats_out:
 		print("write variant metrics and filters to file")
 		tbl = mt.rows().key_by('locus','alleles')
 		tbl = tbl.drop("info","variant_qc_raw")
 		tbl.flatten().export(args.variants_stats_out, header=True)
 
-	#if args.test in ['burden','skat']:
-	#	if args.filters:
-	#		# filter variants based on all samples
-	#	if args.cohort_filters:
-	#		# filter within cohort
-	#	if args.knockout_filters:
-	#		for f in args.knockout_filters:
-	#			cohort_id = f[0]
-	#			filter_id = f[1]
-	#			filter_fields = f[2].split(",")
-	#			filter_expression = f[3]
-	#			absent = False
-	#			for field in filter_fields:
-	#				if field not in mt.row_value.flatten():
-	#					absent = True
-	#				filter_expression = filter_expression.replace(field,"mt['" + field + "']")
-	#			if not absent:
-	#				print("knockout genotypes based on configuration filter " + filter_id + " for field/s " + ",".join(filter_fields))
+	print(mt.describe())
+
+	n_all = mt.rows().count()
+	if len(exclude_any_fields) > 0:
+		mt = mt.filter_rows(mt.ls_global_exclude == 0, keep=True)
+		n_post_filter = mt.rows().count()
+		print(str(n_all - n_post_filter) + " variants removed via standard filters")
+		print(str(n_post_filter) + " variants remaining for analysis")
+	else:
+		print(str(n_all) + " variants remaining for analysis")
+
+	for cohort in set(cohorts):
+		if 'ls_knockouts_' + cohort + '.exclude' in knockout_fields:
+			print("knocking out genotype field entries for filter field " + f)
+			AB, AB50, GT, GTT, GQ, NALTT, DS
+			mt = mt.annotate_entries(
+				AB = hl.cond(hl.is_defined(mt.AB), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tfloat64), mt.AB), mt.AB),
+				AB50 = hl.cond(hl.is_defined(mt.AB50), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tfloat64), mt.AB50), mt.AB50),
+				GT = hl.cond(hl.is_defined(mt.GT), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tcall), mt.GT), mt.GT),
+				GTT = hl.cond(hl.is_defined(mt.GTT), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tcall), mt.GTT), mt.GTT),
+				GQ = hl.cond(hl.is_defined(mt.GQ), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tfloat64), mt.GQ), mt.GQ),
+				NALTT = hl.cond(hl.is_defined(mt.NALTT), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tint32), mt.NALTT), mt.NALTT),
+				DS = hl.cond(hl.is_defined(mt.DS), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort + '.exclude'] == 1), hl.null(hl.tfloat64), mt.DS), mt.DS)
+			)
+
+	#Regressions in Hail 0.2 are generic, so there are no longer special command for burden tests. Rather, to do logistic gene burden, annotate and group variants by gene to form a gene-by-sample matrix of scores, and then apply logistic regression per gene. Here’s an example that uses the total number minor alleles as a sample’s gene score (for a biallelic dataset with random phenotype and covariates):
+	#interval_ht = hl.import_locus_intervals('genes.37.interval_list')
 	#
-	#				mt = mt.annotate_entries(GTT = hl.cond(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.cond(mt.GQ >= args.gq_threshold, mt.GT, hl.null(hl.tcall)), hl.null(hl.tcall)))
+	#mt = hl.import_vcf('profile.vcf.bgz')
+	#mt = mt.annotate_cols(y = hl.rand_bool(0.5), x1 = hl.rand_norm(), x2 = hl.rand_norm())
+	#mt = hl.variant_qc(mt)
+	#mt = mt.annotate_rows(gene = interval_ht[mt.locus].target)
+	#mt = mt.filter_rows(hl.is_defined(mt.gene))
 	#
-	#				tbl = tbl.annotate(
-	#					ls_filters = tbl.ls_filters.annotate(
-	#						**{filter_id: hl.cond(eval(hl.eval(filter_expression)), 1, 0, missing_false = True)}
-	#					)
-	#				)
-	#			else:
-	#				print("skipping configuration filter " + filter_id + " for field/s " + ",".join(filter_fields) + "... 1 or more fields do not exist")
-	#				tbl = tbl.annotate(
-	#					ls_filters = tbl.ls_filters.annotate(
-	#						**{filter_id: 0}
-	#					)
-	#				)
+	#gene_mt = mt.group_rows_by(mt.gene).aggregate(
+	#	mac = hl.agg.sum(
+	#		hl.cond(mt.variant_qc.AF[1] <= 0.5,
+	#				mt.GT.n_alt_alleles(),
+	#				2 - mt.GT.n_alt_alleles())))
+	#
+	#gene_mt = hl.logistic_regression(y=gene_mt.y, x=gene_mt.mac, covariates=[1, gene_mt.x1, gene_mt.x2], test='wald')
+	#gene_mt.logreg.show()
 
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
 	mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
@@ -402,6 +423,7 @@ if __name__ == "__main__":
 	parser.add_argument('--covars', help="a '+' separated list of covariates")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")
 	parser.add_argument('--extract-ld', help="a file containing hild proxy results in the form (SNP_A	SNP_B	R2)")
+	parser.add_argument('--annotation', help="a hail table containing annotations from vep")
 	parser.add_argument('--filter', nargs=3, action='append', help='filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--cohort-filter', nargs=4, action='append', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--knockout-filter', nargs=4, action='append', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
@@ -419,7 +441,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
 	requiredArgs.add_argument('--pheno-col', help='a column name for the phenotype', required=True)
 	requiredArgs.add_argument('--cohorts-map-in', help='a cohorts map file', required=True)
-	requiredArgs.add_argument('--test', choices=['wald','lrt','firth','score','lm','lmm'], help='a regression test code', required=True)
+	requiredArgs.add_argument('--test', choices=['wald','lrt','firth','score','lm','burden','skat'], help='a regression test code', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)
