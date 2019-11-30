@@ -107,7 +107,7 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
             googleCopy(ProjectStores.knownStores(s).hiLd, ProjectStores.knownStores(s).hiLdGoogle.get)
           }
                     
-          knownHiLdString = knownHiLdString + "--extract-ld " + s"${ProjectStores.knownStores(s).hiLdGoogle.get.toString.split("@")(1)}"
+          knownHiLdString = knownHiLdString + s"--extract-ld ${ProjectStores.knownStores(s).hiLdGoogle.get.toString.split("@")(1)}"
           
           hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(s).hiLdGoogle.get, model.cohortsMap)
           
@@ -117,11 +117,11 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
           filterFields.filter(e => e.startsWith("annotation.")).size match {
             case n if n > 0 =>
-              annotateCli = annotateCli + "--annotation ${arrayStores(array).refData.annotationsHtGoogle.get}"
+              annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHtGoogle.get.toString.split("@")(1)}"
             case _ => ()
           }
 
-          variantsStatsString = variantsStatsString + "--variants-stats-out " + s"${assoc.variantsStatsGoogle.get.toString.split("@")(1)}"
+          variantsStatsString = variantsStatsString + s"--variants-stats-out ${assoc.variantsStatsGoogle.get.toString.split("@")(1)}"
 
           hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, model.cohortsMap, arrayStores(array).refData.annotationsHtGoogle.get)
 
@@ -170,7 +170,7 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
         case Some(s) =>
 
-          knownHiLdString = knownHiLdString + "--extract-ld " + s"${ProjectStores.knownStores(s).hiLd.toString.split("@")(1)}"
+          knownHiLdString = knownHiLdString + s"--extract-ld ${ProjectStores.knownStores(s).hiLd.toString.split("@")(1)}"
 
           hailAssocIn = (hailAssocIn ++ arrayStores(array).prunedData.plink.data) :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(s).hiLd :+ model.cohortsMap
 
@@ -180,11 +180,11 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
           filterFields.filter(e => e.startsWith("annotation.")).size match {
             case n if n > 0 =>
-              annotateCli = annotateCli + "--annotation ${arrayStores(array).refData.annotationsHt}"
+              annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHt.toString.split("@")(1)}"
             case _ => ()
           }
 
-          variantsStatsString = variantsStatsString + "--variants-stats-out " + s"${assoc.variantsStats.get.toString.split("@")(1)}"
+          variantsStatsString = variantsStatsString + s"--variants-stats-out ${assoc.variantsStats.get.toString.split("@")(1)}"
 
           hailAssocIn = (hailAssocIn ++ arrayStores(array).prunedData.plink.data) :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ model.cohortsMap :+ arrayStores(array).refData.annotationsHt
 
