@@ -909,7 +909,7 @@ object ProjectConfig {
           case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
         }
 
-        val test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm|burden|skat")
+        val test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm|logistic_burden|logistic_skat|linear_burden|linear_skat")
 
         val design = requiredStr(config = model, field = "design", regex = "full|strat")
 
@@ -1097,7 +1097,7 @@ object ProjectConfig {
             case _ => knockoutFilters
           },
           masks = test match {
-            case "burden" | "skat" => masks
+            case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => masks
             case _ => 
               masks match {
                 case Some(s) => throw new CfgException("models.masks: model " + id + " masks are only allowed for collapsing variant tests (ie burden|skat)")

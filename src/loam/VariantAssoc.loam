@@ -35,7 +35,7 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   var filters = ""
   var filterFields = Seq[String]()
   configModel.test match {
-    case "burden" | "skat" => 
+    case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => 
       configKnown match {
         case Some(s) => ()
         case None =>
