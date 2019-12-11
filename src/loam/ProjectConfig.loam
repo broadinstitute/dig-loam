@@ -909,7 +909,7 @@ object ProjectConfig {
           case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
         }
 
-        val test = requiredStr(config = model, field = "test", regex = "lm|wald|firth|lrt|score|lmm|logistic_burden|logistic_skat|linear_burden|linear_skat")
+        val test = requiredStr(config = model, field = "test", regex = "hail\.lm|hail\.wald|hail\.firth|hail\.lrt|hail\.score|epacts\.b\.collapse|epacts\.b\.madsen|epacts\.b\.wcnt|epacts\.q\.reverse|epacts\.q\.wilcox|epacts\.skat|epacts\.VT|epacts\.emmaxCMC|epacts\.emmaxVT|epacts\.mmskat")
 
         val design = requiredStr(config = model, field = "design", regex = "full|strat")
 

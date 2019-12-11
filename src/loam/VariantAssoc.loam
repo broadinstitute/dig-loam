@@ -32,6 +32,7 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   // if configModel.masks =>
   //   apply masks to all samples
 
+  // if design == 'strat' then limit cohort based filters only to those in current cohorts list
   var filters = ""
   var filterFields = Seq[String]()
   configModel.test match {
@@ -48,7 +49,7 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           configModel.cohortFilters match {
             case Some(l) =>
               for {
-                cf <- l
+                cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
               } yield {
                 filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
                 filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
@@ -58,7 +59,7 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           configModel.knockoutFilters match {
             case Some(l) =>
               for {
-                cf <- l
+                cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
               } yield {
                 filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
                 filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)

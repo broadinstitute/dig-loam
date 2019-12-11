@@ -54,7 +54,7 @@ complement <- function(a) {
 x<-read.table(args$results,header=T,as.is=T,sep="\t",comment.char="")
 names(x)[1]<-gsub("X.","",names(x)[1])
 cols_keep<-c("chr","pos","id","ref","alt","n")
-if(args$test %in% c("wald","lrt","firth")) {
+if(args$test %in% c("hail.wald","hail.lrt","hail.firth")) {
 	cols_keep<-c(cols_keep,"case","ctrl")
 }
 if("af" %in% names(x)) {
@@ -69,7 +69,7 @@ if("afmin" %in% names(x)) {
 if("afmax" %in% names(x)) {
 	cols_keep<-c(cols_keep,"afmax")
 }
-if(args$test %in% c("wald","lrt","firth")) {
+if(args$test %in% c("hail.wald","hail.lrt","hail.firth")) {
 	x$or <- exp(x$beta)
 	cols_keep<-c(cols_keep,"or")
 } else {
@@ -223,7 +223,7 @@ if(nrow(x) > 0) {
 	x <- head(x, n=50)
 	
 	for(i in 1:nrow(x)) {
-		if(args$test %in% c("wald","lrt","firth")) {
+		if(args$test %in% c("hail.wald","hail.lrt","hail.firth")) {
 			if((x$or[i] <= 1 & x$or_known[i] <= 1) || (x$or[i] >= 1 & x$or_known[i] >= 1)){
 				x$id[i]<-paste("\\large{\\textbf{",x$id[i],"}}",sep="")
 			}

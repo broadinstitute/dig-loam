@@ -75,7 +75,7 @@ def main(args=None):
 		pops = args.pops.split(",")
 		mt = mt.filter_cols(mt.ANCESTRY_INFERRED in pops, keep=True)
 
-	if args.test != 'lmm':
+	if args.test != 'hail.lmm':
 		print("read in list of PCs to include in test")
 		with hl.hadoop_open(args.pcs_include, "r") as f:
 			pcs = f.read().splitlines()
@@ -109,7 +109,7 @@ def main(args=None):
 
 	print("calculate global variant qc")
 	mt = hl.variant_qc(mt, name="variant_qc")
-	if args.test == 'lm':
+	if args.test == 'hail.lm':
 		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
 	else:
 		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
@@ -152,7 +152,7 @@ def main(args=None):
 			print("calculate variant qc for cohort " + cohort)
 			cohort_mt = mt.filter_cols(mt.COHORT == cohort)
 			cohort_mt = hl.variant_qc(cohort_mt, name = 'variant_qc_' + cohort)
-			if args.test == 'lm':
+			if args.test == 'hail.lm':
 				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort)
 			else:
 				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort, is_case = pheno_analyzed)
@@ -255,7 +255,7 @@ def main(args=None):
 
 	def logistic_regression(mt, test):
 		tbl = hl.logistic_regression_rows(
-			test = test,
+			test = test.replace("hail.",""),
 			y = mt.pheno[pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
@@ -276,7 +276,7 @@ def main(args=None):
 			]
 		)
 
-		if test == 'wald':
+		if test == 'hail.wald':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -303,7 +303,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'firth':
+		elif test == 'hail.firth':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -329,7 +329,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'lrt':
+		elif test == 'hail.lrt':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -355,7 +355,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'score':
+		elif test == 'hail.score':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -379,88 +379,88 @@ def main(args=None):
 			)
 		return tbl
 
-	def linear_burden(mt):
-		#Regressions in Hail 0.2 are generic, so there are no longer special command for burden tests. Rather, to do logistic gene burden, annotate and group variants by gene to form a gene-by-sample matrix of scores, and then apply logistic regression per gene. Here’s an example that uses the total number minor alleles as a sample’s gene score (for a biallelic dataset with random phenotype and covariates):
-		#interval_ht = hl.import_locus_intervals('genes.37.interval_list')
-		#
-		#mt = hl.import_vcf('profile.vcf.bgz')
-		#mt = mt.annotate_cols(y = hl.rand_bool(0.5), x1 = hl.rand_norm(), x2 = hl.rand_norm())
-		#mt = hl.variant_qc(mt)
-		#mt = mt.annotate_rows(gene = interval_ht[mt.locus].target)
-		#mt = mt.filter_rows(hl.is_defined(mt.gene))
-		#
-		#gene_mt = mt.group_rows_by(mt.gene).aggregate(
-		#	mac = hl.agg.sum(
-		#		hl.cond(mt.variant_qc.AF[1] <= 0.5,
-		#				mt.GT.n_alt_alleles(),
-		#				2 - mt.GT.n_alt_alleles())))
-		#
-		#gene_mt = hl.logistic_regression(y=gene_mt.y, x=gene_mt.mac, covariates=[1, gene_mt.x1, gene_mt.x2], test='wald')
-		#gene_mt.logreg.show()
-		gene_mt = mt.group_rows_by(mt.annotation.Gene).aggregate(MAC = hl.agg.sum(mt.variant_qc.MAC))
-		print(gene_mt.describe())
-		tbl = hl.linear_regression_rows(
-			y = gene_mt.pheno[pheno_analyzed],
-			x = gene_mt.MAC,
-			covariates = [1] + [gene_mt.pheno[x] for x in covars],
-			pass_through = [
-				gene_mt.Gene
-			]
-		)
-		#tbl = tbl.select(
-		#	chr = tbl.locus.contig,
-		#	pos = tbl.locus.position,
-		#	id = tbl.rsid,
-		#	ref = tbl.alleles[0],
-		#	alt = tbl.alleles[1],
-		#	n = tbl.n_called,
-		#	male = tbl.n_male_called,
-		#	female = tbl.n_female_called,
-		#	call_rate = tbl.call_rate,
-		#	ac = tbl.AC,
-		#	af = tbl.AF,
-		#	mac = tbl.MAC,
-		#	maf = tbl.MAF,
-		#	sum_x = tbl.sum_x,
-		#	y_transpose_x = tbl.y_transpose_x,
-		#	beta = tbl.beta,
-		#	se = tbl.standard_error,
-		#	t_stat = tbl.t_stat,
-		#	pval = tbl.p_value
-		#)
-		tbl.show()
+	#def linear_burden(mt):
+	#	#Regressions in Hail 0.2 are generic, so there are no longer special command for burden tests. Rather, to do logistic gene burden, annotate and group variants by gene to form a gene-by-sample matrix of scores, and then apply logistic regression per gene. Here’s an example that uses the total number minor alleles as a sample’s gene score (for a biallelic dataset with random phenotype and covariates):
+	#	#interval_ht = hl.import_locus_intervals('genes.37.interval_list')
+	#	#
+	#	#mt = hl.import_vcf('profile.vcf.bgz')
+	#	#mt = mt.annotate_cols(y = hl.rand_bool(0.5), x1 = hl.rand_norm(), x2 = hl.rand_norm())
+	#	#mt = hl.variant_qc(mt)
+	#	#mt = mt.annotate_rows(gene = interval_ht[mt.locus].target)
+	#	#mt = mt.filter_rows(hl.is_defined(mt.gene))
+	#	#
+	#	#gene_mt = mt.group_rows_by(mt.gene).aggregate(
+	#	#	mac = hl.agg.sum(
+	#	#		hl.cond(mt.variant_qc.AF[1] <= 0.5,
+	#	#				mt.GT.n_alt_alleles(),
+	#	#				2 - mt.GT.n_alt_alleles())))
+	#	#
+	#	#gene_mt = hl.logistic_regression(y=gene_mt.y, x=gene_mt.mac, covariates=[1, gene_mt.x1, gene_mt.x2], test='wald')
+	#	#gene_mt.logreg.show()
+	#	gene_mt = mt.group_rows_by(mt.annotation.Gene).aggregate(MAC = hl.agg.sum(mt.variant_qc.MAC))
+	#	print(gene_mt.describe())
+	#	tbl = hl.linear_regression_rows(
+	#		y = gene_mt.pheno[pheno_analyzed],
+	#		x = gene_mt.MAC,
+	#		covariates = [1] + [gene_mt.pheno[x] for x in covars],
+	#		pass_through = [
+	#			gene_mt.Gene
+	#		]
+	#	)
+	#	#tbl = tbl.select(
+	#	#	chr = tbl.locus.contig,
+	#	#	pos = tbl.locus.position,
+	#	#	id = tbl.rsid,
+	#	#	ref = tbl.alleles[0],
+	#	#	alt = tbl.alleles[1],
+	#	#	n = tbl.n_called,
+	#	#	male = tbl.n_male_called,
+	#	#	female = tbl.n_female_called,
+	#	#	call_rate = tbl.call_rate,
+	#	#	ac = tbl.AC,
+	#	#	af = tbl.AF,
+	#	#	mac = tbl.MAC,
+	#	#	maf = tbl.MAF,
+	#	#	sum_x = tbl.sum_x,
+	#	#	y_transpose_x = tbl.y_transpose_x,
+	#	#	beta = tbl.beta,
+	#	#	se = tbl.standard_error,
+	#	#	t_stat = tbl.t_stat,
+	#	#	pval = tbl.p_value
+	#	#)
+	#	tbl.show()
+    #
+	#def logistic_burden(mt):
+    #
+	#	gene_mt = mt.group_rows_by(mt.annotation.Gene).aggregate(MAC = hl.agg.sum(mt.variant_qc.MAC))
+	#	tbl = hl.logistic_regression_rows(
+	#		test = 'wald',
+	#		y = gene_mt.pheno[pheno_analyzed],
+	#		x = gene_mt.MAC,
+	#		covariates = [1] + [gene_mt.pheno[x] for x in covars]
+	#	)
+	#	return tbl.show()
 
-	def logistic_burden(mt):
-
-		gene_mt = mt.group_rows_by(mt.annotation.Gene).aggregate(MAC = hl.agg.sum(mt.variant_qc.MAC))
-		tbl = hl.logistic_regression_rows(
-			test = 'wald',
-			y = gene_mt.pheno[pheno_analyzed],
-			x = gene_mt.MAC,
-			covariates = [1] + [gene_mt.pheno[x] for x in covars]
-		)
-		return tbl.show()
-
-	if args.test == 'lm':
+	if args.test == 'hail.lm':
 		mt_nony_results = linear_regression(mt_nony)
 		mt_y_results = linear_regression(mt_y)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	elif args.test in ['wald','firth','lrt','score']:
+	elif args.test in ['hail.wald','hail.firth','hail.lrt','hail.score']:
 		mt_nony_results = logistic_regression(mt_nony, args.test)
 		mt_y_results = logistic_regression(mt_y, args.test)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	elif args.test in ['logistic_burden']:
-		mt_nony_results = logistic_burden(mt_nony)
-		mt_y_results = logistic_burden(mt_y)
-		mt_results = mt_nony_results.union(mt_y_results)
-
-	elif args.test in ['linear_burden']:
-		mt_nony_results = linear_burden(mt_nony)
-		return 1
-		#mt_y_results = linear_burden(mt_y)
-		#mt_results = mt_nony_results.union(mt_y_results)
+	#elif args.test in ['logistic_burden']:
+	#	mt_nony_results = logistic_burden(mt_nony)
+	#	mt_y_results = logistic_burden(mt_y)
+	#	mt_results = mt_nony_results.union(mt_y_results)
+    #
+	#elif args.test in ['linear_burden']:
+	#	mt_nony_results = linear_burden(mt_nony)
+	#	return 1
+	#	#mt_y_results = linear_burden(mt_y)
+	#	#mt_results = mt_nony_results.union(mt_y_results)
 
 	else:
 		print("association test " + args.test + " not yet available!")
@@ -512,7 +512,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
 	requiredArgs.add_argument('--pheno-col', help='a column name for the phenotype', required=True)
 	requiredArgs.add_argument('--cohorts-map-in', help='a cohorts map file', required=True)
-	requiredArgs.add_argument('--test', choices=['wald','lrt','firth','score','lm','logistic_burden','logistic_skat','linear_burden','linear_skat'], help='a regression test code', required=True)
+	requiredArgs.add_argument('--test', choices=['hail.wald','hail.lrt','hail.firth','hail.score','hail.lm'], help='a regression test code', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)
