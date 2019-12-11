@@ -26,6 +26,7 @@ def main(args=None):
 
 	if args.extract:
 		print("extract variants not yet implemented!")
+		return 1
 
 	if args.extract_ld:
 		print("extract hi ld known variants")

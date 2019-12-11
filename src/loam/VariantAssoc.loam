@@ -35,50 +35,50 @@ def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   // if design == 'strat' then limit cohort based filters only to those in current cohorts list
   var filters = ""
   var filterFields = Seq[String]()
-  configModel.test match {
-    case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => 
-      configKnown match {
-        case Some(s) => ()
-        case None =>
-          configModel.filters match {
-            case Some(l) =>
-              filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--filter")
-              filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
-            case None => ()
-          }
-          configModel.cohortFilters match {
-            case Some(l) =>
-              for {
-                cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
-              } yield {
-                filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
-                filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
-              }
-            case None => ()
-          }
-          configModel.knockoutFilters match {
-            case Some(l) =>
-              for {
-                cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
-              } yield {
-                filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
-                filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
-              }
-            case None => ()
-          }
-          configModel.masks match {
-            case Some(l) =>
-              for {
-                mf <- l
-              } yield {
-                filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = mf.filters, cliOption = "--mask", id = Some(mf.id))
-                filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
-              }
-            case None => ()
-          }
+  //configModel.test match {
+  //  case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => 
+  configKnown match {
+    case Some(s) => ()
+    case None =>
+      configModel.filters match {
+        case Some(l) =>
+          filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--filter")
+          filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
+        case None => ()
       }
-    case _ => ()
+      configModel.cohortFilters match {
+        case Some(l) =>
+          for {
+            cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+          } yield {
+            filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
+            filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+          }
+        case None => ()
+      }
+      configModel.knockoutFilters match {
+        case Some(l) =>
+          for {
+            cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+          } yield {
+            filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
+            filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+          }
+        case None => ()
+      }
+      configModel.masks match {
+        case Some(l) =>
+          for {
+            mf <- l
+          } yield {
+            filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = mf.filters, cliOption = "--mask", id = Some(mf.id))
+            filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
+          }
+        case None => ()
+      }
   }
+  //  case _ => ()
+  //}
 
   var annotateCli = ""
   var knownHiLdString = ""
