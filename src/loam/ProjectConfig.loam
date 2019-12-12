@@ -1,8 +1,92 @@
 import Fxns._
 import loamstream.googlecloud.ClusterConfig
 
-val defaultSampleMetricsGwas = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var")
-val defaultSampleMetricsSeq = Seq("n_non_ref","n_het","n_called","call_rate","r_ti_tv","het","het_low","het_high","n_hom_var","r_het_hom_var","n_singleton","avg_ab","avg_ab50")
+val refGenomes = Seq("GRCh37","GRCh38")
+val ancestryCodes = Seq("EUR","AFR","AMR","SAS","EAS")
+val gwasTech = Seq("gwas")
+val seqTech = Seq("wgs","wes")
+val arrayFormats = Seq("plink","vcf")
+
+val inputTypesPlink = {
+  (for {
+    x <- gwasTech
+    y <- Seq("plink")
+  } yield {
+    (x, y)
+  }) ++
+  (for {
+    x <- seqTech
+    y <- Seq("plink")
+  } yield {
+    (x, y)
+  })
+}
+
+val inputTypesGwasVcf = for {
+  x <- gwasTech
+  y <- Seq("vcf")
+} yield {
+  (x, y)
+}
+
+val inputTypesSeqPlink = for {
+  x <- seqTech
+  y <- Seq("plink")
+} yield {
+  (x, y)
+}
+
+val inputTypesSeqVcf = for {
+  x <- seqTech
+  y <- Seq("vcf")
+} yield {
+  (x, y)
+}
+
+val defaultSampleMetricsGwas = Seq(
+  "n_non_ref",
+  "n_het",
+  "n_called",
+  "call_rate",
+  "r_ti_tv",
+  "het",
+  "het_low",
+  "het_high",
+  "n_hom_var",
+  "r_het_hom_var"
+)
+val defaultSampleMetricsSeq = defaultSampleMetricsGwas ++ Seq(
+  "n_singleton",
+  "avg_ab",
+  "avg_ab50"
+)
+val modelDesigns = Seq("full","strat")
+val modelTrans = Seq("log","invn")
+val assocTests = Seq(
+  "hail.q.lm",
+  "hail.b.wald",
+  "hail.b.firth",
+  "hail.b.lrt",
+  "hail.b.score",
+  "epacts.b.collapse",
+  "epacts.b.madsen",
+  "epacts.b.wcnt",
+  "epacts.q.reverse",
+  "epacts.q.wilcox",
+  "epacts.b.skat",
+  "epacts.b.VT",
+  "epacts.b.emmaxCMC",
+  "epacts.b.emmaxVT",
+  "epacts.q.mmskat",
+  "epacts.q.skat",
+  "epacts.q.VT",
+  "epacts.q.emmaxCMC",
+  "epacts.q.emmaxVT"
+)
+
+val binaryAssocTests = assocTests.filter(e => e.split("\\.")(1) == "b")
+val quantitativeAssocTests = assocTests.filter(e => e.split("\\.")(1) == "q")
+val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
 
 final case class ConfigMachine(
   cpus: Int,
@@ -61,6 +145,7 @@ final case class ConfigResources(
   exportCleanHail: ConfigMachine,
   tabixClean: ConfigMachine,
   filterImputePlink: ConfigMachine,
+  filterModelVariantsHail: ConfigMachine,
   variantAssocHailAssoc: ConfigMachine,
   generatePheno: ConfigMachine,
   crossCohortPrepPlink: ConfigMachine,
@@ -271,6 +356,7 @@ final case class Python(
   pyMergeVariantLists: Path,
   pyBimToUid: Path,
   pyHailUtils: Path,
+  pyHailFilterModelVariants: Path,
   pyHailAssoc: Path
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
@@ -359,7 +445,7 @@ object ProjectConfig {
     val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
     val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
     val exportCleanData = requiredBool(config = config, field = "exportCleanData")
-    val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = "GRCh37|GRCh38")
+    val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
     val regionsExclude = requiredStr(config = config, field = "regionsExclude")
     val genePositions = requiredStr(config = config, field = "genePositions")
     val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
@@ -519,6 +605,10 @@ object ProjectConfig {
       },
       filterImputePlink = {
         val thisConfig = requiredObj(config = config, field = "filterImputePlink")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      filterModelVariantsHail = {
+        val thisConfig = requiredObj(config = config, field = "filterModelVariantsHail")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
       variantAssocHailAssoc = {
@@ -689,7 +779,7 @@ object ProjectConfig {
         array <- requiredObjList(config = config, field = "arrays")
       } yield {
 
-        val technology = requiredStr(config = array, field = "technology", regex = "gwas|wgs|wes")
+        val technology = requiredStr(config = array, field = "technology", regex = (gwasTech ++ seqTech).mkString("|"))
 
         val qcVariantFilters = optionalStrList(config = array, field = "qcVariantFilters") match {
           case Some(s) =>
@@ -745,7 +835,7 @@ object ProjectConfig {
         ConfigArray(
           id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           filename = requiredStr(config = array, field = "filename"),
-          format = requiredStr(config = array, field = "format", regex = "plink|vcf"),
+          format = requiredStr(config = array, field = "format", regex = arrayFormats.mkString("|")),
           technology = technology,
           description = requiredStr(config = array, field = "description"),
           keepIndels = requiredBool(config = array, field = "keepIndels"),
@@ -754,8 +844,9 @@ object ProjectConfig {
           sampleQcMetrics = optionalStrList(config = array, field = "sampleQcMetrics") match { 
             case None =>
               technology match {
-                case "wes" | "wgs" => defaultSampleMetricsSeq
-                case _ => defaultSampleMetricsGwas
+                case m if seqTech.contains(m) => defaultSampleMetricsSeq
+                case n if gwasTech.contains(n) => defaultSampleMetricsGwas
+                case o => throw new CfgException("arrays.sampleQcMetrics: technology '" + o + "' not recognized")
               }
             case Some(s) => s
           },
@@ -794,7 +885,7 @@ object ProjectConfig {
         ConfigCohort(
           id = requiredStr(config = cohort, field = "id"),
           array = array,
-          ancestry = requiredStrList(config = cohort, field = "ancestry", regex = "EUR|AFR|AMR|SAS|EAS"),
+          ancestry = requiredStrList(config = cohort, field = "ancestry", regex = ancestryCodes.mkString("|")),
           minPartitions = optionalInt(config = cohort, field = "minPartitions"),
           stratCol = optionalStr(config = cohort, field = "stratCol"),
           stratCodes = optionalStrList(config = cohort, field = "stratCodes")
@@ -909,9 +1000,9 @@ object ProjectConfig {
           case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
         }
 
-        val test = requiredStr(config = model, field = "test", regex = "hail.lm|hail.wald|hail.firth|hail.lrt|hail.score|epacts.b.collapse|epacts.b.madsen|epacts.b.wcnt|epacts.q.reverse|epacts.q.wilcox|epacts.skat|epacts.VT|epacts.emmaxCMC|epacts.emmaxVT|epacts.mmskat")
+        val test = requiredStr(config = model, field = "test", regex = assocTests.mkString("|"))
 
-        val design = requiredStr(config = model, field = "design", regex = "full|strat")
+        val design = requiredStr(config = model, field = "design", regex = modelDesigns.mkString("|"))
 
         val cohorts = requiredStrList(config = model, field = "cohorts")
 
@@ -1072,7 +1163,7 @@ object ProjectConfig {
           id = id,
           pheno = pheno,
           unrelatedOnly = requiredBool(config = model, field = "unrelatedOnly"),
-          trans = optionalStr(config = model, field = "trans", regex = "log|invn"),
+          trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
           test = test,
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
@@ -1271,7 +1362,8 @@ object ProjectConfig {
       pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
       pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
-      pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py")
+      pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
+      pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),

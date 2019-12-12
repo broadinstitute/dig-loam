@@ -5,80 +5,73 @@
 import ProjectConfig._
 import ArrayStores._
 import ProjectStores._
+import Fxns._
 
 final case class CfgException(s: String) extends Exception(s)
 
 def FilterArray(array: ConfigArray): Unit = {
 
-  val vfilters = {
-    array.postQcVariantFilters match {
-      case Some(l) =>
-        for {
-          f <- l
-        } yield {
-          f match {
-            case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-              "--vfilter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-            case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-              "--vfilter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-            case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-              "--vfilter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-            case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-              val ids = for {
-                ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-              } yield {
-                ff match {
-                  case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                    projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                  case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                    projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                  case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                    projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                  case _ => throw new CfgException("FilterArray: vfilters '" + ff + "' not found")
-                }
-              }
-              "--vfilter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
-            case _ => throw new CfgException("FilterArray: vfilters '" + f + "' not found")
-          }
-        }
-      case None => List("")
-    }
-  }.mkString(" ")
+  var vFilters = Seq[String]()
+  array.postQcVariantFilters match {
+    case Some(l) =>
+      vFilters = vFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
+    case None => ()
+  }
 
-  val sfilters = {
-    array.postQcSampleFilters match {
-      case Some(l) =>
-        for {
-          f <- l
-        } yield {
-          f match {
-            case n if projectConfig.numericSampleFilters.map(e => e.id) contains n =>
-              "--sfilter " + projectConfig.numericSampleFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericSampleFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericSampleFilters.filter(e => e.id == n).head.expression + "\""
-            case b if projectConfig.booleanSampleFilters.map(e => e.id) contains b =>
-              "--sfilter " + projectConfig.booleanSampleFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanSampleFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanSampleFilters.filter(e => e.id == b).head.expression + "\""
-            case c if projectConfig.categoricalSampleFilters.map(e => e.id) contains c =>
-              "--sfilter " + projectConfig.categoricalSampleFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalSampleFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalSampleFilters.filter(e => e.id == c).head.expression + "\""
-            case d if projectConfig.compoundSampleFilters.map(e => e.id) contains d =>
-              val ids = for {
-                ff <- projectConfig.compoundSampleFilters.filter(e => e.id == d).head.filters
-              } yield {
-                ff match {
-                  case nn if projectConfig.numericSampleFilters.map(e => e.id) contains nn =>
-                    projectConfig.numericSampleFilters.filter(e => e.id == nn).head.field
-                  case bb if projectConfig.booleanSampleFilters.map(e => e.id) contains bb =>
-                    projectConfig.booleanSampleFilters.filter(e => e.id == bb).head.field
-                  case cc if projectConfig.categoricalSampleFilters.map(e => e.id) contains cc =>
-                    projectConfig.categoricalSampleFilters.filter(e => e.id == cc).head.field
-                  case _ => throw new CfgException("FilterArray: sfilters '" + ff + "' not found")
-                }
-              }
-              "--sfilter " + projectConfig.compoundSampleFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundSampleFilters.filter(e => e.id == d).head.expression + "\""
-            case _ => throw new CfgException("FilterArray: sfilters '" + f + "' not found")
-          }
-        }
-      case None => List("")
-    }
-  }.mkString(" ")
+  var sFilters = Seq[String]()
+  array.postQcSampleFilters match {
+    case Some(l) =>
+      sFilters = sFilters ++ sampleFiltersToPrintableList(cfg = projectConfig, filters = l)
+    case None => ()
+  }
+
+  vFilters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.vFilters}"""
+          .out(arrayStores(array).filterPostQc.vFilters)
+          .tag(s"${arrayStores(array).filterPostQc.vFilters}".split("/").last)
+
+      }
+
+    case _ =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${arrayStores(array).filterPostQc.vFilters}"""
+          .out(arrayStores(array).filterPostQc.vFilters)
+          .tag(s"${arrayStores(array).filterPostQc.vFilters}".split("/").last)
+
+      }
+
+  }
+
+  sFilters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${sFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.sFilters}"""
+          .out(arrayStores(array).filterPostQc.sFilters)
+          .tag(s"${arrayStores(array).filterPostQc.sFilters}".split("/").last)
+      
+      }
+
+    case _ =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${arrayStores(array).filterPostQc.sFilters}"""
+          .out(arrayStores(array).filterPostQc.sFilters)
+          .tag(s"${arrayStores(array).filterPostQc.sFilters}".split("/").last)
+      
+      }
+
+  }
 
   projectConfig.hailCloud match {
 
@@ -87,6 +80,8 @@ def FilterArray(array: ConfigArray): Unit = {
       local {
       
         googleCopy(arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterQc.samplesExcludeGoogle.get)
+        googleCopy(arrayStores(array).filterPostQc.vFilters, arrayStores(array).filterPostQc.vFiltersGoogle.get)
+        googleCopy(arrayStores(array).filterPostQc.sFilters, arrayStores(array).filterPostQc.sFiltersGoogle.get)
       
       }
 
@@ -96,8 +91,8 @@ def FilterArray(array: ConfigArray): Unit = {
           --cloud
           --reference-genome ${projectConfig.referenceGenome}
           --hail-utils ${ProjectStores.hailUtilsGoogle.get}
-          ${sfilters}
-          ${vfilters}
+          --sample-filters ${arrayStores(array).filterPostQc.sFiltersGoogle.get}
+          --variant-filters ${arrayStores(array).filterPostQc.vFiltersGoogle.get}
           --log ${arrayStores(array).filterPostQc.hailLogGoogle.get}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --samples-remove ${arrayStores(array).filterQc.samplesExcludeGoogle.get}
@@ -105,7 +100,7 @@ def FilterArray(array: ConfigArray): Unit = {
           --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExcludeGoogle.get}
           --variants-stats-out ${arrayStores(array).filterPostQc.variantsStatsGoogle.get}
           --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}"""
-          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get)
+          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.sFiltersGoogle.get, arrayStores(array).filterPostQc.vFiltersGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get)
           .out(arrayStores(array).filterPostQc.samplesStatsGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsStatsGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get, arrayStores(array).filterPostQc.hailLogGoogle.get)
           .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter.google".split("/").last)
       
@@ -127,8 +122,8 @@ def FilterArray(array: ConfigArray): Unit = {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
           --reference-genome ${projectConfig.referenceGenome}
-          ${sfilters}
-          ${vfilters}
+          --sample-filters ${arrayStores(array).filterPostQc.sFilters}
+          --variant-filters ${arrayStores(array).filterPostQc.vFilters}
           --log ${arrayStores(array).filterPostQc.hailLog}
           --mt-in ${arrayStores(array).refData.mt.get}
           --samples-remove ${arrayStores(array).filterQc.samplesExclude}
@@ -136,7 +131,7 @@ def FilterArray(array: ConfigArray): Unit = {
           --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExclude}
           --variants-stats-out ${arrayStores(array).filterPostQc.variantsStats}
           --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExclude}"""
-          .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).filterQc.samplesExclude)
+          .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).filterPostQc.sFilters, arrayStores(array).filterPostQc.vFilters, arrayStores(array).filterQc.samplesExclude)
           .out(arrayStores(array).filterPostQc.samplesStats, arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.variantsStats, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterPostQc.hailLog)
           .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter".split("/").last)
 

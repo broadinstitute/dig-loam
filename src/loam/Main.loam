@@ -16,8 +16,8 @@ import FilterArray._
 import ExportCleanData._
 import PrepareModel._
 import CrossCohort._
-import VariantAssoc._
-//import AssocStores._
+//import VariantAssoc._
+import AssocStores._
 //import Meta._
 //import Merge._
 //import ResultsSummary._
@@ -33,74 +33,74 @@ import loamstream.util.CanBeClosed.enclosed
 
 //throw new Exception(s"${ProjectStores.regionsExcludeGoogle.get.uri}")
 
-//// Upload input files to Google Cloud
-//Upload()
-//
-//// Array specific QC steps up to ancestry inferrence
-//for {
-//  array <- projectConfig.Arrays if array.technology == "gwas"
-//} yield {
-//    
-//  Prepare(array)
-//  Harmonize(array)
-//
-//}
-//
-//for {
-//  array <- projectConfig.Arrays
-//} yield {
-//
-//  Load(array)
-//  ExportQcData(array)
-//  Annotate(array)
-//  Kinship(array)
-//  AncestryPca(array)
-//  AncestryCluster(array)
-//
-//}
-//
-//// Reconcile inferred ancestry
-//MergeInferredAncestry()
-//
-//// Array specific QC steps post ancestry inference
+// Upload input files to Google Cloud
+Upload()
+
+// Array specific QC steps up to ancestry inferrence
+for {
+  array <- projectConfig.Arrays if array.technology == "gwas"
+} yield {
+    
+  Prepare(array)
+  Harmonize(array)
+
+}
+
+for {
+  array <- projectConfig.Arrays
+} yield {
+
+  Load(array)
+  ExportQcData(array)
+  Annotate(array)
+  Kinship(array)
+  AncestryPca(array)
+  AncestryCluster(array)
+
+}
+
+// Reconcile inferred ancestry
+MergeInferredAncestry()
+
+// Array specific QC steps post ancestry inference
+for {
+  array <- projectConfig.Arrays
+} yield { 
+
+  Pca(array)
+  SampleQc(array)
+  FilterArray(array)
+
+}
+
+// Only proceed if exportCleanData is true
+projectConfig.exportCleanData match {
+
+  case true => 
+
+    for {
+      array <- projectConfig.Arrays
+    } yield {
+        
+      ExportCleanData(array)
+    
+    }
+
+  case _ => ()
+
+}
+
+//// QC Report
+//QcReport()
+
+//// Generate imputation ready data files
 //for {
 //  array <- projectConfig.Arrays
 //} yield { 
 //
-//  Pca(array)
-//  SampleQc(array)
-//  FilterArray(array)
+//  FilterImpute(array.id)
 //
 //}
-//
-//// Only proceed if exportCleanData is true
-//projectConfig.exportCleanData match {
-//
-//  case true => 
-//
-//    for {
-//      array <- projectConfig.Arrays
-//    } yield {
-//        
-//      ExportCleanData(array)
-//    
-//    }
-//
-//  case _ => ()
-//
-//}
-//
-////// QC Report
-////QcReport()
-//
-////// Generate imputation ready data files
-////for {
-////  array <- projectConfig.Arrays
-////} yield { 
-////
-////  FilterImpute(array.id)
-////
-////}
 
 // Only proceed if phenoFile is defined
 ProjectStores.phenoFile match {
@@ -155,41 +155,41 @@ ProjectStores.phenoFile match {
     
     }
     
-    // Cohort variant association
-    for {
-      x <- modelCohorts
-    } yield {
-    
-      VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
-    
-    }
-
-    // Cohort variant association for known loci
-    for {
-      x <- modelCohortKnowns
-    } yield {
-    
-      VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = Some(x.known))
-    
-    }
-    
-	// Meta-analysis specific cohort variant association
-    for {
-      x <- modelMetaCohorts
-    } yield { 
-    
-      VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
-    
-    }
-    
-    // Meta-analysis specific cohort variant association for known loci
-    for {
-      x <- modelMetaCohortKnowns
-    } yield { 
-    
-      VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
-    
-    }
+    //// Cohort variant association
+    //for {
+    //  x <- modelCohorts
+    //} yield {
+    //
+    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
+    //
+    //}
+    //
+    //// Cohort variant association for known loci
+    //for {
+    //  x <- modelCohortKnowns
+    //} yield {
+    //
+    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = Some(x.known))
+    //
+    //}
+    //
+	//// Meta-analysis specific cohort variant association
+    //for {
+    //  x <- modelMetaCohorts
+    //} yield { 
+    //
+    //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
+    //
+    //}
+    //
+    //// Meta-analysis specific cohort variant association for known loci
+    //for {
+    //  x <- modelMetaCohortKnowns
+    //} yield { 
+    //
+    //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = Some(x.known))
+    //
+    //}
     
     //// Copy known results to Google Cloud
     //for {

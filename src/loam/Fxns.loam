@@ -290,7 +290,7 @@ def categoricalToExpression(s: String, i: Seq[String]): String = {
   }
 }
 
-def filtersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOption: String, id: Option[String] = None): String = {
+def variantFiltersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOption: String, id: Option[String] = None): String = {
 
   val id_string = id match {
     case Some(s) => s + " "
@@ -333,6 +333,90 @@ def filtersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOption: Stri
     }
   }
   x.mkString(" ")
+
+}
+
+def variantFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String], id: Option[String] = None): Seq[String] = {
+
+  var v = Seq[String]()
+
+  val id_string = id match {
+    case Some(s) => v = v ++ Seq(s + " ")
+    case None => ()
+  }
+
+  val id_exc = id match {
+    case Some(s) => s + ": "
+    case None => ""
+  }
+
+  val x = {
+    for {
+      f <- filters
+    } yield {
+      f match {
+        case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
+          (v ++ Seq(cfg.numericVariantFilters.filter(e => e.id == n).head.id, cfg.numericVariantFilters.filter(e => e.id == n).head.field, cfg.numericVariantFilters.filter(e => e.id == n).head.expression)).mkString("\t")
+        case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
+          (v ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == b).head.id, cfg.booleanVariantFilters.filter(e => e.id == b).head.field, cfg.booleanVariantFilters.filter(e => e.id == b).head.expression)).mkString("\t")
+        case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
+          (v ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.id, cfg.categoricalVariantFilters.filter(e => e.id == c).head.field, cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression)).mkString("\t")
+        case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
+          val ids = for {
+            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+          } yield {
+            ff match {
+              case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
+                cfg.numericVariantFilters.filter(e => e.id == nn).head.field
+              case bb if cfg.booleanVariantFilters.map(e => e.id) contains bb =>
+                cfg.booleanVariantFilters.filter(e => e.id == bb).head.field
+              case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
+                cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field
+              case _ => throw new CfgException("variantFiltersToPrintableList: " + id_exc + " filters '" + ff + "' not found")
+            }
+          }
+          (v ++ Seq(cfg.compoundVariantFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundVariantFilters.filter(e => e.id == d).head.expression)).mkString("\t")
+        case _ => throw new CfgException("variantFiltersToPrintableList: " + id_exc + " filters '" + f + "' not found")
+      }
+    }
+  }
+  x
+
+}
+
+def sampleFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String]): Seq[String] = {
+
+  val x = {
+    for {
+      f <- filters
+    } yield {
+      f match {
+        case n if cfg.numericSampleFilters.map(e => e.id) contains n =>
+          Seq(cfg.numericSampleFilters.filter(e => e.id == n).head.id, cfg.numericSampleFilters.filter(e => e.id == n).head.field, cfg.numericSampleFilters.filter(e => e.id == n).head.expression).mkString("\t")
+        case b if cfg.booleanSampleFilters.map(e => e.id) contains b =>
+          Seq(cfg.booleanSampleFilters.filter(e => e.id == b).head.id, cfg.booleanSampleFilters.filter(e => e.id == b).head.field, cfg.booleanSampleFilters.filter(e => e.id == b).head.expression).mkString("\t")
+        case c if cfg.categoricalSampleFilters.map(e => e.id) contains c =>
+          Seq(cfg.categoricalSampleFilters.filter(e => e.id == c).head.id, cfg.categoricalSampleFilters.filter(e => e.id == c).head.field, cfg.categoricalSampleFilters.filter(e => e.id == c).head.expression).mkString("\t")
+        case d if cfg.compoundSampleFilters.map(e => e.id) contains d =>
+          val ids = for {
+            ff <- cfg.compoundSampleFilters.filter(e => e.id == d).head.filters
+          } yield {
+            ff match {
+              case nn if cfg.numericSampleFilters.map(e => e.id) contains nn =>
+                cfg.numericSampleFilters.filter(e => e.id == nn).head.field
+              case bb if cfg.booleanSampleFilters.map(e => e.id) contains bb =>
+                cfg.booleanSampleFilters.filter(e => e.id == bb).head.field
+              case cc if cfg.categoricalSampleFilters.map(e => e.id) contains cc =>
+                cfg.categoricalSampleFilters.filter(e => e.id == cc).head.field
+              case _ => throw new CfgException("sampleFiltersToPrintableList: filter '" + ff + "' not found")
+            }
+          }
+          Seq(cfg.compoundSampleFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundSampleFilters.filter(e => e.id == d).head.expression).mkString("\t")
+        case _ => throw new CfgException("sampleFiltersToPrintableList: filter '" + f + "' not found")
+      }
+    }
+  }
+  x
 
 }
 

@@ -12,15 +12,36 @@ final case class CfgException(s: String) extends Exception(s)
 
 def ExportQcData(array: ConfigArray): Unit = {
 
-  val vfilters = {
-    array.qcVariantFilters match {
-      case Some(l) =>
-        filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--vfilter")
-      case None => ""
-    }
+  var vFilters = Seq[String]()
+  array.qcVariantFilters match {
+    case Some(l) =>
+      vFilters = vFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
+    case None => ()
   }
 
-  throw new CfgException(s"${vfilters}")
+  vFilters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filteredData.variantFilters}"""
+          .out(arrayStores(array).filteredData.variantFilters)
+          .tag(s"${arrayStores(array).filteredData.variantFilters}".split("/").last)
+      
+      }
+
+    case _ =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${arrayStores(array).filteredData.variantFilters}"""
+          .out(arrayStores(array).filteredData.variantFilters)
+          .tag(s"${arrayStores(array).filteredData.variantFilters}".split("/").last)
+      
+      }
+
+  }
 
   val sampleN = array.qcVariantSampleN.getOrElse("") match {
     case "" => ""
@@ -37,6 +58,12 @@ def ExportQcData(array: ConfigArray): Unit = {
   projectConfig.hailCloud match {
   
     case true =>
+
+      local {
+  
+        googleCopy(arrayStores(array).filteredData.variantFilters, arrayStores(array).filteredData.variantFiltersGoogle.get)
+  
+      }
   
       google {
       
@@ -44,14 +71,14 @@ def ExportQcData(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
-          ${vfilters}
+          --variant-filters ${arrayStores(array).filteredData.variantFiltersGoogle.get}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
           --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
           --cloud
           --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get)
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get, arrayStores(array).filteredData.variantFiltersGoogle.get)
           .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       
@@ -73,13 +100,13 @@ def ExportQcData(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --regions-exclude ${ProjectStores.regionsExclude}
-          ${vfilters}
+          --variant-filters ${arrayStores(array).filteredData.variantFilters}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}
           --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
           --log ${arrayStores(array).filteredData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude)
+          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude, arrayStores(array).filteredData.variantFilters)
           .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       

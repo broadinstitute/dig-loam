@@ -16,7 +16,7 @@ parser$add_argument("--cohorts", dest="cohorts", type="character", help="A comma
 parser$add_argument("--cckinship", dest="cckinship", type="character", help="a cross cohort kinship file")
 parser$add_argument("--meta-prior-samples", dest="meta_prior_samples", type="character", help="a comma separated list of samples available to previous meta cohorts")
 parser$add_argument("--meta-cohorts", dest="meta_cohorts", type="character", help="A comma separated list of meta cohorts")
-parser$add_argument("--test", dest="test", type="character", help="a test code")
+parser$add_argument("--keep-related", action="store_true", dest="keep_related", help="whether or not to keep related samples")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--out-id-map", dest="out_id_map", type="character", help="an output filename for the id removal map")
 parser$add_argument("--out-cohorts-map", dest="out_cohorts_map", type="character", help="an output filename for the cohort sample map")
@@ -128,7 +128,7 @@ if(nrow(kinship_in) > 0) {
 	kinship_in$ID1_remove <- 0
 	kinship_in$ID2_remove <- 0
 	samples_excl <- c()
-	if(args$test != "lmm") {
+	if(! args$keep_related) {
 		for(i in 1:nrow(kinship_in)) {
 			if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
 				if(length(unique(pheno[,args$pheno_col])) == 2 & kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {

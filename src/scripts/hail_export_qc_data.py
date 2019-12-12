@@ -50,44 +50,41 @@ def main(args=None):
 		)
 	)
 
-	for f in args.vfilter:
-		if f is not None:
-			fields = f[1].split(",")
-			absent = False
-			for field in fields:
-				if field not in mt.rows().row_value.flatten():
-					absent = True
-				f[2] = f[2].replace(field,"mt." + field)
-			if not absent:
-				print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
+	if args.variant_filters:
+		with hl.hadoop_open(args.variant_filters, 'r') as f:
+			vfilters = f.read().splitlines()
+			for vf in vfilters:
+				f = vf.split("\t")
+				fields = f[1].split(",")
+				absent = False
+				for field in fields:
+					if field not in mt.rows().row_value.flatten():
+						absent = True
+					f[2] = f[2].replace(field,"mt." + field)
+				if not absent:
+					print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
+					mt = mt.annotate_rows(
+						ls_filters = mt.ls_filters.annotate(
+							**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
+						)
+					)
+				else:
+					print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+					mt = mt.annotate_rows(
+						ls_filters = mt.ls_filters.annotate(
+							**{f[0]: 0}
+						)
+					)
+				print("update exclusion column based on " + f[0])
 				mt = mt.annotate_rows(
 					ls_filters = mt.ls_filters.annotate(
-						**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
+						exclude = hl.cond(
+							mt.ls_filters[f[0]] == 1,
+							1,
+							mt.ls_filters.exclude
+						)
 					)
 				)
-			else:
-				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
-				mt = mt.annotate_rows(
-					ls_filters = mt.ls_filters.annotate(
-						**{f[0]: 0}
-					)
-				)
-		else:
-			mt = mt.annotate_rows(
-				ls_filters = mt.ls_filters.annotate(
-					**{f[0]: 0}
-				)
-			)
-		print("update exclusion column based on " + f[0])
-		mt = mt.annotate_rows(
-			ls_filters = mt.ls_filters.annotate(
-				exclude = hl.cond(
-					mt.ls_filters[f[0]] == 1,
-					1,
-					mt.ls_filters.exclude
-				)
-			)
-		)
 
 	rows_filtered = mt.rows().select('ls_filters')
 	rows_filtered = rows_filtered.filter(rows_filtered.ls_filters.exclude == 0, keep=True)
@@ -148,7 +145,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--vfilter', nargs=3, action='append', help='an id, a column name, and an expression; include variants satisfying this expression')
+	parser.add_argument('--variant-filters', help='an id, a column name, and an expression; include variants satisfying this expression')
 	parser.add_argument('--sample-n', type=int, help='an integer indicating the number of desired variants in the final QC data set (will be ignored if remaining variant count is less than this number)')
 	parser.add_argument('--sample-seed', type=int, default=1, help='an integer used as a seed to allow for reproducibility in sampling variants')
 	requiredArgs = parser.add_argument_group('required arguments')

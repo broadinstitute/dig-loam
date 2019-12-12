@@ -18,15 +18,14 @@ maxiter=${15}
 preliminaryPheno=${16}
 phenotype=${17}
 iidCol=${18}
-test=${19}
-trans=${20}
-covars=${21}
-minPcs=${22}
-maxPcs=${23}
-nStddevs=${24}
-phenoFile=${25}
-pcsIncludeFile=${26}
-outlierFile=${27}
+trans=${19}
+covars=${20}
+minPcs=${21}
+maxPcs=${22}
+nStddevs=${23}
+phenoFile=${24}
+pcsIncludeFile=${25}
+outlierFile=${26}
 
 echo "binFlashpca: $binFlashpca"
 echo "binRscript: $binRscript"
@@ -46,7 +45,6 @@ echo "maxiter: $maxiter"
 echo "preliminaryPheno: $preliminaryPheno"
 echo "phenotype: $phenotype"
 echo "iidCol: $iidCol"
-echo "test: $test"
 echo "trans: $trans"
 echo "covars: $covars"
 echo "minPcs: $minPcs"
@@ -82,7 +80,6 @@ $binRscript --vanilla --verbose $rScript \
 --pheno-col $phenotype \
 --pcs-in ${outPrefix}.tmp.outpc \
 --iid-col $iidCol \
---test $test \
 --trans "$trans" \
 --covars "$covars" \
 --min-pcs $minPcs \
@@ -121,7 +118,6 @@ if [[ -s ${outPrefix}.tmp.outliers && $maxiter -gt 1 ]]; then
 		--pheno-col $phenotype \
 		--pcs-in ${outPrefix}.tmp.outpc \
 		--iid-col $iidCol \
-		--test $test \
 		--trans "$trans" \
 		--covars "$covars" \
 		--min-pcs $minPcs \

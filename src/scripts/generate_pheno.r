@@ -7,7 +7,6 @@ parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a pre
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--pcs-in", dest="pcs_in", type="character", help="pca score file")
 parser$add_argument("--iid-col", dest="iid_col", type="character", help='a column name for sample ID in phenotype file')
-parser$add_argument("--test", dest="test", type="character", help="a test code")
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--min-pcs", dest="min_pcs", type="integer", help="minimum number of pcs to include in analysis")

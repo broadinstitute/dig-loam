@@ -19,35 +19,35 @@ def Load(array: ConfigArray): Unit = {
 
     case true =>
 
-      val inputOptionString = inputType match {
-        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get.toString.split("@")(1)}"
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.google.get}"
+      val inputOptionString = (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.google.get.toString.split("@")(1)}"
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => s"--plink-in ${arrayStores(array).refData.plink.get.base.google.get}"
+        case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
+      }
+
+      val inputFiles = (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, ProjectStores.sampleFileGoogle.get)
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.google.get :+ ProjectStores.hailUtilsGoogle.get :+ ProjectStores.sampleFileGoogle.get
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
-      val inputFiles = array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, ProjectStores.sampleFileGoogle.get)
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.google.get :+ ProjectStores.hailUtilsGoogle.get :+ ProjectStores.sampleFileGoogle.get
-        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      val tagString = (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
+        case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
-      val tagString = array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
-        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
-      }
-
-      array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => 
+      (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => 
           local {
             googleCopy(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.data.google.get)
             googleCopy(arrayStores(array).refData.vcf.get.tbi.local.get, arrayStores(array).refData.vcf.get.tbi.google.get)
           }
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" =>
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
           local {
             googleCopy(arrayStores(array).refData.plink.get.data.local.get, arrayStores(array).refData.plink.get.data.google.get)
           }
-        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+        case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
       googleWith(projectConfig.cloudResources.loadCluster) {
@@ -89,22 +89,22 @@ def Load(array: ConfigArray): Unit = {
 
     case false =>
 
-      val inputOptionString = array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get.toString.split("@")(1)}"
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"--plink-in ${arrayStores(array).refData.plink.get.base.local.get}"
-        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      val inputOptionString = (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => s"--vcf-in ${arrayStores(array).refData.vcf.get.data.local.get.toString.split("@")(1)}"
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => s"--plink-in ${arrayStores(array).refData.plink.get.base.local.get}"
+        case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
-      val inputFiles = array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, ProjectStores.sampleFile)
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => arrayStores(array).refData.plink.get.data.local.get :+ ProjectStores.sampleFile
-        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      val inputFiles = (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, ProjectStores.sampleFile)
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.local.get :+ ProjectStores.sampleFile
+        case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
-      val tagString = array.technology + "_" + array.format match {
-        case "wgs_vcf" | "wes_vcf" => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
-        case "gwas_plink" | "gwas_vcf" | "wgs_plink" | "wes_plink" => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
-        case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
+      val tagString = (array.technology, array.format) match {
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => s"${arrayStores(array).refData.vcf.get.base.local.get}.pyHailLoad".split("/").last
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => s"${arrayStores(array).refData.plink.get.base.local.get}.pyHailLoad".split("/").last
+        case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.loadHail.cpus, mem = projectConfig.resources.loadHail.mem, maxRunTime = projectConfig.resources.loadHail.maxRunTime) {

@@ -341,7 +341,8 @@ def add_sample_qc_stats(mt: hl.MatrixTable, sample_qc: hl.tstr, variant_qc: hl.t
 
 def add_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
 	mt = mt.annotate_rows(**{struct_name: hl.struct(exclude = 0)})
-	for f in filters:
+	for ff in filters:
+		f = ff.split("\t")
 		absent = False
 		for field in f[1].split(","):
 			if field not in mt.rows().row_value.flatten():
