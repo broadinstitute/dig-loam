@@ -633,7 +633,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     hailLog = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log"),
     hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None })
 
-  val cleanData = projectConfig.exportCleanData match {
+  val cleanData = arrayCfg.exportCleanVcf match {
 
     case true =>
 

@@ -71,22 +71,12 @@ for {
   SampleQc(array)
   FilterArray(array)
 
-}
+  projectConfig.exportCleanVcf match {
 
-// Only proceed if exportCleanData is true
-projectConfig.exportCleanData match {
+    case true => ExportCleanData(array)
+    case false => ()
 
-  case true => 
-
-    for {
-      array <- projectConfig.Arrays
-    } yield {
-        
-      ExportCleanData(array)
-    
-    }
-
-  case _ => ()
+  }
 
 }
 

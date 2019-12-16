@@ -341,7 +341,7 @@ def variantFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String], id: 
   var v = Seq[String]()
 
   val id_string = id match {
-    case Some(s) => v = v ++ Seq(s + " ")
+    case Some(s) => v = v ++ Seq(s)
     case None => ()
   }
 

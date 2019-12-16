@@ -87,6 +87,8 @@ val assocTests = Seq(
 val binaryAssocTests = assocTests.filter(e => e.split("\\.")(1) == "b")
 val quantitativeAssocTests = assocTests.filter(e => e.split("\\.")(1) == "q")
 val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
+val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
+val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
 
 final case class ConfigMachine(
   cpus: Int,
@@ -177,7 +179,8 @@ final case class ConfigArray(
   qcVariantSampleN: Option[Int],
   qcVariantSampleSeed: Option[Int],
   postQcSampleFilters: Option[Seq[String]],
-  postQcVariantFilters: Option[Seq[String]]) extends Debug
+  postQcVariantFilters: Option[Seq[String]],
+  exportCleanVcf: Boolean) extends Debug
 
 final case class ConfigCohort(
   id: String,
@@ -254,7 +257,6 @@ final case class ProjectConfig(
   hailCloud: Boolean,
   cloudShare: Option[URI],
   cloudHome: Option[URI],
-  exportCleanData: Boolean,
   projectId: String,
   referenceGenome: String,
   regionsExclude: String,
@@ -350,14 +352,14 @@ final case class Python(
   pyHailAncestryPcaMerge1kg: Path,
   pyHailPcaMerge1kg: Path,
   pyHailSampleqc: Path,
-  pyHailExportCleanData: Path,
   pyMakeSamplesRestoreTable: Path,
   pyCompileExclusions: Path,
   pyMergeVariantLists: Path,
   pyBimToUid: Path,
   pyHailUtils: Path,
   pyHailFilterModelVariants: Path,
-  pyHailAssoc: Path
+  pyHailAssoc: Path,
+  pyHailExportCleanArrayData: Path
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
@@ -444,7 +446,6 @@ object ProjectConfig {
     val hailCloud = requiredBool(config = config, field = "hailCloud")
     val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
     val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
-    val exportCleanData = requiredBool(config = config, field = "exportCleanData")
     val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
     val regionsExclude = requiredStr(config = config, field = "regionsExclude")
     val genePositions = requiredStr(config = config, field = "genePositions")
@@ -863,7 +864,8 @@ object ProjectConfig {
           qcVariantSampleN = optionalInt(config = array, field = "qcVariantSampleN"),
           qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed"),
           postQcSampleFilters = postQcSampleFilters,
-          postQcVariantFilters = postQcVariantFilters
+          postQcVariantFilters = postQcVariantFilters,
+          exportCleanVcf = requiredBool(config = config, field = "exportCleanVcf")
         )
     
       }
@@ -1355,7 +1357,6 @@ object ProjectConfig {
       pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py"),
       pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py"),
       pyHailSampleqc = path(s"${scriptsDir}/hail_sampleqc.py"),
-      pyHailExportCleanData = path(s"${scriptsDir}/hail_export_clean_data.py"),
       pyHailFilter = path(s"${scriptsDir}/hail_filter.py"),
       pyMakeSamplesRestoreTable = path(s"${scriptsDir}/make_samples_restore_table.py"),
       pyCompileExclusions = path(s"${scriptsDir}/compile_exclusions.py"),
@@ -1363,7 +1364,8 @@ object ProjectConfig {
       pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
-      pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py")
+      pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
+      pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_data.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
