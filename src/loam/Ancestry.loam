@@ -129,35 +129,35 @@ def AncestryCluster(array: ConfigArray): Unit = {
 
   val afrCodes = projectConfig.sampleFileAFRCodes match {
 
-    case Some(s) => s"--afr-codes ${projectConfig.sampleFileAFRCodes.get.mkString(",")}"
+    case Some(s) => s"--afr-codes ${s.mkString(",")}"
     case None => ""
 
   }
 
   val amrCodes = projectConfig.sampleFileAMRCodes match {
 
-    case Some(s) => s"--amr-codes ${projectConfig.sampleFileAMRCodes.get.mkString(",")}"
+    case Some(s) => s"--amr-codes ${s.mkString(",")}"
     case None => ""
 
   }
 
   val eurCodes = projectConfig.sampleFileEURCodes match {
 
-    case Some(s) => s"--eur-codes ${projectConfig.sampleFileEURCodes.get.mkString(",")}"
+    case Some(s) => s"--eur-codes ${s.mkString(",")}"
     case None => ""
 
   }
 
   val easCodes = projectConfig.sampleFileEASCodes match {
 
-    case Some(s) => s"--eas-codes ${projectConfig.sampleFileEASCodes.get.mkString(",")}"
+    case Some(s) => s"--eas-codes ${s.mkString(",")}"
     case None => ""
 
   }
 
   val sasCodes = projectConfig.sampleFileSASCodes match {
 
-    case Some(s) => s"--sas-codes ${projectConfig.sampleFileSASCodes.get.mkString(",")}"
+    case Some(s) => s"--sas-codes ${s.mkString(",")}"
     case None => ""
 
   }
