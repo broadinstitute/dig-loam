@@ -57,9 +57,27 @@ def getStrOrBlank(config: loamstream.conf.DataConfig, field: String, regex: Stri
   }
 }
 
-def requiredInt(config: loamstream.conf.DataConfig, field: String, default: Option[Int] = None): Int = {
+def requiredInt(config: loamstream.conf.DataConfig, field: String, default: Option[Int] = None, min: Option[Int] = None, max: Option[Int] = None): Int = {
   Try(config.getInt(field)) match {
-    case Success(o) => o
+    case Success(o) =>
+      (min, max) match {
+        case (Some(m), Some(n)) =>
+          o >= m && o <= n match {
+            case true => o
+            case false => throw new CfgException("requiredInt: field '" + field + "' must be in range [" + m.toString + ", " + n.toString + "]")
+          }
+        case (Some(m), None) =>
+          o >= m match {
+            case true => o
+            case false => throw new CfgException("requiredInt: field '" + field + "' must be in range [" + m.toString + ",)")
+          }
+        case (None, Some(n)) =>
+          o <= n match {
+            case true => o
+            case false => throw new CfgException("requiredInt: field '" + field + "' must be in range (," + n.toString + "]")
+          }
+        case _ => o
+      }
     case Failure(NonFatal(e)) =>
       default match {
         case Some(i) => i
@@ -69,12 +87,26 @@ def requiredInt(config: loamstream.conf.DataConfig, field: String, default: Opti
   }
 }
 
-def optionalInt(config: loamstream.conf.DataConfig, field: String, regex: String = ".*"): Option[Int] = {
+def optionalInt(config: loamstream.conf.DataConfig, field: String, min: Option[Int] = None, max: Option[Int] = None): Option[Int] = {
   Try(config.getInt(field)) match {
-    case Success(o)           =>
-      o.toString.matches(regex) match {
-        case false => throw new CfgException("optionalInt: field " + field + " value " + o.toString + " does not match regex format " + regex)
-        case true  => Some(o)
+    case Success(o) =>
+      (min, max) match {
+        case (Some(m), Some(n)) =>
+          o >= m && o <= n match {
+            case true => Some(o)
+            case false => throw new CfgException("optionalInt: field '" + field + "' must be in range [" + m.toString + ", " + n.toString + "]")
+          }
+        case (Some(m), None) =>
+          o >= m match {
+            case true => Some(o)
+            case false => throw new CfgException("optionalInt: field '" + field + "' must be in range [" + m.toString + ",)")
+          }
+        case (None, Some(n)) =>
+          o <= n match {
+            case true => Some(o)
+            case false => throw new CfgException("optionalInt: field '" + field + "' must be in range (," + n.toString + "]")
+          }
+        case _ => Some(o)
       }
     case Failure(NonFatal(e)) => None
     case Failure(_)           => throw new CfgException("optionalInt: field '" + field + "' fatal error")

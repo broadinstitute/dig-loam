@@ -50,7 +50,7 @@ def Load(array: ConfigArray): Unit = {
         case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
-      googleWith(projectConfig.cloudResources.loadCluster) {
+      googleWith(projectConfig.cloudResources.mtCluster) {
       
         hail"""${utils.python.pyHailLoad} --
           --reference-genome ${projectConfig.referenceGenome}

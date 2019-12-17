@@ -29,7 +29,7 @@ def Annotate(array: ConfigArray): Unit = {
         googleCopy(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationsGoogle.get)
       }
 
-      google {
+      googleWith(projectConfig.cloudResources.variantHtCluster) {
       
         hail"""${utils.python.pyHailLoadAnnotations} --
           --annotations ${arrayStores(array).refData.annotationsGoogle.get}

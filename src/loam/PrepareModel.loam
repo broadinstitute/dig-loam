@@ -319,7 +319,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
         case _ => ()
       }
 
-      google {
+      googleWith(projectConfig.cloudResources.mtCluster) {
       
         hail"""${utils.python.pyHailFilterModelVariants} --
           --hail-utils ${ProjectStores.hailUtilsGoogle.get}
