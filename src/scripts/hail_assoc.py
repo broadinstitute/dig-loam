@@ -16,7 +16,6 @@ def main(args=None):
 	else:
 		import hail_utils
 
-
 	if not args.cloud:
 		hl.init(log = args.log, idempotent=True)
 	else:
@@ -27,6 +26,7 @@ def main(args=None):
 
 	if args.extract:
 		print("extract variants not yet implemented!")
+		return 1
 
 	if args.extract_ld:
 		print("extract hi ld known variants")
@@ -62,7 +62,7 @@ def main(args=None):
 			args.ancestry_in,
 			delimiter="\t",
 			no_header=True,
-			types={'f0': hl.tint, 'f1': hl.tstr}
+			types={'f0': hl.tstr, 'f1': hl.tstr}
 		)
 		tbl = tbl.rename({'f0': 'IID', 'f1': 'ANCESTRY_INFERRED'})
 		tbl = tbl.key_by('IID')
@@ -76,7 +76,7 @@ def main(args=None):
 		pops = args.pops.split(",")
 		mt = mt.filter_cols(mt.ANCESTRY_INFERRED in pops, keep=True)
 
-	if args.test != 'lmm':
+	if args.test != 'hail.lmm':
 		print("read in list of PCs to include in test")
 		with hl.hadoop_open(args.pcs_include, "r") as f:
 			pcs = f.read().splitlines()
@@ -97,144 +97,122 @@ def main(args=None):
 				covars = [x for x in covars if x != covars[i]]
 		covars = covars + pcs
 
-	print("calculate variant qc")
-	mt = hl.variant_qc(mt, name="variant_qc")
+	print("add cohort annotation")
+	tbl = hl.import_table(
+		args.cohorts_map_in,
+		delimiter="\t",
+		no_header=True,
+		types={'f0': hl.tstr, 'f1': hl.tstr}
+	)
+	tbl = tbl.rename({'f0': 'IID', 'f1': 'COHORT'})
+	tbl = tbl.key_by('IID')
+	mt = mt.annotate_cols(COHORT = tbl[mt.s].COHORT)
 
-	if args.test == 'lm':
+	print("calculate global variant qc")
+	mt = hl.variant_qc(mt, name="variant_qc")
+	if args.test == 'hail.lm':
 		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
-	elif args.test in ['wald','firth','lrt','score']:
-		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
 	else:
-		print("test " + args.test + " not currently supported!")
-		return 1
+		mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
+
+	cohorts = []
+	filter_fields = []
+	if args.filter:
+		for f in args.filter:
+			filter_fields = filter_fields + [f[1]]
+	if args.cohort_filter:
+		cohorts = cohorts + [x[0] for x in args.cohort_filter]
+		for f in args.cohort_filter:
+			filter_fields = filter_fields + [f[2]]
+	if args.knockout_filter:
+		cohorts = cohorts + [x[0] for x in args.knockout_filter]
+		for f in args.knockout_filter:
+			filter_fields = filter_fields + [f[2]]
+	if args.mask:
+		for f in args.mask:
+			filter_fields = filter_fields + [f[2]]
+
+	annotation_fields = ['Uploaded_variation', 'Gene'] + list(set([x.replace("annotation.","") for x in filter_fields if x.startswith("annotation.")]))
+	if args.annotation:
+		print("add vep annotations")
+		tbl = hl.read_table(args.annotation)
+		tbl = tbl.select(*annotation_fields)
+		tbl = tbl.key_by('Uploaded_variation')
+		mt = mt.annotate_rows(annotation = tbl[mt.rsid])
+
+	exclude_any_fields = []
+	if args.filter:
+		exclude_any_fields = exclude_any_fields + ['ls_filters.exclude']
+		mt = hail_utils.add_filters(mt, args.filter, 'ls_filters')
+
+	knockout_fields = []
+	if len(cohorts) > 0:
+		if len(cohorts) > 1:
+			mt = mt.annotate_rows(**{'variant_qc': mt['variant_qc'].annotate(max_cohort_maf = 0)})
+		for cohort in set(cohorts):
+			print("calculate variant qc for cohort " + cohort)
+			cohort_mt = mt.filter_cols(mt.COHORT == cohort)
+			cohort_mt = hl.variant_qc(cohort_mt, name = 'variant_qc_' + cohort)
+			if args.test == 'hail.lm':
+				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort)
+			else:
+				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort, is_case = pheno_analyzed)
+			mt = mt.annotate_rows(**{'variant_qc_' + cohort: cohort_mt.rows()[mt.row_key]['variant_qc_' + cohort]})
+			if len(cohorts) > 1:
+				mt = mt.annotate_rows(**{'variant_qc': mt['variant_qc'].annotate(max_cohort_maf = hl.cond( mt['variant_qc'].max_cohort_maf < mt['variant_qc_' + cohort].MAF, mt['variant_qc_' + cohort].MAF,  mt['variant_qc'].max_cohort_maf))})
+			if args.cohort_filter:
+				mt = hail_utils.add_filters(mt, [[x[1],x[2].replace('variant_qc','variant_qc_' + cohort),x[3].replace('variant_qc','variant_qc_' + cohort)] for x in args.cohort_filter], 'ls_filters_' + cohort)
+				exclude_any_fields = exclude_any_fields + ['ls_filters_' + cohort + '.exclude']
+			if args.knockout_filter:
+				mt = hail_utils.add_filters(mt, [[x[1],x[2].replace('variant_qc','variant_qc_' + cohort),x[3].replace('variant_qc','variant_qc_' + cohort)] for x in args.knockout_filter], 'ls_knockouts_' + cohort)
+				knockout_fields = knockout_fields + ['ls_knockouts_' + cohort + '.exclude']
+
+	mask_fields = []
+	if args.mask:
+		masks = [x[0] for x in args.mask]
+		for m in set(masks):
+			masks_row = [x for x in args.mask if x[0] == m]
+			mt = hail_utils.add_filters(mt, [[x[1],x[2],x[3]] for x in masks_row], 'ls_mask_' + m)
+			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
+
+	mt = mt.annotate_rows(ls_global_exclude = 0)
+	for f in exclude_any_fields:
+		print("update global exclusion column based on " + f)
+		ls_struct, ls_field = f.split(".")
+		mt = mt.annotate_rows(ls_global_exclude = hl.cond(mt[ls_struct][ls_field] == 1, 1, mt.ls_global_exclude))
+    
+	if args.variants_stats_out:
+		print("write variant metrics and filters to file")
+		tbl = mt.rows().key_by('locus','alleles')
+		tbl = tbl.drop("info","variant_qc_raw")
+		tbl.flatten().export(args.variants_stats_out, header=True)
+
+	n_all = mt.rows().count()
+	if len(exclude_any_fields) > 0:
+		mt = mt.filter_rows(mt.ls_global_exclude == 0, keep=True)
+		n_post_filter = mt.rows().count()
+		print(str(n_all - n_post_filter) + " variants removed via standard filters")
+		print(str(n_post_filter) + " variants remaining for analysis")
+	else:
+		print(str(n_all) + " variants remaining for analysis")
+
+	for cohort in set(cohorts):
+		if 'ls_knockouts_' + cohort + '.exclude' in knockout_fields:
+			print("knocking out genotype field entries for filter field ls_knockouts_" + cohort + ".exclude")
+			mt = mt.annotate_entries(
+				AB = hl.cond(hl.is_defined(mt.AB), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.AB), mt.AB),
+				AB50 = hl.cond(hl.is_defined(mt.AB50), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.AB50), mt.AB50),
+				GT = hl.cond(hl.is_defined(mt.GT), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tcall), mt.GT), mt.GT),
+				GTT = hl.cond(hl.is_defined(mt.GTT), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tcall), mt.GTT), mt.GTT),
+				GQ = hl.cond(hl.is_defined(mt.GQ), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.GQ), mt.GQ),
+				NALTT = hl.cond(hl.is_defined(mt.NALTT), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tint32), mt.NALTT), mt.NALTT),
+				DS = hl.cond(hl.is_defined(mt.DS), hl.cond((mt.COHORT == cohort) & (mt['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.DS), mt.DS)
+			)
 
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
 	mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
 	mt_y = hl.filter_intervals(mt, [hl.parse_locus_interval('Y')], keep=True)
 	mt_y = mt_y.filter_cols(mt_y.is_female, keep=False)
-
-	#def calc_variant_attributes(mt):
-    #
-	#	print("count males and females")
-	#	tbl = mt.cols()
-	#	mt = mt.annotate_globals(
-	#		global_n = tbl.count(),
-	#		global_n_males = tbl.aggregate(hl.agg.count_where(~ tbl.is_female)),
-	#		global_n_females = tbl.aggregate(hl.agg.count_where(tbl.is_female))
-	#	)
-	#	
-	#	print("count male/female hets, homvars and called")
-	#	mt = mt.annotate_rows(
-	#		results = hl.struct(
-	#			n_called = hl.agg.count_where(hl.is_defined(mt.GT)),
-	#			n_male_diploid = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_diploid())),
-	#			n_male_haploid = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_haploid())),
-	#			n_male_het = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_het())),
-	#			n_male_hom_var = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_hom_var())),
-	#			n_male_hom_ref = hl.agg.count_where((~ mt.is_female) & (mt.GT.is_hom_ref())),
-	#			n_male_called = hl.agg.count_where((~ mt.is_female) & (hl.is_defined(mt.GT))),
-	#			n_female_diploid = hl.agg.count_where((mt.is_female) & (mt.GT.is_diploid())),
-	#			n_female_haploid = hl.agg.count_where((mt.is_female) & (mt.GT.is_haploid())),
-	#			n_female_het = hl.agg.count_where((mt.is_female) & (mt.GT.is_het())),
-	#			n_female_hom_var = hl.agg.count_where((mt.is_female) & (mt.GT.is_hom_var())),
-	#			n_female_hom_ref = hl.agg.count_where((mt.is_female) & (mt.GT.is_hom_ref())),
-	#			n_female_called = hl.agg.count_where((mt.is_female) & (hl.is_defined(mt.GT)))
-	#		)
-	#	)
-	#
-	#	if args.test in ["wald","firth","lrt","score"]:
-	#		mt = mt.annotate_rows(
-	#			results = mt.results.annotate(
-	#				n_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT))),
-	#				n_male_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT)) & (~ mt.is_female)),
-	#				n_male_case_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_hom_var()) & (~ mt.is_female)),
-	#				n_male_case_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_het()) & (~ mt.is_female)),
-	#				n_female_case_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (hl.is_defined(mt.GT)) & (mt.is_female)),
-	#				n_female_case_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_hom_var()) & (mt.is_female)),
-	#				n_female_case_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 1) & (mt.GT.is_het()) & (mt.is_female)),
-	#				n_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT))),
-	#				n_male_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT)) & (~ mt.is_female)),
-	#				n_male_ctrl_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_hom_var()) & (~ mt.is_female)),
-	#				n_male_ctrl_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_het()) & (~ mt.is_female)),
-	#				n_female_ctrl_called = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (hl.is_defined(mt.GT)) & (mt.is_female)),
-	#				n_female_ctrl_hom_var = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_hom_var()) & (mt.is_female)),
-	#				n_female_ctrl_het = hl.agg.count_where((mt.pheno[pheno_analyzed] == 0) & (mt.GT.is_het()) & (mt.is_female))
-	#			)
-	#		)
-	#
-	#	print("calculate callRate, AC, and AF (accounting appropriately for sex chromosomes)")
-	#	mt = mt.annotate_rows(
-	#		results = mt.results.annotate(
-	#			call_rate = hl.cond(
-	#				mt.locus.in_y_nonpar(),
-	#				mt.results.n_male_called / mt.global_n_males,
-	#				hl.cond(
-	#					mt.locus.in_x_nonpar(),
-	#					(mt.results.n_male_called + 2*mt.results.n_female_called) / (mt.global_n_males + 2*mt.global_n_females),
-	#					(mt.results.n_male_called + mt.results.n_female_called) / (mt.global_n_males + mt.global_n_females)
-	#				)
-	#			),
-	#			ac = hl.cond(
-	#				mt.locus.in_y_nonpar(),
-	#				mt.results.n_male_hom_var,
-	#				hl.cond(
-	#					mt.locus.in_x_nonpar(),
-	#					mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var,
-	#					mt.results.n_male_het + 2*mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var
-	#				)
-	#			),
-	#			af = hl.cond(
-	#				mt.locus.in_y_nonpar(),
-	#				mt.results.n_male_hom_var / mt.results.n_male_called,
-	#				hl.cond(
-	#					mt.locus.in_x_nonpar(),
-	#					(mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var) / (mt.results.n_male_called + 2*mt.results.n_female_called),
-	#					(mt.results.n_male_het + 2*mt.results.n_male_hom_var + mt.results.n_female_het + 2*mt.results.n_female_hom_var) / (2*mt.results.n_male_called + 2*mt.results.n_female_called)
-	#				)
-	#			)
-	#		)
-	#	)
-    #
-	#	if args.test in ["wald","firth","lrt","score"]:
-	#		print("calculate AF in cases and ctrls (accounting appropriately for sex chromosomes)")
-	#		mt = mt.annotate_rows(
-	#			results = mt.results.annotate(
-	#				af_case = hl.cond(
-	#					mt.locus.in_y_nonpar(),
-	#					mt.results.n_male_case_hom_var / mt.results.n_male_case_called,
-	#					hl.cond(
-	#						mt.locus.in_x_nonpar(),
-	#						(mt.results.n_male_case_hom_var + mt.results.n_female_case_het + 2*mt.results.n_female_case_hom_var) / (mt.results.n_male_case_called + 2*mt.results.n_female_case_called),
-	#						(mt.results.n_male_case_het + 2*mt.results.n_male_case_hom_var + mt.results.n_female_case_het + 2*mt.results.n_female_case_hom_var) / (2*mt.results.n_male_case_called + 2*mt.results.n_female_case_called)
-	#					)
-	#				),
-	#				af_ctrl = hl.cond(
-	#					mt.locus.in_y_nonpar(),
-	#					mt.results.n_male_ctrl_hom_var / mt.results.n_male_ctrl_called,
-	#					hl.cond(
-	#						mt.locus.in_x_nonpar(),
-	#						(mt.results.n_male_ctrl_hom_var + mt.results.n_female_ctrl_het + 2*mt.results.n_female_ctrl_hom_var) / (mt.results.n_male_ctrl_called + 2*mt.results.n_female_ctrl_called),
-	#						(mt.results.n_male_ctrl_het + 2*mt.results.n_male_ctrl_hom_var + mt.results.n_female_ctrl_het + 2*mt.results.n_female_ctrl_hom_var) / (2*mt.results.n_male_ctrl_called + 2*mt.results.n_female_ctrl_called)
-	#					)
-	#				)
-	#			)
-	#		)
-	#
-	#	print("calculate mac and maf (accounting appropriately for sex chromosomes)")
-	#	mt = mt.annotate_rows(
-	#		results = mt.results.annotate(
-	#			mac = hl.cond(
-	#				mt.results.af <= 0.5,
-	#				mt.results.ac,
-	#				2*mt.results.n_called - mt.results.ac
-	#			),
-	#			maf = hl.cond(
-	#				mt.results.af <= 0.5,
-	#				mt.results.af,
-	#				1 - mt.results.af)
-	#		)
-	#	)
-	#	return mt
 
 	def linear_regression(mt):
 		tbl = hl.linear_regression_rows(
@@ -278,7 +256,7 @@ def main(args=None):
 
 	def logistic_regression(mt, test):
 		tbl = hl.logistic_regression_rows(
-			test = test,
+			test = test.replace("hail.",""),
 			y = mt.pheno[pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
@@ -299,7 +277,7 @@ def main(args=None):
 			]
 		)
 
-		if test == 'wald':
+		if test == 'hail.wald':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -326,7 +304,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'firth':
+		elif test == 'hail.firth':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -352,7 +330,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'lrt':
+		elif test == 'hail.lrt':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -378,7 +356,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'score':
+		elif test == 'hail.score':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -402,15 +380,92 @@ def main(args=None):
 			)
 		return tbl
 
-	if args.test == 'lm':
+	#def linear_burden(mt):
+	#	#Regressions in Hail 0.2 are generic, so there are no longer special command for burden tests. Rather, to do logistic gene burden, annotate and group variants by gene to form a gene-by-sample matrix of scores, and then apply logistic regression per gene. Here’s an example that uses the total number minor alleles as a sample’s gene score (for a biallelic dataset with random phenotype and covariates):
+	#	#interval_ht = hl.import_locus_intervals('genes.37.interval_list')
+	#	#
+	#	#mt = hl.import_vcf('profile.vcf.bgz')
+	#	#mt = mt.annotate_cols(y = hl.rand_bool(0.5), x1 = hl.rand_norm(), x2 = hl.rand_norm())
+	#	#mt = hl.variant_qc(mt)
+	#	#mt = mt.annotate_rows(gene = interval_ht[mt.locus].target)
+	#	#mt = mt.filter_rows(hl.is_defined(mt.gene))
+	#	#
+	#	#gene_mt = mt.group_rows_by(mt.gene).aggregate(
+	#	#	mac = hl.agg.sum(
+	#	#		hl.cond(mt.variant_qc.AF[1] <= 0.5,
+	#	#				mt.GT.n_alt_alleles(),
+	#	#				2 - mt.GT.n_alt_alleles())))
+	#	#
+	#	#gene_mt = hl.logistic_regression(y=gene_mt.y, x=gene_mt.mac, covariates=[1, gene_mt.x1, gene_mt.x2], test='wald')
+	#	#gene_mt.logreg.show()
+	#	gene_mt = mt.group_rows_by(mt.annotation.Gene).aggregate(MAC = hl.agg.sum(mt.variant_qc.MAC))
+	#	print(gene_mt.describe())
+	#	tbl = hl.linear_regression_rows(
+	#		y = gene_mt.pheno[pheno_analyzed],
+	#		x = gene_mt.MAC,
+	#		covariates = [1] + [gene_mt.pheno[x] for x in covars],
+	#		pass_through = [
+	#			gene_mt.Gene
+	#		]
+	#	)
+	#	#tbl = tbl.select(
+	#	#	chr = tbl.locus.contig,
+	#	#	pos = tbl.locus.position,
+	#	#	id = tbl.rsid,
+	#	#	ref = tbl.alleles[0],
+	#	#	alt = tbl.alleles[1],
+	#	#	n = tbl.n_called,
+	#	#	male = tbl.n_male_called,
+	#	#	female = tbl.n_female_called,
+	#	#	call_rate = tbl.call_rate,
+	#	#	ac = tbl.AC,
+	#	#	af = tbl.AF,
+	#	#	mac = tbl.MAC,
+	#	#	maf = tbl.MAF,
+	#	#	sum_x = tbl.sum_x,
+	#	#	y_transpose_x = tbl.y_transpose_x,
+	#	#	beta = tbl.beta,
+	#	#	se = tbl.standard_error,
+	#	#	t_stat = tbl.t_stat,
+	#	#	pval = tbl.p_value
+	#	#)
+	#	tbl.show()
+    #
+	#def logistic_burden(mt):
+    #
+	#	gene_mt = mt.group_rows_by(mt.annotation.Gene).aggregate(MAC = hl.agg.sum(mt.variant_qc.MAC))
+	#	tbl = hl.logistic_regression_rows(
+	#		test = 'wald',
+	#		y = gene_mt.pheno[pheno_analyzed],
+	#		x = gene_mt.MAC,
+	#		covariates = [1] + [gene_mt.pheno[x] for x in covars]
+	#	)
+	#	return tbl.show()
+
+	if args.test == 'hail.lm':
 		mt_nony_results = linear_regression(mt_nony)
 		mt_y_results = linear_regression(mt_y)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	elif args.test in ['wald','firth','lrt','score']:
+	elif args.test in ['hail.wald','hail.firth','hail.lrt','hail.score']:
 		mt_nony_results = logistic_regression(mt_nony, args.test)
 		mt_y_results = logistic_regression(mt_y, args.test)
 		mt_results = mt_nony_results.union(mt_y_results)
+
+	#elif args.test in ['logistic_burden']:
+	#	mt_nony_results = logistic_burden(mt_nony)
+	#	mt_y_results = logistic_burden(mt_y)
+	#	mt_results = mt_nony_results.union(mt_y_results)
+    #
+	#elif args.test in ['linear_burden']:
+	#	mt_nony_results = linear_burden(mt_nony)
+	#	return 1
+	#	#mt_y_results = linear_burden(mt_y)
+	#	#mt_results = mt_nony_results.union(mt_y_results)
+
+	else:
+		print("association test " + args.test + " not yet available!")
+		return 1
 
 	mt_results = mt_results.key_by()
 	mt_results = mt_results.annotate(chr_idx = hl.cond(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.cond(mt_results.locus.contig == "X", 23, hl.cond(mt_results.locus.contig == "Y", 24, hl.cond(mt_results.locus.contig == "MT", 25, 26)))))
@@ -430,12 +485,6 @@ def main(args=None):
 	#else:
 	#	return 1
 
-	if args.variants_stats_out:
-		print("write variant qc metrics to file")
-		tbl = mt.rows()
-		tbl = tbl.drop("info","variant_qc_raw")
-		tbl.flatten().export(args.variants_stats_out, header=True)
-
 	if args.cloud:
 		hl.copy_log(args.log)
 
@@ -446,6 +495,11 @@ if __name__ == "__main__":
 	parser.add_argument('--covars', help="a '+' separated list of covariates")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")
 	parser.add_argument('--extract-ld', help="a file containing hild proxy results in the form (SNP_A	SNP_B	R2)")
+	parser.add_argument('--annotation', help="a hail table containing annotations from vep")
+	parser.add_argument('--filter', nargs=3, action='append', help='filter id, column name, expression; exclude variants satisfying this expression')
+	parser.add_argument('--cohort-filter', nargs=4, action='append', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
+	parser.add_argument('--knockout-filter', nargs=4, action='append', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
+	parser.add_argument('--mask', nargs=4, action='append', help='mask id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
 	parser.add_argument('--variants-stats-out', help='a base filename for variant qc')
 	parser.add_argument('--pops', help='a comma separated list of populations to include in analysis')
@@ -458,7 +512,8 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--pcs-include', help='a file containing a list of PCs to include in test', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
 	requiredArgs.add_argument('--pheno-col', help='a column name for the phenotype', required=True)
-	requiredArgs.add_argument('--test', choices=['wald','lrt','firth','score','lm','lmm'], help='a regression test code', required=True)
+	requiredArgs.add_argument('--cohorts-map-in', help='a cohorts map file', required=True)
+	requiredArgs.add_argument('--test', choices=['hail.wald','hail.lrt','hail.firth','hail.score','hail.lm'], help='a regression test code', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)

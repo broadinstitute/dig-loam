@@ -6,45 +6,42 @@
 import ProjectConfig._
 import ArrayStores._
 import ProjectStores._
+import Fxns._
 
 final case class CfgException(s: String) extends Exception(s)
 
 def ExportQcData(array: ConfigArray): Unit = {
 
-  val vfilters = {
-    array.qcVariantFilters match {
-      case Some(l) =>
-        for {
-          f <- l
-        } yield {
-          f match {
-            case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
-              "--vfilter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
-            case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
-              "--vfilter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
-            case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
-              "--vfilter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
-            case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
-              val ids = for {
-                ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
-              } yield {
-                ff match {
-                  case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
-                    projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
-                  case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
-                    projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
-                  case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
-                    projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
-                  case _ => throw new CfgException("ExportQcData: vfilters '" + ff + "' not found")
-                }
-              }
-              "--vfilter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == d).head.expression + "\""
-            case _ => throw new CfgException("ExportQcData: vfilters '" + f + "' not found")
-          }
-        }
-      case None => List("")
-    }
-  }.mkString(" ")
+  var vFilters = Seq[String]()
+  array.qcVariantFilters match {
+    case Some(l) =>
+      vFilters = vFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
+    case None => ()
+  }
+
+  vFilters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filteredData.variantFilters}"""
+          .out(arrayStores(array).filteredData.variantFilters)
+          .tag(s"${arrayStores(array).filteredData.variantFilters}".split("/").last)
+      
+      }
+
+    case _ =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${arrayStores(array).filteredData.variantFilters}"""
+          .out(arrayStores(array).filteredData.variantFilters)
+          .tag(s"${arrayStores(array).filteredData.variantFilters}".split("/").last)
+      
+      }
+
+  }
 
   val sampleN = array.qcVariantSampleN.getOrElse("") match {
     case "" => ""
@@ -61,6 +58,12 @@ def ExportQcData(array: ConfigArray): Unit = {
   projectConfig.hailCloud match {
   
     case true =>
+
+      local {
+  
+        googleCopy(arrayStores(array).filteredData.variantFilters, arrayStores(array).filteredData.variantFiltersGoogle.get)
+  
+      }
   
       google {
       
@@ -68,14 +71,14 @@ def ExportQcData(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
-          ${vfilters}
+          --variant-filters ${arrayStores(array).filteredData.variantFiltersGoogle.get}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
           --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
           --cloud
           --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get)
+          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get, arrayStores(array).filteredData.variantFiltersGoogle.get)
           .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       
@@ -97,13 +100,13 @@ def ExportQcData(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --regions-exclude ${ProjectStores.regionsExclude}
-          ${vfilters}
+          --variant-filters ${arrayStores(array).filteredData.variantFilters}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}
           --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
           --log ${arrayStores(array).filteredData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude)
+          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude, arrayStores(array).filteredData.variantFilters)
           .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       

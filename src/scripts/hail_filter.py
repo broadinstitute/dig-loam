@@ -100,9 +100,11 @@ def main(args=None):
 		)
 	)
 
-	if args.sfilter:
-		for f in args.sfilter:
-			if f is not None:
+	if args.sample_filters:
+		with hl.hadoop_open(args.sample_filters, 'r') as f:
+			sfilters = f.read().splitlines()
+			for sf in sfilters:
+				f = sf.split("\t")
 				fields = f[1].split(",")
 				absent = False
 				for field in fields:
@@ -113,7 +115,7 @@ def main(args=None):
 					print("filter samples based on configuration filter " + f[0] + " for field/s " + f[1])
 					tbl = tbl.annotate(
 						ls_filters = tbl.ls_filters.annotate(
-							**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+							**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
 						)
 					)
 				else:
@@ -123,22 +125,16 @@ def main(args=None):
 							**{f[0]: 0}
 						)
 					)
-			else:
+				print("update exclusion column based on " + f[0])
 				tbl = tbl.annotate(
 					ls_filters = tbl.ls_filters.annotate(
-						**{f[0]: 0}
+						exclude = hl.cond(
+							tbl.ls_filters[f[0]] == 1,
+							1,
+							tbl.ls_filters.exclude
+						)
 					)
 				)
-			print("update exclusion column based on " + f[0])
-			tbl = tbl.annotate(
-				ls_filters = tbl.ls_filters.annotate(
-					exclude = hl.cond(
-						tbl.ls_filters[f[0]] == 1,
-						1,
-						tbl.ls_filters.exclude
-					)
-				)
-			)
 
 	print("write sample qc metrics and exclusions to file")
 	tbl.flatten().export(args.samples_stats_out, header=True)
@@ -176,9 +172,11 @@ def main(args=None):
 	print("add exclude field and update for base filters")
 	tbl = tbl.annotate(ls_filters = hl.struct(exclude = hl.cond((tbl.ls_filters.filters == 1) | (tbl.ls_filters.AN == 1) | (tbl.ls_filters.is_monomorphic == 1), 1, 0)))
 
-	if args.vfilter:
-		for f in args.vfilter:
-			if f is not None:
+	if args.variant_filters:
+		with hl.hadoop_open(args.variant_filters, 'r') as f:
+			vfilters = f.read().splitlines()
+			for vf in vfilters:
+				f = vf.split("\t")
 				fields = f[1].split(",")
 				absent = False
 				for field in fields:
@@ -189,7 +187,7 @@ def main(args=None):
 					print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 					tbl = tbl.annotate(
 						ls_filters = tbl.ls_filters.annotate(
-							**{f[0]: hl.cond(eval(hl.eval(f[2])), 1, 0, missing_false = True)}
+							**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
 						)
 					)
 				else:
@@ -199,22 +197,16 @@ def main(args=None):
 							**{f[0]: 0}
 						)
 					)
-			else:
+				print("update exclusion column based on " + f[0])
 				tbl = tbl.annotate(
 					ls_filters = tbl.ls_filters.annotate(
-						**{f[0]: 0}
+						exclude = hl.cond(
+							tbl.ls_filters[f[0]] == 1,
+							1,
+							tbl.ls_filters.exclude
+						)
 					)
 				)
-			print("update exclusion column based on " + f[0])
-			tbl = tbl.annotate(
-				ls_filters = tbl.ls_filters.annotate(
-					exclude = hl.cond(
-						tbl.ls_filters[f[0]] == 1,
-						1,
-						tbl.ls_filters.exclude
-					)
-				)
-			)
 
 	print("write variant qc metrics and exclusions to file")
 	tbl = tbl.drop("info","variant_qc_raw")
@@ -234,8 +226,8 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
-	parser.add_argument('--sfilter', nargs=3, action='append', help='column name followed by expression; include samples satisfying this expression')
-	parser.add_argument('--vfilter', nargs=3, action='append', help='column name followed by expression; include variants satisfying this expression')
+	parser.add_argument('--sample-filters', help='filter id, column name, expression; exclude variants satisfying this expression')
+	parser.add_argument('--variant-filters', help='filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--pheno-in', help='a phenotype file name')
 	parser.add_argument('--id-col', help='a sample id column name in phenotype file')
 	parser.add_argument('--case-ctrl-col', help='a case/ctrl type column name in phenotype file (ie. coded as 1/0)')

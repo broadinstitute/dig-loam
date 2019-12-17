@@ -1,0 +1,183 @@
+final case class ModelCohort(
+    model: ConfigModel,
+    cohort: ConfigCohort) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohort]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelCohort => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result
+  }
+}
+
+final case class PhenoCohort(
+    pheno: ConfigPheno,
+    cohort: ConfigCohort) {
+  def canEqual(a: Any) = a.isInstanceOf[PhenoCohort]
+  override def equals(that: Any): Boolean = that match {
+    case that: PhenoCohort => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + pheno.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result
+  }
+}
+
+final case class ModelCohortKnown(
+    model: ConfigModel,
+    cohort: ConfigCohort,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelCohortKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + known.id.hashCode
+      result
+  }
+}
+
+final case class ModelCohortMeta(
+    model: ConfigModel,
+    cohort: ConfigCohort,
+    meta: ConfigMeta) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortMeta]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelCohortMeta => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result
+  }
+}
+
+final case class PhenoCohortMeta(
+    pheno: ConfigPheno,
+    cohort: ConfigCohort,
+    meta: ConfigMeta) {
+  def canEqual(a: Any) = a.isInstanceOf[PhenoCohortMeta]
+  override def equals(that: Any): Boolean = that match {
+    case that: PhenoCohortMeta => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + pheno.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result
+  }
+}
+
+final case class ModelCohortMetaKnown(
+    model: ConfigModel,
+    cohort: ConfigCohort,
+    meta: ConfigMeta,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelCohortMetaKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelCohortMetaKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + cohort.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result = prime * result + known.id.hashCode
+      result
+  }
+}
+
+final case class ModelMeta(
+    model: ConfigModel,
+    meta: ConfigMeta) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelMeta]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelMeta => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result
+  }
+}
+
+final case class ModelMerge(
+    model: ConfigModel,
+    merge: ConfigMerge) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelMerge]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelMerge => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + merge.id.hashCode
+      result
+  }
+}
+
+final case class ModelMetaKnown(
+    model: ConfigModel,
+    meta: ConfigMeta,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelMetaKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelMetaKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + meta.id.hashCode
+      result = prime * result + known.id.hashCode
+      result
+  }
+}
+
+final case class ModelMergeKnown(
+    model: ConfigModel,
+    merge: ConfigMerge,
+    known: ConfigKnown) {
+  def canEqual(a: Any) = a.isInstanceOf[ModelMergeKnown]
+  override def equals(that: Any): Boolean = that match {
+    case that: ModelMergeKnown => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + model.id.hashCode
+      result = prime * result + merge.id.hashCode
+      result = prime * result + known.id.hashCode
+      result
+  }
+}

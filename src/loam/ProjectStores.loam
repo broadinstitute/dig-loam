@@ -36,7 +36,7 @@ object ProjectStores {
   
   }.toMap
 
-  val knownStores = projectConfig.Knowns.filter(e => projectConfig.Reports.flatMap(e => e.sections).flatMap(e => e.knowns).flatten.toSeq.distinct.contains(e.id)).map { known =>
+  val knownStores = projectConfig.Knowns.filter(e => projectConfig.Models.filter(e => e.knowns.isDefined).map(e => e.knowns.get).flatten.toSeq.distinct.contains(e.id)).map { known =>
 
     known -> Known(
       data = store(path(checkPath(known.data))).asInput,

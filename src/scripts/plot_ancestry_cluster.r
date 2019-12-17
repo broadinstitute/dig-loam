@@ -168,17 +168,6 @@ centers_project$cluster<-as.integer(row.names(centers_project))
 cluster_table<-merge(cluster_table,centers_project,all=T)
 print(cluster_table)
 
-afr_codes <- unlist(strsplit(args$afr_codes,split=","))
-amr_codes <- unlist(strsplit(args$amr_codes,split=","))
-eur_codes <- unlist(strsplit(args$eur_codes,split=","))
-eas_codes <- unlist(strsplit(args$eas_codes,split=","))
-sas_codes <- unlist(strsplit(args$sas_codes,split=","))
-afr_codes <- afr_codes[paste0("sr_",afr_codes) %in% names(cluster_table)]
-amr_codes <- amr_codes[paste0("sr_",amr_codes) %in% names(cluster_table)]
-eur_codes <- eur_codes[paste0("sr_",eur_codes) %in% names(cluster_table)]
-eas_codes <- eas_codes[paste0("sr_",eas_codes) %in% names(cluster_table)]
-sas_codes <- sas_codes[paste0("sr_",sas_codes) %in% names(cluster_table)]
-
 cat("\nassign each cluster to nearest 1kg super population\n")
 for(i in 1:nrow(cluster_table)) {
 	print(cluster_table[i,])
@@ -189,28 +178,28 @@ for(i in 1:nrow(cluster_table)) {
 		} else {
 			cat("  ",paste0("recalculating super population membership based on self report for cluster ",cluster_table$cluster[i]),"\n")
 			c<-cluster_table[i,c("AMR","AFR","EAS","EUR","SAS")]
-			if(args$afr_codes != "") {
-				for(afr_code in afr_codes) {
+			if(! is.null(args$afr_codes)) {
+				for(afr_code in afr_codes[paste0("sr_",afr_codes) %in% names(cluster_table)]) {
 					c$AFR <- c$AFR + cluster_table[i,paste0("sr_",afr_code)]
 				}
 			}
-			if(args$amr_codes != "") {
-				for(amr_code in amr_codes) {
+			if(! is.null(args$amr_codes)) {
+				for(amr_code in amr_codes[paste0("sr_",amr_codes) %in% names(cluster_table)]) {
 					c$AMR <- c$AMR + cluster_table[i,paste0("sr_",amr_code)]
 				}
 			}
-			if(args$eur_codes != "") {
-				for(eur_code in eur_codes) {
+			if(! is.null(args$eur_codes)) {
+				for(eur_code in eur_codes[paste0("sr_",eur_codes) %in% names(cluster_table)]) {
 					c$EUR <- c$EUR + cluster_table[i,paste0("sr_",eur_code)]
 				}
 			}
-			if(args$eas_codes != "") {
-				for(eas_code in eas_codes) {
+			if(! is.null(args$eas_codes)) {
+				for(eas_code in eas_codes[paste0("sr_",eas_codes) %in% names(cluster_table)]) {
 					c$EAS <- c$EAS + cluster_table[i,paste0("sr_",eas_code)]
 				}
 			}
-			if(args$sas_codes != "") {
-				for(sas_code in sas_codes) {
+			if(! is.null(args$sas_codes)) {
+				for(sas_code in sas_codes[paste0("sr_",sas_codes) %in% names(cluster_table)]) {
 					c$SAS <- c$SAS + cluster_table[i,paste0("sr_",sas_code)]
 				}
 			}

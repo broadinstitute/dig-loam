@@ -181,6 +181,31 @@ def SampleQc(array: ConfigArray): Unit = {
    * Restore Samples Step
    * Requires: Python
    */
+
+  val ancestryOutliersKeep = array.ancestryOutliersKeep match {
+    case Some(s) => s.mkString(",")
+    case None => None
+  }
+
+  val duplicatesKeep = array.duplicatesKeep match {
+    case Some(s) => s.mkString(",")
+    case None => None
+  }
+
+  val famsizeKeep = array.famsizeKeep match {
+    case Some(s) => s.mkString(",")
+    case None => None
+  }
+
+  val sampleqcKeep = array.sampleqcKeep match {
+    case Some(s) => s.mkString(",")
+    case None => None
+  }
+
+  val sexcheckKeep = array.sexcheckKeep match {
+    case Some(s) => s.mkString(",")
+    case None => None
+  }
   
   drmWith(imageName = s"${utils.image.imgPython2}") {
   

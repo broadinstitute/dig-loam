@@ -43,8 +43,6 @@ final case class DirTree(
   data: MultiPath,
   dataArray: MultiPath,
   dataArrayMap: Map[ConfigArray, DirTreeDataArray],
-  dataCohort: MultiPath,
-  dataCohortMap: Map[ConfigCohort, DirTreeDataCohort],
   dataGlobal: MultiPath,
   dataGlobalAncestry: MultiPath,
   dataGlobalKinship: MultiPath,
@@ -80,7 +78,6 @@ object DirTree {
 
     val data = appendSubDir(base, "data")
     val dataArray = appendSubDir(data, "array")
-    val dataCohort = appendSubDir(data, "cohort")
     val dataGlobal = appendSubDir(data, "global")
     val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
     val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
@@ -112,44 +109,56 @@ object DirTree {
       )
     }.toMap
 
-    val dataCohortMap = cfg.Cohorts.map { cohort =>
-      val base = appendSubDir(dataCohort, cohort.id)
-      val filter = appendSubDir(base, "filter")
-      cohort -> DirTreeDataCohort(
-        base = base,
-        filter = filter
-      )
-    }.toMap
-
-    val dataGlobalKinshipMap = metasReport.map { meta =>
+    val dataGlobalKinshipMap = projectConfig.Metas.map { meta =>
       meta -> appendSubDir(dataGlobalKinship, meta.id)
     }.toMap
 
-    val analysisPhenoMap = phenosReport.map { pheno =>
+    val analysisPhenoMap = projectConfig.Phenos.filter(e => projectConfig.Models.map(e => e.pheno).contains(e.id)).map { pheno =>
 
       val base_pheno = appendSubDir(analysis, pheno.id)
 
       pheno -> DirTreeAnalysisPheno(
         base = base_pheno,
-        models = modelsReport.filter(e => e.pheno == pheno.id).map { model =>
+        models = projectConfig.Models.filter(e => e.pheno == pheno.id).map { model =>
           val base_model = appendSubDir(base_pheno, model.id)
-          val base_cohort = (modelCohorts ++ modelCohortMetas).size match { case 0 => None; case _ => Some(appendSubDir(base_model, "cohort")) }
-          val base_meta = modelMetas.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "meta")) }
-          val base_merge = modelMerges.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "merge")) }
+          val base_cohort = model.design match {
+            case "strat" => Some(appendSubDir(base_model, "cohort"))
+            case _ => None
+          }
+          val base_meta = model.design match {
+            case "strat" => model.metas.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "meta")) }
+            case _ => None
+          }
+          val base_merge = model.design match {
+            case "strat" => model.merges.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "merge")) }
+            case _ => None
+          }
           model -> DirTreeAnalysisModel(
             base = base_model,
             base_cohort = base_cohort,
             base_meta = base_meta,
             base_merge = base_merge,
-            merges = modelMerges.map(e => e.merge).map { merge =>
-              merge -> appendSubDir(base_merge.get, merge.id)
-            }.toMap,
-            metas = modelMetas.map(e => e.meta).map { meta =>
-              meta -> appendSubDir(base_meta.get, meta.id)
-            }.toMap,
-            cohorts = (modelCohorts.map(e => e.cohort) ++ modelCohortMetas.map(e => e.cohort)).map { cohort =>
-              cohort -> appendSubDir(base_cohort.get, cohort.id)
-            }.toMap
+            merges = base_merge match {
+              case Some(s) => 
+                projectConfig.Merges.filter(e => model.merges.get.contains(e.id)).map { merge =>
+                  merge -> appendSubDir(s, merge.id)
+                }.toMap
+              case None => Map[ConfigMerge, MultiPath]()
+            },
+            metas =  base_meta match {
+              case Some(s) => 
+                projectConfig.Metas.filter(e => model.metas.get.contains(e.id)).map { meta =>
+                  meta -> appendSubDir(s, meta.id)
+                }.toMap
+              case None => Map[ConfigMeta, MultiPath]()
+            },
+            cohorts = base_cohort match {
+              case Some(s) => 
+                projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
+                  cohort -> appendSubDir(s, cohort.id)
+                }.toMap
+              case None => Map[ConfigCohort, MultiPath]()
+            }
           )
         }.toMap
       )
@@ -165,8 +174,6 @@ object DirTree {
       data = data,
       dataArray = dataArray,
       dataArrayMap = dataArrayMap,
-      dataCohort = dataCohort,
-      dataCohortMap = dataCohortMap,
       dataGlobal = dataGlobal,
       dataGlobalAncestry = dataGlobalAncestry,
       dataGlobalKinship = dataGlobalKinship,

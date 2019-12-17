@@ -1,0 +1,432 @@
+/**
+ * Prepare Model Cohorts
+ * 
+ */
+import ProjectConfig._
+import ArrayStores._
+import ProjectStores._
+import ModelStores._
+import AssocStores._
+import Fxns._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+
+  val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+
+  val stratStrings = {
+    for {
+      cohort <- configCohorts
+    } yield {
+      var s = "--strat " + cohort.id + " " + cohort.ancestry.mkString(",")
+      cohort.stratCol match {
+        case Some(a) => s = s + " " + a
+        case None => s = s + " " + """"N/A""""
+      }
+      cohort.stratCodes match {
+        case Some(a) => s = s + " " + a.mkString(",")
+        case None => s = s + " " + """"N/A""""
+      }
+      s
+    }
+  }
+
+  val metaPriorSamplesString = configMeta match {
+    case Some(s) =>
+      var mpss = s"--cohorts ${configCohorts.map(e => e.id).mkString(",")}"
+      val x = for {
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
+      } yield {
+        s"${modelStores((configModel, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable.toString.split("@")(1)}"
+      }
+      x.size match {
+        case n if n > 0 => mpss = mpss + " --meta-prior-samples " + x.mkString(",") + " --meta-cohorts " + configMeta.get.cohorts.mkString(",") + " --cckinship " + s"${metaKinshipStores(configMeta.get).kin0.toString.split("@")(1)}"
+        case _ => ""
+      }
+      mpss
+    case None => ""
+  }
+
+  val modelCohortSamplesAvailableIn = configMeta match {
+    case Some(s) => 
+      val x = for {
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
+      } yield {
+        modelStores((configModel, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
+      }
+      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
+    case None =>
+      arrayStores(array).filteredData.plink.data.local.get :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
+  }
+
+  val keepRelated = famTests.contains(configModel.test) match {
+    case true => "--keep-related"
+    case false => ""
+  }
+  
+  drmWith(imageName = s"${utils.image.imgR}") {
+
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rModelCohortSamplesAvailable}
+      --pheno-in ${ProjectStores.phenoFile.get}
+      --fam-in ${arrayStores(array).filteredData.plink.base.local.get}.fam
+      --ancestry-in ${ProjectStores.ancestryInferred}
+      ${stratStrings.mkString(" ")}
+      ${metaPriorSamplesString}
+      --pheno-col ${configModel.pheno}
+      --iid-col ${projectConfig.phenoFileId}
+      --sampleqc-in ${arrayStores(array).sampleQcData.stats}
+      --kinship-in ${arrayStores(array).kinshipData.kin0}
+      --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude}
+      --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude}
+      ${keepRelated}
+      --covars "${configModel.covars}"
+      --out-pheno-prelim ${modelStores((configModel, configCohorts, configMeta)).phenoPrelim}
+      --out-id-map ${modelStores((configModel, configCohorts, configMeta)).sampleMap}
+      --out-cohorts-map ${modelStores((configModel, configCohorts, configMeta)).cohortMap}
+      --out ${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}
+      > ${modelStores((configModel, configCohorts, configMeta)).samplesAvailableLog}"""
+      .in(modelCohortSamplesAvailableIn)
+      .out(modelStores((configModel, configCohorts, configMeta)).sampleMap, modelStores((configModel, configCohorts, configMeta)).phenoPrelim, modelStores((configModel, configCohorts, configMeta)).samplesAvailable, modelStores((configModel, configCohorts, configMeta)).samplesAvailableLog)
+      .tag(s"${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}".split("/").last)
+  
+  }
+
+  val trans = configModel.trans match {
+    case Some(s) => configModel.trans.get
+    case None => "N/A"
+  }
+
+  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.generatePheno.cpus, mem = projectConfig.resources.generatePheno.mem, maxRunTime = projectConfig.resources.generatePheno.maxRunTime) {
+  
+    cmd"""${utils.bash.shFlashPca}
+      ${utils.binary.binFlashPca}
+      ${utils.binary.binRscript}
+      ${utils.binary.binPlink}
+      ${utils.r.rGeneratePheno}
+      ${projectConfig.resources.generatePheno.cpus}
+      ${arrayStores(array).prunedData.plink.base}
+      ${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaBase}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaScores}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaEigenVecs}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaLoadings}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaEigenVals}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaPve}
+      ${modelStores((configModel, configCohorts, configMeta)).pcaMeansd}
+      ${configModel.maxPcaOutlierIterations}
+      ${modelStores((configModel, configCohorts, configMeta)).phenoPrelim}
+      ${configModel.pheno}
+      ${projectConfig.phenoFileId}
+      "${trans}"
+      "${configModel.covars}"
+      ${projectConfig.minPCs}
+      ${projectConfig.maxPCs}
+      ${projectConfig.nStddevs}
+      ${modelStores((configModel, configCohorts, configMeta)).pheno}
+      ${modelStores((configModel, configCohorts, configMeta)).pcsInclude}
+      ${modelStores((configModel, configCohorts, configMeta)).outliers}
+      > ${modelStores((configModel, configCohorts, configMeta)).pcaLog}"""
+      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configCohorts, configMeta)).phenoPrelim :+ ProjectStores.phenoFile.get)
+      .out(modelStores((configModel, configCohorts, configMeta)).pcaScores, modelStores((configModel, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configCohorts, configMeta)).pcaPve, modelStores((configModel, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).pcsInclude, modelStores((configModel, configCohorts, configMeta)).outliers, modelStores((configModel, configCohorts, configMeta)).pcaLog)
+      .tag(s"${modelStores((configModel, configCohorts, configMeta)).pheno}".split("/").last)
+  
+  }
+
+  var filters = Seq[String]()
+  var cohortFilters = Seq[String]()
+  var knockoutFilters = Seq[String]()
+  var masks = Seq[String]()
+  var filterFields = Seq[String]()
+  configModel.filters match {
+    case Some(l) =>
+      filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
+      filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
+    case None => ()
+  }
+  configModel.cohortFilters match {
+    case Some(l) =>
+      for {
+        cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+      } yield {
+        cohortFilters = cohortFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+      }
+    case None => ()
+  }
+  configModel.knockoutFilters match {
+    case Some(l) =>
+      for {
+        cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+      } yield {
+        knockoutFilters = knockoutFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+      }
+    case None => ()
+  }
+  configModel.masks match {
+    case Some(l) =>
+      for {
+        mf <- l
+      } yield {
+        masks = masks ++ variantFiltersToPrintableList(cfg = projectConfig, filters = mf.filters, id = Some(mf.id))
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
+      }
+    case None => ()
+  }
+
+  filters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${filters.mkString("\n")}" > ${modelStores((configModel, configCohorts, configMeta)).filters}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).filters)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).filters}".split("/").last)
+      
+      }
+
+    case _ => 
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${modelStores((configModel, configCohorts, configMeta)).filters}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).filters)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).filters}".split("/").last)
+      
+      }
+
+  }
+
+  cohortFilters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+
+        cmd"""echo "${cohortFilters.mkString("\n")}" > ${modelStores((configModel, configCohorts, configMeta)).cohortFilters}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).cohortFilters)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortFilters}".split("/").last)
+      
+      }
+
+    case _ => 
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${modelStores((configModel, configCohorts, configMeta)).cohortFilters}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).cohortFilters)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortFilters}".split("/").last)
+      
+      }
+
+  }
+
+  knockoutFilters.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${knockoutFilters.mkString("\n")}" > ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).knockoutFilters)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).knockoutFilters}".split("/").last)
+      
+      }
+
+    case _ => 
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).knockoutFilters)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).knockoutFilters}".split("/").last)
+      
+      }
+
+  }
+
+  masks.size match {
+
+    case n if n > 0 =>
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""echo "${masks.mkString("\n")}" > ${modelStores((configModel, configCohorts, configMeta)).masks}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).masks)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).masks}".split("/").last)
+      
+      }
+
+    case _ => 
+
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""touch ${modelStores((configModel, configCohorts, configMeta)).masks}"""
+          .out(modelStores((configModel, configCohorts, configMeta)).masks)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).masks}".split("/").last)
+      
+      }
+
+  }
+
+  var annotateCli = ""
+  var groupFileOut = ""
+  var exportVcf = ""
+  var hailAssocIn = Seq[Store]()
+  var hailAssocOut = Seq[Store]()
+
+  val binary = binaryAssocTests.contains(configModel.test) match {
+    case true => "--binary"
+    case false => ""
+  }
+
+  projectConfig.hailCloud match {
+
+    case true =>
+
+      local {
+      
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortMap, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).filters, modelStores((configModel, configCohorts, configMeta)).filtersGoogle.get)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortFilters, modelStores((configModel, configCohorts, configMeta)).cohortFiltersGoogle.get)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).knockoutFilters, modelStores((configModel, configCohorts, configMeta)).knockoutFiltersGoogle.get)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).masks, modelStores((configModel, configCohorts, configMeta)).masksGoogle.get)
+      
+      }
+
+      hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get, modelStores((configModel, configCohorts, configMeta)).filtersGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortFiltersGoogle.get, modelStores((configModel, configCohorts, configMeta)).knockoutFiltersGoogle.get, modelStores((configModel, configCohorts, configMeta)).masksGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
+
+      hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get)
+
+      (filterFields.filter(e => e.startsWith("annotation.")).size, groupTests.contains(configModel.test)) match {
+        case (m, n) if (m > 0 || n) =>
+          annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHtGoogle.get.toString.split("@")(1)}"
+          hailAssocIn = hailAssocIn ++ Seq(arrayStores(array).refData.annotationsHtGoogle.get)
+        case (o, p) if p =>
+          groupFileOut = groupFileOut + s"--groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get.toString.split("@")(1)}"
+          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get)
+        case _ => ()
+      }
+
+      nonHailTests.contains(configModel.test) match {
+        case true =>
+          exportVcf = exportVcf + s"--vcf-out ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.google.get.toString.split("@")(1)}"
+          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.google.get)
+        case _ => ()
+      }
+
+      googleWith(projectConfig.cloudResources.mtCluster) {
+      
+        hail"""${utils.python.pyHailFilterModelVariants} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --pheno-in ${modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}
+          --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get}
+          --filters ${modelStores((configModel, configCohorts, configMeta)).filtersGoogle.get}
+          --cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFiltersGoogle.get}
+          --knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFiltersGoogle.get}
+          --masks ${modelStores((configModel, configCohorts, configMeta)).masksGoogle.get}
+          ${annotateCli}
+          ${groupFileOut}
+          ${exportVcf}
+          ${binary}
+          --cloud
+          --log ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get}"""
+            .in(hailAssocIn)
+            .out(hailAssocOut)
+            .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}.google".split("/").last)
+
+      }
+      
+      local {
+
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStats)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFile.get)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
+      
+      }
+
+      nonHailTests.contains(configModel.test) match {
+
+        case true =>
+
+          local {
+
+            googleCopy(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get)
+
+          }
+
+        case false => ()
+
+      }
+
+    case false =>
+
+      hailAssocIn = hailAssocIn ++ Seq(arrayStores(array).refData.mt.get, modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).cohortMap, modelStores((configModel, configCohorts, configMeta)).filters, modelStores((configModel, configCohorts, configMeta)).cohortFilters, modelStores((configModel, configCohorts, configMeta)).knockoutFilters, modelStores((configModel, configCohorts, configMeta)).masks, arrayStores(array).filterPostQc.variantsExclude)
+
+      hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).variantsStats, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
+
+      (filterFields.filter(e => e.startsWith("annotation.")).size, groupTests.contains(configModel.test)) match {
+        case (m, n) if (m > 0 || n) =>
+          annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHt.toString.split("@")(1)}"
+          hailAssocIn = hailAssocIn ++ Seq(arrayStores(array).refData.annotationsHt)
+        case (o, p) if p =>
+          groupFileOut = groupFileOut + s"--groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFile.get.toString.split("@")(1)}"
+          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).groupFile.get)
+        case _ => ()
+      }
+
+      nonHailTests.contains(configModel.test) match {
+        case true =>
+          exportVcf = exportVcf + s"--vcf-out ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get.toString.split("@")(1)}"
+          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get)
+        case _ => ()
+      }
+
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
+
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterModelVariants}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --pheno-in ${modelStores((configModel, configCohorts, configMeta)).pheno}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExclude}
+          --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).variantsStats}
+          --filters ${modelStores((configModel, configCohorts, configMeta)).filters}
+          --cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFilters}
+          --knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters}
+          --masks ${modelStores((configModel, configCohorts, configMeta)).masks}
+          ${annotateCli}
+          ${groupFileOut}
+          ${exportVcf}
+          ${binary}
+          --log ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog}"""
+            .in(hailAssocIn)
+            .out(hailAssocOut)
+            .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}".split("/").last)
+
+      }
+
+  }
+
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabixClean.cpus, mem = projectConfig.resources.tabixClean.mem, maxRunTime = projectConfig.resources.tabixClean.maxRunTime) {
+
+    cmd"""${utils.binary.binTabix} -p vcf ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get}"""
+      .in(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get)
+      .out(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.tbi.local.get)
+      .tag(s"${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.tbi.local.get}".split("/").last)
+
+  }
+
+}

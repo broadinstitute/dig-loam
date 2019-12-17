@@ -10,9 +10,9 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   val inputType = arrayCfg.technology + "_" + arrayCfg.format
 
-  inputType match {
+  (arrayCfg.technology, arrayCfg.format) match {
 
-    case "gwas_vcf" =>
+    case (m,n) if inputTypesGwasVcf.contains((m,n)) =>
 
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
       

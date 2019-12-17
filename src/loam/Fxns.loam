@@ -2,6 +2,7 @@ import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
 import java.nio.file.{Paths, Files}
 import scala.sys.process._
+import ProjectConfig._
 
 final case class CfgException(s: String) extends Exception(s)
 
@@ -56,9 +57,27 @@ def getStrOrBlank(config: loamstream.conf.DataConfig, field: String, regex: Stri
   }
 }
 
-def requiredInt(config: loamstream.conf.DataConfig, field: String, default: Option[Int] = None): Int = {
+def requiredInt(config: loamstream.conf.DataConfig, field: String, default: Option[Int] = None, min: Option[Int] = None, max: Option[Int] = None): Int = {
   Try(config.getInt(field)) match {
-    case Success(o) => o
+    case Success(o) =>
+      (min, max) match {
+        case (Some(m), Some(n)) =>
+          o >= m && o <= n match {
+            case true => o
+            case false => throw new CfgException("requiredInt: field '" + field + "' must be in range [" + m.toString + ", " + n.toString + "]")
+          }
+        case (Some(m), None) =>
+          o >= m match {
+            case true => o
+            case false => throw new CfgException("requiredInt: field '" + field + "' must be in range [" + m.toString + ",)")
+          }
+        case (None, Some(n)) =>
+          o <= n match {
+            case true => o
+            case false => throw new CfgException("requiredInt: field '" + field + "' must be in range (," + n.toString + "]")
+          }
+        case _ => o
+      }
     case Failure(NonFatal(e)) =>
       default match {
         case Some(i) => i
@@ -68,12 +87,26 @@ def requiredInt(config: loamstream.conf.DataConfig, field: String, default: Opti
   }
 }
 
-def optionalInt(config: loamstream.conf.DataConfig, field: String, regex: String = ".*"): Option[Int] = {
+def optionalInt(config: loamstream.conf.DataConfig, field: String, min: Option[Int] = None, max: Option[Int] = None): Option[Int] = {
   Try(config.getInt(field)) match {
-    case Success(o)           =>
-      o.toString.matches(regex) match {
-        case false => throw new CfgException("optionalInt: field " + field + " value " + o.toString + " does not match regex format " + regex)
-        case true  => Some(o)
+    case Success(o) =>
+      (min, max) match {
+        case (Some(m), Some(n)) =>
+          o >= m && o <= n match {
+            case true => Some(o)
+            case false => throw new CfgException("optionalInt: field '" + field + "' must be in range [" + m.toString + ", " + n.toString + "]")
+          }
+        case (Some(m), None) =>
+          o >= m match {
+            case true => Some(o)
+            case false => throw new CfgException("optionalInt: field '" + field + "' must be in range [" + m.toString + ",)")
+          }
+        case (None, Some(n)) =>
+          o <= n match {
+            case true => Some(o)
+            case false => throw new CfgException("optionalInt: field '" + field + "' must be in range (," + n.toString + "]")
+          }
+        case _ => Some(o)
       }
     case Failure(NonFatal(e)) => None
     case Failure(_)           => throw new CfgException("optionalInt: field '" + field + "' fatal error")
@@ -101,12 +134,15 @@ def requiredStrList(config: loamstream.conf.DataConfig, field: String, regex: St
           case true  => ()
         }
       }
-      o 
+      o.size match {
+        case x if(x >= 1) => o
+        case _ => throw new CfgException("requiredStrList: field " + field + " list must have at least 1 element")
+      }
     case Failure(NonFatal(e)) => 
       default match {
         case Some(s) =>
           s.toString.matches(regex) match {
-            case false => throw new CfgException("optionalInt: field " + field + " value " + s.toString + " does not match regex format " + regex)
+            case false => throw new CfgException("requiredStrList: field " + field + " value " + s.toString + " does not match regex format " + regex)
             case true  => s
           }
         case None    => throw new CfgException("requiredStrList: field '" + field + "' not found")
@@ -117,7 +153,11 @@ def requiredStrList(config: loamstream.conf.DataConfig, field: String, regex: St
 
 def optionalStrList(config: loamstream.conf.DataConfig, field: String): Option[Seq[String]] = {
   Try(config.getStrList(field)) match {
-    case Success(o)           => Some(o)
+    case Success(o)           => 
+      o.size match {
+        case x if(x >= 1) => Some(o)
+        case _ => None
+      }
     case Failure(NonFatal(e)) => None
     case Failure(_)           => throw new CfgException("optionalStrList: field '" + field + "' fatal error")
   }
@@ -152,6 +192,18 @@ def requiredObjList(config: loamstream.conf.DataConfig, field: String, default: 
         case None    => throw new CfgException("requiredObjList: field '" + field + "' not found")
       }
     case Failure(_)           => throw new CfgException("requiredObjList: field '" + field + "' fatal error")
+  }
+}
+
+def optionalObjList(config: loamstream.conf.DataConfig, field: String): Option[Seq[loamstream.conf.DataConfig]] = {
+  Try(config.getObjList(field)) match {
+    case Success(o)           => 
+      o.size match {
+        case x if(x >= 1) => Some(o)
+        case _ => None
+      }
+    case Failure(NonFatal(e)) => None
+    case Failure(_)           => throw new CfgException("optionalObjList: field '" + field + "' fatal error")
   }
 }
 
@@ -255,8 +307,8 @@ def intervalToExpression(s: String, i: String): String = {
 
 def booleanToExpression(s: String, i: String): String = {
   i match {
-    case "true" => s + " == True"
-    case "false" => s + " == False"
+    case "true" => s + " != True"
+    case "false" => s + " != False"
     case _ => throw new CfgException("booleanToExpression: user supplied value " + i + " for " + s + " is not currently supported... true and false are currently supported")
   }
 }
@@ -264,8 +316,171 @@ def booleanToExpression(s: String, i: String): String = {
 def categoricalToExpression(s: String, i: Seq[String]): String = {
   s match {
     case "chr" =>
-      "hl.literal({'" + expandChrList(i).mkString("','") + "'}).contains(" + s + ")"
+      "! hl.literal({'" + expandChrList(i).mkString("','") + "'}).contains(" + s + ")"
     case _ =>
-      "hl.literal({'" + i.mkString("','") + "'}).contains(" + s + ")"
+      "! hl.literal({'" + i.mkString("','") + "'}).contains(" + s + ")"
   }
+}
+
+def variantFiltersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOption: String, id: Option[String] = None): String = {
+
+  val id_string = id match {
+    case Some(s) => s + " "
+    case None => " "
+  }
+
+  val id_exc = id match {
+    case Some(s) => s + ": "
+    case None => ""
+  }
+
+  val x = {
+    for {
+      f <- filters
+    } yield {
+      f match {
+        case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
+          cliOption + " " + id_string + cfg.numericVariantFilters.filter(e => e.id == n).head.id + " " + cfg.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + cfg.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+        case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
+          cliOption + " " + id_string + cfg.booleanVariantFilters.filter(e => e.id == b).head.id + " " + cfg.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + cfg.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+        case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
+          cliOption + " " + id_string + cfg.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + cfg.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+        case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
+          val ids = for {
+            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+          } yield {
+            ff match {
+              case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
+                cfg.numericVariantFilters.filter(e => e.id == nn).head.field
+              case bb if cfg.booleanVariantFilters.map(e => e.id) contains bb =>
+                cfg.booleanVariantFilters.filter(e => e.id == bb).head.field
+              case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
+                cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field
+              case _ => throw new CfgException("filtersToCliString: " + id_exc + " filters '" + ff + "' not found")
+            }
+          }
+          cliOption + " " + id_string + cfg.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + cfg.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+        case _ => throw new CfgException("filtersToCliString: " + id_exc + " filters '" + f + "' not found")
+      }
+    }
+  }
+  x.mkString(" ")
+
+}
+
+def variantFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String], id: Option[String] = None): Seq[String] = {
+
+  var v = Seq[String]()
+
+  val id_string = id match {
+    case Some(s) => v = v ++ Seq(s)
+    case None => ()
+  }
+
+  val id_exc = id match {
+    case Some(s) => s + ": "
+    case None => ""
+  }
+
+  val x = {
+    for {
+      f <- filters
+    } yield {
+      f match {
+        case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
+          (v ++ Seq(cfg.numericVariantFilters.filter(e => e.id == n).head.id, cfg.numericVariantFilters.filter(e => e.id == n).head.field, cfg.numericVariantFilters.filter(e => e.id == n).head.expression)).mkString("\t")
+        case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
+          (v ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == b).head.id, cfg.booleanVariantFilters.filter(e => e.id == b).head.field, cfg.booleanVariantFilters.filter(e => e.id == b).head.expression)).mkString("\t")
+        case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
+          (v ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.id, cfg.categoricalVariantFilters.filter(e => e.id == c).head.field, cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression)).mkString("\t")
+        case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
+          val ids = for {
+            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+          } yield {
+            ff match {
+              case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
+                cfg.numericVariantFilters.filter(e => e.id == nn).head.field
+              case bb if cfg.booleanVariantFilters.map(e => e.id) contains bb =>
+                cfg.booleanVariantFilters.filter(e => e.id == bb).head.field
+              case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
+                cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field
+              case _ => throw new CfgException("variantFiltersToPrintableList: " + id_exc + " filters '" + ff + "' not found")
+            }
+          }
+          (v ++ Seq(cfg.compoundVariantFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundVariantFilters.filter(e => e.id == d).head.expression)).mkString("\t")
+        case _ => throw new CfgException("variantFiltersToPrintableList: " + id_exc + " filters '" + f + "' not found")
+      }
+    }
+  }
+  x
+
+}
+
+def sampleFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String]): Seq[String] = {
+
+  val x = {
+    for {
+      f <- filters
+    } yield {
+      f match {
+        case n if cfg.numericSampleFilters.map(e => e.id) contains n =>
+          Seq(cfg.numericSampleFilters.filter(e => e.id == n).head.id, cfg.numericSampleFilters.filter(e => e.id == n).head.field, cfg.numericSampleFilters.filter(e => e.id == n).head.expression).mkString("\t")
+        case b if cfg.booleanSampleFilters.map(e => e.id) contains b =>
+          Seq(cfg.booleanSampleFilters.filter(e => e.id == b).head.id, cfg.booleanSampleFilters.filter(e => e.id == b).head.field, cfg.booleanSampleFilters.filter(e => e.id == b).head.expression).mkString("\t")
+        case c if cfg.categoricalSampleFilters.map(e => e.id) contains c =>
+          Seq(cfg.categoricalSampleFilters.filter(e => e.id == c).head.id, cfg.categoricalSampleFilters.filter(e => e.id == c).head.field, cfg.categoricalSampleFilters.filter(e => e.id == c).head.expression).mkString("\t")
+        case d if cfg.compoundSampleFilters.map(e => e.id) contains d =>
+          val ids = for {
+            ff <- cfg.compoundSampleFilters.filter(e => e.id == d).head.filters
+          } yield {
+            ff match {
+              case nn if cfg.numericSampleFilters.map(e => e.id) contains nn =>
+                cfg.numericSampleFilters.filter(e => e.id == nn).head.field
+              case bb if cfg.booleanSampleFilters.map(e => e.id) contains bb =>
+                cfg.booleanSampleFilters.filter(e => e.id == bb).head.field
+              case cc if cfg.categoricalSampleFilters.map(e => e.id) contains cc =>
+                cfg.categoricalSampleFilters.filter(e => e.id == cc).head.field
+              case _ => throw new CfgException("sampleFiltersToPrintableList: filter '" + ff + "' not found")
+            }
+          }
+          Seq(cfg.compoundSampleFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundSampleFilters.filter(e => e.id == d).head.expression).mkString("\t")
+        case _ => throw new CfgException("sampleFiltersToPrintableList: filter '" + f + "' not found")
+      }
+    }
+  }
+  x
+
+}
+
+def getFilterFields(cfg: ProjectConfig, filters: Seq[String]): Seq[String] = {
+
+  var x = Seq[String]()
+  for {
+    f <- filters
+  } yield {
+    f match {
+      case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
+        x = x ++ Seq(cfg.numericVariantFilters.filter(e => e.id == n).head.field)
+      case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
+        x = x ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == b).head.field)
+      case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
+        x = x ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.field)
+      case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
+        for {
+          ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+        } yield {
+          ff match {
+            case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
+              x = x ++ Seq(cfg.numericVariantFilters.filter(e => e.id == nn).head.field)
+            case bb if cfg.booleanVariantFilters.map(e => e.id) contains bb =>
+              x = x ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == bb).head.field)
+            case cc if cfg.categoricalVariantFilters.map(e => e.id) contains cc =>
+              x = x ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == cc).head.field)
+            case _ => throw new CfgException("getFilterFields: filters '" + ff + "' not found")
+          }
+        }
+      case _ => throw new CfgException("getFilterFields: filters '" + f + "' not found")
+    }
+  }
+  x
 }

@@ -17,7 +17,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
   
       google {
       
-        hail"""${utils.python.pyHailExportCleanData} --
+        hail"""${utils.python.pyHailExportCleanArrayData} --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --vcf-out ${arrayStores(array).cleanData.get.vcf.data.google.get}
@@ -27,7 +27,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
           --log ${arrayStores(array).cleanData.get.hailLogGoogle.get}"""
           .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
           .out(arrayStores(array).cleanData.get.vcf.data.google.get, arrayStores(array).cleanData.get.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanData".split("/").last)
+          .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanArrayData".split("/").last)
       
       }
   
@@ -42,7 +42,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
   
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.exportCleanHail.cpus, mem = projectConfig.resources.exportCleanHail.mem, maxRunTime = projectConfig.resources.exportCleanHail.maxRunTime) {
       
-        cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanData}
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanArrayData}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
           --vcf-out ${arrayStores(array).cleanData.get.vcf.data.local.get}
@@ -51,7 +51,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
           --log ${arrayStores(array).cleanData.get.hailLog}"""
           .in(arrayStores(array).refData.mt.get, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.variantsExclude)
           .out(arrayStores(array).cleanData.get.vcf.data.local.get, arrayStores(array).cleanData.get.hailLog)
-          .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanData".split("/").last)
+          .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanArrayData".split("/").last)
       
       }
   

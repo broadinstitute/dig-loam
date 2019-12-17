@@ -1,7 +1,7 @@
 /**
   * Ancestry PCA Step
   *  Description: Calculate PCs combined with 1KG Phase 3 Purcell 5k data
-  *  Requires: Hail, R, ${utils.r.rPlotAncestryPca}
+  *  Requires: Hail, R
   *  Notes:
   *     To perform ancestry inference and clustering with 1KG data, we must combine on common variants with reference data (clustering does not work when only using PCA loadings and projecting)
   */
@@ -127,6 +127,41 @@ def AncestryCluster(array: ConfigArray): Unit = {
 
   }
 
+  val afrCodes = projectConfig.sampleFileAFRCodes match {
+
+    case Some(s) => s"--afr-codes ${projectConfig.sampleFileAFRCodes.get.mkString(",")}"
+    case None => ""
+
+  }
+
+  val amrCodes = projectConfig.sampleFileAMRCodes match {
+
+    case Some(s) => s"--amr-codes ${projectConfig.sampleFileAMRCodes.get.mkString(",")}"
+    case None => ""
+
+  }
+
+  val eurCodes = projectConfig.sampleFileEURCodes match {
+
+    case Some(s) => s"--eur-codes ${projectConfig.sampleFileEURCodes.get.mkString(",")}"
+    case None => ""
+
+  }
+
+  val easCodes = projectConfig.sampleFileEASCodes match {
+
+    case Some(s) => s"--eas-codes ${projectConfig.sampleFileEASCodes.get.mkString(",")}"
+    case None => ""
+
+  }
+
+  val sasCodes = projectConfig.sampleFileSASCodes match {
+
+    case Some(s) => s"--sas-codes ${projectConfig.sampleFileSASCodes.get.mkString(",")}"
+    case None => ""
+
+  }
+
   drmWith(imageName = s"${utils.image.imgR}") {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose
@@ -139,11 +174,11 @@ def AncestryCluster(array: ConfigArray): Unit = {
       --project-id ${projectConfig.projectId}
       --sample-id ${projectConfig.sampleFileId}
       --sr-race ${projectConfig.sampleFileSrRace}
-      --afr-codes "${projectConfig.sampleFileAFRCodes.mkString(",")}"
-      --amr-codes "${projectConfig.sampleFileAMRCodes.mkString(",")}"
-      --eur-codes "${projectConfig.sampleFileEURCodes.mkString(",")}"
-      --eas-codes "${projectConfig.sampleFileEASCodes.mkString(",")}"
-      --sas-codes "${projectConfig.sampleFileSASCodes.mkString(",")}"
+      ${afrCodes}
+      ${amrCodes}
+      ${eurCodes}
+      ${easCodes}
+      ${sasCodes}
       --cluster-plots ${arrayStores(array).ancestryClusterData.plots}
       --xtabs ${arrayStores(array).ancestryClusterData.xtab}
       --plots-centers ${arrayStores(array).ancestryClusterData.centerPlots}

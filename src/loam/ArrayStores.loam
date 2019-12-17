@@ -21,7 +21,6 @@ final case class RawData(
   possDupPlink: Option[Plink],
   possDupBase: Option[Path],
   possDupFreq: Option[Store],
-  possDupImiss: Option[Store],
   possDupLmiss: Option[Store],
   dupVarsRemove: Option[Store])
 
@@ -89,13 +88,21 @@ final case class RefData(
   sitesVcf: Store,
   sitesVcfGoogle: Option[Store],
   annotations: Store,
-  annotationWarnings: Store)
+  annotationsGoogle: Option[Store],
+  annotationsHt: Store,
+  annotationsHtGoogle: Option[Store],
+  annotationsHailLog: Store,
+  annotationsHailLogGoogle: Option[Store],
+  annotationWarnings: Store,
+  annotationHeader: Store)
 
 final case class ImputeData(
   data: Seq[Store],
   base: Path)
 
 final case class FilteredData(
+  variantFilters: Store,
+  variantFiltersGoogle: Option[Store],
   variantMetrics: Store,
   variantMetricsGoogle: Option[Store],
   plink: MultiPathPlink,
@@ -118,8 +125,7 @@ final case class Ref1kgData(
   hailLog: Store,
   hailLogGoogle: Option[Store],
   kgSamples: Store,
-  kgSamplesGoogle: Option[Store],
-  gds: Store)
+  kgSamplesGoogle: Option[Store])
 
 final case class AncestryData(
   inferred: Store)
@@ -160,9 +166,7 @@ final case class SexcheckData(
   sexcheck: Store,
   sexcheckGoogle: Option[Store],
   problems: Store,
-  problemsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store])
+  problemsGoogle: Option[Store])
 
 final case class SampleQcData(
   stats: Store,
@@ -208,6 +212,10 @@ final case class FilterPostQc(
   samplesStatsGoogle: Option[Store],
   samplesExcludeGoogle: Option[Store],
   variantsStats: Store,
+  vFilters: Store,
+  vFiltersGoogle: Option[Store],
+  sFilters: Store,
+  sFiltersGoogle: Option[Store],
   variantsExclude: Store,
   variantsStatsGoogle: Option[Store],
   variantsExcludeGoogle: Option[Store],
@@ -264,68 +272,65 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val filterQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.qc"
   val filterPostQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.postqc"
   val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
-  //val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
 
   val baseName = arrayCfg.filename.split("/").last
-  val inputType = arrayCfg.technology + "_" + arrayCfg.format
 
-  val plink = inputType match {
-    case "gwas_plink" | "wgs_plink" | "wes_plink" =>
+  val plink = (arrayCfg.technology, arrayCfg.format) match {
+    case (m,n) if inputTypesPlink.contains((m,n)) =>
       Some(Plink(
         base = path(arrayCfg.filename),
         data = Seq(store(path(checkPath(arrayCfg.filename + s".bed"))).asInput,store(path(checkPath(arrayCfg.filename + s".bim"))).asInput,store(path(checkPath(arrayCfg.filename + s".fam"))).asInput),
       ))
-    case "gwas_vcf" =>
+    case (o,p) if inputTypesGwasVcf.contains((o,p)) =>
       Some(Plink(
         base = dirTree.base.local.get / rawBaseString,
         data = bedBimFam(path(checkPlinkPath(s"${dirTree.base.local.get}" + s"/${rawBaseString}")))
       ))
-    case "wgs_vcf" | "wes_vcf" => None
-    case _ => throw new CfgException("invalid input type " + inputType)
+    case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
+    case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
   }
 
-  val vcf = inputType match {
-    case "gwas_vcf" =>
+  val vcf = (arrayCfg.technology, arrayCfg.format) match {
+    case (m, n) if inputTypesGwasVcf.contains((m,n)) =>
       Some(MultiPathVcf(
         base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = None),
         data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = None),
         tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = None)
       ))
-    case "wgs_vcf" | "wes_vcf" =>
+    case (o, p) if inputTypesSeqVcf.contains((o,p)) => None
       Some(MultiPathVcf(
         base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = projectConfig.hailCloud match { case true => Some(dirTree.dataGlobal.google.get / baseName.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")); case false => None }),
         data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / baseName)); case false => None }),
         tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${baseName}.tbi")); case false => None })
       ))
-    case "gwas_plink" | "wgs_plink" | "wes_plink" => None
-    case _ => throw new CfgException("invalid input type " + inputType)
+    case (q,r) if inputTypesPlink.contains((q,r)) => None
+    case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
   }
 
   val rawData = RawData(
     plink = plink,
     vcf = vcf,
-    rawBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawBaseString); case _ => None },
-    unplaced = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unplaced")); case _ => None },
-    unique = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unique")); case _ => None },
-    indel = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.indel")); case _ => None },
-    lmiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.lmiss")); case _ => None },
-    imiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.imiss")); case _ => None },
-    imissRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.imiss.remove")); case _ => None },
-    freq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.freq.frq")); case _ => None },
-    mono = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.mono")); case _ => None },
-    uids = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.uids")); case _ => None },
-    possDupVars = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.vars")); case _ => None },
-    possDupPlink = arrayCfg.technology match { case "gwas" => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString, data = bedBimFam(path(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawPossibleDupBaseString}")))); case _ => None },
-    possDupBase = arrayCfg.technology match { case "gwas" => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString); case _ => None },
-    possDupFreq = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.freq.frq")); case _ => None },
-    possDupImiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.imiss")); case _ => None },
-    possDupLmiss = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.lmiss")); case _ => None },
-    dupVarsRemove = arrayCfg.technology match { case "gwas" => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.dup.vars.remove")); case _ => None }
+    rawBase = gwasTech.contains(arrayCfg.technology) match { case true => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawBaseString); case false => None },
+    unplaced = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unplaced")); case false => None },
+    unique = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unique")); case false => None },
+    indel = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.indel")); case false => None },
+    lmiss = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.lmiss")); case false => None },
+    imiss = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.imiss")); case false => None },
+    imissRemove = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.missing.imiss.remove")); case false => None },
+    freq = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.freq.frq")); case false => None },
+    mono = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.mono")); case false => None },
+    uids = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.uids")); case false => None },
+    possDupVars = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.vars")); case false => None },
+    possDupPlink = gwasTech.contains(arrayCfg.technology) match { case true => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString, data = bedBimFam(path(s"${dirTree.dataArrayMap(arrayCfg).prepare.local.get}" + s"/${rawPossibleDupBaseString}")))); case false => None },
+    possDupBase = gwasTech.contains(arrayCfg.technology) match { case true => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawPossibleDupBaseString); case false => None },
+    possDupFreq = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.freq.frq")); case false => None },
+    possDupLmiss = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawPossibleDupBaseString}.missing.lmiss")); case false => None },
+    dupVarsRemove = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.dup.vars.remove")); case false => None }
   )
 
-  val preparedData = arrayCfg.technology match {
+  val preparedData = gwasTech.contains(arrayCfg.technology) match {
 
-    case "gwas" =>
+    case true =>
 
       Some(PreparedData(
         plink = Plink(base = dirTree.dataArrayMap(arrayCfg).prepare.local.get / preparedBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).prepare.local.get / preparedBaseString)),
@@ -337,13 +342,13 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         liftedUpdate = arrayCfg.liftOver.map(s => store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${preparedBaseString}.lifted.update")),
         liftedExtract = arrayCfg.liftOver.map(s => store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${preparedBaseString}.lifted.extract"))))
 
-    case _ => None
+    case false => None
 
   }
 
-  val annotatedData = arrayCfg.technology match {
+  val annotatedData = gwasTech.contains(arrayCfg.technology) match {
 
-    case "gwas" =>
+    case true =>
 
       Some(AnnotatedData(
         plink = arrayCfg.liftOver match {
@@ -356,13 +361,13 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         }
       ))
 
-    case _ => None
+    case false => None
 
   }
 
-  val annotatedChrData = arrayCfg.technology match {
+  val annotatedChrData = gwasTech.contains(arrayCfg.technology) match {
 
-    case "gwas" =>
+    case true =>
 
       Some(expandChrList(arrayCfg.chrs).map { chr =>
 
@@ -406,13 +411,13 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
       }.toMap)
 
-    case _ => None
+    case false => None
 
   }
 
-  val harmonizedData = arrayCfg.technology match {
+  val harmonizedData = gwasTech.contains(arrayCfg.technology) match {
 
-    case "gwas" =>
+    case true =>
 
       Some(HarmonizedData(
         plink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / harmonizedBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / harmonizedBaseString)),
@@ -427,18 +432,18 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
         mergedKgVarSnpLog = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}_snpLog.log"),
         forceA2 = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.force_a2.txt")))
 
-    case _ => None
+    case false => None
 
   }
 
-  val refVcf = inputType match {
-    case "wgs_vcf" | "wes_vcf" => rawData.vcf
-    case "gwas_vcf" | "gwas_plink" | "wgs_plink" | "wes_plink" => None
-    case _ => throw new CfgException("invalid input type " + inputType)
+  val refVcf = (arrayCfg.technology, arrayCfg.format) match {
+    case (m,n) if inputTypesSeqVcf.contains((m,n)) => rawData.vcf
+    case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => None
+    case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
   }
 
-  val refPlink = inputType match {
-    case "gwas_vcf" | "gwas_plink" =>
+  val refPlink = (arrayCfg.technology, arrayCfg.format) match {
+    case (m,n) if gwasTech.contains(m) =>
       Some(MultiPathPlink(
         base = MultiPath(
           local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString),
@@ -455,7 +460,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
           }
         )
       ))
-    case "wgs_plink" | "wes_plink" => 
+    case (o,p) if inputTypesSeqPlink.contains((o,p)) => 
       Some(MultiPathPlink(
         base = MultiPath(
           local = Some(rawData.plink.get.base),
@@ -472,8 +477,8 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
           }
         )
       ))
-    case "wgs_vcf" | "wes_vcf" => None
-    case _ => throw new CfgException("invalid input type " + inputType)
+    case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
+    case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
   }
 
   val refData = RefData(
@@ -490,13 +495,21 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     sitesVcf = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz"),
     sitesVcfGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None },
     annotations = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.bgz"),
-    annotationWarnings = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.warnings"))
+    annotationsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.bgz")); case false => None },
+    annotationsHt = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.ht"),
+    annotationsHtGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht")); case false => None },
+    annotationsHailLog = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.hail.log"),
+    annotationsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.hail.log")); case false => None },
+    annotationWarnings = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.warnings"),
+    annotationHeader = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.header"))
 
   val imputeData = ImputeData(
     data = bedBimFam(dirTree.dataArrayMap(arrayCfg).impute.local.get / imputeBaseString),
     base = dirTree.dataArrayMap(arrayCfg).impute.local.get / imputeBaseString)
 
   val filteredData = FilteredData(
+    variantFilters = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.variant.filters.txt"),
+    variantFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.variant.filters.txt")); case false => None },
     variantMetrics = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.variant.metrics.tsv.bgz"),
     variantMetricsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.variant.metrics.tsv.bgz")); case false => None },
     plink = MultiPathPlink(base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / filteredBaseString), google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / filteredBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / filteredBaseString)), google = projectConfig.hailCloud match { case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / filteredBaseString)); case false => None })),
@@ -519,8 +532,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     hailLog = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.hail.log"),
     hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.hail.log")); case false => None },
     kgSamples = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.kgsamples.tsv"),
-    kgSamplesGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None },
-    gds = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.gds"))
+    kgSamplesGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None })
 
   val ancestryData = AncestryData(
     inferred = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryBaseString}.inferred.tsv"))
@@ -561,9 +573,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     sexcheck = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.tsv"),
     sexcheckGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None },
     problems = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None },
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.hail.log")); case false => None })
+    problemsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None })
 
   val sampleQcData = SampleQcData(
     stats = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.tsv"),
@@ -608,18 +618,22 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 	samplesRestore = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.restore.tbl"))
 
   val filterPostQc = FilterPostQc(
-    samplesStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.samples.stats.tsv.bgz"),
+    samplesStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.sample.stats.tsv.bgz"),
     samplesExclude = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.samples.exclude.txt"),
-    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.samples.stats.tsv.bgz")); case false => None },
+    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.sample.stats.tsv.bgz")); case false => None },
     samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.samples.exclude.txt")); case false => None },
-    variantsStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variants.stats.tsv.bgz"),
+    variantsStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variant.stats.tsv.bgz"),
+    vFilters = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variant.filters.txt"),
+    vFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variant.filters.txt")); case false => None },
+    sFilters = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.sample.filters.txt"),
+    sFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.sample.filters.txt")); case false => None },
     variantsExclude = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variants.exclude.txt"),
-    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variants.stats.tsv.bgz")); case false => None },
+    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variant.stats.tsv.bgz")); case false => None },
     variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variants.exclude.txt")); case false => None },
     hailLog = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log"),
     hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None })
 
-  val cleanData = projectConfig.exportCleanData match {
+  val cleanData = arrayCfg.exportCleanVcf match {
 
     case true =>
 

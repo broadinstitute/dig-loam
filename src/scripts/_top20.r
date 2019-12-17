@@ -15,7 +15,7 @@ print(args)
 
 x<-read.table(args$results,header=T,as.is=T,sep="\t",comment.char="")
 
-if(args$test %in% c("wald","lrt","firth")) {
+if(args$test %in% c("hail.wald","hail.lrt","hail.firth")) {
 	x$or <- exp(x$beta)
 	pre<-names(x)[1:(grep("\\bpval\\b",names(x))-1)]
 	pre<-pre[grep("\\bor\\b",pre,invert=TRUE)]

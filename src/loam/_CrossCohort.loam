@@ -41,33 +41,10 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
 
   val arrayCfg = projectConfig.Arrays.filter(e => e.id == configCohort.array).head
 
-  val stratCol = {
-    configCohort.stratCol match {
-      case Some(a) => "--strat-col " + a
-      case _ => ""
-    }
-  }
-  
-  val stratCodes = {
-    configCohort.stratCodes match {
-      case Some(a) => "--strat-codes " + a.mkString(",")
-      case _ => ""
-    }
-  }
+  drmWith(imageName = s"${utils.image.imgTools}") {
 
-  drmWith(imageName = s"${utils.image.imgR}") {
-
-    cmd"""${utils.binary.binRscript} --vanilla --verbose
-      ${utils.r.rMetaCohortSamples}
-      --fam-in ${arrayStores(arrayCfg).filteredData.plink.base.local.get}.fam
-      --ancestry-in ${ProjectStores.ancestryInferred}
-      --ancestry-keep "${configCohort.ancestry.mkString(",")}"
-      --pheno-in ${ProjectStores.phenoFile.get}
-      --iid-col ${projectConfig.phenoFileId}
-      ${stratCol}
-      ${stratCodes}
-      --out ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred)
+    cmd"""${utils.bash.shMetaCohortSamples} ${arrayStores(arrayCfg).filteredData.plink.base.local.get}.fam ${ProjectStores.ancestryInferred} "${configCohort.ancestry.mkString(",")}" ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
+    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ ProjectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 
@@ -116,31 +93,31 @@ def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
 
   drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.crossCohortKinshipKing.cpus, mem = projectConfig.resources.crossCohortKinshipKing.mem, maxRunTime = projectConfig.resources.crossCohortKinshipKing.maxRunTime) {
 
-    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${projectConfig.resources.crossCohortKinshipKing.cpus} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0}"""
+    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${metaKinshipStores(configMeta).baseFiltered}.bed ${metaKinshipStores(configMeta).baseKinship.toString} ${metaKinshipStores(configMeta).log} ${metaKinshipStores(configMeta).kin0} ${metaKinshipStores(configMeta).kin0Related} ${projectConfig.resources.crossCohortKinshipKing.cpus}"""
     .in(metaKinshipStores(configMeta).dataFiltered)
-    .out(metaKinshipStores(configMeta).log, metaKinshipStores(configMeta).kin0)
+    .out(metaKinshipStores(configMeta).log, metaKinshipStores(configMeta).kin0, metaKinshipStores(configMeta).kin0Related)
     .tag(s"${metaKinshipStores(configMeta).baseFiltered}.shKing".split("/").last)
 
   }
 
 }
 
-//def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
-//
-//  drmWith(imageName = s"${utils.image.imgR}") {
-//  
-//    cmd"""${utils.binary.binRscript} --vanilla --verbose
-//      ${utils.r.rExcludeCrossArray}
-//      --kinship ${metaKinshipStores(configMeta).kin0}
-//      --samples ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}
-//      --meta-cohorts ${configMeta.cohorts.mkString(",")}
-//      --cohort ${configCohort.id}
-//      --out ${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}
-//      """
-//      .in(metaKinshipStores(configMeta).kin0, metaKinshipStores(configMeta).metaCohort(configCohort).samples)
-//      .out(metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude)
-//      .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}".split("/").last)
-//  
-//  }
-//
-//}
+def CrossCohortExclude(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = {
+
+  drmWith(imageName = s"${utils.image.imgR}") {
+  
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rExcludeCrossArray}
+      --kinship ${metaKinshipStores(configMeta).kin0Related}
+      --samples ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}
+      --meta-cohorts ${configMeta.cohorts.mkString(",")}
+      --cohort ${configCohort.id}
+      --out ${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}
+      """
+      .in(metaKinshipStores(configMeta).kin0Related, metaKinshipStores(configMeta).metaCohort(configCohort).samples)
+      .out(metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude)
+      .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).kinshipSamplesExclude}".split("/").last)
+  
+  }
+
+}

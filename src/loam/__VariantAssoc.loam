@@ -1,0 +1,324 @@
+/**
+  * Association Step
+  *  Description: Run association tests
+  *  Requires: Hail
+  */
+import ProjectConfig._
+import ArrayStores._
+import ModelStores._
+import AssocStores._
+import ProjectStores._
+import Fxns._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def VariantAssoc(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None, configKnown: Option[ConfigKnown] = None): Unit = {
+
+  val model = modelStores((configModel, configCohorts, configMeta))
+
+  val assoc = assocStores((configModel, configCohorts, configMeta, configKnown))
+
+  val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+
+  // designs: 
+  //   full: run pooled cohorts
+  //     make variant stats for all samples as well as each cohort listed in model cohorts
+  //   strat: run each cohort
+  //     make variant stats for all samples
+
+  // if configModel.knockoutFilters =>
+  //   read in cohort samplesAvailable files
+  //   apply knockouts for each cohort
+  // if configModel.masks =>
+  //   apply masks to all samples
+
+  // if design == 'strat' then limit cohort based filters only to those in current cohorts list
+  var filters = ""
+  var filterFields = Seq[String]()
+  //configModel.test match {
+  //  case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => 
+  configKnown match {
+    case Some(s) => ()
+    case None =>
+      configModel.filters match {
+        case Some(l) =>
+          filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = l, cliOption = "--filter")
+          filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
+        case None => ()
+      }
+      configModel.cohortFilters match {
+        case Some(l) =>
+          for {
+            cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+          } yield {
+            filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--cohort-filter", id = Some(cf.cohort))
+            filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+          }
+        case None => ()
+      }
+      configModel.knockoutFilters match {
+        case Some(l) =>
+          for {
+            cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+          } yield {
+            filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = cf.filters, cliOption = "--knockout-filter", id = Some(cf.cohort))
+            filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+          }
+        case None => ()
+      }
+      configModel.masks match {
+        case Some(l) =>
+          for {
+            mf <- l
+          } yield {
+            filters = filters + " " + filtersToCliString(cfg = projectConfig, filters = mf.filters, cliOption = "--mask", id = Some(mf.id))
+            filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
+          }
+        case None => ()
+      }
+  }
+  //  case _ => ()
+  //}
+
+  var annotateCli = ""
+  var knownHiLdString = ""
+  var variantsStatsString = ""
+  var hailAssocIn = Seq[Store]()
+  var hailAssocOut = Seq[Store]()
+
+  val Seq(_, prunedBim, _) = arrayStores(array).prunedData.plink.data
+
+  projectConfig.hailCloud match {
+
+    case true =>
+
+      local {
+      
+        googleCopy(model.pheno, model.phenoGoogle.get)
+        googleCopy(model.pcsInclude, model.pcsIncludeGoogle.get)
+        googleCopy(prunedBim, arrayStores(array).prunedData.bimGoogle.get)
+      
+      }
+
+      configKnown match {
+
+        case Some(s) =>
+          
+          local {
+            googleCopy(ProjectStores.knownStores(s).hiLd, ProjectStores.knownStores(s).hiLdGoogle.get)
+          }
+                    
+          knownHiLdString = knownHiLdString + s"--extract-ld ${ProjectStores.knownStores(s).hiLdGoogle.get.toString.split("@")(1)}"
+          
+          hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, ProjectStores.knownStores(s).hiLdGoogle.get, model.cohortsMap)
+          
+          hailAssocOut = hailAssocOut ++ Seq(assoc.resultsGoogle.get, assoc.resultsHailLogGoogle.get)
+
+        case None =>
+
+          filterFields.filter(e => e.startsWith("annotation.")).size match {
+            case n if n > 0 =>
+              annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHtGoogle.get.toString.split("@")(1)}"
+            case _ => ()
+          }
+
+          variantsStatsString = variantsStatsString + s"--variants-stats-out ${assoc.variantsStatsGoogle.get.toString.split("@")(1)}"
+
+          hailAssocIn = hailAssocIn ++ Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).prunedData.bimGoogle.get, arrayStores(array).refData.mtGoogle.get, model.phenoGoogle.get, model.pcsIncludeGoogle.get, model.cohortsMap, arrayStores(array).refData.annotationsHtGoogle.get)
+
+          hailAssocOut = hailAssocOut ++ Seq(assoc.resultsGoogle.get, assoc.variantsStatsGoogle.get, assoc.resultsHailLogGoogle.get)
+
+      }
+
+      google {
+      
+        hail"""${utils.python.pyHailAssoc} --
+          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --bim-in ${arrayStores(array).prunedData.bimGoogle.get}
+          --pheno-in ${model.phenoGoogle.get}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${model.pcsIncludeGoogle.get}
+          --cohorts-map-in ${model.cohortsMap}
+          ${knownHiLdString}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          ${annotateCli}
+          ${filters}
+          --out ${assoc.resultsGoogle.get}
+          ${variantsStatsString}
+          --cloud
+          --log ${assoc.resultsHailLogGoogle.get}"""
+            .in(hailAssocIn)
+            .out(hailAssocOut)
+            .tag(s"${assoc.results}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(assoc.resultsGoogle.get, assoc.results)
+        googleCopy(assoc.variantsStatsGoogle.get, assoc.variantsStats.get)
+        googleCopy(assoc.resultsHailLogGoogle.get, assoc.resultsHailLog)
+      
+      }
+
+    case false =>
+
+      configKnown match {
+
+        case Some(s) =>
+
+          knownHiLdString = knownHiLdString + s"--extract-ld ${ProjectStores.knownStores(s).hiLd.toString.split("@")(1)}"
+
+          hailAssocIn = (hailAssocIn ++ arrayStores(array).prunedData.plink.data) :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ ProjectStores.knownStores(s).hiLd :+ model.cohortsMap
+
+          hailAssocOut = hailAssocOut ++ Seq(assoc.results, assoc.resultsHailLog)
+
+        case None =>
+
+          filterFields.filter(e => e.startsWith("annotation.")).size match {
+            case n if n > 0 =>
+              annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHt.toString.split("@")(1)}"
+            case _ => ()
+          }
+
+          variantsStatsString = variantsStatsString + s"--variants-stats-out ${assoc.variantsStats.get.toString.split("@")(1)}"
+
+          hailAssocIn = (hailAssocIn ++ arrayStores(array).prunedData.plink.data) :+ arrayStores(array).refData.mt.get :+ model.pheno :+ model.pcsInclude :+ model.cohortsMap :+ arrayStores(array).refData.annotationsHt
+
+          hailAssocOut = hailAssocOut ++ Seq(assoc.results, assoc.variantsStats.get, assoc.resultsHailLog)
+      }
+
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.variantAssocHailAssoc.cpus, mem = projectConfig.resources.variantAssocHailAssoc.mem, maxRunTime = projectConfig.resources.variantAssocHailAssoc.maxRunTime) {
+
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+          --mt-in ${arrayStores(array).refData.mt.get}
+          --bim-in ${arrayStores(array).prunedData.plink.base}.bim
+          --pheno-in ${model.pheno}
+          --iid-col ${projectConfig.phenoFileId}
+          --pheno-col ${configModel.pheno}
+          --pcs-include ${model.pcsInclude}
+          --cohorts-map-in ${model.cohortsMap}
+          ${knownHiLdString}
+          --test ${configModel.test}
+          --trans "${configModel.trans}"
+          --covars "${configModel.covars}"
+          ${annotateCli}
+          ${filters}
+          --out ${assoc.results}
+          ${variantsStatsString}
+          --log ${assoc.resultsHailLog}"""
+            .in(hailAssocIn)
+            .out(hailAssocOut)
+            .tag(s"${assoc.results}".split("/").last)
+
+      }
+
+  }
+  
+  drmWith(imageName = s"${utils.image.imgTools}") {
+
+    cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${assoc.results}"""
+      .in(assoc.results)
+      .out(assoc.tbi)
+      .tag(s"${assoc.tbi}".split("/").last)
+
+  }
+
+  //configKnown match {
+  //
+  //  case Some(s) => ()
+  //
+  //  case None =>
+  //
+  //    configCohort.resultsVariantFilters match {
+  //    
+  //      case Some(a) =>
+  //    
+  //        val vfilters = {
+  //          for {
+  //            f <- a
+  //          } yield {
+  //            f match {
+  //              case n if projectConfig.numericVariantFilters.map(e => e.id) contains n =>
+  //                "--vfilter " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.id + " " + projectConfig.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + projectConfig.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
+  //              case b if projectConfig.booleanVariantFilters.map(e => e.id) contains b =>
+  //                "--vfilter " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.id + " " + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + projectConfig.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
+  //              case c if projectConfig.categoricalVariantFilters.map(e => e.id) contains c =>
+  //                "--vfilter " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + projectConfig.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
+  //              case d if projectConfig.compoundVariantFilters.map(e => e.id) contains d =>
+  //                val ids = for {
+  //                  ff <- projectConfig.compoundVariantFilters.filter(e => e.id == d).head.filters
+  //                } yield {
+  //                  ff match {
+  //                    case nn if projectConfig.numericVariantFilters.map(e => e.id) contains nn =>
+  //                      projectConfig.numericVariantFilters.filter(e => e.id == nn).head.field
+  //                    case bb if projectConfig.booleanVariantFilters.map(e => e.id) contains bb =>
+  //                      projectConfig.booleanVariantFilters.filter(e => e.id == bb).head.field
+  //                    case cc if projectConfig.categoricalVariantFilters.map(e => e.id) contains cc =>
+  //                      projectConfig.categoricalVariantFilters.filter(e => e.id == cc).head.field
+  //                    case _ => throw new CfgException("VariantAssoc: vfilters '" + ff + "' not found")
+  //                  }
+  //                }
+  //                "--vfilter " + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + projectConfig.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
+  //              case _ => throw new CfgException("VariantAssoc: vfilters '" + f + "' not found")
+  //            }
+  //          }
+  //        }.mkString(" ")
+  //        
+  //        projectConfig.hailCloud match {
+  //        
+  //          case true =>
+  //        
+  //            google {
+  //        
+  //              hail"""${utils.python.pyHailFilterResults} --
+  //                --cloud
+  //                --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+  //                ${vfilters}
+  //                --log ${assoc.variantsFilterHailLogGoogle.get}
+  //                --stats-in ${assoc.variantsStatsGoogle.get}
+  //                --variants-filters-out ${assoc.variantsFilterGoogle.get}
+  //                --variants-exclude-out ${assoc.variantsExcludeGoogle.get}"""
+  //                .in(ProjectStores.hailUtilsGoogle.get, assoc.variantsStatsGoogle.get)
+  //                .out(assoc.variantsFilterGoogle.get, assoc.variantsExcludeGoogle.get, assoc.variantsFilterHailLogGoogle.get)
+  //                .tag(s"${assoc.variantsStats.get}.pyHailFilterResults.google".split("/").last)
+  //        
+  //            }
+  //            
+  //            local {
+  //            
+  //              googleCopy(assoc.variantsFilterGoogle.get, assoc.variantsFilter.get)
+  //              googleCopy(assoc.variantsExcludeGoogle.get, assoc.variantsExclude.get)
+  //              googleCopy(assoc.variantsFilterHailLogGoogle.get, assoc.variantsFilterHailLog.get)
+  //            
+  //            }
+  //        
+  //          case false =>
+  //        
+  //            drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
+  //        
+  //              cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterResults}
+  //                ${vfilters}
+  //                --log ${assoc.variantsFilterHailLog.get}
+  //                --stats-in ${assoc.variantsStats.get}
+  //                --variants-filters-out ${assoc.variantsFilter.get}
+  //                --variants-exclude-out ${assoc.variantsExclude.get}"""
+  //                .in(assoc.variantsStats.get)
+  //                .out(assoc.variantsFilter.get, assoc.variantsExclude.get, assoc.variantsFilterHailLog.get)
+  //                .tag(s"${assoc.variantsStats.get}.pyHailFilterResults".split("/").last)
+  //        
+  //            }
+  //        
+  //        }
+  //    
+  //      case _ => ()
+  //    
+  //    }
+  //
+  //}
+
+}

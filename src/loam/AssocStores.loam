@@ -4,25 +4,12 @@ import Collections._
 import StoreHelpers._
 
 final case class Assoc(
-  idMap: Store,
-  phenoLog: Store,
-  pheno: Store,
-  phenoGoogle: Option[Store],
-  pcs: Store,
-  pcsGoogle: Option[Store],
   results: Store,
   tbi: Store,
   resultsGoogle: Option[Store],
-  variantsStats: Option[Store],
-  variantsStatsGoogle: Option[Store],
-  variantsFilter: Option[Store],
-  variantsFilterGoogle: Option[Store],
-  variantsExclude: Option[Store],
-  variantsExcludeGoogle: Option[Store],
   resultsHailLog: Store,
-  resultsHailLogGoogle: Option[Store],
-  variantsFilterHailLog: Option[Store],
-  variantsFilterHailLogGoogle: Option[Store])
+  resultsHailLogGoogle: Option[Store]
+)
 
 final case class MetaCohort(
   data: Seq[Store],
@@ -39,192 +26,174 @@ final case class MetaKinship(
   baseKinship: Path,
   log: Store,
   kin0: Store,
-  kin0Related: Store,
   metaCohort: Map[ConfigCohort, MetaCohort])
 
-final case class Meta(
-  results: Store,
-  resultsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
-  tbi: Store)
+//final case class Meta(
+//  results: Store,
+//  resultsGoogle: Option[Store],
+//  hailLog: Store,
+//  hailLogGoogle: Option[Store],
+//  tbi: Store)
 
-final case class Merge(
-  results: Store,
-  resultsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
-  tbi: Store)
+//final case class Merge(
+//  results: Store,
+//  resultsGoogle: Option[Store],
+//  hailLog: Store,
+//  hailLogGoogle: Option[Store],
+//  tbi: Store)
 
 val assocStores = (
     (
       for {
 		x <- modelCohorts
       } yield {
-        (x.model, x.cohort, None)
+        (x.model, x.cohorts, None, None)
       } 
     ) ++
     (
       for {
-        x <- modelCohortMetas
+        x <- modelMetaCohorts
       } yield {
-        (x.model, x.cohort, Some(x.meta))
+        (x.model, x.cohorts, Some(x.meta), None)
+      }
+    ) ++
+    (
+      for {
+		x <- modelCohortKnowns
+      } yield {
+        (x.model, x.cohorts, None, Some(x.known))
+      } 
+    ) ++
+    (
+      for {
+        x <- modelMetaCohortKnowns
+      } yield {
+        (x.model, x.cohorts, Some(x.meta), Some(x.known))
       }
     )
   ).map { assoc => 
 
     val model = assoc._1
-    val cohort = assoc._2
+    val cohorts = assoc._2
     val meta: Option[ConfigMeta] = assoc._3
+    val known: Option[ConfigKnown] = assoc._4
     
     val prefix = meta match {
-      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}"
-      case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}"
-    }
-
-    val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
-
-    val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
-
-    val variantsFilter = cohort.resultsVariantFilters match {
-      case Some(s) => Some(store(local_home / s"${prefix}.variants.filter.tsv.bgz"))
-      case None => None
-    }
-
-    val variantsFilterGoogle = cohort.resultsVariantFilters match {
-      case Some(s) =>
-        projectConfig.hailCloud match {
-          case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.tsv.bgz"))
-          case false => None
+      case Some(s) => 
+        known match {
+          case Some(t) =>
+            model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohorts.head.id}.${known.get.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${known.get.id}"
+            }
+          case None => model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}.${cohorts.head.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}.${meta.get.id}"
+          }
         }
-      case None => None
-    }
-
-    val variantsExclude = cohort.resultsVariantFilters match {
-      case Some(s) => Some(store(local_home / s"${prefix}.variants.exclude.txt"))
-      case None => None
-    }
-
-    val variantsExcludeGoogle = cohort.resultsVariantFilters match {
-      case Some(s) =>
-        projectConfig.hailCloud match {
-          case true => Some(store(cloud_home.get / s"${prefix}.variants.exclude.txt"))
-          case false => None
+      case None =>
+        known match {
+          case Some(t) =>
+            model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${cohorts.head.id}.${known.get.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}.${known.get.id}"
+            }
+          case None =>
+            model.design match {
+              case "strat" => s"${projectConfig.projectId}.${model.id}.${cohorts.head.id}"
+              case "full" => s"${projectConfig.projectId}.${model.id}"
+            }
         }
-      case None => None
     }
 
-    val resultsHailLogGoogle = cohort.resultsVariantFilters match {
-      case Some(s) =>
-        projectConfig.hailCloud match {
-          case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log"))
-          case false => None
+    val local_dir = model.design match {
+      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).local.get
+      case "full" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
+    }
+
+    val cloud_dir = projectConfig.hailCloud match {
+      case true => 
+        model.design match {
+          case "strat" => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).google.get)
+          case "full" => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.google.get)
         }
-      case None => None
-    }
-
-    val variantsFilterHailLog = cohort.resultsVariantFilters match {
-      case Some(s) => Some(store(local_home / s"${prefix}.variants.filter.hail.log"))
-      case None => None
-    }
-
-    val variantsFilterHailLogGoogle = cohort.resultsVariantFilters match {
-      case Some(s) =>
-        projectConfig.hailCloud match {
-          case true => Some(store(cloud_home.get / s"${prefix}.variants.filter.hail.log"))
-          case false => None
-        }
-      case None => None
+      case false => None
     }
 
     assoc -> Assoc(
-      idMap = store(local_home / s"${prefix}.samples_exclude.map.tsv"),
-      phenoLog = store(local_home / s"${prefix}.pheno.log"),
-      pheno = store(local_home / s"${prefix}.pheno.tsv"),
-      phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pheno.tsv")); case false => None },
-      pcs = store(local_home / s"${prefix}.pcs.include"),
-      pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pcs.include")); case false => None },
-      results = store(local_home / s"${prefix}.results.tsv.bgz"),
-      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi"),
-      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      variantsStats = Some(store(local_home / s"${prefix}.variants.stats.tsv.bgz")),
-      variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.variants.stats.tsv.bgz")); case false => None },
-      variantsFilter = variantsFilter,
-      variantsFilterGoogle = variantsFilterGoogle,
-      variantsExclude = variantsExclude,
-      variantsExcludeGoogle = variantsExcludeGoogle,
-      resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
-      resultsHailLogGoogle = resultsHailLogGoogle,
-      variantsFilterHailLog = variantsFilterHailLog,
-      variantsFilterHailLogGoogle = variantsFilterHailLogGoogle
+      results = store(local_dir / s"${prefix}.results.tsv.bgz"),
+      tbi = store(local_dir / s"${prefix}.results.tsv.bgz.tbi"),
+      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.tsv.bgz")); case false => None },
+      resultsHailLog = store(local_dir / s"${prefix}.results.hail.log"),
+      resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.hail.log")); case false => None }
     )
 
   }.toMap
 
-val knownLociStores = (
-    (
-      for {
-        x <- modelCohortKnowns
-      } yield {
-        (x.model, x.cohort, x.known, None)
-      }
-    ) ++
-    (
-      for {
-        x <- modelCohortMetaKnowns
-      } yield {
-        (x.model, x.cohort, x.known, Some(x.meta))
-      }
-    )
-  ).map { knownLoci => 
+//val knownLociStores = (
+//    (
+//      for {
+//        x <- modelCohortKnowns
+//      } yield {
+//        (x.model, x.cohort, x.known, None)
+//      }
+//    ) ++
+//    (
+//      for {
+//        x <- modelCohortMetaKnowns
+//      } yield {
+//        (x.model, x.cohort, x.known, Some(x.meta))
+//      }
+//    )
+//  ).map { knownLoci => 
+//
+//    val model = knownLoci._1
+//    val cohort = knownLoci._2
+//    val known = knownLoci._3
+//    val meta: Option[ConfigMeta] = knownLoci._4
+//    
+//    val prefix = meta match {
+//      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}.${known.id}"
+//      case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}.${known.id}"
+//    }
+//
+//    val local_dir = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
+//
+//    val cloud_dir = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
+//    
+//    knownLoci -> Assoc(
+//        idMap = store(local_dir / s"${prefix}.samples_exclude.map.tsv"),
+//        phenoLog = store(local_dir / s"${prefix}.pheno.log"),
+//        pheno = store(local_dir / s"${prefix}.pheno.tsv"),
+//        phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.pheno.tsv")); case false => None },
+//        pcs = store(local_dir / s"${prefix}.pcs.include"),
+//        pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.pcs.include")); case false => None },
+//        results = store(local_dir / s"${prefix}.results.tsv.bgz"),
+//        resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.tsv.bgz")); case false => None },
+//        variantsStats = None,
+//        variantsStatsGoogle = None,
+//        variantsFilter = None,
+//        variantsFilterGoogle = None,
+//        variantsExclude = None,
+//        variantsExcludeGoogle = None,
+//        resultsHailLog = store(local_dir / s"${prefix}.results.hail.log"),
+//        resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.hail.log")); case false => None },
+//        variantsFilterHailLog = None,
+//        variantsFilterHailLogGoogle = None,
+//        tbi = store(local_dir / s"${prefix}.results.tsv.bgz.tbi")
+//      )
+//
+//  }.toMap
 
-    val model = knownLoci._1
-    val cohort = knownLoci._2
-    val known = knownLoci._3
-    val meta: Option[ConfigMeta] = knownLoci._4
-    
-    val prefix = meta match {
-      case Some(s) => s"${projectConfig.projectId}.${meta.get.id}.${cohort.id}.${model.id}.${known.id}"
-      case None => s"${projectConfig.projectId}.${cohort.id}.${model.id}.${known.id}"
-    }
-
-    val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).local.get
-
-    val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohort).google.get); case false => None }
-    
-    knownLoci -> Assoc(
-        idMap = store(local_home / s"${prefix}.samples_exclude.map.tsv"),
-        phenoLog = store(local_home / s"${prefix}.pheno.log"),
-        pheno = store(local_home / s"${prefix}.pheno.tsv"),
-        phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pheno.tsv")); case false => None },
-        pcs = store(local_home / s"${prefix}.pcs.include"),
-        pcsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.pcs.include")); case false => None },
-        results = store(local_home / s"${prefix}.results.tsv.bgz"),
-        resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
-        variantsStats = None,
-        variantsStatsGoogle = None,
-        variantsFilter = None,
-        variantsFilterGoogle = None,
-        variantsExclude = None,
-        variantsExcludeGoogle = None,
-        resultsHailLog = store(local_home / s"${prefix}.results.hail.log"),
-        resultsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
-        variantsFilterHailLog = None,
-        variantsFilterHailLogGoogle = None,
-        tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
-      )
-
-  }.toMap
-
-val metaKinshipStores = metas.map { meta =>
+val metaKinshipStores = projectConfig.Metas.map { meta =>
 
   val baseString = s"${projectConfig.projectId}.${meta.id}"
   val baseRefFilteredString = s"${baseString}.ref.filtered"
   val baseKinshipString = s"${baseString}.kinship"
 
-  val local_home = dirTree.dataGlobalKinshipMap(meta).local.get
+  val local_dir = dirTree.dataGlobalKinshipMap(meta).local.get
 
-  val commonVariants = store(local_home / s"${baseRefFilteredString}.common_variants.txt")
+  val commonVariants = store(local_dir / s"${baseRefFilteredString}.common_variants.txt")
 
   val metaCohort = projectConfig.Cohorts.filter(e => meta.cohorts contains e.id).map { cohort =>
 
@@ -233,141 +202,140 @@ val metaKinshipStores = metas.map { meta =>
     val cohortKinshipBaseString = s"${cohortBaseString}.kinship"
 
     cohort -> MetaCohort(
-      data = bedBimFam(local_home / cohortRefBaseString),
-      base = local_home / cohortRefBaseString,
-      samples = store(local_home / s"${cohortBaseString}.samples"),
-      famMerge = store(local_home / s"${cohortRefBaseString}.fam.merge"),
-      kinshipSamplesExclude = store(local_home / s"${cohortKinshipBaseString}.samples.exclude"))
+      data = bedBimFam(local_dir / cohortRefBaseString),
+      base = local_dir / cohortRefBaseString,
+      samples = store(local_dir / s"${cohortBaseString}.samples"),
+      famMerge = store(local_dir / s"${cohortRefBaseString}.fam.merge"),
+      kinshipSamplesExclude = store(local_dir / s"${cohortKinshipBaseString}.samples.exclude"))
 
   }.toMap
 
   meta -> MetaKinship(
     commonVariants = commonVariants,
-    mergeList= store(local_home / s"${baseRefFilteredString}.merge_list.txt"),
-    dataFiltered = bedBimFam(local_home / baseRefFilteredString),
-    baseFiltered = local_home / baseRefFilteredString,
-    baseKinship = local_home / baseKinshipString,
-    log = store(local_home / s"${baseKinshipString}.log"),
-    kin0 = store(local_home / s"${baseKinshipString}.kin0"),
-    kin0Related = store(local_home / s"${baseKinshipString}.kin0.related"),
+    mergeList= store(local_dir / s"${baseRefFilteredString}.merge_list.txt"),
+    dataFiltered = bedBimFam(local_dir / baseRefFilteredString),
+    baseFiltered = local_dir / baseRefFilteredString,
+    baseKinship = local_dir / baseKinshipString,
+    log = store(local_dir / s"${baseKinshipString}.log"),
+    kin0 = store(local_dir / s"${baseKinshipString}.kin0"),
     metaCohort = metaCohort)
 
 }.toMap
 
-val metaStores = (
-    (
-      for {
-        x <- modelMetas
-      } yield {
-        (x.model, x.meta)
-      }
-    )
-  ).map { modelMeta =>
+//val metaStores = (
+//    (
+//      for {
+//        x <- modelMetas
+//      } yield {
+//        (x.model, x.meta)
+//      }
+//    )
+//  ).map { modelMeta =>
+//
+//  val model = modelMeta._1
+//  val meta = modelMeta._2
+//
+//  val baseString = s"${projectConfig.projectId}.${meta.id}.${model.id}"
+//
+//  val local_dir = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
+//
+//  val cloud_dir = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
+//
+//  modelMeta -> Meta(
+//    results = store(local_dir / s"${baseString}.results.tsv.bgz"),
+//    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.results.tsv.bgz")); case false => None },
+//    hailLog = store(local_dir / s"${baseString}.results.hail.log"),
+//    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.results.hail.log")); case false => None },
+//    tbi = store(local_dir / s"${baseString}.results.tsv.bgz.tbi")
+//  )
+//
+//}.toMap
 
-  val model = modelMeta._1
-  val meta = modelMeta._2
+//val knownMetaStores = (
+//    (
+//      for {
+//        x <- modelMetaKnowns
+//      } yield {
+//        (x.model, x.meta, x.known)
+//      }
+//    )
+//  ).map { modelMetaKnown =>
+//
+//  val model = modelMetaKnown._1
+//  val meta = modelMetaKnown._2
+//  val known = modelMetaKnown._3
+//
+//  val prefix = s"${projectConfig.projectId}.${meta.id}.${model.id}.${known.id}"
+//
+//  val local_dir = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
+//
+//  val cloud_dir = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
+//
+//  modelMetaKnown -> Meta(
+//      results = store(local_dir / s"${prefix}.results.tsv.bgz"),
+//      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.tsv.bgz")); case false => None },
+//      hailLog = store(local_dir / s"${prefix}.results.hail.log"),
+//      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.hail.log")); case false => None },
+//      tbi = store(local_dir / s"${prefix}.results.tsv.bgz.tbi")
+//  )
+//
+//}.toMap
 
-  val baseString = s"${projectConfig.projectId}.${meta.id}.${model.id}"
+//val mergeStores = (
+//    (
+//      for {
+//        x <- modelMerges
+//      } yield {
+//        (x.model, x.merge)
+//      }
+//    )
+//  ).map { modelMerge =>
+//
+//  val model = modelMerge._1
+//  val merge = modelMerge._2
+//
+//  val baseString = s"${projectConfig.projectId}.${merge.id}.${model.id}"
+//
+//  val local_dir = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).local.get
+//
+//  val cloud_dir = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).google.get); case false => None }
+//
+//  modelMerge -> Merge(
+//    results = store(local_dir / s"${baseString}.results.tsv.bgz"),
+//    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.results.tsv.bgz")); case false => None },
+//    hailLog = store(local_dir / s"${baseString}.results.hail.log"),
+//    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.results.hail.log")); case false => None },
+//    tbi = store(local_dir / s"${baseString}.results.tsv.bgz.tbi")
+//  )
+//
+//}.toMap
 
-  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
-
-  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
-
-  modelMeta -> Meta(
-    results = store(local_home / s"${baseString}.results.tsv.bgz"),
-    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.tsv.bgz")); case false => None },
-    hailLog = store(local_home / s"${baseString}.results.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.hail.log")); case false => None },
-    tbi = store(local_home / s"${baseString}.results.tsv.bgz.tbi")
-  )
-
-}.toMap
-
-val knownMetaStores = (
-    (
-      for {
-        x <- modelMetaKnowns
-      } yield {
-        (x.model, x.meta, x.known)
-      }
-    )
-  ).map { modelMetaKnown =>
-
-  val model = modelMetaKnown._1
-  val meta = modelMetaKnown._2
-  val known = modelMetaKnown._3
-
-  val prefix = s"${projectConfig.projectId}.${meta.id}.${model.id}.${known.id}"
-
-  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
-
-  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
-
-  modelMetaKnown -> Meta(
-      results = store(local_home / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      hailLog = store(local_home / s"${prefix}.results.hail.log"),
-      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
-      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
-  )
-
-}.toMap
-
-val mergeStores = (
-    (
-      for {
-        x <- modelMerges
-      } yield {
-        (x.model, x.merge)
-      }
-    )
-  ).map { modelMerge =>
-
-  val model = modelMerge._1
-  val merge = modelMerge._2
-
-  val baseString = s"${projectConfig.projectId}.${merge.id}.${model.id}"
-
-  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).local.get
-
-  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).google.get); case false => None }
-
-  modelMerge -> Merge(
-    results = store(local_home / s"${baseString}.results.tsv.bgz"),
-    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.tsv.bgz")); case false => None },
-    hailLog = store(local_home / s"${baseString}.results.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${baseString}.results.hail.log")); case false => None },
-    tbi = store(local_home / s"${baseString}.results.tsv.bgz.tbi")
-  )
-
-}.toMap
-
-val knownMergeStores = (
-    (
-      for {
-        x <- modelMergeKnowns
-      } yield {
-        (x.model, x.merge, x.known)
-      }
-    )
-  ).map { modelMergeKnown =>
-
-  val model = modelMergeKnown._1
-  val merge = modelMergeKnown._2
-  val known = modelMergeKnown._3
-
-  val prefix = s"${projectConfig.projectId}.${merge.id}.${model.id}.${known.id}"
-
-  val local_home = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).local.get
-
-  val cloud_home = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).google.get); case false => None }
-
-  modelMergeKnown -> Merge(
-      results = store(local_home / s"${prefix}.results.tsv.bgz"),
-      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.tsv.bgz")); case false => None },
-      hailLog = store(local_home / s"${prefix}.results.hail.log"),
-      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_home.get / s"${prefix}.results.hail.log")); case false => None },
-      tbi = store(local_home / s"${prefix}.results.tsv.bgz.tbi")
-  )
-
-}.toMap
+//val knownMergeStores = (
+//    (
+//      for {
+//        x <- modelMergeKnowns
+//      } yield {
+//        (x.model, x.merge, x.known)
+//      }
+//    )
+//  ).map { modelMergeKnown =>
+//
+//  val model = modelMergeKnown._1
+//  val merge = modelMergeKnown._2
+//  val known = modelMergeKnown._3
+//
+//  val prefix = s"${projectConfig.projectId}.${merge.id}.${model.id}.${known.id}"
+//
+//  val local_dir = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).local.get
+//
+//  val cloud_dir = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).merges(merge).google.get); case false => None }
+//
+//  modelMergeKnown -> Merge(
+//      results = store(local_dir / s"${prefix}.results.tsv.bgz"),
+//      resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.tsv.bgz")); case false => None },
+//      hailLog = store(local_dir / s"${prefix}.results.hail.log"),
+//      hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${prefix}.results.hail.log")); case false => None },
+//      tbi = store(local_dir / s"${prefix}.results.tsv.bgz.tbi")
+//  )
+//
+//}.toMap
