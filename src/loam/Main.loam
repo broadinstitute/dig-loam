@@ -71,7 +71,7 @@ for {
   SampleQc(array)
   FilterArray(array)
 
-  projectConfig.exportCleanVcf match {
+  array.exportCleanVcf match {
 
     case true => ExportCleanData(array)
     case false => ()

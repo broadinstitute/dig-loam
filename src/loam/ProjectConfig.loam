@@ -865,7 +865,7 @@ object ProjectConfig {
           qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed"),
           postQcSampleFilters = postQcSampleFilters,
           postQcVariantFilters = postQcVariantFilters,
-          exportCleanVcf = requiredBool(config = config, field = "exportCleanVcf")
+          exportCleanVcf = requiredBool(config = array, field = "exportCleanVcf")
         )
     
       }
@@ -1252,7 +1252,6 @@ object ProjectConfig {
       hailCloud = hailCloud,
       cloudHome = cloudHome,
       cloudShare = cloudShare,
-      exportCleanData = exportCleanData,
       referenceGenome = referenceGenome,
       regionsExclude = regionsExclude,
       genePositions = genePositions,
@@ -1365,7 +1364,7 @@ object ProjectConfig {
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
       pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
-      pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_data.py")
+      pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),

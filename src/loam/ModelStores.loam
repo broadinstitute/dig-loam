@@ -39,9 +39,7 @@ final case class Model(
   variantsStatsHailLogGoogle: Option[Store],
   groupFile: Option[Store],
   groupFileGoogle: Option[Store],
-  cleanVcf: Option[Store],
-  cleanVcfTbi: Option[Store],
-  cleanVcfGoogle: Option[Store],
+  cleanVcf: Option[MultiPathVcf]
 )
 
 val modelStores = (
@@ -78,15 +76,36 @@ val modelStores = (
       case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).local.get
   }
 
-  val cloud_dir = model.design match {
-      case "full" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.local.get
-      case "strat" => dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).local.get
+  val cloud_dir = (model.design, projectConfig.hailCloud) match {
+      case ("full", true) => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base.google.get)
+      case ("strat", true) => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohorts(cohorts.head).google.get)
+      case _ => None
+  }
+
+  val cleanVcf = nonHailTests.contains(model.test) match {
+
+    case true =>
+
+      Some(MultiPathVcf(
+        base = MultiPath(
+          local = Some(local_dir / baseString),
+          google = projectConfig.hailCloud match { case true => Some(cloud_dir.get / baseString); case false => None }
+        ),
+        data = MultiStore(
+          local = Some(store(local_dir / s"${baseString}.clean.vcf.bgz")),
+          google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.clean.vcf.bgz")); case false => None }
+        ),
+        tbi = MultiStore(local = Some(store(local_dir / s"${baseString}.clean.vcf.bgz.tbi")), google = None)
+      ))
+
+    case _ => None
+
   }
 
   sm -> Model(
     sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
     cohortMap = store(local_dir / s"${baseString}.cohort.map.tsv"),
-    cohortMapGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.cohort.map.tsv")); case false => None },
+    cohortMapGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.cohort.map.tsv")); case false => None },
     phenoPrelim = store(local_dir / s"${baseString}.pheno.prelim.tsv"),
     samplesAvailable = store(local_dir / s"${baseString}.samples.available.txt"),
     samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
@@ -100,26 +119,24 @@ val modelStores = (
     outliers = store(local_dir / s"${baseString}.pca.outliers.txt"),
     pcaLog = store(local_dir / s"${baseString}.pca.log"),
     pheno = store(local_dir / s"${baseString}.pheno.tsv"),
-    phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.pheno.tsv")); case false => None },
+    phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None },
     pcsInclude = store(local_dir / s"${baseString}.pcs.include.txt"),
-    pcsIncludeGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.pcs.include.txt")); case false => None },
+    pcsIncludeGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None },
     filters = store(local_dir / s"${baseString}.variant.filters.txt"),
-    filtersGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.variant.filters.txt")); case false => None },
+    filtersGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.filters.txt")); case false => None },
     cohortFilters = store(local_dir / s"${baseString}.variant.cohortfilters.txt"),
-    cohortFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.variant.cohortfilters.txt")); case false => None },
+    cohortFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.cohortfilters.txt")); case false => None },
     knockoutFilters = store(local_dir / s"${baseString}.variant.knockoutfilters.txt"),
-    knockoutFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.variant.knockoutfilters.txt")); case false => None },
+    knockoutFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.knockoutfilters.txt")); case false => None },
     masks = store(local_dir / s"${baseString}.variant.masks.txt"),
-    masksGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.variant.masks.txt")); case false => None },
+    masksGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.masks.txt")); case false => None },
     variantsStats = store(local_dir / s"${baseString}.variant.stats.tsv.bgz"),
-    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.variant.stats.tsv.bgz")); case false => None },
+    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.stats.tsv.bgz")); case false => None },
     variantsStatsHailLog = store(local_dir / s"${baseString}.variant.stats.hail.log"),
-    variantsStatsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.variant.stats.hail.log")); case false => None },
+    variantsStatsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.stats.hail.log")); case false => None },
     groupFile = groupTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.groupfile.txt")); case false => None },
-	groupFileGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(projectConfig.hailCloud match { case true => Some(store(cloud_dir / s"${baseString}.groupfile.txt")); case false => None },
-    cleanVcf = nonHailTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.clean.vcf.bgz")); case false => None },
-    cleanVcfTbi = nonHailTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.clean.vcf.bgz.tbi")); case false => None },
-    cleanVcfGoogle = (nonHailTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir / s"${baseString}.clean.vcf.bgz")); case false => None }
+	groupFileGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir.get / s"${baseString}.groupfile.txt")); case false => None },
+    cleanVcf = cleanVcf
   )
 
 }.toMap

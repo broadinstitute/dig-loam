@@ -314,8 +314,8 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
       nonHailTests.contains(configModel.test) match {
         case true =>
-          exportVcf = exportVcf + s"--vcf-out ${modelStores((configModel, configCohorts, configMeta)).cleanVcfGoogle.get.toString.split("@")(1)}"
-          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).cleanVcfGoogle.get)
+          exportVcf = exportVcf + s"--vcf-out ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.google.get.toString.split("@")(1)}"
+          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.google.get)
         case _ => ()
       }
 
@@ -350,7 +350,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       local {
 
         googleCopy(modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStats)
-        googleCopy(modelStores((configModel, configCohorts, configMeta)).groupfileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupfile)
+        googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFile.get)
         googleCopy(modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
       
       }
@@ -361,7 +361,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
           local {
 
-            googleCopy(modelStores((configModel, configCohorts, configMeta)).cleanVcfGoogle.get, modelStores((configModel, configCohorts, configMeta)).cleanVcf)
+            googleCopy(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get)
 
           }
 
@@ -387,8 +387,8 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
       nonHailTests.contains(configModel.test) match {
         case true =>
-          exportVcf = exportVcf + s"--vcf-out ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.toString.split("@")(1)}"
-          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).cleanVcf)
+          exportVcf = exportVcf + s"--vcf-out ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get.toString.split("@")(1)}"
+          hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get)
         case _ => ()
       }
 
@@ -417,6 +417,15 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
             .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}".split("/").last)
 
       }
+
+  }
+
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabixClean.cpus, mem = projectConfig.resources.tabixClean.mem, maxRunTime = projectConfig.resources.tabixClean.maxRunTime) {
+
+    cmd"""${utils.binary.binTabix} -p vcf ${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get}"""
+      .in(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.data.local.get)
+      .out(modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.tbi.local.get)
+      .tag(s"${modelStores((configModel, configCohorts, configMeta)).cleanVcf.get.tbi.local.get}".split("/").last)
 
   }
 
