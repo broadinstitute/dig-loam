@@ -305,10 +305,17 @@ def QcReport(): Unit = {
   //
   //}
 
+  val acknowledgements = projectConfig.acknowledgementsQcReport match {
+
+    case Some(s) => s"--acknowledgements ${s.mkString(",")}"
+    case None => ""
+
+  }
+
   drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportBibliography}
-      --acknowledgements "${projectConfig.acknowledgementsQcReport.mkString(",")}"
+      ${acknowledgements}
       --loamstream-version "${projectConfig.loamstreamVersion}"
       --pipeline-version "${projectConfig.pipelineVersion}"
       --out ${qcReportStores.texData.bibliography}"""

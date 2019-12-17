@@ -290,8 +290,8 @@ final case class ProjectConfig(
   authors: Seq[String],
   email: String,
   organization: String,
-  acknowledgementsAnalysisReport: Seq[String],
-  acknowledgementsQcReport: Seq[String],
+  acknowledgementsAnalysisReport: Option[Seq[String]],
+  acknowledgementsQcReport: Option[Seq[String]],
   nAncestryInferenceFeatures: Int,
   ancestryInferenceFeatures: String,
   minPCs: Int,
@@ -478,8 +478,8 @@ object ProjectConfig {
     val authors = requiredStrList(config = config, field = "authors")
     val email = requiredStr(config = config, field = "email")
     val organization = requiredStr(config = config, field = "organization")
-    val acknowledgementsAnalysisReport = requiredStrList(config = config, field = "acknowledgementsAnalysisReport")
-    val acknowledgementsQcReport = requiredStrList(config = config, field = "acknowledgementsQcReport")
+    val acknowledgementsAnalysisReport = optionalStrList(config = config, field = "acknowledgementsAnalysisReport")
+    val acknowledgementsQcReport = optionalStrList(config = config, field = "acknowledgementsQcReport")
     val maxSigRegions = optionalInt(config = config, field = "maxSigRegions", min = Some(0))
     val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
     val minPCs = requiredInt(config = config, field = "minPCs", min = Some(0), max = Some(20))

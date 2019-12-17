@@ -141,10 +141,17 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
   }
 
+  val acknowledgements = projectConfig.acknowledgementsAnalysisReport match {
+
+    case Some(s) => s"--acknowledgements ${s.mkString(",")}"
+    case None => ""
+
+  }
+
   drmWith(imageName = s"${utils.image.imgPython2}") {
 
     cmd"""${utils.binary.binPython} ${utils.python.pyGenerateAnalysisReportBibliography}
-      --acknowledgements "${projectConfig.acknowledgementsAnalysisReport.mkString(",")}"
+      ${acknowledgements}
       --known-loci-citations "${knownLociCitations.mkString(",,,")}"
       --loamstream-version "${projectConfig.loamstreamVersion}"
       --pipeline-version "${projectConfig.pipelineVersion}"

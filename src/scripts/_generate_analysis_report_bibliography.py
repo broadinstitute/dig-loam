@@ -5,7 +5,7 @@ def main(args=None):
 	## open latex file for writing
 	with open(args.out_tex,'w') as f:
 
-		if args.acknowledgements != "":
+		if args.acknowledgements:
 
 			print "writing acknowledgements section"
 			f.write("\n"); f.write(r"\clearpage"); f.write("\n")
@@ -62,9 +62,9 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--acknowledgements', help='a comma separated list of names for acknowledgement')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--known-loci-citations', help='a 3 comma separated list of tags and citations, each separated by 3 underscores', required=True)
-	requiredArgs.add_argument('--acknowledgements', help='a comma separated list of names for acknowledgement', required=True)
 	requiredArgs.add_argument('--loamstream-version', help='a loamstream version', required=True)
 	requiredArgs.add_argument('--pipeline-version', help='a pipeline version', required=True)
 	requiredArgs.add_argument('--out-tex', help='an output file name with extension .tex', required=True)
