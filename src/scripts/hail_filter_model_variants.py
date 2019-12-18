@@ -201,7 +201,7 @@ def main(args=None):
 				l = []
 				for i, x in df.iterrows():                                    
 					l = l + [x['annotation.Gene'] + "\t" + "\t".join(x['values'])]
-				print("generate null group file with " + str(length(l)) + " genes")
+				print("generate null group file with " + str(len(l)) + " genes")
 				with open(args.groupfile_out, 'w') as f:
 					f.write("\n".join(l))
 			else:

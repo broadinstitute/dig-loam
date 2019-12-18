@@ -306,10 +306,14 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
         case (m, n) if (m > 0 || n) =>
           annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHtGoogle.get.toString.split("@")(1)}"
           hailAssocIn = hailAssocIn ++ Seq(arrayStores(array).refData.annotationsHtGoogle.get)
-        case (o, p) if p =>
+        case _ => ()
+      }
+
+      groupTests.contains(configModel.test) match {
+        case true =>
           groupFileOut = groupFileOut + s"--groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get.toString.split("@")(1)}"
           hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get)
-        case _ => ()
+        case false => ()
       }
 
       nonHailTests.contains(configModel.test) match {
@@ -379,10 +383,14 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
         case (m, n) if (m > 0 || n) =>
           annotateCli = annotateCli + s"--annotation ${arrayStores(array).refData.annotationsHt.toString.split("@")(1)}"
           hailAssocIn = hailAssocIn ++ Seq(arrayStores(array).refData.annotationsHt)
-        case (o, p) if p =>
+        case _ => ()
+      }
+
+      groupTests.contains(configModel.test) match {
+        case true =>
           groupFileOut = groupFileOut + s"--groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFile.get.toString.split("@")(1)}"
           hailAssocOut = hailAssocOut ++ Seq(modelStores((configModel, configCohorts, configMeta)).groupFile.get)
-        case _ => ()
+        case false => ()
       }
 
       nonHailTests.contains(configModel.test) match {
