@@ -3,8 +3,11 @@ import argparse
 import pandas as pd
 import csv
 from pathlib import Path
+import time
 
 def main(args=None):
+
+	global_start_time = time.time()
 
 	if args.hail_utils:
 		import importlib.util
@@ -118,7 +121,7 @@ def main(args=None):
 
 	cohorts = list(set(cohorts))
 	filter_fields = list(set(filter_fields))
-	
+
 	annotation_fields = ['Uploaded_variation', 'Gene'] + [x.replace("annotation.","") for x in filter_fields if x.startswith("annotation.")]
 	if args.annotation:
 		print("add vep annotations")
@@ -126,6 +129,11 @@ def main(args=None):
 		tbl = tbl.select(*annotation_fields)
 		tbl = tbl.key_by('Uploaded_variation')
 		mt = mt.annotate_rows(annotation = tbl[mt.rsid])
+
+	start_time = time.time()
+	mt = mt.checkpoint("mt.checkpoint", overwrite=True)
+	elapsed_time = time.time() - start_time
+	print(time.strftime("write checkpoint matrix table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	exclude_any_fields = []
 
@@ -136,58 +144,88 @@ def main(args=None):
 	knockout_fields = []
 	if len(cohorts) > 0:
 		if len(cohorts) > 1:
+			start_time = time.time()
 			mt = mt.annotate_rows(**{'variant_qc': mt['variant_qc'].annotate(max_cohort_maf = 0)})
+			elapsed_time = time.time() - start_time
+			print(time.strftime("initialize max_cohort_maf to 0 - %H:%M:%S", time.gmtime(elapsed_time)))
 		for cohort in cohorts:
-			print("calculate variant qc for cohort " + cohort)
+			start_time = time.time()
 			cohort_mt = mt.filter_cols(mt.COHORT == cohort)
+			elapsed_time = time.time() - start_time
+			print(time.strftime("filter samples to cohort " + cohort + " = " + str(cohort_mt.cols().count()) + " - %H:%M:%S", time.gmtime(elapsed_time)))
+			start_time = time.time()
 			cohort_mt = hl.variant_qc(cohort_mt, name = 'variant_qc_' + cohort)
 			if not args.binary:
 				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort)
 			else:
 				cohort_mt = hail_utils.update_variant_qc(cohort_mt, is_female = "is_female", variant_qc = 'variant_qc_' + cohort, is_case = args.pheno_col)
+			elapsed_time = time.time() - start_time
+			print(time.strftime("calculate variant qc for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
+			start_time = time.time()
 			mt = mt.annotate_rows(**{'variant_qc_' + cohort: cohort_mt.rows()[mt.row_key]['variant_qc_' + cohort]})
+			elapsed_time = time.time() - start_time
+			print(time.strftime("annotate rows with variant qc for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 			if len(cohorts) > 1:
+				start_time = time.time()
 				mt = mt.annotate_rows(**{'variant_qc': mt['variant_qc'].annotate(max_cohort_maf = hl.cond( mt['variant_qc'].max_cohort_maf < mt['variant_qc_' + cohort].MAF, mt['variant_qc_' + cohort].MAF,  mt['variant_qc'].max_cohort_maf))})
+				elapsed_time = time.time() - start_time
+				print(time.strftime("annotate rows with updated max_cohort_maf for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 			if len(cohort_filters) > 0:
+				start_time = time.time()
 				mt = hail_utils.add_filters(mt, [[x[1],x[2].replace('variant_qc','variant_qc_' + cohort),x[3].replace('variant_qc','variant_qc_' + cohort)] for x in cohort_filters], 'ls_filters_' + cohort)
 				exclude_any_fields = exclude_any_fields + ['ls_filters_' + cohort + '.exclude']
+				elapsed_time = time.time() - start_time
+				print(time.strftime("add cohort filters for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 			if len(knockout_filters) > 0:
+				start_time = time.time()
 				mt = hail_utils.add_filters(mt, [[x[1],x[2].replace('variant_qc','variant_qc_' + cohort),x[3].replace('variant_qc','variant_qc_' + cohort)] for x in knockout_filters], 'ls_knockouts_' + cohort)
 				knockout_fields = knockout_fields + ['ls_knockouts_' + cohort + '.exclude']
+				elapsed_time = time.time() - start_time
+				print(time.strftime("add knockout filters for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	mask_fields = []
 	if len(masks) > 0:
 		mask_ids = [x[0] for x in masks]
 		for m in set(mask_ids):
+			start_time = time.time()
 			masks_row = [x for x in masks if x[0] == m]
 			mt = hail_utils.add_filters(mt, [[x[1],x[2],x[3]] for x in masks_row], 'ls_mask_' + m)
 			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
-
+			elapsed_time = time.time() - start_time
+			print(time.strftime("add mask " + m + " to filters - %H:%M:%S", time.gmtime(elapsed_time)))
+    
 	mt = mt.annotate_rows(ls_global_exclude = 0)
 	mt = mt.annotate_rows(ls_global_exclude = hl.cond(mt.ls_previous_exclude == 1, 1, mt.ls_global_exclude))
 	for f in exclude_any_fields:
-		print("update global exclusion column based on " + f)
+		start_time = time.time()
 		ls_struct, ls_field = f.split(".")
 		mt = mt.annotate_rows(ls_global_exclude = hl.cond(mt[ls_struct][ls_field] == 1, 1, mt.ls_global_exclude))
-    
+		elapsed_time = time.time() - start_time
+		print(time.strftime("update global exclusion column based on " + f + " - %H:%M:%S", time.gmtime(elapsed_time)))
+
 	if args.variants_stats_out:
-		print("write variant metrics and filters to file")
+		start_time = time.time()
 		tbl = mt.rows().key_by('locus','alleles')
 		tbl = tbl.drop("info","variant_qc_raw")
 		tbl.flatten().export(args.variants_stats_out, header=True)
-
+		elapsed_time = time.time() - start_time
+		print(time.strftime("write variant metrics and filters to file - %H:%M:%S", time.gmtime(elapsed_time)))
+    
 	n_all = mt.rows().count()
 	if len(exclude_any_fields) > 0:
-		print("filter variants that failed standard filters")
+		start_time = time.time()
 		mt = mt.filter_rows(mt.ls_global_exclude == 0, keep=True)
 		n_post_filter = mt.rows().count()
+		elapsed_time = time.time() - start_time
+		print(time.strftime("filter variants that failed standard filters - %H:%M:%S", time.gmtime(elapsed_time)))
 		print(str(n_all - n_post_filter) + " variants flagged for removal via standard filters")
 		print(str(n_post_filter) + " variants remaining for analysis")
 	else:
 		print(str(n_all) + " variants remaining for analysis")
-
+    
 	if args.groupfile_out:
 		if n_all > 0:
+			start_time = time.time()
 			tbl = mt.rows().flatten()
 			tbl = tbl.select(*['locus','alleles','annotation.Gene'])
 			tbl = tbl.annotate(groupfile_id = tbl.locus.contig + ":" + hl.str(tbl.locus.position) + "_" + tbl.alleles[0] + "/" + tbl.alleles[1])
@@ -197,26 +235,36 @@ def main(args=None):
 			tbl = tbl.annotate(values=tbl.values.map(lambda x: x.groupfile_id))
 			df = tbl.to_pandas()
 			df = df.dropna()
+			elapsed_time = time.time() - start_time
+			print(time.strftime("generate group file table - %H:%M:%S", time.gmtime(elapsed_time)))
 			if df.shape[0] > 0:
 				l = []
 				for i, x in df.iterrows():                                    
 					l = l + [x['annotation.Gene'] + "\t" + "\t".join(x['values'])]
-				print("generate null group file with " + str(len(l)) + " genes")
-				with open(args.groupfile_out, 'w') as f:
+				start_time = time.time()
+				with hl.hadoop_open(args.groupfile_out, 'w') as f:
 					f.write("\n".join(l))
+				elapsed_time = time.time() - start_time
+				print(time.strftime("generate null group file with " + str(len(l)) + " genes - %H:%M:%S", time.gmtime(elapsed_time)))
 			else:
 				print("no genes found for remaining variants... writing empty group file")
 				Path(args.groupfile_out).touch()      
 		else:
 			print("no variants remaining... writing empty group file")
 			Path(args.groupfile_out).touch()
-
+    
 	if args.vcf_out:
-		print("write VCF file to disk")
+		start_time = time.time()
 		hl.export_vcf(mt, args.vcf_out)
-
+		elapsed_time = time.time() - start_time
+		print(time.strftime("write VCF file to disk - %H:%M:%S", time.gmtime(elapsed_time)))
+	
 	if args.cloud:
 		hl.copy_log(args.log)
+
+	global_elapsed_time = time.time() - global_start_time
+	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))
+
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
