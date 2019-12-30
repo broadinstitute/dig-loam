@@ -358,9 +358,10 @@ final case class Python(
   pyMergeVariantLists: Path,
   pyBimToUid: Path,
   pyHailUtils: Path,
-  pyHailFilterModelVariants: Path,
+  pyHailModelVariantStats: Path,
   pyHailAssoc: Path,
   pyHailExportCleanArrayData: Path
+  //pyHailFilterModelVariants: Path,
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
@@ -1383,8 +1384,9 @@ object ProjectConfig {
       pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
-      pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
+      pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
       pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py")
+      //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
