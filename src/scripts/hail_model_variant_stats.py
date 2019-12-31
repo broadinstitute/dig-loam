@@ -80,8 +80,7 @@ def main(args=None):
 	print(time.strftime("calculate variant qc on " + str(mt.cols().count()) + " samples and " + str(mt.rows().count()) + " variants - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	print("write variant stats to hail table")
-	tbl = mt.rows().key_by('locus','alleles')
-	tbl = tbl.drop("info","variant_qc_raw")
+	tbl = mt.rows().drop("info","variant_qc_raw")
 	tbl.write(args.variants_stats_ht_out, overwrite = True)
 
 	if args.variants_stats_out:
@@ -93,7 +92,6 @@ def main(args=None):
 
 	global_elapsed_time = time.time() - global_start_time
 	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))
-
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
