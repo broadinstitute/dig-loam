@@ -291,7 +291,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
         googleCopy(modelStores((configModel, configCohorts, configMeta)).masks, modelStores((configModel, configCohorts, configMeta)).masksGoogle.get)
       
       }
-
+      
       googleWith(projectConfig.cloudResources.mtCluster) {
       
         hail"""${utils.python.pyHailModelVariantStats} --
@@ -309,57 +309,20 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
             .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get)
             .out(modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHtGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get)
             .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}.google".split("/").last)
-
+      
       }
       
       local {
-
+      
         googleCopy(modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStats)
         googleCopy(modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
       
       }
 
-      for {
-
-        cohort <- configCohorts
-
-      } yield {
-
-        googleWith(projectConfig.cloudResources.mtCluster) {
-      
-          hail"""${utils.python.pyHailModelVariantStats} --
-            --hail-utils ${ProjectStores.hailUtilsGoogle.get}
-            --reference-genome ${projectConfig.referenceGenome}
-            --mt-in ${arrayStores(array).refData.mtGoogle.get}
-            --pheno-in ${modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get}
-            --iid-col ${projectConfig.phenoFileId}
-            --pheno-col ${configModel.pheno}
-            --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get}
-            --cohort ${cohort.id}
-            --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort)}
-            --variants-stats-ht-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHtGoogle.get(cohort)}
-            ${binary}
-            --cloud
-            --log ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort)}"""
-              .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get)
-              .out(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHtGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort))
-              .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort)}.google".split("/").last)
-        
-        }
-        
-        local {
-        
-          googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats(cohort))
-          googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog(cohort))
-        
-        }
-
-    }
-
     case false =>
 
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
-
+      
         cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
@@ -373,36 +336,81 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
             .in(arrayStores(array).refData.mt.get, modelStores((configModel, configCohorts, configMeta)).pheno)
             .out(modelStores((configModel, configCohorts, configMeta)).variantsStats, modelStores((configModel, configCohorts, configMeta)).variantsStatsHt, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
             .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}".split("/").last)
-
+      
       }
 
+  }
+
+  (configModel.design, configModel.filterCohorts.size) match {
+
+    case ("full", n) if n > 0 =>
+
       for {
-
-        cohort <- configCohorts
-
+      
+        cohort <- configCohorts if configModel.filterCohorts.contains(cohort.id)
+      
       } yield {
 
-        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
-
-          cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
-            --reference-genome ${projectConfig.referenceGenome}
-            --mt-in ${arrayStores(array).refData.mt.get}
-            --pheno-in ${modelStores((configModel, configCohorts, configMeta)).pheno}
-            --iid-col ${projectConfig.phenoFileId}
-            --pheno-col ${configModel.pheno}
-            --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap}
-            --cohort ${cohort.id}
-            --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats(cohort)}
-            --variants-stats-ht-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHt(cohort)}
-            ${binary}
-            --log ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog(cohort)}"""
-              .in(arrayStores(array).refData.mt.get, modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).cohortMap)
-              .out(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHt(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog(cohort))
-              .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats(cohort)}".split("/").last)
+        projectConfig.hailCloud match {
         
+          case true =>
+        
+            googleWith(projectConfig.cloudResources.mtCluster) {
+          
+              hail"""${utils.python.pyHailModelVariantStats} --
+                --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+                --reference-genome ${projectConfig.referenceGenome}
+                --mt-in ${arrayStores(array).refData.mtGoogle.get}
+                --pheno-in ${modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get}
+                --iid-col ${projectConfig.phenoFileId}
+                --pheno-col ${configModel.pheno}
+                --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get}
+                --cohort ${cohort.id}
+                --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort)}
+                --variants-stats-ht-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHtGoogle.get(cohort)}
+                ${binary}
+                --cloud
+                --log ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort)}"""
+                  .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get)
+                  .out(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHtGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort))
+                  .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort)}.google".split("/").last)
+            
+            }
+            
+            local {
+            
+              googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats.get(cohort))
+              googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog.get(cohort))
+            
+            }
+
+          case false =>
+          
+            drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
+            
+                cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
+                  --reference-genome ${projectConfig.referenceGenome}
+                  --mt-in ${arrayStores(array).refData.mt.get}
+                  --pheno-in ${modelStores((configModel, configCohorts, configMeta)).pheno}
+                  --iid-col ${projectConfig.phenoFileId}
+                  --pheno-col ${configModel.pheno}
+                  --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap}
+                  --cohort ${cohort.id}
+                  --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats.get(cohort)}
+                  --variants-stats-ht-out ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHt.get(cohort)}
+                  ${binary}
+                  --log ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog.get(cohort)}"""
+                    .in(arrayStores(array).refData.mt.get, modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).cohortMap)
+                    .out(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHt.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog.get(cohort))
+                    .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats.get(cohort)}".split("/").last)
+              
+              }
+
         }
 
       }
+
+    case _ => ()
 
   }
 

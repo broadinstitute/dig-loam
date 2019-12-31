@@ -240,7 +240,8 @@ final case class ConfigModel(
   cohortFilters: Option[Seq[CohortFilter]],
   knockoutFilters: Option[Seq[CohortFilter]],
   masks: Option[Seq[MaskFilter]],
-  knowns: Option[Seq[String]]) extends Debug
+  knowns: Option[Seq[String]],
+  filterCohorts: Seq[String]) extends Debug
 
 final case class ConfigSection(
   id: String,
@@ -1118,6 +1119,11 @@ object ProjectConfig {
           case None => None
         }
 
+        (cohortFilters, cohorts.size) match {
+          case (Some(f), n) if n == 1 => throw new CfgException("models.cohortFilters: cohort specific filters require > 1 cohort for model " + id)
+          case _ => ()
+        }
+
         val knockoutFilters = optionalObjList(config = model, field = "knockoutFilters") match {
           case Some(s) =>
             val x = for {
@@ -1141,6 +1147,16 @@ object ProjectConfig {
             }
             Some(x)
           case None => None
+        }
+
+        (knockoutFilters, cohorts.size) match {
+          case (Some(f), n) if n == 1 => throw new CfgException("models.knockoutFilters: cohort specific knockout filters require > 1 cohort for model " + id)
+          case (Some(f), n) if n > 1 =>
+            (design, knockoutFilters) match {
+              case ("strat", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'strat' design and knockoutFilters are not allowed")
+              case _ => ()
+            }
+          case _ => ()
         }
 
         val masks = optionalObjList(config = model, field = "masks") match {
@@ -1182,6 +1198,30 @@ object ProjectConfig {
           case None => None
         }
 
+        var filterCohorts = Seq[String]()
+        cohortFilters match {
+          case Some(f) =>
+            for {
+              cf <- f
+            } yield {
+              filterCohorts = filterCohorts ++ Seq(cf.cohort)
+            }
+          case _ => ()
+        }
+        knockoutFilters match {
+          case Some(f) =>
+            for {
+              kf <- f
+            } yield {
+              filterCohorts = filterCohorts ++ Seq(kf.cohort)
+            }
+          case _ => ()
+        }
+        filterCohorts.size match {
+          case n if n > 1 => filterCohorts = filterCohorts.distinct
+          case _ => ()
+        }
+
         ConfigModel(
           id = id,
           pheno = pheno,
@@ -1206,10 +1246,7 @@ object ProjectConfig {
           filters = filters,
           maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
           cohortFilters = cohortFilters,
-          knockoutFilters = (design, knockoutFilters) match {
-            case ("strat", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'strat' design and knockoutFilters are not allowed")
-            case _ => knockoutFilters
-          },
+          knockoutFilters = knockoutFilters,
           masks = test match {
             case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => masks
             case _ => 
@@ -1218,7 +1255,8 @@ object ProjectConfig {
                 case None => None
               }
           },
-          knowns = knowns
+          knowns = knowns,
+          filterCohorts = filterCohorts
         )
 
       }

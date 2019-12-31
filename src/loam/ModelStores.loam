@@ -39,11 +39,11 @@ final case class Model(
   variantsStatsHtGoogle: Option[Store],
   variantsStatsHailLog: Store,
   variantsStatsHailLogGoogle: Option[Store],
-  cohortVariantsStats: Map[ConfigCohort, Store],
+  cohortVariantsStats: Option[Map[ConfigCohort, Store]],
   cohortVariantsStatsGoogle: Option[Map[ConfigCohort, Store]],
-  cohortVariantsStatsHt: Map[ConfigCohort, Store],
+  cohortVariantsStatsHt: Option[Map[ConfigCohort, Store]],
   cohortVariantsStatsHtGoogle: Option[Map[ConfigCohort, Store]],
-  cohortVariantsStatsHailLog: Map[ConfigCohort, Store],
+  cohortVariantsStatsHailLog: Option[Map[ConfigCohort, Store]],
   cohortVariantsStatsHailLogGoogle: Option[Map[ConfigCohort, Store]],
   groupFile: Option[Store],
   groupFileGoogle: Option[Store],
@@ -110,6 +110,36 @@ val modelStores = (
 
   }
 
+  val cohortVariantsStats = model.design match {
+    case "full" => Some(cohorts.filter(e => model.filterCohorts.contains(e.id)).map { cohort => cohort -> store(local_dir / s"${baseString}.${cohort.id}.variant.stats.tsv.bgz") }.toMap)
+    case "strat" => None
+  }
+
+  val cohortVariantsStatsGoogle = model.design match {
+    case "full" => projectConfig.hailCloud match { case true => Some(cohorts.filter(e => model.filterCohorts.contains(e.id)).map { cohort => cohort -> store(cloud_dir.get / s"${baseString}.${cohort.id}.variant.stats.tsv.bgz") }.toMap); case false => None }
+    case "strat" => None
+  }
+
+  val cohortVariantsStatsHt = model.design match {
+    case "full" => Some(cohorts.filter(e => model.filterCohorts.contains(e.id)).map { cohort => cohort -> store(local_dir / s"${baseString}.${cohort.id}.variant.stats.ht") }.toMap)
+    case "strat" => None
+  }
+
+  val cohortVariantsStatsHtGoogle = model.design match {
+    case "full" => projectConfig.hailCloud match { case true => Some(cohorts.filter(e => model.filterCohorts.contains(e.id)).map { cohort => cohort -> store(cloud_dir.get / s"${baseString}.${cohort.id}.variant.stats.ht") }.toMap); case false => None }
+    case "strat" => None
+  }
+
+  val cohortVariantsStatsHailLog = model.design match {
+    case "full" => Some(cohorts.filter(e => model.filterCohorts.contains(e.id)).map { cohort => cohort -> store(local_dir / s"${baseString}.${cohort.id}.variant.stats.hail.log") }.toMap)
+    case "strat" => None
+  }
+
+  val cohortVariantsStatsHailLogGoogle = model.design match {
+    case "full" => projectConfig.hailCloud match { case true => Some(cohorts.filter(e => model.filterCohorts.contains(e.id)).map { cohort => cohort -> store(cloud_dir.get / s"${baseString}.${cohort.id}.variant.stats.hail.log") }.toMap); case false => None }
+    case "strat" => None
+  }
+
   sm -> Model(
     sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
     cohortMap = store(local_dir / s"${baseString}.cohort.map.tsv"),
@@ -142,14 +172,14 @@ val modelStores = (
     variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.stats.tsv.bgz")); case false => None },
     variantsStatsHt = store(local_dir / s"${baseString}.variant.stats.ht"),
     variantsStatsHtGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.stats.ht")); case false => None },
-    cohortVariantsStats = cohorts.map { cohort => cohort -> store(local_dir / s"${baseString}.${cohort.id}.variant.stats.tsv.bgz") }.toMap,
-    cohortVariantsStatsGoogle = projectConfig.hailCloud match { case true => Some(cohorts.map { cohort => cohort -> store(cloud_dir.get / s"${baseString}.${cohort.id}.variant.stats.tsv.bgz") }.toMap); case false => None },
-    cohortVariantsStatsHt = cohorts.map { cohort => cohort -> store(local_dir / s"${baseString}.${cohort.id}.variant.stats.ht") }.toMap,
-    cohortVariantsStatsHtGoogle = projectConfig.hailCloud match { case true => Some(cohorts.map { cohort => cohort -> store(cloud_dir.get / s"${baseString}.${cohort.id}.variant.stats.ht") }.toMap); case false => None },
+    cohortVariantsStats = cohortVariantsStats,
+    cohortVariantsStatsGoogle = cohortVariantsStatsGoogle,
+    cohortVariantsStatsHt = cohortVariantsStatsHt,
+    cohortVariantsStatsHtGoogle = cohortVariantsStatsHtGoogle,
     variantsStatsHailLog = store(local_dir / s"${baseString}.variant.stats.hail.log"),
     variantsStatsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.stats.hail.log")); case false => None },
-    cohortVariantsStatsHailLog = cohorts.map { cohort => cohort -> store(local_dir / s"${baseString}.${cohort.id}.variant.stats.hail.log") }.toMap,
-    cohortVariantsStatsHailLogGoogle = projectConfig.hailCloud match { case true => Some(cohorts.map { cohort => cohort -> store(cloud_dir.get / s"${baseString}.${cohort.id}.variant.stats.hail.log") }.toMap); case false => None },
+    cohortVariantsStatsHailLog = cohortVariantsStatsHailLog,
+    cohortVariantsStatsHailLogGoogle = cohortVariantsStatsHailLogGoogle,
     groupFile = groupTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.groupfile.txt")); case false => None },
 	groupFileGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir.get / s"${baseString}.groupfile.txt")); case false => None },
     cleanVcf = cleanVcf
