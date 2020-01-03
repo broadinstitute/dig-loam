@@ -339,15 +339,82 @@ def add_sample_qc_stats(mt: hl.MatrixTable, sample_qc: hl.tstr, variant_qc: hl.t
 		)}
 	)
 
-def add_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
+def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
+	mt = mt.annotate_cols(**{struct_name: hl.struct(exclude = 0)})
+	for f in filters:
+		absent = False
+		zero_stddev = False
+		all_miss = False
+		single_val = False
+		for field in f[1].split(","):
+			if field not in mt.cols().col_value.flatten():
+				absent = True
+			dt = eval("ht." + field).dtype
+			if dt in [hl.tint32, hl.tint64, hl.tfloat32, hl.tfloat64]:
+				field_stats = ht.aggregate(hl.agg.stats(eval("ht." + field)))
+				if field_stats.stdev == 0:
+					zero_stddev = True
+				if field_stats.n == 0:
+					all_miss = True
+			else:
+				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))):
+					single_val = True
+			f[2] = f[2].replace(field,"mt." + field)
+		if not absent and not zero_stddev and not all_miss and not single_val:
+			print("filter samples based on configuration filter " + f[0] + " for field/s " + f[1])
+			mt = mt.annotate_cols(
+				**{struct_name: mt[struct_name].annotate(
+					**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
+				)}
+			)
+		else:
+			if absent:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+			if zero_stddev:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... standard deviation is zero")
+			if all_miss:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... all records missing")
+			if single_val:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... all records missing or single value")
+			mt = mt.annotate_cols(
+				**{struct_name: mt[struct_name].annotate(
+					**{f[0]: 0}
+				)}
+			)
+		print("update exclusion column based on " + f[0])
+		mt = mt.annotate_cols(
+			**{struct_name: mt[struct_name].annotate(
+				exclude = hl.cond(
+					mt[struct_name][f[0]] == 1,
+					1,
+					mt[struct_name].exclude
+				)
+			)}
+		)
+	return mt
+
+def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
 	mt = mt.annotate_rows(**{struct_name: hl.struct(exclude = 0)})
 	for f in filters:
 		absent = False
+		zero_stddev = False
+		all_miss = False
+		single_val = False
 		for field in f[1].split(","):
 			if field not in mt.rows().row_value.flatten():
 				absent = True
+			dt = eval("ht." + field).dtype
+			if dt in [hl.tint32, hl.tint64, hl.tfloat32, hl.tfloat64]:
+				field_stats = ht.aggregate(hl.agg.stats(eval("ht." + field)))
+				if field_stats.stdev == 0:
+					zero_stddev = True
+				if field_stats.n == 0:
+					all_miss = True
+			else:
+				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))):
+					single_val = True
 			f[2] = f[2].replace(field,"mt." + field)
-		if not absent:
+		if not absent and not zero_stddev and not all_miss and not single_val:
 			print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 			mt = mt.annotate_rows(
 				**{struct_name: mt[struct_name].annotate(
@@ -355,7 +422,14 @@ def add_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) ->
 				)}
 			)
 		else:
-			print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+			if absent:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+			if zero_stddev:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... standard deviation is zero")
+			if all_miss:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... all records missing")
+			if single_val:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... all records missing or single value")
 			mt = mt.annotate_rows(
 				**{struct_name: mt[struct_name].annotate(
 					**{f[0]: 0}
@@ -372,3 +446,57 @@ def add_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) ->
 			)}
 		)
 	return mt
+
+def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr) -> hl.Table:
+	ht = ht.annotate(**{struct_name: hl.struct(exclude = 0)})
+	for f in filters:
+		absent = False
+		zero_stddev = False
+		all_miss = False
+		single_val = False
+		for field in f[1].split(","):
+			if field not in ht.row_value.flatten():
+				absent = True
+			dt = eval("ht." + field).dtype
+			if dt in [hl.tint32, hl.tint64, hl.tfloat32, hl.tfloat64]:
+				field_stats = ht.aggregate(hl.agg.stats(eval("ht." + field)))
+				if field_stats.stdev == 0:
+					zero_stddev = True
+				if field_stats.n == 0:
+					all_miss = True
+			else:
+				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))):
+					single_val = True
+			f[2] = f[2].replace(field,"ht." + field)
+		if not absent and not zero_stddev and not all_miss and not single_val:
+			print("filter table based on configuration filter " + f[0] + " for field/s " + f[1])
+			ht = ht.annotate(
+				**{struct_name: ht[struct_name].annotate(
+					**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
+				)}
+			)
+		else:
+			if absent:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
+			if zero_stddev:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... standard deviation is zero")
+			if all_miss:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... all records missing")
+			if single_val:
+				print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... all records missing or single value")
+			ht = ht.annotate(
+				**{struct_name: ht[struct_name].annotate(
+					**{f[0]: 0}
+				)}
+			)
+		print("update exclusion column based on " + f[0])
+		ht = ht.annotate(
+			**{struct_name: ht[struct_name].annotate(
+				exclude = hl.cond(
+					ht[struct_name][f[0]] == 1,
+					1,
+					ht[struct_name].exclude
+				)
+			)}
+		)
+	return ht

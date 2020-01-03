@@ -103,38 +103,7 @@ def main(args=None):
 	if args.sample_filters:
 		with hl.hadoop_open(args.sample_filters, 'r') as f:
 			sfilters = f.read().splitlines()
-			for sf in sfilters:
-				f = sf.split("\t")
-				fields = f[1].split(",")
-				absent = False
-				for field in fields:
-					if field not in tbl.row_value.flatten():
-						absent = True
-					f[2] = f[2].replace(field,"tbl." + field)
-				if not absent:
-					print("filter samples based on configuration filter " + f[0] + " for field/s " + f[1])
-					tbl = tbl.annotate(
-						ls_filters = tbl.ls_filters.annotate(
-							**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
-						)
-					)
-				else:
-					print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
-					tbl = tbl.annotate(
-						ls_filters = tbl.ls_filters.annotate(
-							**{f[0]: 0}
-						)
-					)
-				print("update exclusion column based on " + f[0])
-				tbl = tbl.annotate(
-					ls_filters = tbl.ls_filters.annotate(
-						exclude = hl.cond(
-							tbl.ls_filters[f[0]] == 1,
-							1,
-							tbl.ls_filters.exclude
-						)
-					)
-				)
+		tbl = hail_utils.ht_add_filters(ht = tbl, filters = [f.split("\t") for f in sfilters], struct_name = "ls_filters")
 
 	print("write sample qc metrics and exclusions to file")
 	tbl.flatten().export(args.samples_stats_out, header=True)
@@ -175,38 +144,7 @@ def main(args=None):
 	if args.variant_filters:
 		with hl.hadoop_open(args.variant_filters, 'r') as f:
 			vfilters = f.read().splitlines()
-			for vf in vfilters:
-				f = vf.split("\t")
-				fields = f[1].split(",")
-				absent = False
-				for field in fields:
-					if field not in tbl.row_value.flatten():
-						absent = True
-					f[2] = f[2].replace(field,"tbl." + field)
-				if not absent:
-					print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
-					tbl = tbl.annotate(
-						ls_filters = tbl.ls_filters.annotate(
-							**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
-						)
-					)
-				else:
-					print("skipping configuration filter " + f[0] + " for field/s " + f[1] + "... 1 or more fields do not exist")
-					tbl = tbl.annotate(
-						ls_filters = tbl.ls_filters.annotate(
-							**{f[0]: 0}
-						)
-					)
-				print("update exclusion column based on " + f[0])
-				tbl = tbl.annotate(
-					ls_filters = tbl.ls_filters.annotate(
-						exclude = hl.cond(
-							tbl.ls_filters[f[0]] == 1,
-							1,
-							tbl.ls_filters.exclude
-						)
-					)
-				)
+		tbl = hail_utils.ht_add_filters(ht = tbl, filters = [f.split("\t") for f in vfilters], struct_name = "ls_filters")
 
 	print("write variant qc metrics and exclusions to file")
 	tbl = tbl.drop("info","variant_qc_raw")
