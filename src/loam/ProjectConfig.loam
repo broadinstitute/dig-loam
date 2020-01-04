@@ -361,8 +361,8 @@ final case class Python(
   pyHailUtils: Path,
   pyHailModelVariantStats: Path,
   pyHailAssoc: Path,
-  pyHailExportCleanArrayData: Path
-  //pyHailFilterModelVariants: Path,
+  pyHailExportCleanArrayData: Path,
+  pyHailFilterModelVariants: Path
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
@@ -1248,10 +1248,10 @@ object ProjectConfig {
           cohortFilters = cohortFilters,
           knockoutFilters = knockoutFilters,
           masks = test match {
-            case "logistic_burden" | "logistic_skat" | "linear_burden" | "linear_skat" => masks
+            case s if groupTests.contains(s) => masks
             case _ => 
               masks match {
-                case Some(s) => throw new CfgException("models.masks: model " + id + " masks are only allowed for collapsing variant tests (ie burden|skat)")
+                case Some(s) => throw new CfgException("models.masks: model " + id + " masks are only allowed for collapsing variant (ie. group|gene) tests")
                 case None => None
               }
           },
@@ -1423,8 +1423,8 @@ object ProjectConfig {
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
       pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
-      pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py")
-      //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
+      pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
+      pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),

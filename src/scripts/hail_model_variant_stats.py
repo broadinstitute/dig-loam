@@ -29,12 +29,6 @@ def main(args=None):
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
 
-	print("key rows by locus, alleles and rsid")
-	mt = mt.key_rows_by('locus','alleles','rsid')
-
-	print("key rows by locus and alleles")
-	mt = mt.key_rows_by('locus','alleles')
-
 	print("annotate samples with phenotype file")
 	tbl = hl.import_table(
 		args.pheno_in,

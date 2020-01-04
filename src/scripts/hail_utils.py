@@ -465,7 +465,7 @@ def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr) -> hl
 				if field_stats.n == 0:
 					all_miss = True
 			else:
-				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))):
+				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))) == 1:
 					single_val = True
 			f[2] = f[2].replace(field,"ht." + field)
 		if not absent and not zero_stddev and not all_miss and not single_val:
