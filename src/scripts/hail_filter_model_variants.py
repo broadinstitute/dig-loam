@@ -108,7 +108,7 @@ def main(args=None):
 		ht = ht.annotate(annotation = tbl[ht.rsid])
 
 	start_time = time.time()
-	ht = ht.checkpoint("ht.checkpoint", overwrite=True)
+	ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
 	elapsed_time = time.time() - start_time
 	print(time.strftime("write checkpoint hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
 
@@ -175,7 +175,7 @@ def main(args=None):
 			elapsed_time = time.time() - start_time
 			print(time.strftime("add mask " + m + " to filters - %H:%M:%S", time.gmtime(elapsed_time)))
 
-	fields_out = fields_out + ['ls_global_exclude']
+	fields_out = fields_out + ['ls_previous_exclude','ls_global_exclude']
 	ht = ht.annotate(ls_global_exclude = 0)
 	ht = ht.annotate(ls_global_exclude = hl.cond(ht.ls_previous_exclude == 1, 1, ht.ls_global_exclude))
 	for f in exclude_any_fields:
@@ -264,6 +264,7 @@ if __name__ == "__main__":
 	parser.add_argument('--knockout-filters', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--masks', help='mask id, column name, expression, groupfile; exclude variants satisfying this expression')
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
+	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
 	#parser.add_argument('--groupfile-out', help='an output groupfile name')
 	#parser.add_argument('--masked-groupfiles-out', nargs='+', help='a list of mask id and output groupfile name pairs, each separated by commas')
 	#parser.add_argument('--vcf-out', help='mask id, column name, expression, groupfile; exclude variants satisfying this expression')
@@ -271,7 +272,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--full-stats-in', help='a hail table with variant stats on full sample set', required=True)
-	requiredArgs.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas', required=True)
+	requiredArgs.add_argument('--ht-checkpoint', help='a checkpoint filename', required=True)
 	requiredArgs.add_argument('--variant-filters-ht-out', help='a filename for variant filters hail table', required=True)
 	args = parser.parse_args()
 	main(args)
