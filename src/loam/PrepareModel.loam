@@ -305,11 +305,11 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           --iid-col ${projectConfig.phenoFileId}
           --pheno-col ${configModel.pheno}
           --variants-stats-out ${modelStores((configModel, configCohorts, configMeta)).variantsStats}
-          --variants-stats-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt}
+          --variants-stats-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.get}
           ${binary}
           --log ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog}"""
             .in(arrayStores(array).refData.mt.get, modelStores((configModel, configCohorts, configMeta)).pheno)
-            .out(modelStores((configModel, configCohorts, configMeta)).variantsStats, modelStores((configModel, configCohorts, configMeta)).variantsStatsHt, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
+            .out(modelStores((configModel, configCohorts, configMeta)).variantsStats, modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLog)
             .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}".split("/").last)
       
       }
@@ -514,7 +514,6 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       local {
       
         googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterTableGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterTable)
-        googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable)
         googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog)
       
       }
@@ -558,7 +557,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   
       }
       
-      var cohortStatsIn = Seq(modelStores((configModel, configCohorts, configMeta)).variantsStatsHt, arrayStores(array).refData.annotationsHt, modelStores((configModel, configCohorts, configMeta)).filters, modelStores((configModel, configCohorts, configMeta)).masks, arrayStores(array).filterPostQc.variantsExclude)
+      var cohortStatsIn = Seq(modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.get, arrayStores(array).refData.annotationsHt, modelStores((configModel, configCohorts, configMeta)).filters, modelStores((configModel, configCohorts, configMeta)).masks, arrayStores(array).filterPostQc.variantsExclude)
       
       modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHt match {
         case Some(s) =>
@@ -583,7 +582,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterModelVariants}
           --reference-genome ${projectConfig.referenceGenome}
-          --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt}
+          --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.get}
           ${cohortStatsInString}
           --annotation ${arrayStores(array).refData.annotationsHt}
           --filters ${modelStores((configModel, configCohorts, configMeta)).filters}
@@ -592,11 +591,11 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           --masks ${modelStores((configModel, configCohorts, configMeta)).masks}
           --variants-remove ${arrayStores(array).filterPostQc.variantsExclude}
           --variant-filters-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterTable}
-          --ht-checkpoint ${modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint}
-          --variant-filters-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable}
+          --ht-checkpoint ${modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.get}
+          --variant-filters-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get}
           --log ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog}"""
             .in(cohortStatsIn)
-            .out(modelStores((configModel, configCohorts, configMeta)).variantFilterTable, modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog)
+            .out(modelStores((configModel, configCohorts, configMeta)).variantFilterTable, modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog)
             .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantFilterTable}".split("/").last)
       
       }
