@@ -602,4 +602,83 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   
   }
 
+  groupTests.contains(configModel.test) match {
+
+    case true =>
+
+      projectConfig.hailCloud match {
+      
+        case true =>
+
+          val maskedGroupFiles = {
+            modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
+              case Some(s) =>
+                val x = "--masked-groupfiles-out"
+                val y = for {
+                  (k, v) <- s
+                } yield {
+                  s"""${k.id},${v.toString.split("@")(1)}"""
+                }
+                x + " " + y.mkString(" ")
+              case None => ""
+            }
+          }
+    
+          googleWith(projectConfig.cloudResources.mtCluster) {
+          
+            hail"""${utils.python.pyHailGenerateGroupfile} --
+              --cloud
+              --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+              ${maskedGroupFiles}
+              --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}
+              --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get}
+              --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get}"""
+              .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
+              .out(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get)
+              .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get}.google".split("/").last)
+    
+          }
+
+          local {
+
+            googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFile.get)
+            googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get)
+
+          }
+
+        case false =>
+
+          val maskedGroupFiles = {
+            modelStores((configModel, configCohorts, configMeta)).maskedGroupFile match {
+              case Some(s) =>
+                val x = "--masked-groupfiles-out"
+                val y = for {
+                  (k, v) <- s
+                } yield {
+                  s"""${k.id},${v.toString.split("@")(1)}"""
+                }
+                x + " " + y.mkString(" ")
+              case None => ""
+            }
+          }
+
+          drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
+          
+            cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
+              ${maskedGroupFiles}
+              --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get}
+              --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFile.get}
+              --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get}"""
+              .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get)
+              .out(modelStores((configModel, configCohorts, configMeta)).groupFile.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get)
+              .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get}".split("/").last)
+
+          }
+    
+      }
+
+    case false => ()
+
+  }
+
 }
