@@ -610,7 +610,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       
         case true =>
 
-          val maskedGroupFiles = {
+          val maskedGroupFilesString = {
             modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
               case Some(s) =>
                 val x = "--masked-groupfiles-out"
@@ -623,18 +623,32 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               case None => ""
             }
           }
-    
+
+          var generateGroupfileOut = Seq(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get)
+
+          modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
+            case Some(s) =>
+              generateGroupfileOut = generateGroupfileOut ++ {
+                for {
+                  (k, v) <- s
+                } yield {
+                  v
+                }
+              }
+            case None => ()
+          }
+
           googleWith(projectConfig.cloudResources.mtCluster) {
           
             hail"""${utils.python.pyHailGenerateGroupfile} --
               --cloud
               --hail-utils ${ProjectStores.hailUtilsGoogle.get}
-              ${maskedGroupFiles}
+              ${maskedGroupFilesString}
               --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}
               --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get}
               --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get}"""
               .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
-              .out(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get)
+              .out(generateGroupfileOut)
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get}.google".split("/").last)
     
           }
@@ -646,9 +660,21 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
           }
 
+          modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
+            case Some(s) =>
+              for {
+                (k, v) <- s
+              } yield {
+                local {
+                  googleCopy(v, modelStores((configModel, configCohorts, configMeta)).maskedGroupFile.get(k))
+                }
+              }
+            case None => ()
+          }
+
         case false =>
 
-          val maskedGroupFiles = {
+          val maskedGroupFilesString = {
             modelStores((configModel, configCohorts, configMeta)).maskedGroupFile match {
               case Some(s) =>
                 val x = "--masked-groupfiles-out"
@@ -662,15 +688,29 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
             }
           }
 
+          var generateGroupfileOut = Seq(modelStores((configModel, configCohorts, configMeta)).groupFile.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get)
+
+          modelStores((configModel, configCohorts, configMeta)).maskedGroupFile match {
+            case Some(s) =>
+              generateGroupfileOut = generateGroupfileOut ++ {
+                for {
+                  (k, v) <- s
+                } yield {
+                  v
+                }
+              }
+            case None => ()
+          }
+
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
-              ${maskedGroupFiles}
+              ${maskedGroupFilesString}
               --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get}
               --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFile.get}
               --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get}"""
               .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get)
-              .out(modelStores((configModel, configCohorts, configMeta)).groupFile.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get)
+              .out(generateGroupfileOut)
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get}".split("/").last)
 
           }

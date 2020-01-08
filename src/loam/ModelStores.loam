@@ -184,7 +184,7 @@ val modelStores = (
   val maskedGroupFileGoogle = model.masks match {
     case Some(s) =>
       model.masks.get.size match {
-        case n if n > 0 => projectConfig.hailCloud match { case true => Some(model.masks.get.map { mask => mask -> store(local_dir / s"${baseString}.variant.groupfile.${mask.id}.tsv") }.toMap); case false => None }
+        case n if n > 0 => projectConfig.hailCloud match { case true => Some(model.masks.get.map { mask => mask -> store(cloud_dir.get / s"${baseString}.variant.groupfile.${mask.id}.tsv") }.toMap); case false => None }
         case _ => None
       }
     case None => None

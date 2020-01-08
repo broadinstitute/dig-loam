@@ -32,6 +32,7 @@ vep -i $sitesVcf \
 --flag_pick_allele \
 --pick_order tsl,biotype,appris,rank,ccds,canonical,length \
 --domains flags \
+--plugin LoF \
 --plugin LoFtool \
 --plugin dbNSFP,${dbNSFP},ALL \
 --output_file STDOUT \
