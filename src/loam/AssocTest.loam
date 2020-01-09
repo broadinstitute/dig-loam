@@ -1,0 +1,41 @@
+/**
+ * Run Assoc Analysis
+ * 
+ */
+import ProjectConfig._
+import ProjectStores._
+import ModelStores._
+//import AssocStores._
+//import Fxns._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def AssocTest(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None, configKnown: Option[ConfigKnown] = None): Unit = {
+
+  configModel.assocPlatform match {
+
+    case "epacts" =>
+
+      drmWith(imageName = s"${utils.image.imgR}") {
+
+        cmd"""${utils.binary.binRscript} --vanilla --verbose
+          ${utils.r.rConvertPhenoToPed}
+          --pheno ${modelStores((configModel, configCohorts, configMeta)).pheno}
+          --pcs ${modelStores((configModel, configCohorts, configMeta)).pcsInclude}
+          --pheno-col ${configModel.pheno}
+          --iid-col ${projectConfig.phenoFileId}
+          --sex-col ${projectConfig.sampleFileSrSex}
+          --male-code ${projectConfig.sampleFileMaleCode}
+          --female-code ${projectConfig.sampleFileFemaleCode}
+          --ped ${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}"""
+          .in(modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).pcsInclude)
+          .out(modelStores((configModel, configCohorts, configMeta)).pedEpacts.get)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}".split("/").last)
+
+      }
+
+    case _ => ()
+
+  }
+
+}

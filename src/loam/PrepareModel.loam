@@ -721,4 +721,66 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
   }
 
+  modelStores((configModel, configCohorts, configMeta)).vcf match {
+
+    case Some(s) =>
+
+      projectConfig.hailCloud match {
+      
+        case true =>
+
+          googleWith(projectConfig.cloudResources.mtCluster) {
+          
+            hail"""${utils.python.pyHailGenerateModelVcf} --
+              --cloud
+              --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+              --mt-in ${arrayStores(array).refData.mtGoogle.get}
+              --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get}
+              --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}
+              --vcf-out ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get}
+              --log ${modelStores((configModel, configCohorts, configMeta)).vcfHailLogGoogle.get}"""
+              .in(arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
+              .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLogGoogle.get)
+              .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}.google".split("/").last)
+    
+          }
+
+          local {
+
+            googleCopy(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
+            googleCopy(modelStores((configModel, configCohorts, configMeta)).vcfHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLog.get)
+
+          }
+
+        case false =>
+
+          drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
+          
+            cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
+              --mt-in ${arrayStores(array).refData.mt.get}
+              --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap}
+              --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get}
+              --vcf-out ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}
+              --log ${modelStores((configModel, configCohorts, configMeta)).vcfHailLog.get}"""
+              .in(arrayStores(array).refData.mt.get, modelStores((configModel, configCohorts, configMeta)).cohortMap, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get)
+              .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLog.get)
+              .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}".split("/").last)
+    
+          }
+
+      }
+
+      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabixClean.cpus, mem = projectConfig.resources.tabixClean.mem, maxRunTime = projectConfig.resources.tabixClean.maxRunTime) {
+
+        cmd"""${utils.binary.binTabix} -p vcf ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}"""
+          .in(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
+          .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.tbi.local.get)
+          .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.tbi.local.get}".split("/").last)
+      
+      }
+
+    case None => ()
+
+  }
+
 }

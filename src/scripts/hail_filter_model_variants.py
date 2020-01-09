@@ -48,8 +48,8 @@ def main(args=None):
 
 	cohorts = []
 	standard_filters = []
-	cohort_filters = []
-	knockout_filters = []
+	cohort_filters = {}
+	knockout_filters = {}
 	masks = []
 	variant_qc_fields = []
 	variant_qc_cohort_fields = {}
@@ -66,8 +66,10 @@ def main(args=None):
 			filters = f.read().splitlines()
 			for x in filters:
 				y = x.split("\t")
-				if y not in cohort_filters:
-					cohort_filters = cohort_filters + [y]
+				if y[0] not in cohort_filters:
+					cohort_filters[y[0]] = [y[1:]]
+				else:
+					cohort_filters[y[0]] = cohort_filters[y[0]] + [y[1:]]
 				cohorts = cohorts + [y[0]]
 				if y[0] not in variant_qc_cohort_fields:
 					variant_qc_cohort_fields[y[0]] = []
@@ -77,8 +79,10 @@ def main(args=None):
 			filters = f.read().splitlines()
 			for x in filters:
 				y = x.split("\t")
-				if y not in knockout_filters:
-					knockout_filters = knockout_filters + [y]
+				if y[0] not in knockout_filters:
+					knockout_filters[y[0]] = [y[1:]]
+				else:
+					knockout_filters[y[0]] = knockout_filters[y[0]] + [y[1:]]
 				cohorts = cohorts + [y[0]]
 				if y[0] not in variant_qc_cohort_fields:
 					variant_qc_cohort_fields[y[0]] = []
@@ -134,20 +138,24 @@ def main(args=None):
 		for cohort in cohorts:
 			start_time = time.time()
 			cohort_ht = hl.read_table(cohort_stats[cohort])
-			if len(cohort_filters) > 0:
+			ht = ht.annotate(**{'variant_qc_' + cohort: cohort_ht[ht.key]['variant_qc']})
+			if cohort in cohort_filters.keys():
 				start_time = time.time()
-				cohort_ht = hail_utils.ht_add_filters(cohort_ht, [[x[1],x[2],x[3]] for x in cohort_filters], 'ls_filters_' + cohort)
+				cohort_ht = hail_utils.ht_add_filters(cohort_ht, cohort_filters[cohort], 'ls_filters_' + cohort)
+				ht = ht.annotate(**{'ls_filters_' + cohort: cohort_ht[ht.key]['ls_filters_' + cohort]})
+				fields_out = fields_out + ['ls_filters_' + cohort]
 				exclude_any_fields = exclude_any_fields + ['ls_filters_' + cohort + '.exclude']
 				elapsed_time = time.time() - start_time
 				print(time.strftime("add cohort filters for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
-			if len(knockout_filters) > 0:
+			if cohort in knockout_filters.keys():
 				start_time = time.time()
-				cohort_ht = hail_utils.ht_add_filters(cohort_ht, [[x[1],x[2],x[3]] for x in knockout_filters], 'ls_knockouts_' + cohort)
+				cohort_ht = hail_utils.ht_add_filters(cohort_ht, knockout_filters[cohort], 'ls_knockouts_' + cohort)
+				ht = ht.annotate(**{'ls_knockouts_' + cohort: cohort_ht[ht.key]['ls_knockouts_' + cohort]})
+				fields_out = fields_out + ['ls_knockouts_' + cohort]
 				knockout_fields = knockout_fields + ['ls_knockouts_' + cohort + '.exclude']
 				elapsed_time = time.time() - start_time
 				print(time.strftime("add knockout filters for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 			start_time = time.time()
-			ht = ht.annotate(**{'variant_qc_' + cohort: cohort_ht[ht.key]['variant_qc'], 'ls_filters_' + cohort: cohort_ht[ht.key]['ls_filters_' + cohort], 'ls_knockouts_' + cohort: cohort_ht[ht.key]['ls_knockouts_' + cohort]})
 			elapsed_time = time.time() - start_time
 			print(time.strftime("annotate rows with cohort level variant qc in " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 			if len(cohorts) > 1:
@@ -155,7 +163,6 @@ def main(args=None):
 				ht = ht.annotate(max_cohort_maf = hl.cond( ht.max_cohort_maf < ht['variant_qc_' + cohort].MAF, ht['variant_qc_' + cohort].MAF, ht.max_cohort_maf))
 				elapsed_time = time.time() - start_time
 				print(time.strftime("annotate rows with updated max_cohort_maf for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
-			fields_out = fields_out + ['ls_filters_' + cohort, 'ls_knockouts_' + cohort]
 
 	# add filters for full variant stats
 	if len(standard_filters) > 0:
@@ -196,56 +203,7 @@ def main(args=None):
 		ht.flatten().export(args.variant_filters_out, header=True)
 		elapsed_time = time.time() - start_time
 		print(time.strftime("write variant filters to file - %H:%M:%S", time.gmtime(elapsed_time)))
-    
-	#n_all = ht.count()
-	#if len(exclude_any_fields) > 0:
-	#	start_time = time.time()
-	#	ht = ht.filter(ht.ls_global_exclude == 1, keep=True)
-	#	n_post_filter = ht.count()
-	#	elapsed_time = time.time() - start_time
-	#	print(time.strftime("filter variants that failed standard filters - %H:%M:%S", time.gmtime(elapsed_time)))
-	#	print(str(n_post_filter) + " variants flagged for removal via standard filters")
-	#	print(str(n_all - n_post_filter) + " variants remaining for analysis")
-	#else:
-	#	print("0 variants flagged for removal via standard filters")
-	#	print(str(n_all) + " variants remaining for analysis")
-    #
-	#if args.groupfile_out:
-	#	if n_all > 0:
-	#		start_time = time.time()
-	#		tbl = ht.flatten()
-	#		tbl = tbl.select(*['locus','alleles','annotation.Gene'])
-	#		tbl = tbl.annotate(groupfile_id = tbl.locus.contig + ":" + hl.str(tbl.locus.position) + "_" + tbl.alleles[0] + "/" + tbl.alleles[1])
-	#		tbl = tbl.key_by('annotation.Gene')
-	#		tbl = tbl.select(*['groupfile_id'])
-	#		tbl = tbl.collect_by_key()
-	#		tbl = tbl.annotate(values=tbl.values.map(lambda x: x.groupfile_id))
-	#		df = tbl.to_pandas()
-	#		df = df.dropna()
-	#		elapsed_time = time.time() - start_time
-	#		print(time.strftime("generate group file table - %H:%M:%S", time.gmtime(elapsed_time)))
-	#		if df.shape[0] > 0:
-	#			l = []
-	#			for i, x in df.iterrows():                                    
-	#				l = l + [x['annotation.Gene'] + "\t" + "\t".join(x['values'])]
-	#			start_time = time.time()
-	#			with hl.hadoop_open(args.groupfile_out, 'w') as f:
-	#				f.write("\n".join(l))
-	#			elapsed_time = time.time() - start_time
-	#			print(time.strftime("generate null group file with " + str(len(l)) + " genes - %H:%M:%S", time.gmtime(elapsed_time)))
-	#		else:
-	#			print("no genes found for remaining variants... writing empty group file")
-	#			Path(args.groupfile_out).touch()      
-	#	else:
-	#		print("no variants remaining... writing empty group file")
-	#		Path(args.groupfile_out).touch()
-    #
-	#if args.vcf_out:
-	#	start_time = time.time()
-	#	hl.export_vcf(mt, args.vcf_out)
-	#	elapsed_time = time.time() - start_time
-	#	print(time.strftime("write VCF file to disk - %H:%M:%S", time.gmtime(elapsed_time)))
-	
+
 	if args.cloud:
 		hl.copy_log(args.log)
 
@@ -265,9 +223,6 @@ if __name__ == "__main__":
 	parser.add_argument('--masks', help='mask id, column name, expression, groupfile; exclude variants satisfying this expression')
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
 	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
-	#parser.add_argument('--groupfile-out', help='an output groupfile name')
-	#parser.add_argument('--masked-groupfiles-out', nargs='+', help='a list of mask id and output groupfile name pairs, each separated by commas')
-	#parser.add_argument('--vcf-out', help='mask id, column name, expression, groupfile; exclude variants satisfying this expression')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

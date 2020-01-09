@@ -230,6 +230,7 @@ final case class ConfigModel(
   unrelatedOnly: Boolean,
   trans: Option[String],
   test: String,
+  assocPlatform: String,
   covars: String,
   design: String,
   cohorts: Seq[String],
@@ -363,7 +364,8 @@ final case class Python(
   pyHailAssoc: Path,
   pyHailExportCleanArrayData: Path,
   pyHailFilterModelVariants: Path,
-  pyHailGenerateGroupfile: Path
+  pyHailGenerateGroupfile: Path,
+  pyHailGenerateModelVcf: Path
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
@@ -418,7 +420,8 @@ final case class R(
   rModelCohortSamplesAvailable: Path,
   rMetaCohortSamples: Path,
   rExcludeCrossArray: Path,
-  rGeneratePheno: Path
+  rGeneratePheno: Path,
+  rConvertPhenoToPed: Path
   //rAncestryClusterTable: Path,
   //rPcair: Path,
   //rVariantsSummaryTable: Path,
@@ -1229,6 +1232,7 @@ object ProjectConfig {
           unrelatedOnly = requiredBool(config = model, field = "unrelatedOnly"),
           trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
           test = test,
+          assocPlatform = test.split("\\.")(0),
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
           cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
@@ -1426,7 +1430,8 @@ object ProjectConfig {
       pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
       pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
       pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
-      pyHailGenerateGroupfile = path(s"${scriptsDir}/hail_generate_groupfile.py")
+      pyHailGenerateGroupfile = path(s"${scriptsDir}/hail_generate_groupfile.py"),
+      pyHailGenerateModelVcf = path(s"${scriptsDir}/hail_generate_model_vcf.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
@@ -1481,7 +1486,8 @@ object ProjectConfig {
       rModelCohortSamplesAvailable = path(s"${scriptsDir}/model_cohort_samples_available.r"),
       rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
       rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
-      rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r")
+      rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
+      rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r")
       //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
       //rPcair = path(s"${scriptsDir}/pcair.r"),
       //rVariantsSummaryTable = path(s"${scriptsDir}/variants_summary_table.r"),

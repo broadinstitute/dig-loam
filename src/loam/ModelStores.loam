@@ -23,6 +23,7 @@ final case class Model(
   pcaLog: Store,
   pheno: Store,
   phenoGoogle: Option[Store],
+  pedEpacts: Option[Store],
   pcsInclude: Store,
   pcsIncludeGoogle: Option[Store],
   filters: Store,
@@ -59,7 +60,9 @@ final case class Model(
   groupFileHailLogGoogle: Option[Store],
   maskedGroupFile: Option[Map[MaskFilter, Store]],
   maskedGroupFileGoogle: Option[Map[MaskFilter, Store]],
-  cleanVcf: Option[MultiPathVcf]
+  vcf: Option[MultiPathVcf],
+  vcfHailLog: Option[Store],
+  vcfHailLogGoogle: Option[Store]
 )
 
 val modelStores = (
@@ -77,6 +80,8 @@ val modelStores = (
   val model = sm._1
   val cohorts = sm._2
   val meta: Option[ConfigMeta] = sm._3
+
+  val array = projectConfig.Arrays.filter(e => e.id == cohorts.head.array).head
 
   val baseString = meta match {
     case Some(s) =>
@@ -102,23 +107,63 @@ val modelStores = (
       case _ => None
   }
 
-  val cleanVcf = nonHailTests.contains(model.test) match {
+  val vcf = nonHailTests.contains(model.test) match {
 
     case true =>
 
-      Some(MultiPathVcf(
-        base = MultiPath(
-          local = Some(local_dir / baseString),
-          google = projectConfig.hailCloud match { case true => Some(cloud_dir.get / baseString); case false => None }
-        ),
-        data = MultiStore(
-          local = Some(store(local_dir / s"${baseString}.clean.vcf.bgz")),
-          google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.clean.vcf.bgz")); case false => None }
-        ),
-        tbi = MultiStore(local = Some(store(local_dir / s"${baseString}.clean.vcf.bgz.tbi")), google = None)
-      ))
+      (model.knockoutFilters, array.exportCleanVcf) match {
+
+        case (Some(_), _) | (_, false) =>
+
+          Some(MultiPathVcf(
+            base = MultiPath(
+              local = Some(local_dir / baseString),
+              google = projectConfig.hailCloud match { case true => Some(cloud_dir.get / baseString); case false => None }
+            ),
+            data = MultiStore(
+              local = Some(store(local_dir / s"${baseString}.vcf.bgz")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.vcf.bgz")); case false => None }
+            ),
+            tbi = MultiStore(local = Some(store(local_dir / s"${baseString}.vcf.bgz.tbi")), google = None)
+          ))
+
+        case _ => None
+
+      }
 
     case _ => None
+
+  }
+
+  val vcfHailLog = nonHailTests.contains(model.test) match {
+
+    case true =>
+
+      (model.knockoutFilters, array.exportCleanVcf, projectConfig.hailCloud) match {
+
+        case (Some(_), _, false) | (_, false, false) =>  Some(store(local_dir / s"${baseString}.vcf.hail.log"))
+
+        case _ => None
+
+      }
+
+    case false => None
+
+  }
+
+  val vcfHailLogGoogle = nonHailTests.contains(model.test) match {
+
+    case true =>
+
+      (model.knockoutFilters, array.exportCleanVcf, projectConfig.hailCloud) match {
+
+        case (Some(_), _, true) | (_, false, true) =>  Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
+
+        case _ => None
+
+      }
+
+    case false => None
 
   }
 
@@ -208,6 +253,7 @@ val modelStores = (
     pcaLog = store(local_dir / s"${baseString}.pca.log"),
     pheno = store(local_dir / s"${baseString}.pheno.tsv"),
     phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None },
+    pedEpacts = model.assocPlatform match { case "epacts" => Some(store(local_dir / s"${baseString}.epacts.ped")); case _ => None },
     pcsInclude = store(local_dir / s"${baseString}.pcs.include.txt"),
     pcsIncludeGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None },
     filters = store(local_dir / s"${baseString}.variant.filters.txt"),
@@ -244,7 +290,9 @@ val modelStores = (
     groupFileHailLogGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.hail.log")); case false => None },
     maskedGroupFile = maskedGroupFile,
     maskedGroupFileGoogle = maskedGroupFileGoogle,
-    cleanVcf = cleanVcf
+    vcf = vcf,
+    vcfHailLog = vcfHailLog,
+    vcfHailLogGoogle = vcfHailLogGoogle
   )
 
 }.toMap

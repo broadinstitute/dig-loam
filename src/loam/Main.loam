@@ -18,6 +18,7 @@ import PrepareModel._
 import CrossCohort._
 //import VariantAssoc._
 import AssocStores._
+import AssocTest._
 //import Meta._
 //import Merge._
 //import ResultsSummary._
@@ -145,15 +146,15 @@ ProjectStores.phenoFile match {
     
     }
     
-    //// Cohort variant association
-    //for {
-    //  x <- modelCohorts
-    //} yield {
-    //
-    //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
-    //
-    //}
-    //
+    // Cohort variant association
+    for {
+      x <- modelCohorts
+    } yield {
+    
+      AssocTest(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
+
+    }
+    
     //// Cohort variant association for known loci
     //for {
     //  x <- modelCohortKnowns
