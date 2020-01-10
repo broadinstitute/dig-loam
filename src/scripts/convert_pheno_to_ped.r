@@ -9,6 +9,9 @@ parser$add_argument("--iid-col", dest="iid_col", type="character", help='a colum
 parser$add_argument("--sex-col", dest="sex_col", type="character", help='a column name for sample sex in phenotype file')
 parser$add_argument("--male-code", dest="male_code", type="character", help='--sex-col value for male samples')
 parser$add_argument("--female-code", dest="female_code", type="character", help='--sex-col value for female samples')
+parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
+parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
+parser$add_argument("--model-vars", dest="model_vars", type="character", help="a model vars output filename")
 parser$add_argument("--ped", dest="ped", type="character", help="a ped output filename")
 args<-parser$parse_args()
 
@@ -21,7 +24,36 @@ out_cols<-colnames(pheno)
 cat("read in pcs to include\n")
 pcs<-scan(file = args$pcs,what="character")
 
-merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, args$pheno_col)
+if(! is.null(args$trans)) {
+	if(args$trans == 'invn') {
+		pheno_out <- paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")
+	} else if(args$trans == 'log') {
+		pheno_out <- paste(args$pheno_col,"_log",sep="")
+	} else {
+		pheno_out <- args$pheno_col
+	}
+} else {
+	pheno_out <- args$pheno_col
+}
+
+covars <- unlist(strsplit(args$covars,split="\\+"))
+for(cv in covars) {
+	cvv <- unlist(strsplit(cv,split=""))
+	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+		for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
+			pheno[,paste0(cvb,val)] <- 0
+			pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
+			covars <- c(covars,paste0(cvb,val))
+		}
+		covars <- covars[covars != cv]
+	}
+}
+
+cat(pheno_out, "\n", file=args$model_vars, append=FALSE)
+cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+
+merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, pheno_out)
 header <- c(merlin_header, colnames(pheno)[! colnames(pheno) %in% c(args$iid_col, merlin_header)])
 
 pheno$FAT_ID <- 0

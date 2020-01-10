@@ -1,5 +1,6 @@
 import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
+import scala.io.Source
 import java.nio.file.{Paths, Files}
 import scala.sys.process._
 import ProjectConfig._
@@ -262,6 +263,13 @@ def checkPlinkPath(s: String): String = {
 def checkURI(s: String): Int = {
   val cmd = s"gsutil -m ls ${s}"
   cmd.!
+}
+
+def fileToList(s: String): Seq[String] = {
+  val h = Source.fromFile(s)
+  val lines = (for (line <- h.getLines()) yield line).toList
+  h.close
+  lines
 }
 
 def intervalToExpression(s: String, i: String): String = {

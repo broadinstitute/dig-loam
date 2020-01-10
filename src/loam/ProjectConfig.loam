@@ -88,6 +88,7 @@ val binaryAssocTests = assocTests.filter(e => e.split("\\.")(1) == "b")
 val quantitativeAssocTests = assocTests.filter(e => e.split("\\.")(1) == "q")
 val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
 val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
+val epactsTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
 val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
 
 final case class ConfigMachine(
@@ -218,11 +219,16 @@ final case class ConfigKnown(
 
 final case class CohortFilter(
   cohort: String,
-  filters: Seq[String])
+  filters: Seq[String]) extends Debug
 
 final case class MaskFilter(
   id: String,
-  filters: Seq[String])
+  filters: Seq[String],
+  groupFile: Option[String]) extends Debug
+
+final case class CohortGroupFile(
+  cohort: String,
+  groupFile: String) extends Debug
 
 final case class ConfigModel(
   id: String,
@@ -233,6 +239,8 @@ final case class ConfigModel(
   assocPlatform: String,
   covars: String,
   design: String,
+  groupFile: Option[String],
+  cohortGroupFiles: Option[Seq[CohortGroupFile]],
   cohorts: Seq[String],
   metas: Option[Seq[String]],
   merges: Option[Seq[String]],
@@ -330,7 +338,8 @@ final case class Image(
   imgTools: Path,
   imgTexLive: Path,
   imgEnsemblVep: Path,
-  imgFlashPca: Path) extends Debug
+  imgFlashPca: Path,
+  imgUmichStatgen: Path) extends Debug
 
 final case class Binary(
   binLiftOver: Path,
@@ -344,7 +353,8 @@ final case class Binary(
   binLocuszoom: Path,
   binPdflatex: Path,
   binRscript: Path,
-  binFlashPca: Path) extends Debug
+  binFlashPca: Path,
+  binEpacts: Path) extends Debug
 
 final case class Python(
   pyAlignNon1kgVariants: Path,
@@ -402,7 +412,9 @@ final case class Bash(
   shKlustakwikPca: Path,
   shKlustakwikMetric: Path,
   shCrossCohortCommonVariants: Path,
-  shFlashPca: Path
+  shFlashPca: Path,
+  shEpacts: Path,
+  shMergeResults: Path
   //shRegPlot: Path,
   //shTop1000Genes: Path
   ) extends Debug
@@ -1181,7 +1193,8 @@ object ProjectConfig {
               }
               MaskFilter(
                 id = requiredStr(config = cf, field = "id"),
-                filters = requiredStrList(config = cf, field = "filters")
+                filters = requiredStrList(config = cf, field = "filters"),
+                groupFile = optionalStr(config = cf, field = "groupFile"),
               )
             }
             Some(x)
@@ -1226,6 +1239,20 @@ object ProjectConfig {
           case _ => ()
         }
 
+        val cohortGroupFiles = optionalObjList(config = model, field = "cohortGroupFiles") match {
+          case Some(s) =>
+            val x = for {
+              cf <- s
+            } yield {
+              CohortGroupFile(
+                cohort = requiredStr(config = cf, field = "cohort"),
+                groupFile = requiredStr(config = cf, field = "groupFile")
+              )
+            }
+            Some(x)
+          case None => None
+        }
+
         ConfigModel(
           id = id,
           pheno = pheno,
@@ -1235,6 +1262,8 @@ object ProjectConfig {
           assocPlatform = test.split("\\.")(0),
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
+          groupFile = optionalStr(config = model, field = "groupFile"),
+          cohortGroupFiles = cohortGroupFiles,
           cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
             case ("strat", false, _) => throw new CfgException("models.cohorts: model " + id + " 'strat' design requires more than 1 cohort")
             case ("full", true, true) => throw new CfgException("models.cohorts: model " + id + " 'full' design requires cohorts from same array")
@@ -1394,7 +1423,8 @@ object ProjectConfig {
       imgTools = path(s"${imagesDir}/tools.simg"),
       imgTexLive = path(s"${imagesDir}/texlive.simg"),
       imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
-      imgFlashPca = path(s"${imagesDir}/flashpca.simg")
+      imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
+      imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg")
     )
 
     val binary = Binary(
@@ -1409,7 +1439,8 @@ object ProjectConfig {
       binLocuszoom = path("/usr/local/bin/locuszoom"),
       binPdflatex = path("/usr/local/bin/pdflatex"),
       binRscript = path("/usr/local/bin/Rscript"),
-      binFlashPca = path("/usr/local/bin/flashpca")
+      binFlashPca = path("/usr/local/bin/flashpca"),
+      binEpacts = path("/usr/local/bin/epacts")
     )
 
     val python = Python(
@@ -1469,6 +1500,8 @@ object ProjectConfig {
       shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh"),
       shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh"),
       shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
+      shEpacts = path(s"${scriptsDir}/epacts.sh"),
+      shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
       //shRegPlot = path(s"${scriptsDir}/regplot.sh"),
       //shTop1000Genes = path(s"${scriptsDir}/top1000_genes.sh")
     )

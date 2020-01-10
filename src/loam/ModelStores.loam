@@ -24,6 +24,7 @@ final case class Model(
   pheno: Store,
   phenoGoogle: Option[Store],
   pedEpacts: Option[Store],
+  modelVarsEpacts: Option[Store],
   pcsInclude: Store,
   pcsIncludeGoogle: Option[Store],
   filters: Store,
@@ -62,7 +63,15 @@ final case class Model(
   maskedGroupFileGoogle: Option[Map[MaskFilter, Store]],
   vcf: Option[MultiPathVcf],
   vcfHailLog: Option[Store],
-  vcfHailLogGoogle: Option[Store]
+  vcfHailLogGoogle: Option[Store],
+  groupResultsSplit: Map[String, Store],
+  groupFilesSplit: Map[String, Store],
+  maskedGroupResultsSplit: Map[String, Map[MaskFilter, Store]],
+  maskedGroupFilesSplit: Map[String, Map[MaskFilter, Store]],
+  maskedResults: Map[MaskFilter, Store],
+  maskedResultsMergeList: Map[MaskFilter, Store]
+  //cohortGroupResultsSplit: Map[ConfigCohort, Map[String, Store]]
+  //cohortMaskedGroupResultsSplit: Map[ConfigCohort, Map[String, Map[MaskFilter, Store]]]
 )
 
 val modelStores = (
@@ -235,6 +244,120 @@ val modelStores = (
     case None => None
   }
 
+  val groupResultsSplit = model.design match {
+    case "full" =>
+      model.groupFile match {
+        case Some(_) =>
+          val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
+          groups.map { group =>
+            group -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_test.get.jobs(group).local.get / s"${group}.${model.test}.results.tsv")
+          }.toMap
+        case _ => Map[String, Store]()
+      }
+    case "strat" => Map[String, Store]()
+  }
+
+  val groupFilesSplit = model.design match {
+    case "full" =>
+      model.groupFile match {
+        case Some(_) =>
+          val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
+          groups.map { group =>
+            group -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_test.get.jobs(group).local.get / s"${group}.${model.test}.groupfile.tsv")
+          }.toMap
+        case _ => Map[String, Store]()
+      }
+    case "strat" => Map[String, Store]()
+  }
+
+  val maskedGroupResultsSplit = model.design match {
+    case "full" =>
+      (model.groupFile, model.masks) match {
+        case (Some(_), Some(_)) =>
+          val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
+          groups.map { group =>
+            group -> model.masks.get.map { mask =>
+              mask -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_test.get.jobs(group).local.get / s"${group}.${model.test}.${mask.id}.results.tsv")
+            }.toMap
+          }.toMap
+        case _ => Map[String, Map[MaskFilter, Store]]()
+      }
+    case "strat" => Map[String, Map[MaskFilter, Store]]()
+  }
+
+  val maskedGroupFilesSplit = model.design match {
+    case "full" =>
+      (model.groupFile, model.masks) match {
+        case (Some(_), Some(_)) =>
+          val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
+          groups.map { group =>
+            group -> model.masks.get.map { mask =>
+              mask -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_test.get.jobs(group).local.get / s"${group}.${model.test}.${mask.id}.groupfile.tsv")
+            }.toMap
+          }.toMap
+        case _ => Map[String, Map[MaskFilter, Store]]()
+      }
+    case "strat" => Map[String, Map[MaskFilter, Store]]()
+  }
+
+  val maskedResults = model.masks match {
+    case Some(s) =>
+      model.masks.get.size match {
+        case n if n > 0 => model.masks.get.map { mask => mask -> store(local_dir / s"${baseString}.${model.test}.${mask.id}.results.tsv") }.toMap
+        case _ => Map[MaskFilter, Store]()
+      }
+    case None => Map[MaskFilter, Store]()
+  }
+
+  val maskedResultsMergeList = model.masks match {
+    case Some(s) =>
+      model.masks.get.size match {
+        case n if n > 0 => model.masks.get.map { mask => mask -> store(local_dir / s"${baseString}.${model.test}.${mask.id}.mergelist.txt") }.toMap
+        case _ => Map[MaskFilter, Store]()
+      }
+    case None => Map[MaskFilter, Store]()
+  }
+  
+  //val cohortGroupResultsSplit = model.design match {
+  //  case "full" => Map[ConfigCohort, Map[String, Store]]()
+  //  case "strat" =>
+  //    model.cohortGroupFiles match {
+  //      case Some(_) =>
+  //          projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
+  //            model.cohortGroupFiles.get.contains(cohort.id) match {
+  //              case true =>
+  //                val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("\t")(0))
+  //                cohort -> groups.map { group =>
+  //                  group -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohort_tests(cohort).jobs(group).local.get / s"${group}.${model.test}.gz")
+  //                }.toMap
+  //              case false => Map[String, Store]()
+  //            }
+  //         }.toMap
+  //      case _ => Map[ConfigCohort, Map[String, Store]]()
+  //    }
+  //}
+  //
+  //val cohortMaskedGroupResultsSplit = model.design match {
+  //  case "full" => Map[ConfigCohort, Map[String, Map[MaskFilter, Store]]]()
+  //  case "strat" =>
+  //    (model.cohortGroupFiles, model.masks) match {
+  //      case (Some(_), Some(_)) =>
+  //        projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
+  //          model.cohortGroupFiles.get.contains(cohort.id) match {
+  //            case true =>
+  //              val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("\t")(0))
+  //              cohort -> groups.map { group =>
+  //                group -> model.masks.get.map { mask =>
+  //                  mask -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohort_tests(cohort).jobs(group).local.get / s"${group}.${model.test}.${mask.id}.gz")
+  //                }.toMap
+  //              }.toMap
+  //            case false => Map[String, Map[MaskFilter, Store]]()
+  //          }
+  //        }.toMap
+  //      case _ => Map[ConfigCohort, Map[String, Map[MaskFilter, Store]]]()
+  //    }
+  //}
+
   sm -> Model(
     sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
     cohortMap = store(local_dir / s"${baseString}.cohort.map.tsv"),
@@ -254,6 +377,7 @@ val modelStores = (
     pheno = store(local_dir / s"${baseString}.pheno.tsv"),
     phenoGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None },
     pedEpacts = model.assocPlatform match { case "epacts" => Some(store(local_dir / s"${baseString}.epacts.ped")); case _ => None },
+    modelVarsEpacts = model.assocPlatform match { case "epacts" => Some(store(local_dir / s"${baseString}.epacts.model.vars")); case _ => None },
     pcsInclude = store(local_dir / s"${baseString}.pcs.include.txt"),
     pcsIncludeGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None },
     filters = store(local_dir / s"${baseString}.variant.filters.txt"),
@@ -284,15 +408,23 @@ val modelStores = (
     variantFilterHailTableGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.filters.ht")); case false => None },
     variantFilterHailLog = store(local_dir / s"${baseString}.variant.filters.hail.log"),
     variantFilterHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.filters.hail.log")); case false => None },
-    groupFile = groupTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.variant.groupfile.txt")); case false => None },
-	groupFileGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.txt")); case false => None },
+    groupFile = groupTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.variant.groupfile.tsv")); case false => None },
+	groupFileGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.tsv")); case false => None },
     groupFileHailLog = groupTests.contains(model.test) match { case true => Some(store(local_dir / s"${baseString}.variant.groupfile.hail.log")); case false => None },
     groupFileHailLogGoogle = (groupTests.contains(model.test) && projectConfig.hailCloud) match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.hail.log")); case false => None },
     maskedGroupFile = maskedGroupFile,
     maskedGroupFileGoogle = maskedGroupFileGoogle,
     vcf = vcf,
     vcfHailLog = vcfHailLog,
-    vcfHailLogGoogle = vcfHailLogGoogle
+    vcfHailLogGoogle = vcfHailLogGoogle,
+    groupResultsSplit = groupResultsSplit,
+    maskedGroupResultsSplit = maskedGroupResultsSplit,
+    groupFilesSplit = groupFilesSplit,
+    maskedGroupFilesSplit = maskedGroupFilesSplit,
+    maskedResults = maskedResults,
+    maskedResultsMergeList = maskedResultsMergeList
+    //cohortGroupResultsSplit = cohortGroupResultsSplit
+    //cohortMaskedGroupResultsSplit = cohortMaskedGroupResultsSplit
   )
 
 }.toMap
