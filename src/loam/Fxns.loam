@@ -2,6 +2,7 @@ import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
 import scala.io.Source
 import java.nio.file.{Paths, Files}
+import java.lang.reflect.Field
 import scala.sys.process._
 import ProjectConfig._
 
@@ -491,4 +492,85 @@ def getFilterFields(cfg: ProjectConfig, filters: Seq[String]): Seq[String] = {
     }
   }
   x
+}
+
+def prettyPrint(a: Any, indentSize: Int = 2, maxElementWidth: Int = 30, depth: Int = 0): String = {
+  val indent      = " " * depth * indentSize
+  val fieldIndent = indent + (" " * indentSize)
+  val nextDepth   = prettyPrint(_: Any, indentSize, maxElementWidth, depth + 1)
+  a match {
+    case s: String =>
+      val replaceMap = Seq(
+        "\n" -> "\\n",
+        "\r" -> "\\r",
+        "\t" -> "\\t",
+        "\"" -> "\\\""
+      )
+      '"' + replaceMap.foldLeft(s) { case (acc, (c, r)) => acc.replace(c, r) } + '"'
+    case opt: Some[_] =>
+      val resultOneLine = s"Some(${nextDepth(opt.get)})"
+      if (resultOneLine.length <= maxElementWidth) return resultOneLine
+      s"Some(\n$fieldIndent${nextDepth(opt.get)}\n$indent)"
+    case xs: Seq[_] if xs.isEmpty =>
+      xs.toString()
+    case map: Map[_, _] if map.isEmpty =>
+      map.toString()
+    case xs: Map[_, _] =>
+      val result = xs.map { case (key, value) => s"\n$fieldIndent${nextDepth(key)} -> ${nextDepth(value)}" }.toString
+      "Map" + s"${result.substring(0, result.length - 1)}\n$indent)".substring(4)
+    // Make Strings look similar to their literal form.
+    // For an empty Seq just use its normal String representation.
+    case xs: Seq[_] =>
+      // If the Seq is not too long, pretty print on one line.
+      val resultOneLine = xs.map(nextDepth).toString()
+      if (resultOneLine.length <= maxElementWidth) return resultOneLine
+      // Otherwise, build it with newlines and proper field indents.
+      val result = xs.map(x => s"\n$fieldIndent${nextDepth(x)}").toString()
+      result.substring(0, result.length - 1) + "\n" + indent + ")"
+    // Product should cover case classes.
+    case p: Product =>
+      val prefix = p.productPrefix
+      // We'll use reflection to get the constructor arg names and values.
+      val cls    = p.getClass
+      val fields = cls.getDeclaredFields.filterNot(_.isSynthetic).map(_.getName)
+      val values = p.productIterator.toSeq
+      // If we weren't able to match up fields/values, fall back to toString.
+      if (fields.length != values.length) return p.toString
+      fields.zip(values).toList match {
+        // If there are no fields, just use the normal String representation.
+        case Nil => p.toString
+        // If there is more than one field, build up the field names and values.
+        case kvps =>
+          val prettyFields = kvps.map { case (k, v) => s"$k = ${nextDepth(v)}" }
+          // If the result is not too long, pretty print on one line.
+          val resultOneLine = s"$prefix(${prettyFields.mkString(", ")})"
+          if (resultOneLine.length <= maxElementWidth) return resultOneLine
+          // Otherwise, build it with newlines and proper field indents.
+          s"$prefix(\n${kvps.map { case (k, v) => s"$fieldIndent$k = ${nextDepth(v)}" }.mkString(",\n")}\n$indent)"
+      }
+    // If we haven't specialized this type, just use its toString.
+    case _ => a.toString
+  }
+}
+
+def findCycles(graph: LoamGraph): Set[Seq[Tool]] = {
+  def findCycleStartingFrom(t: Tool): Option[Seq[Tool]] = {
+    def walkFrom(current: Tool, soFar: Seq[Tool], seen: Set[Tool]): Option[Seq[Tool]] = {
+      val preceding = graph.toolsPreceding(current)
+      if(preceding.isEmpty) { None }
+      else if(preceding.exists(seen.contains(_))) { 
+        preceding.collectFirst { case p if seen.contains(p) => p }.map(offending => (offending +: soFar)) 
+      }
+      else { 
+        val cycles = preceding.iterator.map(p => walkFrom(p, p +: soFar, seen + p)).filter(_.isDefined)
+        cycles.toStream.headOption.flatten
+      }
+    }
+    walkFrom(t, Seq(t), Set(t))
+  }
+  graph.tools.map(findCycleStartingFrom(_).toSet).flatten
+}
+
+def pathToString(graph: LoamGraph)(path: Seq[Tool]): String = {
+  path.map(t => s"'${graph.nameOf(t).get}'").mkString(" => ")
 }

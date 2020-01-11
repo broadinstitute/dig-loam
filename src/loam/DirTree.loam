@@ -244,32 +244,19 @@ object DirTree {
 println("Initializing Directory Tree ...")
 val dirTree = DirTree.initDirTree(projectConfig)
 println("... Finished Initializing Directory Tree")
+println("... Writing Configuration")
 
-def writeConfig(cfg: ProjectConfig, utils: Utils): Any = {
-  val f = new File(s"${dirTree.base.local.get}/cfg.objects")
-  val bw = new BufferedWriter(new FileWriter(f))
-  val objs = Seq(dirTree, cfg) ++ cfg.Arrays
-  for ( o <- objs ) {
-    val vars = o.getClass.getDeclaredFields
-    val name = o.getClass.getName.split("\\$")(1)
-    bw.write("Class: " + name + "\n")
-    for ( v <- vars ) {
-      v.setAccessible(true)
-      bw.write("  " + v.getName() + " => " + v.get(o).toString + "\n")
-    }
-    bw.write("\n")
-  }
-  for ( o <- Seq(utils, utils.image, utils.binary, utils.python, utils.bash, utils.r, utils) ) {
-    val vars = o.getClass.getDeclaredFields
-    val name = o.getClass.getName.split("\\$")(1)
-    bw.write("Class: " + name + "\n")
-    for ( v <- vars ) {
-      v.setAccessible(true)
-      bw.write("  " + v.getName() + " => " + v.get(o).toString + "\n")
-    }
-    bw.write("\n")
-  }
-  bw.close()
-}
+val bw1 = new BufferedWriter(new FileWriter(new File(s"${dirTree.base.local.get}/cfg.dirTree")))
+bw1.write(prettyPrint(dirTree))
+bw1.write("\n")
+bw1.close()
 
-writeConfig(projectConfig, utils)
+val bw2 = new BufferedWriter(new FileWriter(new File(s"${dirTree.base.local.get}/cfg.projectConfig")))
+bw2.write(prettyPrint(projectConfig))
+bw2.write("\n")
+bw2.close()
+
+val bw3 = new BufferedWriter(new FileWriter(new File(s"${dirTree.base.local.get}/cfg.utils")))
+bw3.write(prettyPrint(utils))
+bw3.write("\n")
+bw3.close()
