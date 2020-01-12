@@ -3,10 +3,8 @@
  * 
  */
 import ProjectConfig._
-//import ProjectStores._
 import ModelStores._
 import ArrayStores._
-//import AssocStores._
 import Fxns._
 
 final case class CfgException(s: String) extends Exception(s)
