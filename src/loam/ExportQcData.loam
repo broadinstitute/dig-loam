@@ -70,7 +70,7 @@ def ExportQcData(array: ConfigArray): Unit = {
         hail"""${utils.python.pyHailExportQcData} --
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --regions-exclude ${ProjectStores.regionsExcludeGoogle.get}
+          --regions-exclude ${projectStores.regionsExcludeGoogle.get}
           --variant-filters ${arrayStores(array).filteredData.variantFiltersGoogle.get}
           ${sampleN}
           ${sampleSeed}
@@ -78,7 +78,7 @@ def ExportQcData(array: ConfigArray): Unit = {
           --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
           --cloud
           --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, ProjectStores.regionsExcludeGoogle.get, arrayStores(array).filteredData.variantFiltersGoogle.get)
+          .in(arrayStores(array).refData.mtGoogle.get, projectStores.regionsExcludeGoogle.get, arrayStores(array).filteredData.variantFiltersGoogle.get)
           .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       
@@ -99,14 +99,14 @@ def ExportQcData(array: ConfigArray): Unit = {
         cmd"""${utils.binary.binPython} ${utils.python.pyHailExportQcData}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
-          --regions-exclude ${ProjectStores.regionsExclude}
+          --regions-exclude ${projectStores.regionsExclude}
           --variant-filters ${arrayStores(array).filteredData.variantFilters}
           ${sampleN}
           ${sampleSeed}
           --variants-out ${arrayStores(array).filteredData.variantMetrics}
           --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
           --log ${arrayStores(array).filteredData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, ProjectStores.regionsExclude, arrayStores(array).filteredData.variantFilters)
+          .in(arrayStores(array).refData.mt.get, projectStores.regionsExclude, arrayStores(array).filteredData.variantFilters)
           .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       

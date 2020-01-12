@@ -12,8 +12,8 @@ def Annotate(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.annotate.cpus, mem = projectConfig.resources.annotate.mem, maxRunTime = projectConfig.resources.annotate.maxRunTime) {
 
-    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf} ${projectConfig.resources.annotate.cpus} ${ProjectStores.fasta} ${ProjectStores.vepCacheDir} ${ProjectStores.vepPluginsDir} ${ProjectStores.dbNSFP} ${arrayStores(array).refData.annotations} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
-    .in(arrayStores(array).refData.sitesVcf, ProjectStores.fasta, ProjectStores.vepCacheDir, ProjectStores.vepPluginsDir, ProjectStores.dbNSFP)
+    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf} ${projectConfig.resources.annotate.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
+    .in(arrayStores(array).refData.sitesVcf, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP)
     .out(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationWarnings, arrayStores(array).refData.annotationHeader)
     .tag(s"${arrayStores(array).refData.annotations}".split("/").last)
 

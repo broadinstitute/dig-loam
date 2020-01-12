@@ -244,19 +244,3 @@ object DirTree {
 println("Initializing Directory Tree ...")
 val dirTree = DirTree.initDirTree(projectConfig)
 println("... Finished Initializing Directory Tree")
-println("... Writing Configuration")
-
-val bw1 = new BufferedWriter(new FileWriter(new File(s"${dirTree.base.local.get}/cfg.dirTree")))
-bw1.write(prettyPrint(dirTree))
-bw1.write("\n")
-bw1.close()
-
-val bw2 = new BufferedWriter(new FileWriter(new File(s"${dirTree.base.local.get}/cfg.projectConfig")))
-bw2.write(prettyPrint(projectConfig))
-bw2.write("\n")
-bw2.close()
-
-val bw3 = new BufferedWriter(new FileWriter(new File(s"${dirTree.base.local.get}/cfg.utils")))
-bw3.write(prettyPrint(utils))
-bw3.write("\n")
-bw3.close()

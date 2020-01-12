@@ -1,3 +1,4 @@
+import java.io.{File, BufferedWriter, FileWriter}
 import scala.util.{Try, Success, Failure}
 import scala.util.control.NonFatal
 import scala.io.Source
@@ -551,6 +552,13 @@ def prettyPrint(a: Any, indentSize: Int = 2, maxElementWidth: Int = 30, depth: I
     // If we haven't specialized this type, just use its toString.
     case _ => a.toString
   }
+}
+
+def writeObject(obj: Any, filename: String): Unit = {
+  val bw = new BufferedWriter(new FileWriter(new File(filename)))
+  bw.write(prettyPrint(obj))
+  bw.write("\n")
+  bw.close()
 }
 
 def findCycles(graph: LoamGraph): Set[Seq[Tool]] = {

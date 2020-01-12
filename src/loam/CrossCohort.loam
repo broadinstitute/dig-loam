@@ -60,14 +60,14 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rMetaCohortSamples}
       --fam-in ${arrayStores(arrayCfg).filteredData.plink.base.local.get}.fam
-      --ancestry-in ${ProjectStores.ancestryInferred}
+      --ancestry-in ${projectStores.ancestryInferred}
       --ancestry-keep "${configCohort.ancestry.mkString(",")}"
-      --pheno-in ${ProjectStores.phenoFile.get}
+      --pheno-in ${projectStores.phenoFile.get}
       --iid-col ${projectConfig.phenoFileId}
       ${stratCol}
       ${stratCodes}
       --out ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred)
+    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ projectStores.phenoFile.get :+ projectStores.ancestryInferred)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 

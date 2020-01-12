@@ -13,41 +13,41 @@ def Upload(): Unit = {
 
     case true =>
     
-      checkURI(s"${ProjectStores.regionsExcludeGoogle.get.uri}") match {
+      checkURI(s"${projectStores.regionsExcludeGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(ProjectStores.regionsExclude, ProjectStores.regionsExcludeGoogle.get)
+            googleCopy(projectStores.regionsExclude, projectStores.regionsExcludeGoogle.get)
           }
       }
 
-      checkURI(s"${ProjectStores.kgPurcellVcfGoogle.get.uri}") match {
+      checkURI(s"${projectStores.kgPurcellVcfGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(ProjectStores.kgPurcellVcf, ProjectStores.kgPurcellVcfGoogle.get)
+            googleCopy(projectStores.kgPurcellVcf, projectStores.kgPurcellVcfGoogle.get)
           }
       }
       
-      checkURI(s"${ProjectStores.kgSampleGoogle.get.uri}") match {
+      checkURI(s"${projectStores.kgSampleGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(ProjectStores.kgSample, ProjectStores.kgSampleGoogle.get)
+            googleCopy(projectStores.kgSample, projectStores.kgSampleGoogle.get)
           }
       }
       
-      checkURI(s"${ProjectStores.sampleFileGoogle.get.uri}") match {
+      checkURI(s"${projectStores.sampleFileGoogle.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(ProjectStores.sampleFile, ProjectStores.sampleFileGoogle.get)
+            googleCopy(projectStores.sampleFile, projectStores.sampleFileGoogle.get)
           }
       }
 
-      ProjectStores.phenoFile match {
+      projectStores.phenoFile match {
         case Some(r) =>
-          ProjectStores.phenoFileGoogle match {
+          projectStores.phenoFileGoogle match {
             case Some(s) =>
               checkURI(s"${s.uri}") match {
                 case 0 => ()
@@ -61,9 +61,9 @@ def Upload(): Unit = {
         case _ => ()
       }
 
-      ProjectStores.hailUtils match {
+      projectStores.hailUtils match {
         case Some(r) =>
-          ProjectStores.hailUtilsGoogle match {
+          projectStores.hailUtilsGoogle match {
             case Some(s) =>
               local {
                 googleCopy(r, s)

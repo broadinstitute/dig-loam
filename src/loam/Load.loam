@@ -26,8 +26,8 @@ def Load(array: ConfigArray): Unit = {
       }
 
       val inputFiles = (array.technology, array.format) match {
-        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, ProjectStores.sampleFileGoogle.get)
-        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.google.get :+ ProjectStores.hailUtilsGoogle.get :+ ProjectStores.sampleFileGoogle.get
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, projectStores.sampleFileGoogle.get)
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.google.get :+ projectStores.hailUtilsGoogle.get :+ projectStores.sampleFileGoogle.get
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
@@ -57,10 +57,10 @@ def Load(array: ConfigArray): Unit = {
           ${minPartitions}
           ${gqThreshold}
           --cloud
-          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtilsGoogle.get}
           --log ${arrayStores(array).refData.hailLogGoogle.get}
           ${inputOptionString}
-          --sample-in ${ProjectStores.sampleFileGoogle.get}
+          --sample-in ${projectStores.sampleFileGoogle.get}
           --id-col ${projectConfig.sampleFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
           --sex-col ${projectConfig.sampleFileSrSex}
@@ -96,8 +96,8 @@ def Load(array: ConfigArray): Unit = {
       }
 
       val inputFiles = (array.technology, array.format) match {
-        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, ProjectStores.sampleFile)
-        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.local.get :+ ProjectStores.sampleFile
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, projectStores.sampleFile)
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.local.get :+ projectStores.sampleFile
         case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
@@ -115,7 +115,7 @@ def Load(array: ConfigArray): Unit = {
           ${gqThreshold}
           --log ${arrayStores(array).refData.hailLog}
           ${inputOptionString}
-          --sample-in ${ProjectStores.sampleFile}
+          --sample-in ${projectStores.sampleFile}
           --id-col ${projectConfig.sampleFileId}
           --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
           --sex-col ${projectConfig.sampleFileSrSex}

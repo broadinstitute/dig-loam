@@ -55,9 +55,9 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       } yield {
         modelStores((configModel, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
       }
-      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
+      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ projectStores.phenoFile.get :+ projectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
     case None =>
-      arrayStores(array).filteredData.plink.data.local.get :+ ProjectStores.phenoFile.get :+ ProjectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
+      arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.get :+ projectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
   }
 
   val keepRelated = famTests.contains(configModel.test) match {
@@ -69,9 +69,9 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rModelCohortSamplesAvailable}
-      --pheno-in ${ProjectStores.phenoFile.get}
+      --pheno-in ${projectStores.phenoFile.get}
       --fam-in ${arrayStores(array).filteredData.plink.base.local.get}.fam
-      --ancestry-in ${ProjectStores.ancestryInferred}
+      --ancestry-in ${projectStores.ancestryInferred}
       ${stratStrings.mkString(" ")}
       ${metaPriorSamplesString}
       --pheno-col ${configModel.pheno}
@@ -128,7 +128,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       ${modelStores((configModel, configCohorts, configMeta)).pcsInclude}
       ${modelStores((configModel, configCohorts, configMeta)).outliers}
       > ${modelStores((configModel, configCohorts, configMeta)).pcaLog}"""
-      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configCohorts, configMeta)).phenoPrelim :+ ProjectStores.phenoFile.get)
+      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configCohorts, configMeta)).phenoPrelim :+ projectStores.phenoFile.get)
       .out(modelStores((configModel, configCohorts, configMeta)).pcaScores, modelStores((configModel, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configCohorts, configMeta)).pcaPve, modelStores((configModel, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).pcsInclude, modelStores((configModel, configCohorts, configMeta)).outliers, modelStores((configModel, configCohorts, configMeta)).pcaLog)
       .tag(s"${modelStores((configModel, configCohorts, configMeta)).pheno}".split("/").last)
   
@@ -270,7 +270,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       googleWith(projectConfig.cloudResources.mtCluster) {
       
         hail"""${utils.python.pyHailModelVariantStats} --
-          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtilsGoogle.get}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
           --pheno-in ${modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get}
@@ -281,7 +281,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           ${binary}
           --cloud
           --log ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get}"""
-            .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get)
+            .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get)
             .out(modelStores((configModel, configCohorts, configMeta)).variantsStatsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHtGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHailLogGoogle.get)
             .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantsStats}.google".split("/").last)
       
@@ -347,7 +347,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
             googleWith(projectConfig.cloudResources.mtCluster) {
           
               hail"""${utils.python.pyHailModelVariantStats} --
-                --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+                --hail-utils ${projectStores.hailUtilsGoogle.get}
                 --reference-genome ${projectConfig.referenceGenome}
                 --mt-in ${arrayStores(array).refData.mtGoogle.get}
                 --pheno-in ${modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get}
@@ -360,7 +360,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
                 ${binary}
                 --cloud
                 --log ${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort)}"""
-                  .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get)
+                  .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).phenoGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get)
                   .out(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHtGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort))
                   .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats.get(cohort)}.google".split("/").last)
             
@@ -466,7 +466,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
   
       }
   
-      var cohortStatsIn = Seq(ProjectStores.hailUtilsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHtGoogle.get, arrayStores(array).refData.annotationsHtGoogle.get, modelStores((configModel, configCohorts, configMeta)).filtersGoogle.get, modelStores((configModel, configCohorts, configMeta)).masksGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
+      var cohortStatsIn = Seq(projectStores.hailUtilsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHtGoogle.get, arrayStores(array).refData.annotationsHtGoogle.get, modelStores((configModel, configCohorts, configMeta)).filtersGoogle.get, modelStores((configModel, configCohorts, configMeta)).masksGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
       
       modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHtGoogle match {
         case Some(s) =>
@@ -491,7 +491,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       
         hail"""${utils.python.pyHailFilterModelVariants} --
           --cloud
-          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtilsGoogle.get}
           --reference-genome ${projectConfig.referenceGenome}
           --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHtGoogle.get}
           ${cohortStatsInString}
@@ -642,7 +642,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           
             hail"""${utils.python.pyHailGenerateGroupfile} --
               --cloud
-              --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+              --hail-utils ${projectStores.hailUtilsGoogle.get}
               ${maskedGroupFilesString}
               --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}
               --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get}
@@ -733,7 +733,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           
             hail"""${utils.python.pyHailGenerateModelVcf} --
               --cloud
-              --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+              --hail-utils ${projectStores.hailUtilsGoogle.get}
               --mt-in ${arrayStores(array).refData.mtGoogle.get}
               --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get}
               --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}

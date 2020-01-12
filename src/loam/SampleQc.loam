@@ -15,21 +15,21 @@ def SampleQc(array: ConfigArray): Unit = {
 
       local {
       
-        googleCopy(ProjectStores.ancestryInferred, ProjectStores.ancestryInferredGoogle.get)
+        googleCopy(projectStores.ancestryInferred, projectStores.ancestryInferredGoogle.get)
       
       }
       
       google {
       
         hail"""${utils.python.pyHailSampleqc} --
-          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtilsGoogle.get}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --clusters-in ${ProjectStores.ancestryInferredGoogle.get}
+          --clusters-in ${projectStores.ancestryInferredGoogle.get}
           --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}
           --cloud
           --log ${arrayStores(array).sampleQcData.hailLogGoogle.get}"""
-          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get)
+          .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, projectStores.ancestryInferredGoogle.get)
           .out(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
       
@@ -49,10 +49,10 @@ def SampleQc(array: ConfigArray): Unit = {
         cmd"""${utils.binary.binPython} ${utils.python.pyHailSampleqc}
           --reference-genome ${projectConfig.referenceGenome}
           --mt-in ${arrayStores(array).refData.mt.get}
-          --clusters-in ${ProjectStores.ancestryInferred}
+          --clusters-in ${projectStores.ancestryInferred}
           --qc-out ${arrayStores(array).sampleQcData.stats}
           --log ${arrayStores(array).sampleQcData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, ProjectStores.ancestryInferred)
+          .in(arrayStores(array).refData.mt.get, projectStores.ancestryInferred)
           .out(arrayStores(array).sampleQcData.stats, arrayStores(array).sampleQcData.hailLog)
           .tag(s"${arrayStores(array).sampleQcData.stats}".split("/").last)
 
@@ -69,7 +69,7 @@ def SampleQc(array: ConfigArray): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rCalcIstatsAdj}
       --sampleqc-stats ${arrayStores(array).sampleQcData.stats}
-      --sample-file ${ProjectStores.sampleFile}
+      --sample-file ${projectStores.sampleFile}
       --iid-col ${projectConfig.sampleFileId}
       ${nSampleMetricPcs}
       ${sampleMetricCovars}
@@ -229,7 +229,7 @@ def SampleQc(array: ConfigArray): Unit = {
   drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
-      --ancestry-inferred ${ProjectStores.ancestryInferred}
+      --ancestry-inferred ${projectStores.ancestryInferred}
       --kinship-related ${arrayStores(array).kinshipData.kin0}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
@@ -237,7 +237,7 @@ def SampleQc(array: ConfigArray): Unit = {
       --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
       --restore ${arrayStores(array).filterQc.samplesRestore}
       --out ${arrayStores(array).filterQc.samplesExclude}"""
-      .in(ProjectStores.ancestryInferred, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterQc.samplesRestore)
+      .in(projectStores.ancestryInferred, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterQc.samplesRestore)
       .out(arrayStores(array).filterQc.samplesExclude)
       .tag(s"${arrayStores(array).filterQc.samplesExclude}".split("/").last)
   

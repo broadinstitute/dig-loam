@@ -90,7 +90,7 @@ def FilterArray(array: ConfigArray): Unit = {
         hail"""${utils.python.pyHailFilter} --
           --cloud
           --reference-genome ${projectConfig.referenceGenome}
-          --hail-utils ${ProjectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtilsGoogle.get}
           --sample-filters ${arrayStores(array).filterPostQc.sFiltersGoogle.get}
           --variant-filters ${arrayStores(array).filterPostQc.vFiltersGoogle.get}
           --log ${arrayStores(array).filterPostQc.hailLogGoogle.get}
@@ -100,7 +100,7 @@ def FilterArray(array: ConfigArray): Unit = {
           --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExcludeGoogle.get}
           --variants-stats-out ${arrayStores(array).filterPostQc.variantsStatsGoogle.get}
           --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}"""
-          .in(ProjectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.sFiltersGoogle.get, arrayStores(array).filterPostQc.vFiltersGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get)
+          .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.sFiltersGoogle.get, arrayStores(array).filterPostQc.vFiltersGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get)
           .out(arrayStores(array).filterPostQc.samplesStatsGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsStatsGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get, arrayStores(array).filterPostQc.hailLogGoogle.get)
           .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter.google".split("/").last)
       

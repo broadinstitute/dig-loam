@@ -1,3 +1,4 @@
+import Tracking._
 import ProjectConfig._
 import Collections._
 import ProjectStores._
@@ -24,7 +25,10 @@ import loamstream.googlecloud.HailSupport._
 import loamstream.model.Store
 import loamstream.util.CanBeClosed.enclosed
 
-//throw new Exception(s"${ProjectStores.regionsExcludeGoogle.get.uri}")
+// write pipeline object tracking files
+trackObjects()
+
+//throw new Exception(s"${projectStores.regionsExcludeGoogle.get.uri}")
 
 //// Upload input files to Google Cloud
 //Upload()
@@ -86,7 +90,7 @@ import loamstream.util.CanBeClosed.enclosed
 ////}
 
 // Only proceed if phenoFile is defined
-ProjectStores.phenoFile match {
+projectStores.phenoFile match {
 
   case None => ()
 
@@ -137,7 +141,7 @@ ProjectStores.phenoFile match {
     //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
     //
     //}
-    
+
     //Cohort variant association
     for {
       x <- modelCohorts
@@ -176,7 +180,7 @@ ProjectStores.phenoFile match {
     
     //// Copy known results to Google Cloud
     //for {
-    //  x <- ProjectStores.knownStores.keys
+    //  x <- projectStores.knownStores.keys
     //} yield {
     //
     //  KnownLociToGoogle(configKnown = x)

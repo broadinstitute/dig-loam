@@ -63,7 +63,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
       --inputType PLINK_BED
       --output ${chrData.mergedKgPlink.base}
       --outputType PLINK_BED
-      --ref ${ProjectStores.kgVcf(chr)}
+      --ref ${projectStores.kgVcf(chr)}
       --refType VCF
       --keep
       --update-id
@@ -72,7 +72,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
       --update-id
       --update-reference-allele
       --debug"""
-        .in(chrData.snpsPlink.data :+ ProjectStores.kgVcf(chr))
+        .in(chrData.snpsPlink.data :+ projectStores.kgVcf(chr))
         .out(chrData.mergedKgPlink.data :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
         .tag(s"${chrData.mergedKgPlink.base}".split("/").last)
     
@@ -81,16 +81,16 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
     drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.harmonizeAlignNon1kgVariants.cpus, mem = projectConfig.resources.harmonizeAlignNon1kgVariants.mem, maxRunTime = projectConfig.resources.harmonizeAlignNon1kgVariants.maxRunTime) {
       
       cmd"""${utils.binary.binPython} ${utils.python.pyAlignNon1kgVariants}
-      --kg-ids ${ProjectStores.kgIds(chr)}
+      --kg-ids ${projectStores.kgIds(chr)}
       --bim ${chrData.mergedKgPlink.base}.bim
-      --ref ${ProjectStores.humanReference(chr)}
+      --ref ${projectStores.humanReference(chr)}
       --out-remove ${chrData.nonKgRemove}
       --out-ignore ${chrData.nonKgIgnore}
       --out-mono ${chrData.nonKgMono}
       --out-nomatch ${chrData.nonKgNomatch}
       --out-flip ${chrData.nonKgFlip}
       --out-force-a1 ${chrData.nonKgForceA1}"""
-        .in(chrData.mergedKgPlink.data :+ ProjectStores.kgIds(chr) :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
+        .in(chrData.mergedKgPlink.data :+ projectStores.kgIds(chr) :+ chrData.mergedKgVarIdUpdate :+ chrData.mergedKgVarSnpLog)
         .out(chrData.nonKgRemove, chrData.nonKgIgnore, chrData.nonKgMono, chrData.nonKgNomatch, chrData.nonKgFlip, chrData.nonKgForceA1)
         .tag(s"${chrData.mergedKgNonKgBase}".split("/").last)
 
@@ -104,7 +104,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
           cmd"""${utils.binary.binPython} ${utils.python.pyAlignNon1kgVariants}
           --bim ${chrData.otherPlink.get.base}.bim
-          --ref ${ProjectStores.humanReference(chr)}
+          --ref ${projectStores.humanReference(chr)}
           --out-remove ${chrData.otherRemove.get}
           --out-ignore ${chrData.otherIgnore.get}
           --out-mono ${chrData.otherMono.get}
