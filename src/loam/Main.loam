@@ -123,24 +123,25 @@ projectStores.phenoFile match {
     //  CrossCohortKinship(meta)
     //
     //}
-    //
-    //// Prepare standard cohort model
-    //for {
-    //  x <- modelCohorts
-    //} yield {
-    //
-    //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = None)
-    //
-    //}
-    //
-    //// Prepare meta cohort model
-    //for {
-    //  x <- modelMetaCohorts
-    //} yield {
-    //
-    //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
-    //
-    //}
+    
+    // Prepare standard cohort model
+    throw new Exception("HERE")
+    for {
+      x <- modelCohorts
+    } yield {
+    
+      PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = None)
+    
+    }
+    
+    // Prepare meta cohort model
+    for {
+      x <- modelMetaCohorts
+    } yield {
+    
+      PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
+    
+    }
 
     //Cohort variant association
     for {
