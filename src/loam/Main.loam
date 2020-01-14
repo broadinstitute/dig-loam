@@ -125,7 +125,6 @@ projectStores.phenoFile match {
     //}
     
     // Prepare standard cohort model
-    throw new Exception("HERE")
     for {
       x <- modelCohorts
     } yield {

@@ -31,7 +31,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       s
     }
   }
-
+  
   val metaPriorSamplesString = configMeta match {
     case Some(s) =>
       var mpss = s"--cohorts ${configCohorts.map(e => e.id).mkString(",")}"
@@ -47,7 +47,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       mpss
     case None => ""
   }
-
+  
   val modelCohortSamplesAvailableIn = configMeta match {
     case Some(s) => 
       val x = for {
@@ -59,14 +59,14 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
     case None =>
       arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.get :+ projectStores.ancestryInferred :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude :+ arrayStores(array).filterPostQc.samplesExclude
   }
-
+  
   val keepRelated = famTests.contains(configModel.test) match {
     case true => "--keep-related"
     case false => ""
   }
   
   drmWith(imageName = s"${utils.image.imgR}") {
-
+  
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rModelCohortSamplesAvailable}
       --pheno-in ${projectStores.phenoFile.get}
@@ -92,7 +92,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       .tag(s"${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}".split("/").last)
   
   }
-
+  
   val trans = configModel.trans match {
     case Some(s) => configModel.trans.get
     case None => "N/A"
@@ -182,7 +182,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
     case _ => "touch "
   
   }
-
+  
   drmWith(imageName = s"${utils.image.imgTools}") {
   
     cmd"""${fString} ${modelStores((configModel, configCohorts, configMeta)).filters}"""
@@ -190,11 +190,11 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       .tag(s"${modelStores((configModel, configCohorts, configMeta)).filters}".split("/").last)
   
   }
-
+  
   configModel.design match {
   
     case "full" =>
-
+  
       val cfString = cohortFilters.size match {
       
         case n if n > 0 => s"""echo "${cohortFilters.mkString("\n")}" > """
@@ -209,11 +209,11 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortFilters.get}".split("/").last)
       
       }
-
+  
     case _ => ()
-
+  
   }
-
+  
   configModel.design match {
   
     case "full" =>
@@ -232,18 +232,18 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           .tag(s"${modelStores((configModel, configCohorts, configMeta)).knockoutFilters.get}".split("/").last)
       
       }
-
+  
     case _ => ()
-
+  
   }
-
+  
   val mString = masks.size match {
   
     case n if n > 0 => s"""echo "${masks.mkString("\n")}" > """
     case _ => "touch "
   
   }
-
+  
   drmWith(imageName = s"${utils.image.imgTools}") {
   
     cmd"""${mString} ${modelStores((configModel, configCohorts, configMeta)).masks}"""
@@ -251,7 +251,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       .tag(s"${modelStores((configModel, configCohorts, configMeta)).masks}".split("/").last)
   
   }
-
+  
   val binary = binaryAssocTests.contains(configModel.test) match {
     case true => "--binary"
     case false => ""
@@ -295,7 +295,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       }
   
     case false =>
-
+  
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
@@ -315,31 +315,31 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       }
   
   }
-
+  
   (configModel.design, configModel.filterCohorts.size) match {
   
     case ("full", n) if n > 0 =>
-
+  
       projectConfig.hailCloud match {
         
         case true =>
-  
+      
           local {
-  
+      
             googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortMap, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get)
-  
+      
           }
-
+      
         case false => ()
-
+      
       }
-  
+      
       for {
       
         cohort <- configCohorts if configModel.filterCohorts.contains(cohort.id)
       
       } yield {
-  
+      
         projectConfig.hailCloud match {
         
           case true =>
@@ -372,7 +372,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLogGoogle.get(cohort), modelStores((configModel, configCohorts, configMeta)).cohortVariantsStatsHailLog.get(cohort))
             
             }
-  
+      
           case false =>
           
             drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
@@ -394,9 +394,9 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
                     .tag(s"${modelStores((configModel, configCohorts, configMeta)).cohortVariantsStats.get(cohort)}".split("/").last)
               
               }
-  
+      
         }
-  
+      
       }
   
     case _ => ()
@@ -535,26 +535,26 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
         }
       
       }
-  
+      
       val cohortFiltersInString = {
-  
+      
         configModel.design match {
-  
+      
           case "full" => s"""--cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFilters.get.toString.split("@")(1)}"""
           case _ => ""
-  
+      
         }
-  
+      
       }
-  
+      
       val knockoutFiltersInString = {
-  
+      
         configModel.design match {
           case "full" => s"""--knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters.get.toString.split("@")(1)}"""
           case _ => ""
-  
+      
         }
-  
+      
       }
       
       var cohortStatsIn = Seq(modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.get, arrayStores(array).refData.annotationsHt, modelStores((configModel, configCohorts, configMeta)).filters, modelStores((configModel, configCohorts, configMeta)).masks, arrayStores(array).filterPostQc.variantsExclude)
@@ -570,14 +570,14 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           }
         case None => ()
       }
-  
+      
       configModel.design match {
-  
+      
           case "full" => cohortStatsIn = cohortStatsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).cohortFilters.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.get)
           case _ => ()
-  
+      
       }
-  
+      
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterModelVariants}
@@ -601,15 +601,15 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
       }
   
   }
-
+  
   groupTests.contains(configModel.test) match {
-
+  
     case true =>
-
+  
       projectConfig.hailCloud match {
       
         case true =>
-
+  
           val maskedGroupFilesString = {
             modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
               case Some(s) =>
@@ -623,9 +623,9 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               case None => ""
             }
           }
-
+  
           var generateGroupfileOut = Seq(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get)
-
+  
           modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
             case Some(s) =>
               generateGroupfileOut = generateGroupfileOut ++ {
@@ -647,19 +647,19 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}
               --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get}
               --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get}"""
-              .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
+              .in(projectStores.hailUtilsGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
               .out(generateGroupfileOut)
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get}.google".split("/").last)
     
           }
-
+  
           local {
-
+          
             googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFile.get)
             googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get)
-
+          
           }
-
+          
           modelStores((configModel, configCohorts, configMeta)).maskedGroupFileGoogle match {
             case Some(s) =>
               for {
@@ -671,9 +671,9 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               }
             case None => ()
           }
-
+  
         case false =>
-
+  
           val maskedGroupFilesString = {
             modelStores((configModel, configCohorts, configMeta)).maskedGroupFile match {
               case Some(s) =>
@@ -687,9 +687,9 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               case None => ""
             }
           }
-
+          
           var generateGroupfileOut = Seq(modelStores((configModel, configCohorts, configMeta)).groupFile.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get)
-
+          
           modelStores((configModel, configCohorts, configMeta)).maskedGroupFile match {
             case Some(s) =>
               generateGroupfileOut = generateGroupfileOut ++ {
@@ -701,7 +701,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               }
             case None => ()
           }
-
+          
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
@@ -712,23 +712,23 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.get)
               .out(generateGroupfileOut)
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get}".split("/").last)
-
+          
           }
     
       }
-
+  
     case false => ()
-
+  
   }
-
+  
   modelStores((configModel, configCohorts, configMeta)).vcf match {
-
+  
     case Some(s) =>
-
+  
       projectConfig.hailCloud match {
       
         case true =>
-
+  
           googleWith(projectConfig.cloudResources.mtCluster) {
           
             hail"""${utils.python.pyHailGenerateModelVcf} --
@@ -739,21 +739,21 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get}
               --vcf-out ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get}
               --log ${modelStores((configModel, configCohorts, configMeta)).vcfHailLogGoogle.get}"""
-              .in(arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
+              .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, modelStores((configModel, configCohorts, configMeta)).cohortMapGoogle.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTableGoogle.get)
               .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLogGoogle.get)
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}.google".split("/").last)
     
           }
-
+  
           local {
-
+  
             googleCopy(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
             googleCopy(modelStores((configModel, configCohorts, configMeta)).vcfHailLogGoogle.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLog.get)
-
+  
           }
-
+  
         case false =>
-
+  
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
@@ -767,20 +767,20 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}".split("/").last)
     
           }
-
+  
       }
-
+  
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabixClean.cpus, mem = projectConfig.resources.tabixClean.mem, maxRunTime = projectConfig.resources.tabixClean.maxRunTime) {
-
+  
         cmd"""${utils.binary.binTabix} -p vcf ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}"""
           .in(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
           .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.tbi.local.get)
           .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.tbi.local.get}".split("/").last)
       
       }
-
+  
     case None => ()
-
+  
   }
 
 }
