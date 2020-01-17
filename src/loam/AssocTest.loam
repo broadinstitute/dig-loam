@@ -13,21 +13,21 @@ def AssocTest(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], config
 
   val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
-  configModel.assocPlatform match {
-
-    case "epacts" =>
-
+  configModel.assocPlatforms.contains("epacts") match {
+  
+    case true =>
+    
       val transString = configModel.trans match {
         case Some(_) => "--trans ${configModel.trans}"
         case None => ""
       }
-
+  
       drmWith(imageName = s"${utils.image.imgR}") {
-
+      
         cmd"""${utils.binary.binRscript} --vanilla --verbose
           ${utils.r.rConvertPhenoToPed}
-          --pheno ${modelStores((configModel, configCohorts, configMeta)).pheno}
-          --pcs ${modelStores((configModel, configCohorts, configMeta)).pcsInclude}
+          --pheno ${modelStores((configModel, configCohorts, configMeta)).pheno.local.get}
+          --pcs ${modelStores((configModel, configCohorts, configMeta)).pcsInclude.local.get}
           --pheno-col ${configModel.pheno}
           --iid-col ${projectConfig.phenoFileId}
           --sex-col ${projectConfig.sampleFileSrSex}
@@ -37,131 +37,117 @@ def AssocTest(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], config
           --covars "${configModel.covars}"
           --model-vars ${modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get}
           --ped ${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}"""
-          .in(modelStores((configModel, configCohorts, configMeta)).pheno, modelStores((configModel, configCohorts, configMeta)).pcsInclude)
+          .in(modelStores((configModel, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configCohorts, configMeta)).pcsInclude.local.get)
           .out(modelStores((configModel, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get)
           .tag(s"${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}".split("/").last)
-
+      
       }
+  
+    case false => ()
+  
+  }
 
-      (configModel.design, groupTests.contains(configModel.test), epactsTests.contains(configModel.test), configModel.masks) match {
+  for {
+  
+    test <- configModel.tests
+  
+  } yield {
+  
+    (test.split("\\.")(0), groupTests.contains(test), modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups.size) match {
+  
+      case ("epacts", true, n) if n > 0 =>
 
-        case ("full", true, true, Some(_)) =>
+        val groups = fileToList(s"""${modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.local.get.toString.split("@")(1)}""")
 
+        for {
+        
+          group <- groups
+        
+        } yield {
+        
+          val groupid = group.split("\t")(0)
+          
+          drmWith(imageName = s"${utils.image.imgTools}") {
+          
+            cmd"""echo "${group}" > ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile}"""
+              .out(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile)
+              .tag(s"${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile}".split("/").last)
+          
+          }
+          
           val vcfString = modelStores((configModel, configCohorts, configMeta)).vcf match {
             case Some(s) => s"""${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get.toString.split("@")(1)}"""
             case None => s"""${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
           }
-
-          for {
-
-            m <- configModel.masks.get if m.groupFile.isDefined
-
-          } yield {
-
-            val groups = fileToList(m.groupFile.get)
-
-            for {
-
-              group <- groups
-
-            } yield {
-
-              val groupid = group.split("\t")(0)
-
-              var epactsIn = Seq(modelStores((configModel, configCohorts, configMeta)).maskedGroupFilesSplit(groupid)(m), modelStores((configModel, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get)
-              modelStores((configModel, configCohorts, configMeta)).vcf match {
-                case Some(s) => epactsIn = epactsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
-                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
-              }
-
-              drmWith(imageName = s"${utils.image.imgTools}") {
-
-                cmd"""echo "${group}" > ${modelStores((configModel, configCohorts, configMeta)).maskedGroupFilesSplit(groupid)(m)}"""
-                  .out(modelStores((configModel, configCohorts, configMeta)).maskedGroupFilesSplit(groupid)(m))
-                  .tag(s"${modelStores((configModel, configCohorts, configMeta)).maskedGroupFilesSplit(groupid)(m)}".split("/").last)
-              
-              }
-
-              drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
-
-                cmd"""${utils.bash.shEpacts}
-                    ${utils.binary.binEpacts}
-                    group
-                    ${vcfString}
-                    ${modelStores((configModel, configCohorts, configMeta)).maskedGroupFilesSplit(groupid)(m)}
-                    ${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}
-                    ${modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get}
-                    ${configModel.test.replace("epacts.","")}
-                    "DS"
-                    ${modelStores((configModel, configCohorts, configMeta)).maskedGroupResultsSplit(groupid)(m)}
-                    1"""
-                    .in(epactsIn)
-                    .out(modelStores((configModel, configCohorts, configMeta)).maskedGroupResultsSplit(groupid)(m))
-                    .tag(s"${modelStores((configModel, configCohorts, configMeta)).maskedGroupResultsSplit(groupid)(m)}".split("/").last)
-              
-              }
-
-            }
-
-            val mergeResultsLines = {
-            
-              for {
-            
-                group <- groups
-            
-              } yield {
-
-                val groupid = group.split("\t")(0)
-            
-                s"${modelStores((configModel, configCohorts, configMeta)).maskedGroupResultsSplit(groupid)(m)}"
-              
-              }
-              
-            }
-            
-            val mergeResultsFiles = {
-            
-              for {
-            
-                group <- groups
-            
-              } yield {
-
-                val groupid = group.split("\t")(0)
-            
-                modelStores((configModel, configCohorts, configMeta)).maskedGroupResultsSplit(groupid)(m)
-              
-              }
-              
-            }
-            
-            drmWith(imageName = s"${utils.image.imgTools}") {
-            
-              cmd"""echo "${mergeResultsLines.mkString("\n")}" > ${modelStores((configModel, configCohorts, configMeta)).maskedResultsMergeList(m)}"""
-                .in(mergeResultsFiles)
-                .out(modelStores((configModel, configCohorts, configMeta)).maskedResultsMergeList(m))
-                .tag(s"${modelStores((configModel, configCohorts, configMeta)).maskedResultsMergeList(m)}".split("/").last)
-            
-            }
-            
-            drmWith(imageName = s"${utils.image.imgTools}") {
-            
-              cmd"""${utils.bash.shMergeResults}
-                 ${modelStores((configModel, configCohorts, configMeta)).maskedResultsMergeList(m)}
-                 ${modelStores((configModel, configCohorts, configMeta)).maskedResults(m)}"""
-                .in(modelStores((configModel, configCohorts, configMeta)).maskedResultsMergeList(m))
-                .out(modelStores((configModel, configCohorts, configMeta)).maskedResults(m))
-                .tag(s"${modelStores((configModel, configCohorts, configMeta)).maskedResults(m)}".split("/").last)
-            
-            }
-
+          
+          var epactsIn = Seq(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile, modelStores((configModel, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get)
+          modelStores((configModel, configCohorts, configMeta)).vcf match {
+            case Some(s) => epactsIn = epactsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
+            case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
           }
-
-        case _ => ()
-             
-      }
-
-    case _ => ()
+        
+          drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
+          
+            cmd"""${utils.bash.shEpacts}
+              ${utils.binary.binEpacts}
+              group
+              ${vcfString}
+              ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile}
+              ${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}
+              ${modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get}
+              ${test.replace("epacts.","")}
+              "DS"
+              ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results}
+              1"""
+              .in(epactsIn)
+              .out(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results)
+              .tag(s"${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results}".split("/").last)
+          
+          }
+        
+        }
+        
+        val mergeResultsLines = {
+          for {
+            group <- groups
+          } yield {
+            val groupid = group.split("\t")(0)
+            s"""${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results.toString.split("@")(1)}"""
+          }
+        }
+        
+        val mergeResultsFiles = {
+          for {
+            group <- groups
+          } yield {
+            val groupid = group.split("\t")(0)
+            modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results
+          }
+        }
+        
+        drmWith(imageName = s"${utils.image.imgTools}") {
+        
+          cmd"""echo "${mergeResultsLines.mkString("\n")}" > ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).mergeList.get}"""
+            .in(mergeResultsFiles)
+            .out(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).mergeList.get)
+            .tag(s"${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).mergeList.get}".split("/").last)
+        
+        }
+        
+        drmWith(imageName = s"${utils.image.imgTools}") {
+        
+          cmd"""${utils.bash.shMergeResults}
+             ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).mergeList.get}
+             ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).results.local.get}"""
+            .in(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).mergeList.get)
+            .out(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).results.local.get)
+            .tag(s"${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).results.local.get}".split("/").last)
+        
+        }
+        
+      case _ => ()
+  
+    }
 
   }
 

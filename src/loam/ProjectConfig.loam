@@ -84,8 +84,6 @@ val assocTests = Seq(
   "epacts.q.emmaxVT"
 )
 
-val binaryAssocTests = assocTests.filter(e => e.split("\\.")(1) == "b")
-val quantitativeAssocTests = assocTests.filter(e => e.split("\\.")(1) == "q")
 val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
 val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
 val epactsTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
@@ -205,6 +203,7 @@ final case class ConfigMerge(
 final case class ConfigPheno(
   id: String,
   name: String,
+  binary: Boolean,
   desc: String) extends Debug
 
 final case class ConfigKnown(
@@ -235,12 +234,10 @@ final case class ConfigModel(
   pheno: String,
   unrelatedOnly: Boolean,
   trans: Option[String],
-  test: String,
-  assocPlatform: String,
+  tests: Seq[String],
+  assocPlatforms: Seq[String],
   covars: String,
   design: String,
-  groupFile: Option[String],
-  cohortGroupFiles: Option[Seq[CohortGroupFile]],
   cohorts: Seq[String],
   metas: Option[Seq[String]],
   merges: Option[Seq[String]],
@@ -998,6 +995,7 @@ object ProjectConfig {
         ConfigPheno(
           id = requiredStr(config = pheno, field = "id"),
           name = requiredStr(config = pheno, field = "name"),
+          binary = requiredBool(config = pheno, field = "binary"),
           desc = requiredStr(config = pheno, field = "desc")
         )
     
@@ -1040,7 +1038,7 @@ object ProjectConfig {
           case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
         }
 
-        val test = requiredStr(config = model, field = "test", regex = assocTests.mkString("|"))
+        val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
 
         val design = requiredStr(config = model, field = "design", regex = modelDesigns.mkString("|"))
 
@@ -1234,23 +1232,13 @@ object ProjectConfig {
             }
           case _ => ()
         }
+        (design, filters) match {
+          case ("full", _) => ()
+          case ("strat", Some(_)) => filterCohorts = filterCohorts ++ cohorts
+        }
         filterCohorts.size match {
           case n if n > 1 => filterCohorts = filterCohorts.distinct
           case _ => ()
-        }
-
-        val cohortGroupFiles = optionalObjList(config = model, field = "cohortGroupFiles") match {
-          case Some(s) =>
-            val x = for {
-              cf <- s
-            } yield {
-              CohortGroupFile(
-                cohort = requiredStr(config = cf, field = "cohort"),
-                groupFile = requiredStr(config = cf, field = "groupFile")
-              )
-            }
-            Some(x)
-          case None => None
         }
 
         ConfigModel(
@@ -1258,12 +1246,10 @@ object ProjectConfig {
           pheno = pheno,
           unrelatedOnly = requiredBool(config = model, field = "unrelatedOnly"),
           trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
-          test = test,
-          assocPlatform = test.split("\\.")(0),
+          tests = tests,
+          assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
-          groupFile = optionalStr(config = model, field = "groupFile"),
-          cohortGroupFiles = cohortGroupFiles,
           cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
             case ("strat", false, _) => throw new CfgException("models.cohorts: model " + id + " 'strat' design requires more than 1 cohort")
             case ("full", true, true) => throw new CfgException("models.cohorts: model " + id + " 'full' design requires cohorts from same array")
@@ -1281,8 +1267,8 @@ object ProjectConfig {
           maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
           cohortFilters = cohortFilters,
           knockoutFilters = knockoutFilters,
-          masks = test match {
-            case s if groupTests.contains(s) => masks
+          masks = tests match {
+            case s if groupTests.intersect(s).size > 0 => masks
             case _ => 
               masks match {
                 case Some(s) => throw new CfgException("models.masks: model " + id + " masks are only allowed for collapsing variant (ie. group|gene) tests")

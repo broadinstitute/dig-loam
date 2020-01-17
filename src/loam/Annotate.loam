@@ -12,10 +12,10 @@ def Annotate(array: ConfigArray): Unit = {
 
   drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.annotate.cpus, mem = projectConfig.resources.annotate.mem, maxRunTime = projectConfig.resources.annotate.maxRunTime) {
 
-    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf} ${projectConfig.resources.annotate.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
-    .in(arrayStores(array).refData.sitesVcf, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP)
-    .out(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationWarnings, arrayStores(array).refData.annotationHeader)
-    .tag(s"${arrayStores(array).refData.annotations}".split("/").last)
+    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf.local.get} ${projectConfig.resources.annotate.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations.local.get} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
+    .in(arrayStores(array).refData.sitesVcf.local.get, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP)
+    .out(arrayStores(array).refData.annotations.local.get, arrayStores(array).refData.annotationWarnings, arrayStores(array).refData.annotationHeader)
+    .tag(s"${arrayStores(array).refData.annotations.local.get}".split("/").last)
 
   }
 
@@ -26,21 +26,21 @@ def Annotate(array: ConfigArray): Unit = {
     case true =>
 
       local {
-        googleCopy(arrayStores(array).refData.annotations, arrayStores(array).refData.annotationsGoogle.get)
+        googleCopy(arrayStores(array).refData.annotations.local.get, arrayStores(array).refData.annotations.google.get)
       }
 
       googleWith(projectConfig.cloudResources.variantHtCluster) {
       
         hail"""${utils.python.pyHailLoadAnnotations} --
-          --annotations ${arrayStores(array).refData.annotationsGoogle.get}
-          --out ${arrayStores(array).refData.annotationsHtGoogle.get}
+          --annotations ${arrayStores(array).refData.annotations.google.get}
+          --out ${arrayStores(array).refData.annotationsHt.google.get}
           ${minPartitions}
           --reference-genome ${projectConfig.referenceGenome}
           --cloud
-          --log ${arrayStores(array).refData.annotationsHailLogGoogle.get}"""
-            .in(arrayStores(array).refData.annotationsGoogle.get)
-            .out(arrayStores(array).refData.annotationsHtGoogle.get, arrayStores(array).refData.annotationsHailLogGoogle.get)
-            .tag(s"${arrayStores(array).refData.annotationsHt}.google".split("/").last)
+          --log ${arrayStores(array).refData.annotationsHailLog.google.get}"""
+            .in(arrayStores(array).refData.annotations.google.get)
+            .out(arrayStores(array).refData.annotationsHt.google.get, arrayStores(array).refData.annotationsHailLog.google.get)
+            .tag(s"${arrayStores(array).refData.annotationsHt.local.get}.google".split("/").last)
       
       }
 
@@ -49,14 +49,14 @@ def Annotate(array: ConfigArray): Unit = {
       drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.annotateHailLoad.cpus, mem = projectConfig.resources.annotateHailLoad.mem, maxRunTime = projectConfig.resources.annotateHailLoad.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailLoadAnnotations}
-          --annotations ${arrayStores(array).refData.annotations}
-          --out ${arrayStores(array).refData.annotationsHt}
+          --annotations ${arrayStores(array).refData.annotations.local.get}
+          --out ${arrayStores(array).refData.annotationsHt.local.get}
           ${minPartitions}
           --reference-genome ${projectConfig.referenceGenome}
-          --log ${arrayStores(array).refData.annotationsHailLog}"""
-            .in(arrayStores(array).refData.annotations)
-            .out(arrayStores(array).refData.annotationsHt, arrayStores(array).refData.annotationsHailLog)
-            .tag(s"${arrayStores(array).refData.annotationsHt}".split("/").last)
+          --log ${arrayStores(array).refData.annotationsHailLog.local.get}"""
+            .in(arrayStores(array).refData.annotations.local.get)
+            .out(arrayStores(array).refData.annotationsHt.local.get, arrayStores(array).refData.annotationsHailLog.local.get)
+            .tag(s"${arrayStores(array).refData.annotationsHt.local.get}".split("/").last)
 
       }
 

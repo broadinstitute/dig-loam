@@ -18,17 +18,17 @@ def AncestryPca(array: ConfigArray): Unit = {
       google {
       
         hail"""${utils.python.pyHailAncestryPcaMerge1kg} --
-          --hail-utils ${projectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtils.google.get}
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --kg-vcf-in ${projectStores.kgPurcellVcfGoogle.get}
-          --kg-sample ${projectStores.kgSampleGoogle.get}
+          --mt-in ${arrayStores(array).refData.mt.google.get}
+          --kg-vcf-in ${projectStores.kgPurcellVcf.google.get}
+          --kg-sample ${projectStores.kgSample.google.get}
           --plink-out ${arrayStores(array).ref1kgData.plink.base.google.get}
-          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamplesGoogle.get}
+          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples.google.get}
           --cloud
-          --log ${arrayStores(array).ref1kgData.hailLogGoogle.get}"""
-          .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, projectStores.kgPurcellVcfGoogle.get, projectStores.kgSampleGoogle.get)
-          .out(arrayStores(array).ref1kgData.plink.data.google.get :+ arrayStores(array).ref1kgData.kgSamplesGoogle.get :+ arrayStores(array).ref1kgData.hailLogGoogle.get)
+          --log ${arrayStores(array).ref1kgData.hailLog.google.get}"""
+          .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.kgPurcellVcf.google.get, projectStores.kgSample.google.get)
+          .out(arrayStores(array).ref1kgData.plink.data.google.get :+ arrayStores(array).ref1kgData.kgSamples.google.get :+ arrayStores(array).ref1kgData.hailLog.google.get)
           .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}.pyHailAncestryPcaMerge1kg".split("/").last)
       
       }
@@ -36,8 +36,8 @@ def AncestryPca(array: ConfigArray): Unit = {
       local {
       
         googleCopy(arrayStores(array).ref1kgData.plink.data.google.get, arrayStores(array).ref1kgData.plink.data.local.get)
-        googleCopy(arrayStores(array).ref1kgData.kgSamplesGoogle.get, arrayStores(array).ref1kgData.kgSamples)
-        googleCopy(arrayStores(array).ref1kgData.hailLogGoogle.get, arrayStores(array).ref1kgData.hailLog)
+        googleCopy(arrayStores(array).ref1kgData.kgSamples.google.get, arrayStores(array).ref1kgData.kgSamples.local.get)
+        googleCopy(arrayStores(array).ref1kgData.hailLog.google.get, arrayStores(array).ref1kgData.hailLog.local.get)
       
       }
 
@@ -47,14 +47,14 @@ def AncestryPca(array: ConfigArray): Unit = {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailAncestryPcaMerge1kg}
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mt.get}
-          --kg-vcf-in ${projectStores.kgPurcellVcf}
-          --kg-sample ${projectStores.kgSample}
+          --mt-in ${arrayStores(array).refData.mt.local.get}
+          --kg-vcf-in ${projectStores.kgPurcellVcf.local.get}
+          --kg-sample ${projectStores.kgSample.local.get}
           --plink-out ${arrayStores(array).ref1kgData.plink.base.local.get}
-          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples}
-          --log ${arrayStores(array).ref1kgData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, projectStores.kgPurcellVcf, projectStores.kgSample)
-          .out(arrayStores(array).ref1kgData.plink.data.local.get :+ arrayStores(array).ref1kgData.kgSamples :+ arrayStores(array).ref1kgData.hailLog)
+          --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples.local.get}
+          --log ${arrayStores(array).ref1kgData.hailLog.local.get}"""
+          .in(arrayStores(array).refData.mt.local.get, projectStores.kgPurcellVcf.local.get, projectStores.kgSample.local.get)
+          .out(arrayStores(array).ref1kgData.plink.data.local.get :+ arrayStores(array).ref1kgData.kgSamples.local.get :+ arrayStores(array).ref1kgData.hailLog.local.get)
           .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}".split("/").last)
 
       }
@@ -86,11 +86,11 @@ def AncestryPca(array: ConfigArray): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rPlotAncestryPca}
       --id ${projectConfig.projectId}
-      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples}
-      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples}
+      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples.local.get}
+      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples.local.get}
       --pca-scores ${arrayStores(array).ancestryPcaData.scores}
       --out ${arrayStores(array).ancestryPcaData.plots}"""
-      .in(arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ancestryPcaData.scores)
+      .in(arrayStores(array).ref1kgData.kgSamples.local.get, arrayStores(array).ancestryPcaData.scores)
       .out(arrayStores(array).ancestryPcaData.plots)
       .tag(s"${arrayStores(array).ancestryPcaData.plots}".split("/").last)
 
@@ -167,10 +167,10 @@ def AncestryCluster(array: ConfigArray): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rPlotAncestryCluster}
       --pca-scores ${arrayStores(array).ancestryPcaData.scores}
-      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples}
-      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples}
+      --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples.local.get}
+      --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples.local.get}
       --cluster ${arrayStores(array).ancestryClusterData.clu}
-      --sample-file ${projectStores.sampleFile}
+      --sample-file ${projectStores.sampleFile.local.get}
       --project-id ${projectConfig.projectId}
       --sample-id ${projectConfig.sampleFileId}
       --sr-race ${projectConfig.sampleFileSrRace}
@@ -185,7 +185,7 @@ def AncestryCluster(array: ConfigArray): Unit = {
       --cluster-groups ${arrayStores(array).ancestryClusterData.groups}
       --ancestry-inferred ${arrayStores(array).ancestryData.inferred}
       --cluster-plots-no1kg ${arrayStores(array).ancestryClusterData.no1kgPlots}"""
-      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ref1kgData.kgSamples, arrayStores(array).ancestryClusterData.clu, projectStores.sampleFile)
+      .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ref1kgData.kgSamples.local.get, arrayStores(array).ancestryClusterData.clu, projectStores.sampleFile.local.get)
       .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
       .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
 
@@ -209,11 +209,11 @@ def MergeInferredAncestry(): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rAncestryClusterMerge}
       --ancestry-in $inferredList
-      --out-table ${projectStores.ancestryInferred}
+      --out-table ${projectStores.ancestryInferred.local.get}
       --out-outliers ${projectStores.ancestryOutliers}"""
       .in(projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred))
-      .out(projectStores.ancestryInferred, projectStores.ancestryOutliers)
-      .tag(s"${projectStores.ancestryInferred}".split("/").last)
+      .out(projectStores.ancestryInferred.local.get, projectStores.ancestryOutliers)
+      .tag(s"${projectStores.ancestryInferred.local.get}".split("/").last)
   
   }
 

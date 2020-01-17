@@ -19,7 +19,7 @@ def main(args=None):
 	print("ending with " + str(ht.count()) + " PICK == 1 annotations")
     
 	print("writing hail table to disk")
-	ht.write(args.out)
+	ht.write(args.out, overwrite = True)
 
 	if args.cloud:
 		hl.copy_log(args.log)

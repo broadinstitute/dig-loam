@@ -18,14 +18,14 @@ def ExportCleanData(array: ConfigArray): Unit = {
       
         hail"""${utils.python.pyHailExportCleanArrayData} --
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mtGoogle.get}
+          --mt-in ${arrayStores(array).refData.mt.google.get}
           --vcf-out ${arrayStores(array).cleanData.get.vcf.data.google.get}
-          --samples-remove ${arrayStores(array).filterQc.samplesExcludeGoogle.get},${arrayStores(array).filterPostQc.samplesExcludeGoogle.get}
-          --variants-remove ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}
+          --samples-remove ${arrayStores(array).filterQc.samplesExclude.google.get},${arrayStores(array).filterPostQc.samplesExclude.google.get}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.google.get}
           --cloud
-          --log ${arrayStores(array).cleanData.get.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get)
-          .out(arrayStores(array).cleanData.get.vcf.data.google.get, arrayStores(array).cleanData.get.hailLogGoogle.get)
+          --log ${arrayStores(array).cleanData.get.hailLog.google.get}"""
+          .in(arrayStores(array).refData.mt.google.get, arrayStores(array).filterQc.samplesExclude.google.get, arrayStores(array).filterPostQc.samplesExclude.google.get, arrayStores(array).filterPostQc.variantsExclude.google.get)
+          .out(arrayStores(array).cleanData.get.vcf.data.google.get, arrayStores(array).cleanData.get.hailLog.google.get)
           .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanArrayData".split("/").last)
       
       }
@@ -33,7 +33,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
       local {
   
         googleCopy(arrayStores(array).cleanData.get.vcf.data.google.get, arrayStores(array).cleanData.get.vcf.data.local.get)
-        googleCopy(arrayStores(array).cleanData.get.hailLogGoogle.get, arrayStores(array).cleanData.get.hailLog)
+        googleCopy(arrayStores(array).cleanData.get.hailLog.google.get, arrayStores(array).cleanData.get.hailLog.local.get)
   
       }
   
@@ -43,13 +43,13 @@ def ExportCleanData(array: ConfigArray): Unit = {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanArrayData}
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mt.get}
+          --mt-in ${arrayStores(array).refData.mt.local.get}
           --vcf-out ${arrayStores(array).cleanData.get.vcf.data.local.get}
-          --samples-remove ${arrayStores(array).filterQc.samplesExclude},${arrayStores(array).filterPostQc.samplesExclude}
-          --variants-remove ${arrayStores(array).filterPostQc.variantsExclude}
-          --log ${arrayStores(array).cleanData.get.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.variantsExclude)
-          .out(arrayStores(array).cleanData.get.vcf.data.local.get, arrayStores(array).cleanData.get.hailLog)
+          --samples-remove ${arrayStores(array).filterQc.samplesExclude.local.get},${arrayStores(array).filterPostQc.samplesExclude.local.get}
+          --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.local.get}
+          --log ${arrayStores(array).cleanData.get.hailLog.local.get}"""
+          .in(arrayStores(array).refData.mt.local.get, arrayStores(array).filterQc.samplesExclude.local.get, arrayStores(array).filterPostQc.samplesExclude.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get)
+          .out(arrayStores(array).cleanData.get.vcf.data.local.get, arrayStores(array).cleanData.get.hailLog.local.get)
           .tag(s"${arrayStores(array).cleanData.get.vcf.base.local.get}.pyHailExportCleanArrayData".split("/").last)
       
       }

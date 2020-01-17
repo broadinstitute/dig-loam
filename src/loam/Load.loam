@@ -26,8 +26,8 @@ def Load(array: ConfigArray): Unit = {
       }
 
       val inputFiles = (array.technology, array.format) match {
-        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, projectStores.sampleFileGoogle.get)
-        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.google.get :+ projectStores.hailUtilsGoogle.get :+ projectStores.sampleFileGoogle.get
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(projectStores.hailUtils.google.get, arrayStores(array).refData.vcf.get.data.google.get, arrayStores(array).refData.vcf.get.tbi.google.get, projectStores.sampleFile.google.get)
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.google.get :+ projectStores.hailUtils.google.get :+ projectStores.sampleFile.google.get
         case _ => throw new CfgException("Load: invalid input type " + inputType + " for array " + array.id)
       }
 
@@ -57,33 +57,33 @@ def Load(array: ConfigArray): Unit = {
           ${minPartitions}
           ${gqThreshold}
           --cloud
-          --hail-utils ${projectStores.hailUtilsGoogle.get}
-          --log ${arrayStores(array).refData.hailLogGoogle.get}
+          --hail-utils ${projectStores.hailUtils.google.get}
+          --log ${arrayStores(array).refData.hailLog.google.get}
           ${inputOptionString}
-          --sample-in ${projectStores.sampleFileGoogle.get}
+          --sample-in ${projectStores.sampleFile.google.get}
           --id-col ${projectConfig.sampleFileId}
-          --variant-metrics-out ${arrayStores(array).refData.variantMetricsGoogle.get}
+          --variant-metrics-out ${arrayStores(array).refData.variantMetrics.google.get}
           --sex-col ${projectConfig.sampleFileSrSex}
           --male-code ${projectConfig.sampleFileMaleCode}
           --female-code ${projectConfig.sampleFileFemaleCode}
-          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
-          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problemsGoogle.get}
-          --sites-vcf-out ${arrayStores(array).refData.sitesVcfGoogle.get}
-          --mt-checkpoint ${arrayStores(array).refData.mtCheckpointGoogle.get}
-          --mt-out ${arrayStores(array).refData.mtGoogle.get}"""
+          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck.google.get}
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems.google.get}
+          --sites-vcf-out ${arrayStores(array).refData.sitesVcf.google.get}
+          --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.google.get}
+          --mt-out ${arrayStores(array).refData.mt.google.get}"""
           .in(inputFiles)
-          .out(arrayStores(array).refData.mtGoogle.get, arrayStores(array).refData.mtCheckpointGoogle.get, arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).refData.sitesVcfGoogle.get)
+          .out(arrayStores(array).refData.mt.google.get, arrayStores(array).refData.mtCheckpoint.google.get, arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).refData.sitesVcf.google.get)
           .tag(tagString)
       
       }
 
       local {
 
-        googleCopy(arrayStores(array).refData.hailLogGoogle.get, arrayStores(array).refData.hailLog)
-        googleCopy(arrayStores(array).refData.variantMetricsGoogle.get, arrayStores(array).refData.variantMetrics)
-        googleCopy(arrayStores(array).refData.sitesVcfGoogle.get, arrayStores(array).refData.sitesVcf)
-        googleCopy(arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).sexcheckData.sexcheck)
-        googleCopy(arrayStores(array).sexcheckData.problemsGoogle.get, arrayStores(array).sexcheckData.problems)
+        googleCopy(arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.hailLog.local.get)
+        googleCopy(arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).refData.variantMetrics.local.get)
+        googleCopy(arrayStores(array).refData.sitesVcf.google.get, arrayStores(array).refData.sitesVcf.local.get)
+        googleCopy(arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.sexcheck.local.get)
+        googleCopy(arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).sexcheckData.problems.local.get)
 
       }
 
@@ -96,8 +96,8 @@ def Load(array: ConfigArray): Unit = {
       }
 
       val inputFiles = (array.technology, array.format) match {
-        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, projectStores.sampleFile)
-        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.local.get :+ projectStores.sampleFile
+        case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(arrayStores(array).refData.vcf.get.data.local.get, arrayStores(array).refData.vcf.get.tbi.local.get, projectStores.sampleFile.local.get)
+        case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => arrayStores(array).refData.plink.get.data.local.get :+ projectStores.sampleFile.local.get
         case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
@@ -113,21 +113,21 @@ def Load(array: ConfigArray): Unit = {
           --reference-genome ${projectConfig.referenceGenome}
           ${minPartitions}
           ${gqThreshold}
-          --log ${arrayStores(array).refData.hailLog}
+          --log ${arrayStores(array).refData.hailLog.local.get}
           ${inputOptionString}
-          --sample-in ${projectStores.sampleFile}
+          --sample-in ${projectStores.sampleFile.local.get}
           --id-col ${projectConfig.sampleFileId}
-          --variant-metrics-out ${arrayStores(array).refData.variantMetrics}
+          --variant-metrics-out ${arrayStores(array).refData.variantMetrics.local.get}
           --sex-col ${projectConfig.sampleFileSrSex}
           --male-code ${projectConfig.sampleFileMaleCode}
           --female-code ${projectConfig.sampleFileFemaleCode}
-          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck}
-          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems}
-          --sites-vcf-out ${arrayStores(array).refData.sitesVcf}
-          --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.get}
-          --mt-out ${arrayStores(array).refData.mt.get}"""
+          --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck.local.get}
+          --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems.local.get}
+          --sites-vcf-out ${arrayStores(array).refData.sitesVcf.local.get}
+          --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.local.get}
+          --mt-out ${arrayStores(array).refData.mt.local.get}"""
           .in(inputFiles)
-          .out(arrayStores(array).refData.mt.get, arrayStores(array).refData.mtCheckpoint.get, arrayStores(array).refData.hailLog, arrayStores(array).refData.variantMetrics, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).sexcheckData.problems, arrayStores(array).refData.sitesVcf)
+          .out(arrayStores(array).refData.mt.local.get, arrayStores(array).refData.mtCheckpoint.local.get, arrayStores(array).refData.hailLog.local.get, arrayStores(array).refData.variantMetrics.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).refData.sitesVcf.local.get)
           .tag(tagString)
 
       }

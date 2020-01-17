@@ -78,22 +78,14 @@ final case class HarmonizedData(
 final case class RefData(
   plink: Option[MultiPathPlink],
   vcf: Option[MultiPathVcf],
-  mtCheckpoint: Option[Store],
-  mtCheckpointGoogle: Option[Store],
-  mt: Option[Store],
-  mtGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
-  variantMetrics: Store,
-  variantMetricsGoogle: Option[Store],
-  sitesVcf: Store,
-  sitesVcfGoogle: Option[Store],
-  annotations: Store,
-  annotationsGoogle: Option[Store],
-  annotationsHt: Store,
-  annotationsHtGoogle: Option[Store],
-  annotationsHailLog: Store,
-  annotationsHailLogGoogle: Option[Store],
+  mtCheckpoint: MultiStore,
+  mt: MultiStore,
+  hailLog: MultiStore,
+  variantMetrics: MultiStore,
+  sitesVcf: MultiStore,
+  annotations: MultiStore,
+  annotationsHt: MultiStore,
+  annotationsHailLog: MultiStore,
   annotationWarnings: Store,
   annotationHeader: Store)
 
@@ -102,13 +94,10 @@ final case class ImputeData(
   base: Path)
 
 final case class FilteredData(
-  variantFilters: Store,
-  variantFiltersGoogle: Option[Store],
-  variantMetrics: Store,
-  variantMetricsGoogle: Option[Store],
+  variantFilters: MultiStore,
+  variantMetrics: MultiStore,
   plink: MultiPathPlink,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
+  hailLog: MultiStore,
   pruneIn: Store)
 
 final case class PrunedData(
@@ -123,10 +112,8 @@ final case class KinshipData(
 
 final case class Ref1kgData(
   plink: MultiPathPlink,
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
-  kgSamples: Store,
-  kgSamplesGoogle: Option[Store])
+  hailLog: MultiStore,
+  kgSamples: MultiStore)
 
 final case class AncestryData(
   inferred: Store)
@@ -164,16 +151,12 @@ final case class PcaData(
   meansd: Store)
 
 final case class SexcheckData(
-  sexcheck: Store,
-  sexcheckGoogle: Option[Store],
-  problems: Store,
-  problemsGoogle: Option[Store])
+  sexcheck: MultiStore,
+  problems: MultiStore)
 
 final case class SampleQcData(
-  stats: Store,
-  statsGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store],
+  stats: MultiStore,
+  hailLog: MultiStore,
   statsAdj: Store,
   corrPlots: Store,
   boxPlots: Store,
@@ -203,30 +186,21 @@ final case class SampleQcMetricClusterData(
   log: Store)
 
 final case class FilterQc(
-  samplesExclude: Store,
-  samplesExcludeGoogle: Option[Store],
+  samplesExclude: MultiStore,
   samplesRestore: Store)
 
 final case class FilterPostQc(
-  samplesStats: Store,
-  samplesExclude: Store,
-  samplesStatsGoogle: Option[Store],
-  samplesExcludeGoogle: Option[Store],
-  variantsStats: Store,
-  vFilters: Store,
-  vFiltersGoogle: Option[Store],
-  sFilters: Store,
-  sFiltersGoogle: Option[Store],
-  variantsExclude: Store,
-  variantsStatsGoogle: Option[Store],
-  variantsExcludeGoogle: Option[Store],
-  hailLog: Store,
-  hailLogGoogle: Option[Store])
+  samplesStats: MultiStore,
+  samplesExclude: MultiStore,
+  variantsStats: MultiStore,
+  vFilters: MultiStore,
+  sFilters: MultiStore,
+  variantsExclude: MultiStore,
+  hailLog: MultiStore)
 
 final case class CleanData(
   vcf: MultiPathVcf,
-  hailLog: Store,
-  hailLogGoogle: Option[Store])
+  hailLog: MultiStore)
 
 final case class Array(
   rawData: RawData,
@@ -485,22 +459,38 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   val refData = RefData(
     plink = refPlink,
     vcf = refVcf,
-    mtCheckpoint = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
-    mtCheckpointGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt.checkpoint")); case false => None },
-    mt = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt")); case true => None },
-    mtGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt")); case false => None },
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.hail.log")); case false => None },
-    variantMetrics = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.variant.metrics.tsv.bgz"),
-    variantMetricsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.variant.metrics.tsv.bgz")); case false => None },
-    sitesVcf = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz"),
-    sitesVcfGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None },
-    annotations = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.bgz"),
-    annotationsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.bgz")); case false => None },
-    annotationsHt = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.ht"),
-    annotationsHtGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht")); case false => None },
-    annotationsHailLog = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.hail.log"),
-    annotationsHailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.hail.log")); case false => None },
+    mtCheckpoint = MultiStore(
+      local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt.checkpoint")); case false => None }
+    ),
+    mt = MultiStore(
+      local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt")); case true => None },
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt")); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.hail.log")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.hail.log")); case false => None }
+    ),
+    variantMetrics = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.variant.metrics.tsv.bgz")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.variant.metrics.tsv.bgz")); case false => None }
+    ),
+    sitesVcf = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None }
+    ),
+    annotations = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.bgz")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.bgz")); case false => None }
+    ),
+    annotationsHt = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.ht")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht")); case false => None }
+    ),
+    annotationsHailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.hail.log")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.hail.log")); case false => None }
+    ),
     annotationWarnings = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.warnings"),
     annotationHeader = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.header"))
 
@@ -509,13 +499,23 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     base = dirTree.dataArrayMap(arrayCfg).impute.local.get / imputeBaseString)
 
   val filteredData = FilteredData(
-    variantFilters = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.variant.filters.txt"),
-    variantFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.variant.filters.txt")); case false => None },
-    variantMetrics = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.variant.metrics.tsv.bgz"),
-    variantMetricsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.variant.metrics.tsv.bgz")); case false => None },
-    plink = MultiPathPlink(base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / filteredBaseString), google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / filteredBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / filteredBaseString)), google = projectConfig.hailCloud match { case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / filteredBaseString)); case false => None })),
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.hail.log")); case false => None },
+    variantFilters = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.variant.filters.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.variant.filters.txt")); case false => None }
+    ),
+    variantMetrics = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.variant.metrics.tsv.bgz")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.variant.metrics.tsv.bgz")); case false => None }
+    ),
+    plink = MultiPathPlink(
+      base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / filteredBaseString),
+      google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / filteredBaseString); case false => None }),
+      data = MultiSeqStore(local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / filteredBaseString)), google = projectConfig.hailCloud match { case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / filteredBaseString)); case false => None })
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.hail.log")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sampleqc.google.get / s"${filteredBaseString}.hail.log")); case false => None }
+    ),
     pruneIn = store(dirTree.dataArrayMap(arrayCfg).sampleqc.local.get / s"${filteredBaseString}.prune.in"))
 
   val prunedData = PrunedData(
@@ -530,10 +530,14 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
 
   val ref1kgData = Ref1kgData(
     plink = MultiPathPlink(base = MultiPath(local = Some(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ref1kgBaseString), google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / ref1kgBaseString); case false => None }), data = MultiSeqStore(local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ref1kgBaseString)), google = projectConfig.hailCloud match { case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / ref1kgBaseString)); case false => None })),
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.hail.log")); case false => None },
-    kgSamples = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.kgsamples.tsv"),
-    kgSamplesGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None })
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.hail.log")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.hail.log")); case false => None }
+    ),
+    kgSamples = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ref1kgBaseString}.kgsamples.tsv")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).ancestry.google.get / s"${ref1kgBaseString}.kgsamples.tsv")); case false => None }
+    ))
 
   val ancestryData = AncestryData(
     inferred = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryBaseString}.inferred.tsv"))
@@ -571,16 +575,24 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
     meansd = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.meansd.tsv"))
 
   val sexcheckData = SexcheckData(
-    sexcheck = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.tsv"),
-    sexcheckGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None },
-    problems = store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.problems.tsv"),
-    problemsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None })
+    sexcheck = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.tsv")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.tsv")); case false => None }
+    ),
+    problems = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.local.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).sexcheck.google.get / s"${sampleQcBaseString}.sexcheck.problems.tsv")); case false => None }
+    ))
 
   val sampleQcData = SampleQcData(
-    stats = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.tsv"),
-    statsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).metrics.google.get / s"${sampleQcBaseString}.stats.tsv")); case false => None },
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).metrics.google.get / s"${sampleQcBaseString}.stats.hail.log")); case false => None },
+    stats = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.tsv")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).metrics.google.get / s"${sampleQcBaseString}.stats.tsv")); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.hail.log")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).metrics.google.get / s"${sampleQcBaseString}.stats.hail.log")); case false => None }
+    ),
     statsAdj = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.stats.adj.tsv"),
     corrPlots = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.corr.pdf"),
     boxPlots = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.boxplots.pdf"),
@@ -614,25 +626,41 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   }.toMap
 
   val filterQc = FilterQc(
-    samplesExclude = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.exclude.txt"),
-    samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.google.get / s"${filterQcBaseString}.samples.exclude.txt")); case false => None },
+    samplesExclude = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.exclude.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.google.get / s"${filterQcBaseString}.samples.exclude.txt")); case false => None }
+    ),
 	samplesRestore = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.restore.tbl"))
 
   val filterPostQc = FilterPostQc(
-    samplesStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.sample.stats.tsv.bgz"),
-    samplesExclude = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.samples.exclude.txt"),
-    samplesStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.sample.stats.tsv.bgz")); case false => None },
-    samplesExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.samples.exclude.txt")); case false => None },
-    variantsStats = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variant.stats.tsv.bgz"),
-    vFilters = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variant.filters.txt"),
-    vFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variant.filters.txt")); case false => None },
-    sFilters = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.sample.filters.txt"),
-    sFiltersGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.sample.filters.txt")); case false => None },
-    variantsExclude = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variants.exclude.txt"),
-    variantsStatsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variant.stats.tsv.bgz")); case false => None },
-    variantsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variants.exclude.txt")); case false => None },
-    hailLog = store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log"),
-    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None })
+    samplesStats = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.sample.stats.tsv.bgz")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.sample.stats.tsv.bgz")); case false => None }
+    ),
+    samplesExclude = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.samples.exclude.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.samples.exclude.txt")); case false => None }
+    ),
+    variantsStats = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variant.stats.tsv.bgz")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variant.stats.tsv.bgz")); case false => None }
+    ),
+    vFilters = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variant.filters.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variant.filters.txt")); case false => None }
+    ),
+    sFilters = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.sample.filters.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.sample.filters.txt")); case false => None }
+    ),
+    variantsExclude = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.variants.exclude.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.variants.exclude.txt")); case false => None }
+    ),
+    hailLog = MultiStore(
+      local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None }
+    ))
 
   val cleanData = arrayCfg.exportCleanVcf match {
 
@@ -650,8 +678,10 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
           ),
           tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz.tbi")), google = None)
         ),
-        hailLog = store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.hail.log"),
-        hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.hail.log")); case false => None }
+        hailLog = MultiStore(
+          local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.hail.log")),
+          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.hail.log")); case false => None }
+        )
       ))
 
     case _ => None

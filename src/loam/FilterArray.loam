@@ -31,9 +31,9 @@ def FilterArray(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"${utils.image.imgTools}") {
       
-        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.vFilters}"""
-          .out(arrayStores(array).filterPostQc.vFilters)
-          .tag(s"${arrayStores(array).filterPostQc.vFilters}".split("/").last)
+        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.vFilters.local.get}"""
+          .out(arrayStores(array).filterPostQc.vFilters.local.get)
+          .tag(s"${arrayStores(array).filterPostQc.vFilters.local.get}".split("/").last)
 
       }
 
@@ -41,9 +41,9 @@ def FilterArray(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"${utils.image.imgTools}") {
       
-        cmd"""touch ${arrayStores(array).filterPostQc.vFilters}"""
-          .out(arrayStores(array).filterPostQc.vFilters)
-          .tag(s"${arrayStores(array).filterPostQc.vFilters}".split("/").last)
+        cmd"""touch ${arrayStores(array).filterPostQc.vFilters.local.get}"""
+          .out(arrayStores(array).filterPostQc.vFilters.local.get)
+          .tag(s"${arrayStores(array).filterPostQc.vFilters.local.get}".split("/").last)
 
       }
 
@@ -55,9 +55,9 @@ def FilterArray(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"${utils.image.imgTools}") {
       
-        cmd"""echo "${sFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.sFilters}"""
-          .out(arrayStores(array).filterPostQc.sFilters)
-          .tag(s"${arrayStores(array).filterPostQc.sFilters}".split("/").last)
+        cmd"""echo "${sFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.sFilters.local.get}"""
+          .out(arrayStores(array).filterPostQc.sFilters.local.get)
+          .tag(s"${arrayStores(array).filterPostQc.sFilters.local.get}".split("/").last)
       
       }
 
@@ -65,9 +65,9 @@ def FilterArray(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"${utils.image.imgTools}") {
       
-        cmd"""touch ${arrayStores(array).filterPostQc.sFilters}"""
-          .out(arrayStores(array).filterPostQc.sFilters)
-          .tag(s"${arrayStores(array).filterPostQc.sFilters}".split("/").last)
+        cmd"""touch ${arrayStores(array).filterPostQc.sFilters.local.get}"""
+          .out(arrayStores(array).filterPostQc.sFilters.local.get)
+          .tag(s"${arrayStores(array).filterPostQc.sFilters.local.get}".split("/").last)
       
       }
 
@@ -79,9 +79,9 @@ def FilterArray(array: ConfigArray): Unit = {
  
       local {
       
-        googleCopy(arrayStores(array).filterQc.samplesExclude, arrayStores(array).filterQc.samplesExcludeGoogle.get)
-        googleCopy(arrayStores(array).filterPostQc.vFilters, arrayStores(array).filterPostQc.vFiltersGoogle.get)
-        googleCopy(arrayStores(array).filterPostQc.sFilters, arrayStores(array).filterPostQc.sFiltersGoogle.get)
+        googleCopy(arrayStores(array).filterQc.samplesExclude.local.get, arrayStores(array).filterQc.samplesExclude.google.get)
+        googleCopy(arrayStores(array).filterPostQc.vFilters.local.get, arrayStores(array).filterPostQc.vFilters.google.get)
+        googleCopy(arrayStores(array).filterPostQc.sFilters.local.get, arrayStores(array).filterPostQc.sFilters.google.get)
       
       }
 
@@ -90,29 +90,29 @@ def FilterArray(array: ConfigArray): Unit = {
         hail"""${utils.python.pyHailFilter} --
           --cloud
           --reference-genome ${projectConfig.referenceGenome}
-          --hail-utils ${projectStores.hailUtilsGoogle.get}
-          --sample-filters ${arrayStores(array).filterPostQc.sFiltersGoogle.get}
-          --variant-filters ${arrayStores(array).filterPostQc.vFiltersGoogle.get}
-          --log ${arrayStores(array).filterPostQc.hailLogGoogle.get}
-          --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --samples-remove ${arrayStores(array).filterQc.samplesExcludeGoogle.get}
-          --samples-stats-out ${arrayStores(array).filterPostQc.samplesStatsGoogle.get}
-          --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExcludeGoogle.get}
-          --variants-stats-out ${arrayStores(array).filterPostQc.variantsStatsGoogle.get}
-          --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExcludeGoogle.get}"""
-          .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, arrayStores(array).filterPostQc.sFiltersGoogle.get, arrayStores(array).filterPostQc.vFiltersGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).filterQc.samplesExcludeGoogle.get)
-          .out(arrayStores(array).filterPostQc.samplesStatsGoogle.get, arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.variantsStatsGoogle.get, arrayStores(array).filterPostQc.variantsExcludeGoogle.get, arrayStores(array).filterPostQc.hailLogGoogle.get)
-          .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter.google".split("/").last)
+          --hail-utils ${projectStores.hailUtils.google.get}
+          --sample-filters ${arrayStores(array).filterPostQc.sFilters.google.get}
+          --variant-filters ${arrayStores(array).filterPostQc.vFilters.google.get}
+          --log ${arrayStores(array).filterPostQc.hailLog.google.get}
+          --mt-in ${arrayStores(array).refData.mt.google.get}
+          --samples-remove ${arrayStores(array).filterQc.samplesExclude.google.get}
+          --samples-stats-out ${arrayStores(array).filterPostQc.samplesStats.google.get}
+          --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExclude.google.get}
+          --variants-stats-out ${arrayStores(array).filterPostQc.variantsStats.google.get}
+          --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExclude.google.get}"""
+          .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, arrayStores(array).filterPostQc.sFilters.google.get, arrayStores(array).filterPostQc.vFilters.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).filterQc.samplesExclude.google.get)
+          .out(arrayStores(array).filterPostQc.samplesStats.google.get, arrayStores(array).filterPostQc.samplesExclude.google.get, arrayStores(array).filterPostQc.variantsStats.google.get, arrayStores(array).filterPostQc.variantsExclude.google.get, arrayStores(array).filterPostQc.hailLog.google.get)
+          .tag(s"${arrayStores(array).filterPostQc.hailLog.local.get}.pyHailFilter.google".split("/").last)
       
       }
       
       local {
       
-        googleCopy(arrayStores(array).filterPostQc.samplesStatsGoogle.get, arrayStores(array).filterPostQc.samplesStats)
-        googleCopy(arrayStores(array).filterPostQc.samplesExcludeGoogle.get, arrayStores(array).filterPostQc.samplesExclude)
-        googleCopy(arrayStores(array).filterPostQc.variantsStatsGoogle.get, arrayStores(array).filterPostQc.variantsStats)
-        googleCopy(arrayStores(array).filterPostQc.variantsExcludeGoogle.get, arrayStores(array).filterPostQc.variantsExclude)
-        googleCopy(arrayStores(array).filterPostQc.hailLogGoogle.get, arrayStores(array).filterPostQc.hailLog)
+        googleCopy(arrayStores(array).filterPostQc.samplesStats.google.get, arrayStores(array).filterPostQc.samplesStats.local.get)
+        googleCopy(arrayStores(array).filterPostQc.samplesExclude.google.get, arrayStores(array).filterPostQc.samplesExclude.local.get)
+        googleCopy(arrayStores(array).filterPostQc.variantsStats.google.get, arrayStores(array).filterPostQc.variantsStats.local.get)
+        googleCopy(arrayStores(array).filterPostQc.variantsExclude.google.get, arrayStores(array).filterPostQc.variantsExclude.local.get)
+        googleCopy(arrayStores(array).filterPostQc.hailLog.google.get, arrayStores(array).filterPostQc.hailLog.local.get)
       
       }
 
@@ -122,18 +122,18 @@ def FilterArray(array: ConfigArray): Unit = {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
           --reference-genome ${projectConfig.referenceGenome}
-          --sample-filters ${arrayStores(array).filterPostQc.sFilters}
-          --variant-filters ${arrayStores(array).filterPostQc.vFilters}
-          --log ${arrayStores(array).filterPostQc.hailLog}
-          --mt-in ${arrayStores(array).refData.mt.get}
-          --samples-remove ${arrayStores(array).filterQc.samplesExclude}
-          --samples-stats-out ${arrayStores(array).filterPostQc.samplesStats}
-          --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExclude}
-          --variants-stats-out ${arrayStores(array).filterPostQc.variantsStats}
-          --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExclude}"""
-          .in(arrayStores(array).refData.mt.get, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).filterPostQc.sFilters, arrayStores(array).filterPostQc.vFilters, arrayStores(array).filterQc.samplesExclude)
-          .out(arrayStores(array).filterPostQc.samplesStats, arrayStores(array).filterPostQc.samplesExclude, arrayStores(array).filterPostQc.variantsStats, arrayStores(array).filterPostQc.variantsExclude, arrayStores(array).filterPostQc.hailLog)
-          .tag(s"${arrayStores(array).filterPostQc.hailLog}.pyHailFilter".split("/").last)
+          --sample-filters ${arrayStores(array).filterPostQc.sFilters.local.get}
+          --variant-filters ${arrayStores(array).filterPostQc.vFilters.local.get}
+          --log ${arrayStores(array).filterPostQc.hailLog.local.get}
+          --mt-in ${arrayStores(array).refData.mt.local.get}
+          --samples-remove ${arrayStores(array).filterQc.samplesExclude.local.get}
+          --samples-stats-out ${arrayStores(array).filterPostQc.samplesStats.local.get}
+          --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExclude.local.get}
+          --variants-stats-out ${arrayStores(array).filterPostQc.variantsStats.local.get}
+          --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExclude.local.get}"""
+          .in(arrayStores(array).refData.mt.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).filterPostQc.sFilters.local.get, arrayStores(array).filterPostQc.vFilters.local.get, arrayStores(array).filterQc.samplesExclude.local.get)
+          .out(arrayStores(array).filterPostQc.samplesStats.local.get, arrayStores(array).filterPostQc.samplesExclude.local.get, arrayStores(array).filterPostQc.variantsStats.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get, arrayStores(array).filterPostQc.hailLog.local.get)
+          .tag(s"${arrayStores(array).filterPostQc.hailLog.local.get}.pyHailFilter".split("/").last)
 
       }
 

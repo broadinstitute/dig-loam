@@ -1,11 +1,11 @@
 import ProjectConfig._
 import Fxns._
 import DirTree._
+import Stores._
 
 final case class Known(
   data: Store,
-  hiLd: Store,
-  hiLdGoogle: Option[Store]
+  hiLd: MultiStore
 )
 
 final case class ProjectStores(
@@ -13,25 +13,18 @@ final case class ProjectStores(
   kgIds: Map[String, Store],
   humanReference: Map[String, Store],
   knownStores: Map[ConfigKnown, Known],
-  hailUtils: Option[Store],
-  hailUtilsGoogle: Option[Store],
-  regionsExclude: Store,
-  regionsExcludeGoogle: Option[Store],
+  hailUtils: MultiStore,
+  regionsExclude: MultiStore,
   genePositions: Store,
-  kgPurcellVcf: Store,
-  kgPurcellVcfGoogle: Option[Store],
-  kgSample: Store,
-  kgSampleGoogle: Option[Store],
+  kgPurcellVcf: MultiStore,
+  kgSample: MultiStore,
   fasta: Store,
   vepCacheDir: Store,
   vepPluginsDir: Store,
   dbNSFP: Store,
-  sampleFile: Store,
-  sampleFileGoogle: Option[Store],
-  phenoFile: Option[Store],
-  phenoFileGoogle: Option[Store],
-  ancestryInferred: Store,
-  ancestryInferredGoogle: Option[Store],
+  sampleFile: MultiStore,
+  phenoFile: MultiStore,
+  ancestryInferred: MultiStore,
   ancestryOutliers: Store)
 
 val projectStores = {
@@ -66,8 +59,10 @@ val projectStores = {
 
     known -> Known(
       data = store(path(checkPath(known.data))).asInput,
-      hiLd = store(path(checkPath(known.hiLd))).asInput,
-      hiLdGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
+      hiLd = MultiStore(
+        local = Some(store(path(checkPath(known.hiLd))).asInput),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
+      )
     )
 
   }.toMap
@@ -77,25 +72,39 @@ val projectStores = {
     kgIds = kgIds,
     humanReference = humanReference,
     knownStores = knownStores,
-    hailUtils = projectConfig.hailCloud match { case true => Some(store(path(checkPath(utils.python.pyHailUtils.toString()))).asInput); case false => None },
-    hailUtilsGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.base.google.get / s"${utils.python.pyHailUtils}".split("/").last)); case false => None },
-    regionsExclude = store(path(checkPath(projectConfig.regionsExclude))).asInput,
-    regionsExcludeGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None },
+    hailUtils = MultiStore(
+      local = projectConfig.hailCloud match { case true => Some(store(path(checkPath(utils.python.pyHailUtils.toString()))).asInput); case false => None },
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.base.google.get / s"${utils.python.pyHailUtils}".split("/").last)); case false => None }
+    ),
+    regionsExclude = MultiStore(
+      local = Some(store(path(checkPath(projectConfig.regionsExclude))).asInput),
+      google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
+    ),
     genePositions = store(path(checkPath(projectConfig.genePositions))).asInput,
-    kgPurcellVcf = store(path(checkPath(projectConfig.kgPurcellVcf))).asInput,
-    kgPurcellVcfGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgPurcellVcf}".split("/").last)); case false => None },
-    kgSample = store(path(checkPath(projectConfig.kgSample))).asInput,
-    kgSampleGoogle = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgSample}".split("/").last)); case false => None },
+    kgPurcellVcf = MultiStore(
+      local = Some(store(path(checkPath(projectConfig.kgPurcellVcf))).asInput),
+      google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgPurcellVcf}".split("/").last)); case false => None }
+    ),
+    kgSample = MultiStore(
+      local = Some(store(path(checkPath(projectConfig.kgSample))).asInput),
+      google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgSample}".split("/").last)); case false => None }
+    ),
     fasta = store(path(checkPath(projectConfig.fasta))).asInput,
     vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,
     vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput,
     dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
-    sampleFile = store(path(projectConfig.sampleFile)).asInput,
-    sampleFileGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None },
-    phenoFile = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) },
-    phenoFileGoogle = projectConfig.phenoFile match { case "" => None; case _ => projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None } },
-    ancestryInferred = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv"),
-    ancestryInferredGoogle = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None },
+    sampleFile = MultiStore(
+      local = Some(store(path(projectConfig.sampleFile)).asInput),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
+    ),
+    phenoFile = MultiStore(
+      local = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) },
+      google = projectConfig.phenoFile match { case "" => None; case _ => projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None } }
+    ),
+    ancestryInferred = MultiStore(
+      local = Some(store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")),
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
+    ),
     ancestryOutliers = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
   )
 

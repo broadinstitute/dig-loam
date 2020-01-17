@@ -15,30 +15,30 @@ def SampleQc(array: ConfigArray): Unit = {
 
       local {
       
-        googleCopy(projectStores.ancestryInferred, projectStores.ancestryInferredGoogle.get)
+        googleCopy(projectStores.ancestryInferred.local.get, projectStores.ancestryInferred.google.get)
       
       }
       
       google {
       
         hail"""${utils.python.pyHailSampleqc} --
-          --hail-utils ${projectStores.hailUtilsGoogle.get}
+          --hail-utils ${projectStores.hailUtils.google.get}
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --clusters-in ${projectStores.ancestryInferredGoogle.get}
-          --qc-out ${arrayStores(array).sampleQcData.statsGoogle.get}
+          --mt-in ${arrayStores(array).refData.mt.google.get}
+          --clusters-in ${projectStores.ancestryInferred.google.get}
+          --qc-out ${arrayStores(array).sampleQcData.stats.google.get}
           --cloud
-          --log ${arrayStores(array).sampleQcData.hailLogGoogle.get}"""
-          .in(projectStores.hailUtilsGoogle.get, arrayStores(array).refData.mtGoogle.get, projectStores.ancestryInferredGoogle.get)
-          .out(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.hailLogGoogle.get)
+          --log ${arrayStores(array).sampleQcData.hailLog.google.get}"""
+          .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.ancestryInferred.google.get)
+          .out(arrayStores(array).sampleQcData.stats.google.get, arrayStores(array).sampleQcData.hailLog.google.get)
           .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
       
       }
       
       local {
 
-        googleCopy(arrayStores(array).sampleQcData.statsGoogle.get, arrayStores(array).sampleQcData.stats)
-        googleCopy(arrayStores(array).sampleQcData.hailLogGoogle.get, arrayStores(array).sampleQcData.hailLog)
+        googleCopy(arrayStores(array).sampleQcData.stats.google.get, arrayStores(array).sampleQcData.stats.local.get)
+        googleCopy(arrayStores(array).sampleQcData.hailLog.google.get, arrayStores(array).sampleQcData.hailLog.local.get)
       
       }
 
@@ -48,13 +48,13 @@ def SampleQc(array: ConfigArray): Unit = {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailSampleqc}
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mt.get}
-          --clusters-in ${projectStores.ancestryInferred}
-          --qc-out ${arrayStores(array).sampleQcData.stats}
-          --log ${arrayStores(array).sampleQcData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, projectStores.ancestryInferred)
-          .out(arrayStores(array).sampleQcData.stats, arrayStores(array).sampleQcData.hailLog)
-          .tag(s"${arrayStores(array).sampleQcData.stats}".split("/").last)
+          --mt-in ${arrayStores(array).refData.mt.local.get}
+          --clusters-in ${projectStores.ancestryInferred.local.get}
+          --qc-out ${arrayStores(array).sampleQcData.stats.local.get}
+          --log ${arrayStores(array).sampleQcData.hailLog.local.get}"""
+          .in(arrayStores(array).refData.mt.local.get, projectStores.ancestryInferred.local.get)
+          .out(arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).sampleQcData.hailLog.local.get)
+          .tag(s"${arrayStores(array).sampleQcData.stats.local.get}".split("/").last)
 
       }
 
@@ -68,15 +68,15 @@ def SampleQc(array: ConfigArray): Unit = {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rCalcIstatsAdj}
-      --sampleqc-stats ${arrayStores(array).sampleQcData.stats}
-      --sample-file ${projectStores.sampleFile}
+      --sampleqc-stats ${arrayStores(array).sampleQcData.stats.local.get}
+      --sample-file ${projectStores.sampleFile.local.get}
       --iid-col ${projectConfig.sampleFileId}
       ${nSampleMetricPcs}
       ${sampleMetricCovars}
       --pca-scores ${arrayStores(array).pcaData.scores}
       --incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
       --out ${arrayStores(array).sampleQcData.statsAdj}"""
-      .in(arrayStores(array).sampleQcData.stats, arrayStores(array).pcaData.scores)
+      .in(arrayStores(array).sampleQcData.stats.local.get, projectStores.sampleFile.local.get, arrayStores(array).pcaData.scores)
       .out(arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sampleQcData.statsAdj)
       .tag(s"${arrayStores(array).sampleQcData.statsAdj}".split("/").last)
   
@@ -164,16 +164,16 @@ def SampleQc(array: ConfigArray): Unit = {
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rIstatsAdjGmmPlotMetrics}
       --ind-clu-files "${metricCluFiles.mkString(",")}"
-      --stats-unadj ${arrayStores(array).sampleQcData.stats}
+      --stats-unadj ${arrayStores(array).sampleQcData.stats.local.get}
       --stats-adj ${arrayStores(array).sampleQcData.statsAdj}
       --metric-pca-outliers ${arrayStores(array).sampleQcPcaClusterData.outliers}
       --boxplots ${arrayStores(array).sampleQcData.boxPlots}
       --discreteness ${arrayStores(array).sampleQcData.discreteness}
       --outliers-table ${arrayStores(array).sampleQcData.outliers}
       --metric-plots ${arrayStores(array).sampleQcData.metricPlots}"""
-      .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
+      .in(arrayStores(array).sampleQcMetricClusterData.map(e => e._2).map(_.clu).toSeq :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).sampleQcData.statsAdj :+ arrayStores(array).sampleQcPcaClusterData.outliers)
       .out(arrayStores(array).sampleQcData.boxPlots, arrayStores(array).sampleQcData.discreteness, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.metricPlots)
-      .tag(s"${arrayStores(array).sampleQcData.stats}.rIstatsAdjGmmPlotMetrics".split("/").last)
+      .tag(s"${arrayStores(array).sampleQcData.stats.local.get}.rIstatsAdjGmmPlotMetrics".split("/").last)
 
   }
 
@@ -229,17 +229,17 @@ def SampleQc(array: ConfigArray): Unit = {
   drmWith(imageName = s"${utils.image.imgPython2}") {
   
     cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
-      --ancestry-inferred ${projectStores.ancestryInferred}
+      --ancestry-inferred ${projectStores.ancestryInferred.local.get}
       --kinship-related ${arrayStores(array).kinshipData.kin0}
       --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
       --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
       --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
-      --sexcheck-problems ${arrayStores(array).sexcheckData.problems}
+      --sexcheck-problems ${arrayStores(array).sexcheckData.problems.local.get}
       --restore ${arrayStores(array).filterQc.samplesRestore}
-      --out ${arrayStores(array).filterQc.samplesExclude}"""
-      .in(projectStores.ancestryInferred, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems, arrayStores(array).filterQc.samplesRestore)
-      .out(arrayStores(array).filterQc.samplesExclude)
-      .tag(s"${arrayStores(array).filterQc.samplesExclude}".split("/").last)
+      --out ${arrayStores(array).filterQc.samplesExclude.local.get}"""
+      .in(projectStores.ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).filterQc.samplesRestore)
+      .out(arrayStores(array).filterQc.samplesExclude.local.get)
+      .tag(s"${arrayStores(array).filterQc.samplesExclude.local.get}".split("/").last)
   
   }
 

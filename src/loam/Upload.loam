@@ -13,41 +13,41 @@ def Upload(): Unit = {
 
     case true =>
     
-      checkURI(s"${projectStores.regionsExcludeGoogle.get.uri}") match {
+      checkURI(s"${projectStores.regionsExclude.google.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(projectStores.regionsExclude, projectStores.regionsExcludeGoogle.get)
+            googleCopy(projectStores.regionsExclude.local.get, projectStores.regionsExclude.google.get)
           }
       }
 
-      checkURI(s"${projectStores.kgPurcellVcfGoogle.get.uri}") match {
+      checkURI(s"${projectStores.kgPurcellVcf.google.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(projectStores.kgPurcellVcf, projectStores.kgPurcellVcfGoogle.get)
+            googleCopy(projectStores.kgPurcellVcf.local.get, projectStores.kgPurcellVcf.google.get)
           }
       }
       
-      checkURI(s"${projectStores.kgSampleGoogle.get.uri}") match {
+      checkURI(s"${projectStores.kgSample.google.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(projectStores.kgSample, projectStores.kgSampleGoogle.get)
+            googleCopy(projectStores.kgSample.local.get, projectStores.kgSample.google.get)
           }
       }
       
-      checkURI(s"${projectStores.sampleFileGoogle.get.uri}") match {
+      checkURI(s"${projectStores.sampleFile.google.get.uri}") match {
         case 0 => ()
         case 1 => 
           local {
-            googleCopy(projectStores.sampleFile, projectStores.sampleFileGoogle.get)
+            googleCopy(projectStores.sampleFile.local.get, projectStores.sampleFile.google.get)
           }
       }
 
-      projectStores.phenoFile match {
+      projectStores.phenoFile.local match {
         case Some(r) =>
-          projectStores.phenoFileGoogle match {
+          projectStores.phenoFile.google match {
             case Some(s) =>
               checkURI(s"${s.uri}") match {
                 case 0 => ()
@@ -61,9 +61,9 @@ def Upload(): Unit = {
         case _ => ()
       }
 
-      projectStores.hailUtils match {
+      projectStores.hailUtils.local match {
         case Some(r) =>
-          projectStores.hailUtilsGoogle match {
+          projectStores.hailUtils.google match {
             case Some(s) =>
               local {
                 googleCopy(r, s)

@@ -21,28 +21,18 @@ final case class DirTreeDataArray(
   filterPostQc: MultiPath,
   clean: MultiPath) extends Debug
 
-final case class DirTreeDataCohort(
-  base: MultiPath,
-  filter: MultiPath) extends Debug
-
 final case class DirTreeAnalysisTest(
   base: MultiPath,
-  jobs: Map[String, MultiPath]) extends Debug
+  groups: MultiPath,
+  groupsMap: scala.collection.mutable.Map[String, MultiPath]) extends Debug
 
 final case class DirTreeAnalysisModel(
   base: MultiPath,
-  base_cohort: Option[MultiPath],
-  base_meta: Option[MultiPath],
-  base_merge: Option[MultiPath],
-  merges: Map[ConfigMerge, MultiPath],
-  metas: Map[ConfigMeta, MultiPath],
-  cohorts: Map[ConfigCohort, MultiPath],
-  base_test: Option[DirTreeAnalysisTest],
-  cohort_tests: Map[ConfigCohort, DirTreeAnalysisTest]) extends Debug
+  testsMap: Map[String, DirTreeAnalysisTest]) extends Debug
 
 final case class DirTreeAnalysisPheno(
   base: MultiPath,
-  models: Map[ConfigModel, DirTreeAnalysisModel]) extends Debug
+  modelsMap: Map[ConfigModel, DirTreeAnalysisModel]) extends Debug
 
 final case class DirTree(
   base: MultiPath,
@@ -125,91 +115,28 @@ object DirTree {
 
       pheno -> DirTreeAnalysisPheno(
         base = base_pheno,
-        models = projectConfig.Models.filter(e => e.pheno == pheno.id).map { model =>
+        modelsMap = projectConfig.Models.filter(e => e.pheno == pheno.id).map { model =>
           val base_model = appendSubDir(base_pheno, model.id)
-          val base_cohort = model.design match {
-            case "strat" => Some(appendSubDir(base_model, "cohort"))
-            case _ => None
-          }
-          val base_meta = model.design match {
-            case "strat" => model.metas.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "meta")) }
-            case _ => None
-          }
-          val base_merge = model.design match {
-            case "strat" => model.merges.size match { case 0 => None; case _ => Some(appendSubDir(base_model, "merge")) }
-            case _ => None
-          }
-          val cohorts = base_cohort match {
-            case Some(s) => 
-              projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
-                cohort -> appendSubDir(s, cohort.id)
-              }.toMap
-            case None => Map[ConfigCohort, MultiPath]()
-          }
-
-          val base_test = {
-            model.design match {
-              case "full" =>
-                val base = appendSubDir(base_model, model.test)
-                Some(DirTreeAnalysisTest(
-                  base = base,
-                  jobs = (groupTests.contains(model.test), model.groupFile) match {
-                    case (true, Some(_)) =>
-                      val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
-                      groups.map { group =>
-                        group -> appendSubDir(base, group)
-                      }.toMap
-                    case _ => Map[String, MultiPath]()
-                  }
-                ))
-              case "strat" => None
-            }
-          }
-          val cohort_tests = base_cohort match {
-            case Some(s) =>
-              projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
-                val base = appendSubDir(cohorts(cohort), model.test)
-                val jobs = (groupTests.contains(model.test), model.cohortGroupFiles) match {
-                  case (true, Some(_)) =>
-                    model.cohortGroupFiles.get.contains(cohort.id) match {
-                      case true =>
-                        val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("\t")(0))
-                        groups.map { group =>
-                          group -> appendSubDir(base, group)
-                        }.toMap
-                      case false => Map[String, MultiPath]()
-                    }
-                  case _ => Map[String, MultiPath]()
-                }
-                cohort -> DirTreeAnalysisTest(
-                  base = base,
-                  jobs = jobs
-                )
-              }.toMap
-            case None => Map[ConfigCohort, DirTreeAnalysisTest]()
-          }
+          val tests_map = model.tests.map { test =>
+            val base_test = appendSubDir(base_model, test)
+            val base_groups = appendSubDir(base_test, "groups")
+            test -> DirTreeAnalysisTest(
+              base = base_test,
+              groups = base_groups,
+              groupsMap = scala.collection.mutable.Map[String, MultiPath]()
+              //groupsMap = model.groupFile match {
+              //  case Some(_) =>
+              //    val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
+              //    groups.map { group =>
+              //      group -> appendSubDir(base_groups, group)
+              //    }.toMap
+              //  case _ => scala.collection.mutable.Map[String, MultiPath]()
+              //}
+            )
+          }.toMap
           model -> DirTreeAnalysisModel(
             base = base_model,
-            base_cohort = base_cohort,
-            base_meta = base_meta,
-            base_merge = base_merge,
-            merges = base_merge match {
-              case Some(s) => 
-                projectConfig.Merges.filter(e => model.merges.get.contains(e.id)).map { merge =>
-                  merge -> appendSubDir(s, merge.id)
-                }.toMap
-              case None => Map[ConfigMerge, MultiPath]()
-            },
-            metas =  base_meta match {
-              case Some(s) => 
-                projectConfig.Metas.filter(e => model.metas.get.contains(e.id)).map { meta =>
-                  meta -> appendSubDir(s, meta.id)
-                }.toMap
-              case None => Map[ConfigMeta, MultiPath]()
-            },
-            cohorts = cohorts,
-            base_test = base_test,
-            cohort_tests = cohort_tests
+            testsMap = tests_map
           )
         }.toMap
       )

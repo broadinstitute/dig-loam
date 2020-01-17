@@ -25,9 +25,9 @@ def ExportQcData(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"${utils.image.imgTools}") {
       
-        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filteredData.variantFilters}"""
-          .out(arrayStores(array).filteredData.variantFilters)
-          .tag(s"${arrayStores(array).filteredData.variantFilters}".split("/").last)
+        cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filteredData.variantFilters.local.get}"""
+          .out(arrayStores(array).filteredData.variantFilters.local.get)
+          .tag(s"${arrayStores(array).filteredData.variantFilters.local.get}".split("/").last)
       
       }
 
@@ -35,9 +35,9 @@ def ExportQcData(array: ConfigArray): Unit = {
 
       drmWith(imageName = s"${utils.image.imgTools}") {
       
-        cmd"""touch ${arrayStores(array).filteredData.variantFilters}"""
-          .out(arrayStores(array).filteredData.variantFilters)
-          .tag(s"${arrayStores(array).filteredData.variantFilters}".split("/").last)
+        cmd"""touch ${arrayStores(array).filteredData.variantFilters.local.get}"""
+          .out(arrayStores(array).filteredData.variantFilters.local.get)
+          .tag(s"${arrayStores(array).filteredData.variantFilters.local.get}".split("/").last)
       
       }
 
@@ -61,7 +61,7 @@ def ExportQcData(array: ConfigArray): Unit = {
 
       local {
   
-        googleCopy(arrayStores(array).filteredData.variantFilters, arrayStores(array).filteredData.variantFiltersGoogle.get)
+        googleCopy(arrayStores(array).filteredData.variantFilters.local.get, arrayStores(array).filteredData.variantFilters.google.get)
   
       }
   
@@ -69,17 +69,17 @@ def ExportQcData(array: ConfigArray): Unit = {
       
         hail"""${utils.python.pyHailExportQcData} --
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mtGoogle.get}
-          --regions-exclude ${projectStores.regionsExcludeGoogle.get}
-          --variant-filters ${arrayStores(array).filteredData.variantFiltersGoogle.get}
+          --mt-in ${arrayStores(array).refData.mt.google.get}
+          --regions-exclude ${projectStores.regionsExclude.google.get}
+          --variant-filters ${arrayStores(array).filteredData.variantFilters.google.get}
           ${sampleN}
           ${sampleSeed}
-          --variants-out ${arrayStores(array).filteredData.variantMetricsGoogle.get}
+          --variants-out ${arrayStores(array).filteredData.variantMetrics.google.get}
           --plink-out ${arrayStores(array).filteredData.plink.base.google.get}
           --cloud
-          --log ${arrayStores(array).filteredData.hailLogGoogle.get}"""
-          .in(arrayStores(array).refData.mtGoogle.get, projectStores.regionsExcludeGoogle.get, arrayStores(array).filteredData.variantFiltersGoogle.get)
-          .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetricsGoogle.get :+ arrayStores(array).filteredData.hailLogGoogle.get)
+          --log ${arrayStores(array).filteredData.hailLog.google.get}"""
+          .in(arrayStores(array).refData.mt.google.get, projectStores.regionsExclude.google.get, arrayStores(array).filteredData.variantFilters.google.get)
+          .out(arrayStores(array).filteredData.plink.data.google.get :+ arrayStores(array).filteredData.variantMetrics.google.get :+ arrayStores(array).filteredData.hailLog.google.get)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       
       }
@@ -87,8 +87,8 @@ def ExportQcData(array: ConfigArray): Unit = {
       local {
   
         googleCopy(arrayStores(array).filteredData.plink.data.google.get, arrayStores(array).filteredData.plink.data.local.get)
-        googleCopy(arrayStores(array).filteredData.variantMetricsGoogle.get, arrayStores(array).filteredData.variantMetrics)
-        googleCopy(arrayStores(array).filteredData.hailLogGoogle.get, arrayStores(array).filteredData.hailLog)
+        googleCopy(arrayStores(array).filteredData.variantMetrics.google.get, arrayStores(array).filteredData.variantMetrics.local.get)
+        googleCopy(arrayStores(array).filteredData.hailLog.google.get, arrayStores(array).filteredData.hailLog.local.get)
   
       }
   
@@ -98,16 +98,16 @@ def ExportQcData(array: ConfigArray): Unit = {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailExportQcData}
           --reference-genome ${projectConfig.referenceGenome}
-          --mt-in ${arrayStores(array).refData.mt.get}
-          --regions-exclude ${projectStores.regionsExclude}
-          --variant-filters ${arrayStores(array).filteredData.variantFilters}
+          --mt-in ${arrayStores(array).refData.mt.local.get}
+          --regions-exclude ${projectStores.regionsExclude.local.get}
+          --variant-filters ${arrayStores(array).filteredData.variantFilters.local.get}
           ${sampleN}
           ${sampleSeed}
-          --variants-out ${arrayStores(array).filteredData.variantMetrics}
+          --variants-out ${arrayStores(array).filteredData.variantMetrics.local.get}
           --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
-          --log ${arrayStores(array).filteredData.hailLog}"""
-          .in(arrayStores(array).refData.mt.get, projectStores.regionsExclude, arrayStores(array).filteredData.variantFilters)
-          .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics :+ arrayStores(array).filteredData.hailLog)
+          --log ${arrayStores(array).filteredData.hailLog.local.get}"""
+          .in(arrayStores(array).refData.mt.local.get, projectStores.regionsExclude.local.get, arrayStores(array).filteredData.variantFilters.local.get)
+          .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics.local.get :+ arrayStores(array).filteredData.hailLog.local.get)
           .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
       
       }

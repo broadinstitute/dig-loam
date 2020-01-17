@@ -6,7 +6,7 @@
 import ProjectConfig._
 import ArrayStores._
 import ProjectStores._
-import AssocStores._
+import MetaStores._
 
 def CrossCohortCommonVars(configMeta: ConfigMeta): Unit = {
 
@@ -60,14 +60,14 @@ def CrossCohortPrep(configMeta: ConfigMeta, configCohort: ConfigCohort): Unit = 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
       ${utils.r.rMetaCohortSamples}
       --fam-in ${arrayStores(arrayCfg).filteredData.plink.base.local.get}.fam
-      --ancestry-in ${projectStores.ancestryInferred}
+      --ancestry-in ${projectStores.ancestryInferred.local.get}
       --ancestry-keep "${configCohort.ancestry.mkString(",")}"
-      --pheno-in ${projectStores.phenoFile.get}
+      --pheno-in ${projectStores.phenoFile.local.get}
       --iid-col ${projectConfig.phenoFileId}
       ${stratCol}
       ${stratCodes}
       --out ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ projectStores.phenoFile.get :+ projectStores.ancestryInferred)
+    .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get)
     .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
     .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
 

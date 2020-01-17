@@ -5,7 +5,7 @@ import Collections._
 import ProjectStores._
 import ArrayStores._
 import ModelStores._
-import AssocStores._
+//import AssocStores._
 
 def trackObjects(): Unit = {
 
@@ -21,6 +21,6 @@ def trackObjects(): Unit = {
   writeObject(obj = projectStores, filename = s"${dirTree.base.local.get}/cfg.projectStores")
   writeObject(obj = arrayStores, filename = s"${dirTree.base.local.get}/cfg.arrayStores")
   writeObject(obj = modelStores, filename = s"${dirTree.base.local.get}/cfg.modelStores")
-  writeObject(obj = assocStores, filename = s"${dirTree.base.local.get}/cfg.assocStores")
+  //writeObject(obj = assocStores, filename = s"${dirTree.base.local.get}/cfg.assocStores")
 
 }
