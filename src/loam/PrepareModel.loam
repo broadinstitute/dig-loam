@@ -486,7 +486,7 @@ def PrepareModel(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], con
           --cloud
           --hail-utils ${projectStores.hailUtils.google.get}
           --reference-genome ${projectConfig.referenceGenome}
-          --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStats.base.google.get}
+          --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.google.get}
           ${cohortStatsInString}
           --annotation ${arrayStores(array).refData.annotationsHt.google.get}
           --filters ${modelStores((configModel, configCohorts, configMeta)).filters.google.get}
