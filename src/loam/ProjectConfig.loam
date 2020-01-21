@@ -1233,8 +1233,8 @@ object ProjectConfig {
           case _ => ()
         }
         (design, filters) match {
-          case ("full", _) => ()
           case ("strat", Some(_)) => filterCohorts = filterCohorts ++ cohorts
+          case _ => ()
         }
         filterCohorts.size match {
           case n if n > 1 => filterCohorts = filterCohorts.distinct
