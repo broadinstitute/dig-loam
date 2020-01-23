@@ -50,6 +50,13 @@ def main(args=None):
 	print("annotate matrix table with filter table and key by locus and alleles")
 	mt = mt.annotate_rows(ls_filters = ht[mt.row_key])
 	mt = mt.key_rows_by('locus','alleles')
+
+	print("filter out rows with ls_global_exclude == 1")
+	n_all = mt.rows().count()
+	mt = mt.filter_rows(mt.ls_filters.ls_global_exclude == 0, keep = True)
+	n_post_filter = mt.rows().count()
+	print(str(n_all - n_post_filter) + " variants removed via standard filters")
+	print(str(n_post_filter) + " variants remaining for analysis")
 	
 	knockout_cohorts = [x.replace("ls_knockouts_","") for x in list(ht.row_value) if x.startswith("ls_knockouts_")]
 	if len(knockout_cohorts) > 0:

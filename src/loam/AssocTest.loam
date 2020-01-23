@@ -76,8 +76,8 @@ def AssocTest(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], config
           }
           
           val vcfString = modelStores((configModel, configCohorts, configMeta)).vcf match {
-            case Some(s) => s"""${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get.toString.split("@")(1)}"""
-            case None => s"""${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+            case Some(s) => s"""--vcf ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get.toString.split("@")(1)}"""
+            case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
           }
           
           var epactsIn = Seq(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile, modelStores((configModel, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get)
@@ -89,16 +89,16 @@ def AssocTest(configModel: ConfigModel, configCohorts: Seq[ConfigCohort], config
           drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
           
             cmd"""${utils.bash.shEpacts}
-              ${utils.binary.binEpacts}
-              group
+              --bin ${utils.binary.binEpacts}
+              --type group
               ${vcfString}
-              ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile}
-              ${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}
-              ${modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get}
-              ${test.replace("epacts.","")}
-              "DS"
-              ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results}
-              1"""
+              --groupf ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).groupFile}
+              --ped ${modelStores((configModel, configCohorts, configMeta)).pedEpacts.get}
+              --vars ${modelStores((configModel, configCohorts, configMeta)).modelVarsEpacts.get}
+              --test ${test.replace("epacts.","")}
+              --field "DS"
+              --out ${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results}
+              --run 1"""
               .in(epactsIn)
               .out(modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results)
               .tag(s"${modelStores((configModel, configCohorts, configMeta)).assoc.base(test).groups(groupid).results}".split("/").last)

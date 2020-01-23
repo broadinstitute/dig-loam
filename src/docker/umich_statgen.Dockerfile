@@ -13,6 +13,7 @@ RUN set -x && \
         groff \
         help2man \
         lsb-release \
+		locales \
         python \
         python-pip \
         r-base \
@@ -24,6 +25,12 @@ RUN set -x && \
     pip install cget
 
 WORKDIR /work
+
+# Set the locale
+RUN sed -i -e 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen && locale-gen
+ENV LANG=en_US.UTF-8  
+ENV LANGUAGE=en_US:en  
+ENV LC_ALL=en_US.UTF-8     
 
 # install epacts
 RUN wget https://github.com/statgen/EPACTS/archive/v3.3.2.tar.gz && \
