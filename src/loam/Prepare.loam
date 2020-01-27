@@ -73,7 +73,7 @@ def Prepare(array: String): Unit = {
       ${arrayStores(array).rawData.dupVarsBase}
       ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
       .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.dupVarsData :+ arrayStores(array).rawData.dupVarsFreq :+ arrayStores(array).rawData.dupVarsImiss :+ arrayStores(array).rawData.dupVarsLmiss)
+      .out(arrayStores(array).rawData.dupVarsData :+ arrayStores(array).rawData.dupVars :+ arrayStores(array).rawData.dupVarsFreq :+ arrayStores(array).rawData.dupVarsImiss :+ arrayStores(array).rawData.dupVarsLmiss)
       .tag(s"${arrayStores(array).rawData.dupVarsBase}.shFindDuplicateVariants".split("/").last)
 
   }
