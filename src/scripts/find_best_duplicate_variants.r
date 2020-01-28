@@ -10,21 +10,6 @@ args<-parser$parse_args()
 print(args)
 
 print("read in bim file")
-y<-try(read.table(args$genes,header=F,as.is=T,sep="\t",comment.char=""), silent=TRUE)
-if(! inherits(y, "try-error")) {
-	names(y)[1]<-"gene"
-	if(grepl("#",args$chr )) {
-		names(y)[2]<-gsub("#","X.",args$chr)
-	} else {
-		names(y)[2]<-args$chr
-	}
-	names(y)[3]<-args$pos
-	x<-merge(x,y,all=T)
-	x$gene[is.na(x$gene)]<-"NA"
-} else {
-	x$gene<-NA
-}
-
 dat<-try(read.table(args$bim_in,header=F,as.is=T,stringsAsFactors=F), silent=TRUE)
 if(! inherits(dat, "try-error")) {
 	names(dat)[1]<-"CHR"
