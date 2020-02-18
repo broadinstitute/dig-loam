@@ -1,0 +1,683 @@
+/**
+ * Prepare Model Cohorts
+ * 
+ */
+import ProjectConfig._
+import ArrayStores._
+import ProjectStores._
+import SchemaStores._
+import MetaStores._
+import Fxns._
+
+final case class CfgException(s: String) extends Exception(s)
+
+def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+
+  val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+  
+  val stratStrings = {
+    for {
+      cohort <- configCohorts
+    } yield {
+      var s = "--strat " + cohort.id + " " + cohort.ancestry.mkString(",")
+      cohort.stratCol match {
+        case Some(a) => s = s + " " + a
+        case None => s = s + " " + """"N/A""""
+      }
+      cohort.stratCodes match {
+        case Some(a) => s = s + " " + a.mkString(",")
+        case None => s = s + " " + """"N/A""""
+      }
+      s
+    }
+  }
+  
+  val modelCohortSamplesAvailableIn = configMeta match {
+    case Some(s) => 
+      val x = for {
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
+      } yield {
+        schemaStores((configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
+      }
+      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
+    case None =>
+      arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
+  }
+  
+  drmWith(imageName = s"${utils.image.imgR}") {
+
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rSchemaCohortSamplesAvailable}
+      --pheno-in ${projectStores.phenoFile.local.get}
+      --fam-in ${arrayStores(array).filteredData.plink.base.local.get}.fam
+      --ancestry-in ${projectStores.ancestryInferred.local.get}
+      ${stratStrings.mkString(" ")}
+      --iid-col ${projectConfig.phenoFileId}
+      --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude.local.get}
+      --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude.local.get}
+      --out-id-map ${schemaStores((configSchema, configCohorts, configMeta)).sampleMap}
+      --out-cohorts-map ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get}
+      --out ${schemaStores((configSchema, configCohorts, configMeta)).samplesAvailable}
+      > ${schemaStores((configSchema, configCohorts, configMeta)).samplesAvailableLog}"""
+      .in(arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get)
+      .out(schemaStores((configSchema, configCohorts, configMeta)).sampleMap, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get, schemaStores((configSchema, configCohorts, configMeta)).samplesAvailable, schemaStores((configSchema, configCohorts, configMeta)).samplesAvailableLog)
+      .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).samplesAvailable}".split("/").last)
+  
+  }
+  
+  var filters = Seq[String]()
+  var cohortFilters = Seq[String]()
+  var knockoutFilters = Seq[String]()
+  var masks = Seq[String]()
+  var filterFields = Seq[String]()
+  configSchema.filters match {
+    case Some(l) =>
+      filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
+      filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
+    case None => ()
+  }
+  (configSchema.design, configSchema.cohortFilters) match {
+    case ("full", Some(l)) =>
+      for {
+        cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+      } yield {
+        cohortFilters = cohortFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+      }
+    case ("strat", Some(l)) =>
+      for {
+        cf <- l if configCohorts.head.id == cf.cohort
+      } yield {
+        filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters)
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+      }
+    case _ => ()
+  }
+  (configSchema.design, configSchema.knockoutFilters) match {
+    case ("full", Some(l)) =>
+      for {
+        cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+      } yield {
+        knockoutFilters = knockoutFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+      }
+    case _ => ()
+  }
+  configSchema.masks match {
+    case Some(l) =>
+      for {
+        mf <- l
+      } yield {
+        masks = masks ++ variantFiltersToPrintableList(cfg = projectConfig, filters = mf.filters, id = Some(mf.id))
+        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
+      }
+    case None => ()
+  }
+  
+  val fString = filters.size match {
+  
+    case n if n > 0 => s"""echo "${filters.mkString("\n")}" > """
+    case _ => "touch "
+  
+  }
+  
+  drmWith(imageName = s"${utils.image.imgTools}") {
+  
+    cmd"""${fString} ${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}"""
+      .out(schemaStores((configSchema, configCohorts, configMeta)).filters.local.get)
+      .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}".split("/").last)
+  
+  }
+  
+  schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local match {
+  
+    case Some(_) =>
+  
+      val cfString = cohortFilters.size match {
+      
+        case n if n > 0 => s"""echo "${cohortFilters.mkString("\n")}" > """
+        case _ => "touch "
+      
+      }
+      
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""${cfString} ${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get}"""
+          .out(schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get)
+          .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get}".split("/").last)
+      
+      }
+  
+    case None => ()
+  
+  }
+  
+  schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local match {
+  
+    case Some(_) =>
+  
+      val kfString = knockoutFilters.size match {
+      
+        case n if n > 0 => s"""echo "${knockoutFilters.mkString("\n")}" > """
+        case _ => "touch "
+      
+      }
+      
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""${kfString} ${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get}"""
+          .out(schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get)
+          .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get}".split("/").last)
+      
+      }
+  
+    case None => ()
+  
+  }
+  
+  val mString = masks.size match {
+  
+    case n if n > 0 => s"""echo "${masks.mkString("\n")}" > """
+    case _ => "touch "
+  
+  }
+  
+  drmWith(imageName = s"${utils.image.imgTools}") {
+  
+    cmd"""${mString} ${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}"""
+      .out(schemaStores((configSchema, configCohorts, configMeta)).masks.local.get)
+      .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}".split("/").last)
+  
+  }
+  
+  projectConfig.hailCloud match {
+  
+    case true =>
+  
+      local {
+
+        googleCopy(schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get)
+      
+      }
+      
+      googleWith(projectConfig.cloudResources.mtCluster) {
+      
+        hail"""${utils.python.pyHailSchemaVariantStats} --
+          --hail-utils ${projectStores.hailUtils.google.get}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.google.get}
+          --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get}
+          --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.google.get}
+          --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.google.get}
+          --cloud
+          --log ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.google.get}"""
+            .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get)
+            .out(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.google.get)
+            .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get}.google".split("/").last)
+      
+      }
+      
+      local {
+      
+        googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get)
+        googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.local.get)
+      
+      }
+  
+    case false =>
+  
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+      
+        cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
+          --reference-genome ${projectConfig.referenceGenome}
+          --mt-in ${arrayStores(array).refData.mt.local.get}
+          --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get}
+          --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get}
+          --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.local.get}
+          --log ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.local.get}"""
+            .in(arrayStores(array).refData.mt.local.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get)
+            .out(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.local.get)
+            .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get}".split("/").last)
+      
+      }
+  
+  }
+  
+  (configSchema.design, configSchema.filterCohorts.size) match {
+  
+    case ("full", n) if n > 0 =>
+      
+      for {
+      
+        cohort <- configCohorts if configSchema.filterCohorts.contains(cohort.id)
+      
+      } yield {
+      
+        projectConfig.hailCloud match {
+        
+          case true =>
+        
+            googleWith(projectConfig.cloudResources.mtCluster) {
+          
+              hail"""${utils.python.pyHailSchemaVariantStats} --
+                --hail-utils ${projectStores.hailUtils.google.get}
+                --reference-genome ${projectConfig.referenceGenome}
+                --mt-in ${arrayStores(array).refData.mt.google.get}
+                --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get}
+                --cohort ${cohort.id}
+                --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).google.get}
+                --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts(cohort).google.get}
+                --cloud
+                --log ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).google.get}"""
+                  .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get)
+                  .out(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).google.get)
+                  .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).local.get}.google".split("/").last)
+            
+            }
+            
+            local {
+            
+              googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).local.get)
+              googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).local.get)
+            
+            }
+      
+          case false =>
+          
+            drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+            
+                cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
+                  --reference-genome ${projectConfig.referenceGenome}
+                  --mt-in ${arrayStores(array).refData.mt.local.get}
+                  --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get}
+                  --cohort ${cohort.id}
+                  --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).local.get}
+                  --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts(cohort).local.get}
+                  --log ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).local.get}"""
+                    .in(arrayStores(array).refData.mt.local.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get)
+                    .out(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).local.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts(cohort).local.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).local.get)
+                    .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).local.get}".split("/").last)
+              
+            }
+      
+        }
+      
+      }
+  
+    case _ => ()
+  
+  }
+  
+  //projectConfig.hailCloud match {
+  //
+  //  case true =>
+  //
+  //    local {
+  //
+  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).filters.local.get, modelStores((configModel, configCohorts, configMeta)).filters.google.get)
+  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).masks.local.get, modelStores((configModel, configCohorts, configMeta)).masks.google.get)
+  //
+  //    }
+  //
+  //    configModel.design match {
+  //
+  //      case "full" =>
+  //
+  //        local {
+  //
+  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortFilters.local.get, modelStores((configModel, configCohorts, configMeta)).cohortFilters.google.get)
+  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).knockoutFilters.local.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.google.get)
+  //
+  //        }
+  //
+  //      case _ => ()
+  //
+  //    }
+  //
+  //    val cohortStatsInString = {
+  //      modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //        case n if n > 0 =>
+  //          val x = "--cohort-stats-in"
+  //          val y = for {
+  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //          } yield {
+  //            s"""${k.id},${v.google.get.toString.split("@")(1)}"""
+  //          }
+  //          x + " " + y.mkString(" ")
+  //        case _ => ""
+  //      }
+  //    }
+  //
+  //    val cohortFiltersInString = configModel.design match {
+  //      case "full" => s"""--cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFilters.google.get.toString.split("@")(1)}"""
+  //      case _ => ""
+  //    }
+  //
+  //    val knockoutFiltersInString = configModel.design match {
+  //      case "full" => s"""--knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters.google.get.toString.split("@")(1)}"""
+  //      case _ => ""
+  //    }
+  //
+  //    var cohortStatsIn = Seq(projectStores.hailUtils.google.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.google.get, arrayStores(array).refData.annotationsHt.google.get, modelStores((configModel, configCohorts, configMeta)).filters.google.get, modelStores((configModel, configCohorts, configMeta)).masks.google.get, arrayStores(array).filterPostQc.variantsExclude.google.get)
+  //    
+  //    modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //      case n if n > 0 =>
+  //        cohortStatsIn = cohortStatsIn ++ {
+  //          for {
+  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //          } yield {
+  //            v.google.get
+  //          }
+  //        }
+  //      case _ => ()
+  //    }
+  //    
+  //    configModel.design match {
+  //        case "full" => cohortStatsIn = cohortStatsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).cohortFilters.google.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.google.get)
+  //        case _ => ()
+  //    }
+  //    
+  //    googleWith(projectConfig.cloudResources.mtCluster) {
+  //    
+  //      hail"""${utils.python.pyHailFilterModelVariants} --
+  //        --cloud
+  //        --hail-utils ${projectStores.hailUtils.google.get}
+  //        --reference-genome ${projectConfig.referenceGenome}
+  //        --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.google.get}
+  //        ${cohortStatsInString}
+  //        --annotation ${arrayStores(array).refData.annotationsHt.google.get}
+  //        --filters ${modelStores((configModel, configCohorts, configMeta)).filters.google.get}
+  //        ${cohortFiltersInString}
+  //        ${knockoutFiltersInString}
+  //        --masks ${modelStores((configModel, configCohorts, configMeta)).masks.google.get}
+  //        --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.google.get}
+  //        --design ${configModel.design}
+  //        --variant-filters-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.google.get}
+  //        --ht-checkpoint ${modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.google.get}
+  //        --variant-filters-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get}
+  //        --log ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.google.get}"""
+  //          .in(cohortStatsIn)
+  //          .out(modelStores((configModel, configCohorts, configMeta)).variantFilterTable.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.google.get)
+  //          .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get}.google".split("/").last)
+  //    
+  //    }
+  //    
+  //    local {
+  //    
+  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterTable.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get)
+  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.local.get)
+  //    
+  //    }
+  //
+  //  case false =>
+  //
+  //    val cohortStatsInString = {
+  //      modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //        case n if n > 0 =>
+  //          val x = "--cohort-stats-in"
+  //          val y = for {
+  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //          } yield {
+  //            s"""${k.id},${v.local.get.toString.split("@")(1)}"""
+  //          }
+  //          x + " " + y.mkString(" ")
+  //        case _ => ""
+  //      }
+  //    }
+  //    
+  //    val cohortFiltersInString = configModel.design match {
+  //      case "full" => s"""--cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFilters.local.get.toString.split("@")(1)}"""
+  //      case _ => ""
+  //    }
+  //    
+  //    val knockoutFiltersInString = configModel.design match {
+  //      case "full" => s"""--knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters.local.get.toString.split("@")(1)}"""
+  //      case _ => ""
+  //    }
+  //    
+  //    var cohortStatsIn = Seq(modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.local.get, arrayStores(array).refData.annotationsHt.local.get, modelStores((configModel, configCohorts, configMeta)).filters.local.get, modelStores((configModel, configCohorts, configMeta)).masks.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get)
+  //    
+  //    modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //      case n if n > 0 =>
+  //        cohortStatsIn = cohortStatsIn ++ {
+  //          for {
+  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //          } yield {
+  //            v.local.get
+  //          }
+  //        }
+  //      case _ => ()
+  //    }
+  //    
+  //    configModel.design match {
+  //      case "full" => cohortStatsIn = cohortStatsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).cohortFilters.local.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.local.get)
+  //      case _ => ()
+  //    }
+  //    
+  //    drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+  //    
+  //      cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterModelVariants}
+  //        --reference-genome ${projectConfig.referenceGenome}
+  //        --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.local.get}
+  //        ${cohortStatsInString}
+  //        --annotation ${arrayStores(array).refData.annotationsHt.local.get}
+  //        --filters ${modelStores((configModel, configCohorts, configMeta)).filters.local.get}
+  //        ${cohortFiltersInString}
+  //        ${knockoutFiltersInString}
+  //        --masks ${modelStores((configModel, configCohorts, configMeta)).masks.local.get}
+  //        --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.local.get}
+  //        --design ${configModel.design}
+  //        --variant-filters-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get}
+  //        --ht-checkpoint ${modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.local.get}
+  //        --variant-filters-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get}
+  //        --log ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.local.get}"""
+  //          .in(cohortStatsIn)
+  //          .out(modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.local.get)
+  //          .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get}".split("/").last)
+  //    
+  //    }
+  //
+  //}
+  //
+  //groupTests.intersect(configModel.tests).size match {
+  //
+  //  case n if n > 0 =>
+  //
+  //    projectConfig.hailCloud match {
+  //    
+  //      case true =>
+  //
+  //        val maskedGroupFilesString = {
+  //          modelStores((configModel, configCohorts, configMeta)).groupFile match {
+  //            case Some(s) =>
+  //              modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks.size match {
+  //                case n if n > 0 =>
+  //                  val x = "--masked-groupfiles-out"
+  //                  val y = for {
+  //                    (k, v) <- modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks
+  //                  } yield {
+  //                    s"""${k.id},${v.google.get.toString.split("@")(1)}"""
+  //                  }
+  //                  x + " " + y.mkString(" ")
+  //                case _ => ""
+  //              }
+  //            case None => ""
+  //          }
+  //        }
+  //
+  //        var generateGroupfileOut = Seq(modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.google.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get.google.get)
+  //
+  //        modelStores((configModel, configCohorts, configMeta)).groupFile match {
+  //          case Some(s) =>
+  //            modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks.size match {
+  //                case n if n > 0 =>
+  //                  generateGroupfileOut = generateGroupfileOut ++ {
+  //                    for {
+  //                      (k, v) <- modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks
+  //                    } yield {
+  //                      v.google.get
+  //                    }
+  //                  }
+  //                case _ => ()
+  //            }
+  //          case None => ()
+  //        }
+  //
+  //        googleWith(projectConfig.cloudResources.mtCluster) {
+  //        
+  //          hail"""${utils.python.pyHailGenerateGroupfile} --
+  //            --cloud
+  //            --hail-utils ${projectStores.hailUtils.google.get}
+  //            ${maskedGroupFilesString}
+  //            --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get}
+  //            --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.google.get}
+  //            --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get.google.get}"""
+  //            .in(projectStores.hailUtils.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get)
+  //            .out(generateGroupfileOut)
+  //            .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.local.get}.google".split("/").last)
+  //  
+  //        }
+  //
+  //        local {
+  //        
+  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.google.get, modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.local.get)
+  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get.google.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get.local.get)
+  //        
+  //        }
+  //        
+  //        modelStores((configModel, configCohorts, configMeta)).groupFile match {
+  //          case Some(s) =>
+  //            modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks.size match {
+  //              case n if n > 0 =>
+  //                for {
+  //                  (k, v) <- modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks
+  //                } yield {
+  //                  local {
+  //                    googleCopy(v.google.get, v.local.get)
+  //                  }
+  //                }
+  //              case _ => ()
+  //            }
+  //          case None => ()
+  //        }
+  //
+  //      case false =>
+  //
+  //        val maskedGroupFilesString = {
+  //          modelStores((configModel, configCohorts, configMeta)).groupFile match {
+  //            case Some(s) =>
+  //              modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks.size match {
+  //                case n if n > 0 =>
+  //                  val x = "--masked-groupfiles-out"
+  //                  val y = for {
+  //                    (k, v) <- modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks
+  //                  } yield {
+  //                    s"""${k.id},${v.local.get.toString.split("@")(1)}"""
+  //                  }
+  //                  x + " " + y.mkString(" ")
+  //                case _ => ""
+  //              }
+  //            case None => ""
+  //          }
+  //        }
+  //        
+  //        var generateGroupfileOut = Seq(modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.local.get, modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get.local.get)
+  //        
+  //        modelStores((configModel, configCohorts, configMeta)).groupFile match {
+  //          case Some(s) =>
+  //            modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks.size match {
+  //              case n if n > 0 =>
+  //                generateGroupfileOut = generateGroupfileOut ++ {
+  //                  for {
+  //                    (k, v) <- modelStores((configModel, configCohorts, configMeta)).groupFile.get.masks
+  //                  } yield {
+  //                    v.local.get
+  //                  }
+  //                }
+  //              case _ => ()
+  //            }
+  //          case None => ()
+  //        }
+  //        
+  //        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+  //        
+  //          cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
+  //            ${maskedGroupFilesString}
+  //            --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get}
+  //            --groupfile-out ${modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.local.get}
+  //            --log ${modelStores((configModel, configCohorts, configMeta)).groupFileHailLog.get.local.get}"""
+  //            .in(modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get)
+  //            .out(generateGroupfileOut)
+  //            .tag(s"${modelStores((configModel, configCohorts, configMeta)).groupFile.get.base.local.get}".split("/").last)
+  //        
+  //        }
+  //  
+  //    }
+  //
+  //  case _ => ()
+  //
+  //}
+  //
+  //modelStores((configModel, configCohorts, configMeta)).vcf match {
+  //
+  //  case Some(s) =>
+  //
+  //    projectConfig.hailCloud match {
+  //    
+  //      case true =>
+  //
+  //        googleWith(projectConfig.cloudResources.mtCluster) {
+  //        
+  //          hail"""${utils.python.pyHailGenerateModelVcf} --
+  //            --cloud
+  //            --hail-utils ${projectStores.hailUtils.google.get}
+  //            --mt-in ${arrayStores(array).refData.mt.google.get}
+  //            --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap.google.get}
+  //            --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get}
+  //            --vcf-out ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get}
+  //            --log ${modelStores((configModel, configCohorts, configMeta)).vcfHailLog.google.get}"""
+  //            .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, modelStores((configModel, configCohorts, configMeta)).cohortMap.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get)
+  //            .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLog.google.get)
+  //            .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}.google".split("/").last)
+  //  
+  //        }
+  //
+  //        local {
+  //
+  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.google.get, modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
+  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).vcfHailLog.google.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLog.local.get)
+  //
+  //        }
+  //
+  //      case false =>
+  //
+  //        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+  //        
+  //          cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
+  //            --mt-in ${arrayStores(array).refData.mt.local.get}
+  //            --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap.local.get}
+  //            --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get}
+  //            --vcf-out ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}
+  //            --log ${modelStores((configModel, configCohorts, configMeta)).vcfHailLog.local.get}"""
+  //            .in(arrayStores(array).refData.mt.local.get, modelStores((configModel, configCohorts, configMeta)).cohortMap.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get)
+  //            .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get, modelStores((configModel, configCohorts, configMeta)).vcfHailLog.local.get)
+  //            .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}".split("/").last)
+  //  
+  //        }
+  //
+  //    }
+  //
+  //    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.tabix.maxRunTime) {
+  //
+  //      cmd"""${utils.binary.binTabix} -p vcf ${modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get}"""
+  //        .in(modelStores((configModel, configCohorts, configMeta)).vcf.get.data.local.get)
+  //        .out(modelStores((configModel, configCohorts, configMeta)).vcf.get.tbi.local.get)
+  //        .tag(s"${modelStores((configModel, configCohorts, configMeta)).vcf.get.tbi.local.get}".split("/").last)
+  //    
+  //    }
+  //
+  //  case None => ()
+  //
+  //}
+
+}

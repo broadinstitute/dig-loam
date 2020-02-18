@@ -107,7 +107,7 @@ def Load(array: ConfigArray): Unit = {
         case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
       }
 
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.loadHail.cpus, mem = projectConfig.resources.loadHail.mem, maxRunTime = projectConfig.resources.loadHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailLoad}
           --reference-genome ${projectConfig.referenceGenome}

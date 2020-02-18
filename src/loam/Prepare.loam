@@ -14,9 +14,9 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
     case (m,n) if inputTypesGwasVcf.contains((m,n)) =>
 
-      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
       
-        cmd"""${utils.binary.binPlink} --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data.local.get} --allow-no-sex --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+        cmd"""${utils.binary.binPlink} --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data.local.get} --allow-no-sex --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
           .in(arrayStores(arrayCfg).rawData.vcf.get.data.local.get)
           .out(arrayStores(arrayCfg).rawData.plink.get.data)
           .tag(s"${arrayStores(arrayCfg).rawData.vcf.get.base.local.get}.convert_to_plink".split("/").last)
@@ -46,9 +46,9 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
   
   }
   
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --missing --out ${arrayStores(arrayCfg).rawData.rawBase.get}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --missing --out ${arrayStores(arrayCfg).rawData.rawBase.get}.missing --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
       .out(arrayStores(arrayCfg).rawData.lmiss.get, arrayStores(arrayCfg).rawData.imiss.get)
       .tag(s"${arrayStores(arrayCfg).rawData.plink.get.base}.missing".split("/").last)
@@ -64,9 +64,9 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
   
   }
   
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --freq --out ${arrayStores(arrayCfg).rawData.rawBase.get}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).rawData.plink.get.base} --allow-no-sex --freq --out ${arrayStores(arrayCfg).rawData.rawBase.get}.freq --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
       .out(arrayStores(arrayCfg).rawData.freq.get)
       .tag(s"${arrayStores(arrayCfg).rawData.plink.get.base}.freq".split("/").last)
@@ -91,7 +91,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
     cmd"""${utils.bash.shFindPossibleDuplicateVariants}
       ${utils.binary.binPlink}
@@ -101,7 +101,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
       ${arrayStores(arrayCfg).rawData.possDupPlink.get.base}
       ${arrayStores(arrayCfg).rawData.possDupBase.get}.freq
       ${arrayStores(arrayCfg).rawData.possDupBase.get}.missing
-      ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}
+      ${projectConfig.resources.standardPlink.mem * 0.9 * 1000}
       """
       .in(arrayStores(arrayCfg).rawData.plink.get.data)
       .out(arrayStores(arrayCfg).rawData.possDupPlink.get.data :+ arrayStores(arrayCfg).rawData.possDupVars.get :+ arrayStores(arrayCfg).rawData.possDupFreq.get :+ arrayStores(arrayCfg).rawData.possDupLmiss.get)
@@ -109,7 +109,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.prepareFindBestDuplicateVariants.cpus, mem = projectConfig.resources.prepareFindBestDuplicateVariants.mem, maxRunTime = projectConfig.resources.prepareFindBestDuplicateVariants.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.standardR.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
   
     cmd"""${utils.binary.binRscript} --vanilla --verbose 
       ${utils.r.rFindBestDuplicateVariants}
@@ -123,9 +123,9 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
 
   }
   
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
-    cmd"""${utils.bash.shPlinkPrepare} ${utils.binary.binPlink} ${arrayStores(arrayCfg).rawData.plink.get.base} ${arrayStores(arrayCfg).preparedData.get.plink.base} ${arrayStores(arrayCfg).rawData.imissRemove.get} ${arrayStores(arrayCfg).rawData.dupVarsRemove.get} ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}"""
+    cmd"""${utils.bash.shPlinkPrepare} ${utils.binary.binPlink} ${arrayStores(arrayCfg).rawData.plink.get.base} ${arrayStores(arrayCfg).preparedData.get.plink.base} ${arrayStores(arrayCfg).rawData.imissRemove.get} ${arrayStores(arrayCfg).rawData.dupVarsRemove.get} ${projectConfig.resources.standardPlink.mem * 0.9 * 1000}"""
       .in(arrayStores(arrayCfg).rawData.plink.get.data :+ arrayStores(arrayCfg).rawData.imissRemove.get :+ arrayStores(arrayCfg).rawData.dupVarsRemove.get)
       .out(arrayStores(arrayCfg).preparedData.get.plink.data)
       .tag(s"${arrayStores(arrayCfg).preparedData.get.plink.base}".split("/").last)
@@ -153,7 +153,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
       
       }
       
-      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.prepareLiftOver.cpus, mem = projectConfig.resources.prepareLiftOver.mem, maxRunTime = projectConfig.resources.prepareLiftOver.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.liftOver.cpus, mem = projectConfig.resources.liftOver.mem, maxRunTime = projectConfig.resources.liftOver.maxRunTime) {
       
         cmd"""${utils.binary.binLiftOver} ${arrayStores(arrayCfg).preparedData.get.bed.get} ${arrayStores(arrayCfg).preparedData.get.chain.get} ${arrayStores(arrayCfg).preparedData.get.lifted.get} ${arrayStores(arrayCfg).preparedData.get.unlifted.get}"""
           .in(arrayStores(arrayCfg).preparedData.get.bed.get, arrayStores(arrayCfg).preparedData.get.chain.get)
@@ -173,7 +173,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
   
       }
   
-      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
       
         cmd"""${utils.binary.binPlink}
           --bfile ${arrayStores(arrayCfg).preparedData.get.plink.base}
@@ -184,7 +184,7 @@ def Prepare(arrayCfg: ConfigArray): Unit = {
           --output-chr MT
           --make-bed
           --out ${arrayStores(arrayCfg).annotatedData.get.plink.base}
-          --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}
+          --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000}
           --seed 1"""
           .in(arrayStores(arrayCfg).preparedData.get.plink.data :+ arrayStores(arrayCfg).preparedData.get.liftedExtract.get :+ arrayStores(arrayCfg).preparedData.get.liftedUpdate.get)
           .out(arrayStores(arrayCfg).annotatedData.get.plink.data)

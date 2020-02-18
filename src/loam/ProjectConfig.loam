@@ -122,39 +122,20 @@ final case class ConfigCloudResources(
   variantHtCluster: ClusterConfig) extends Debug
 
 final case class ConfigResources(
-  preparePlink: ConfigMachine,
-  prepareFindBestDuplicateVariants: ConfigMachine,
-  prepareLiftOver: ConfigMachine,
-  harmonizePlinkFull: ConfigMachine,
-  harmonizeGenotypeHarmonizer: ConfigMachine,
-  harmonizeAlignNon1kgVariants: ConfigMachine,
-  harmonizePlinkChr: ConfigMachine,
-  loadHail: ConfigMachine,
-  filterHail: ConfigMachine,
-  prunePlink: ConfigMachine,
-  annotate: ConfigMachine,
-  annotateHailLoad: ConfigMachine,
-  kinshipKing: ConfigMachine,
-  ancestryPcaHail: ConfigMachine,
-  ancestryPcaPlink: ConfigMachine,
-  ancestryPcaFlashPca: ConfigMachine,
-  ancestryClusterKlustakwik: ConfigMachine,
-  pca: ConfigMachine,
-  sampleQcHail: ConfigMachine,
-  sampleQcKlustakwikPca: ConfigMachine,
-  sampleQcKlustakwikMetric: ConfigMachine,
-  filterFinalHail: ConfigMachine,
-  exportCleanHail: ConfigMachine,
-  tabixClean: ConfigMachine,
-  filterImputePlink: ConfigMachine,
-  filterModelVariantsHail: ConfigMachine,
-  variantAssocHailAssoc: ConfigMachine,
-  generatePheno: ConfigMachine,
-  crossCohortPrepPlink: ConfigMachine,
-  crossCohortKinshipPlink: ConfigMachine,
-  crossCohortKinshipKing: ConfigMachine,
-  metaAnalysisHail: ConfigMachine,
-  mergeAssocHail: ConfigMachine) extends Debug
+  matrixTableHail: ConfigMachine,
+  tableHail: ConfigMachine,
+  standardPlink: ConfigMachine,
+  highMemPlink: ConfigMachine,
+  standardR: ConfigMachine,
+  highMemR: ConfigMachine,
+  flashPca: ConfigMachine,
+  liftOver: ConfigMachine,
+  genotypeHarmonizer: ConfigMachine,
+  standardPython: ConfigMachine,
+  vep: ConfigMachine,
+  king: ConfigMachine,
+  klustakwik: ConfigMachine,
+  tabix: ConfigMachine) extends Debug
 
 final case class ConfigArray(
   id: String,
@@ -229,25 +210,30 @@ final case class CohortGroupFile(
   cohort: String,
   groupFile: String) extends Debug
 
-final case class ConfigModel(
+final case class ConfigSchema(
   id: String,
-  pheno: String,
-  unrelatedOnly: Boolean,
-  trans: Option[String],
-  tests: Seq[String],
-  assocPlatforms: Seq[String],
-  covars: String,
   design: String,
   cohorts: Seq[String],
+  samplesKeep: Option[String],
+  samplesExclude: Option[String],
   metas: Option[Seq[String]],
   merges: Option[Seq[String]],
   filters: Option[Seq[String]],
-  maxPcaOutlierIterations: Int,
   cohortFilters: Option[Seq[CohortFilter]],
   knockoutFilters: Option[Seq[CohortFilter]],
   masks: Option[Seq[MaskFilter]],
-  knowns: Option[Seq[String]],
   filterCohorts: Seq[String]) extends Debug
+
+final case class ConfigModel(
+  id: String,
+  schema: String,
+  pheno: String,
+  trans: Option[String],
+  tests: Seq[String],
+  assocPlatforms: Seq[String],
+  maxPcaOutlierIterations: Int,
+  covars: String,
+  knowns: Option[Seq[String]]) extends Debug
 
 final case class ConfigSection(
   id: String,
@@ -322,9 +308,10 @@ final case class ProjectConfig(
   Cohorts: Seq[ConfigCohort],
   Metas: Seq[ConfigMeta],
   Merges: Seq[ConfigMerge],
-  Phenos: Seq[ConfigPheno],
-  Models: Seq[ConfigModel],
   Knowns: Seq[ConfigKnown],
+  Phenos: Seq[ConfigPheno],
+  Schemas: Seq[ConfigSchema],
+  Models: Seq[ConfigModel],
   Reports: Seq[ConfigReport]) extends Debug
 
 final case class Image(
@@ -367,7 +354,8 @@ final case class Python(
   pyMergeVariantLists: Path,
   pyBimToUid: Path,
   pyHailUtils: Path,
-  pyHailModelVariantStats: Path,
+  //pyHailModelVariantStats: Path,
+  pyHailSchemaVariantStats: Path,
   pyHailAssoc: Path,
   pyHailExportCleanArrayData: Path,
   pyHailFilterModelVariants: Path,
@@ -426,7 +414,8 @@ final case class R(
   rIstatsAdjGmmPlotMetrics: Path,
   rCalcIstatsAdj: Path,
   rIstatsAdjPca: Path,
-  rModelCohortSamplesAvailable: Path,
+  //rModelCohortSamplesAvailable: Path,
+  rSchemaCohortSamplesAvailable: Path,
   rMetaCohortSamples: Path,
   rExcludeCrossArray: Path,
   rGeneratePheno: Path,
@@ -543,136 +532,60 @@ object ProjectConfig {
     )
 
     val resources = ConfigResources(
-      preparePlink = {
-        val thisConfig = requiredObj(config = config, field = "preparePlink")
+      matrixTableHail = {
+        val thisConfig = requiredObj(config = config, field = "matrixTableHail")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      prepareFindBestDuplicateVariants = {
-        val thisConfig = requiredObj(config = config, field = "prepareFindBestDuplicateVariants")
+      tableHail = {
+        val thisConfig = requiredObj(config = config, field = "tableHail")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      prepareLiftOver = {
-        val thisConfig = requiredObj(config = config, field = "prepareLiftOver")
+      standardPlink = {
+        val thisConfig = requiredObj(config = config, field = "standardPlink")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      harmonizePlinkFull = {
-        val thisConfig = requiredObj(config = config, field = "harmonizePlinkFull")
+      highMemPlink = {
+        val thisConfig = requiredObj(config = config, field = "highMemPlink")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      harmonizeGenotypeHarmonizer = {
-        val thisConfig = requiredObj(config = config, field = "harmonizeGenotypeHarmonizer")
+      standardR = {
+        val thisConfig = requiredObj(config = config, field = "standardR")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      harmonizeAlignNon1kgVariants = {
-        val thisConfig = requiredObj(config = config, field = "harmonizeAlignNon1kgVariants")
+      highMemR = {
+        val thisConfig = requiredObj(config = config, field = "highMemR")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      harmonizePlinkChr = {
-        val thisConfig = requiredObj(config = config, field = "harmonizePlinkChr")
+      flashPca = {
+        val thisConfig = requiredObj(config = config, field = "flashPca")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      loadHail = {
-        val thisConfig = requiredObj(config = config, field = "loadHail")
+      liftOver = {
+        val thisConfig = requiredObj(config = config, field = "liftOver")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      filterHail = {
-        val thisConfig = requiredObj(config = config, field = "filterHail")
+      genotypeHarmonizer = {
+        val thisConfig = requiredObj(config = config, field = "genotypeHarmonizer")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      prunePlink = {
-        val thisConfig = requiredObj(config = config, field = "prunePlink")
+      standardPython = {
+        val thisConfig = requiredObj(config = config, field = "standardPython")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      annotate = {
-        val thisConfig = requiredObj(config = config, field = "annotate")
+      vep = {
+        val thisConfig = requiredObj(config = config, field = "vep")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      annotateHailLoad = {
-        val thisConfig = requiredObj(config = config, field = "annotateHailLoad")
+      king = {
+        val thisConfig = requiredObj(config = config, field = "king")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      kinshipKing = {
-        val thisConfig = requiredObj(config = config, field = "kinshipKing")
+      klustakwik = {
+        val thisConfig = requiredObj(config = config, field = "klustakwik")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
-      ancestryPcaHail = {
-        val thisConfig = requiredObj(config = config, field = "ancestryPcaHail")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      ancestryPcaPlink = {
-        val thisConfig = requiredObj(config = config, field = "ancestryPcaPlink")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      ancestryPcaFlashPca = {
-        val thisConfig = requiredObj(config = config, field = "ancestryPcaFlashPca")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      ancestryClusterKlustakwik = {
-        val thisConfig = requiredObj(config = config, field = "ancestryClusterKlustakwik")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      pca = {
-        val thisConfig = requiredObj(config = config, field = "pca")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      sampleQcHail = {
-        val thisConfig = requiredObj(config = config, field = "sampleQcHail")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      sampleQcKlustakwikPca = {
-        val thisConfig = requiredObj(config = config, field = "sampleQcKlustakwikPca")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      sampleQcKlustakwikMetric = {
-        val thisConfig = requiredObj(config = config, field = "sampleQcKlustakwikMetric")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      filterFinalHail = {
-        val thisConfig = requiredObj(config = config, field = "filterFinalHail")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      exportCleanHail = {
-        val thisConfig = requiredObj(config = config, field = "exportCleanHail")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      tabixClean = {
-        val thisConfig = requiredObj(config = config, field = "tabixClean")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      filterImputePlink = {
-        val thisConfig = requiredObj(config = config, field = "filterImputePlink")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      filterModelVariantsHail = {
-        val thisConfig = requiredObj(config = config, field = "filterModelVariantsHail")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      variantAssocHailAssoc = {
-        val thisConfig = requiredObj(config = config, field = "variantAssocHailAssoc")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      generatePheno = {
-        val thisConfig = requiredObj(config = config, field = "generatePheno")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      crossCohortPrepPlink = {
-        val thisConfig = requiredObj(config = config, field = "crossCohortPrepPlink")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      crossCohortKinshipPlink = {
-        val thisConfig = requiredObj(config = config, field = "crossCohortKinshipPlink")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      crossCohortKinshipKing = {
-        val thisConfig = requiredObj(config = config, field = "crossCohortKinshipKing")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      metaAnalysisHail = {
-        val thisConfig = requiredObj(config = config, field = "metaAnalysisHail")
-        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-      },
-      mergeAssocHail = {
-        val thisConfig = requiredObj(config = config, field = "mergeAssocHail")
+      tabix = {
+        val thisConfig = requiredObj(config = config, field = "tabix")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       }
     )
@@ -1024,27 +937,19 @@ object ProjectConfig {
     
     }
 
-    val Models = {
-    
+    val Schemas = {
+
       for {
-        model <- requiredObjList(config = config, field = "models")
+        schema <- requiredObjList(config = config, field = "schemas")
       } yield {
 
-        val id = requiredStr(config = model, field = "id")
+        val id = requiredStr(config = schema, field = "id")
 
-        val pheno = requiredStr(config = model, field = "pheno")
-        Phenos.map(e => e.id) contains pheno match {
-          case true => ()
-          case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
-        }
+        val design = requiredStr(config = schema, field = "design", regex = modelDesigns.mkString("|"))
 
-        val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+        val cohorts = requiredStrList(config = schema, field = "cohorts")
 
-        val design = requiredStr(config = model, field = "design", regex = modelDesigns.mkString("|"))
-
-        val cohorts = requiredStrList(config = model, field = "cohorts")
-
-        val metas = optionalStrList(config = model, field = "metas") match {
+        val metas = optionalStrList(config = schema, field = "metas") match {
           case Some(s) =>
             for {
               f <- s
@@ -1053,17 +958,17 @@ object ProjectConfig {
                 case n if Metas.map(e => e.id) contains n =>
                   val x = Metas.filter(e => e.id == n).head.cohorts
                   cohorts.intersect(x) == x match {
-                    case false => throw new CfgException("models.metas: model " + id + " meta cohorts must be subset of model cohorts")
+                    case false => throw new CfgException("schemas.metas: schema " + id + " meta cohorts must be subset of schema cohorts")
                     case true => ()
                   }
-                case _ => throw new CfgException("models.metas: model " + id + " meta '" + f + "' not found")
+                case _ => throw new CfgException("schemas.metas: schema " + id + " meta '" + f + "' not found")
               }
             }
             Some(s)
           case None => None
         }
  
-        val merges = optionalStrList(config = model, field = "merges") match {
+        val merges = optionalStrList(config = schema, field = "merges") match {
           case Some(s) =>
             for {
               f <- s
@@ -1072,26 +977,26 @@ object ProjectConfig {
                 case n if Merges.map(e => e.id) contains n =>
                   val x = Cohorts.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
                   cohorts.intersect(x) == x match {
-                    case false => throw new CfgException("models.merges: model " + id + " merge cohorts must be subset of model cohorts")
+                    case false => throw new CfgException("schemas.merges: schema " + id + " merge cohorts must be subset of schema cohorts")
                     case true => ()
                   }
                   metas match {
                     case Some(t) =>
                       val y = Metas.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
                       metas.get.intersect(y) == y match {
-                        case false => throw new CfgException("models.merges: model " + id + " merge metas must be subset of model metas")
+                        case false => throw new CfgException("schemas.merges: schema " + id + " merge metas must be subset of schema metas")
                         case true => ()
                       }
                     case None => ()
                   }
-                case _ => throw new CfgException("models.merges: model " + id + " merge '" + f + "' not found")
+                case _ => throw new CfgException("schemas.merges: schema " + id + " merge '" + f + "' not found")
               }
             }
             Some(s)
           case None => None
         }
 
-        val filters = optionalStrList(config = model, field = "filters") match {
+        val filters = optionalStrList(config = schema, field = "filters") match {
           case Some(s) =>
             for {
               f <- s
@@ -1101,14 +1006,14 @@ object ProjectConfig {
                 case o if booleanVariantFilters.map(e => e.id) contains o => ()
                 case p if categoricalVariantFilters.map(e => e.id) contains p => ()
                 case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                case _ => throw new CfgException("models.filters: model " + id + " variant filter '" + f + "' not found")
+                case _ => throw new CfgException("schemas.filters: schema " + id + " variant filter '" + f + "' not found")
               }
             }
             Some(s)
           case None => None
         }
 
-        val cohortFilters = optionalObjList(config = model, field = "cohortFilters") match {
+        val cohortFilters = optionalObjList(config = schema, field = "cohortFilters") match {
           case Some(s) =>
             val x = for {
               cf <- s
@@ -1121,7 +1026,7 @@ object ProjectConfig {
                   case o if booleanVariantFilters.map(e => e.id) contains o => ()
                   case p if categoricalVariantFilters.map(e => e.id) contains p => ()
                   case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                  case _ => throw new CfgException("models.cohortFilters: model " + id + " cohort filter '" + f + "' not found")
+                  case _ => throw new CfgException("schemas.cohortFilters: schema " + id + " cohort filter '" + f + "' not found")
                 }
               }
               CohortFilter(
@@ -1134,11 +1039,11 @@ object ProjectConfig {
         }
 
         (cohortFilters, cohorts.size) match {
-          case (Some(f), n) if n == 1 => throw new CfgException("models.cohortFilters: cohort specific filters require > 1 cohort for model " + id)
+          case (Some(f), n) if n == 1 => throw new CfgException("schemas.cohortFilters: cohort specific filters require > 1 cohort for schema " + id)
           case _ => ()
         }
 
-        val knockoutFilters = optionalObjList(config = model, field = "knockoutFilters") match {
+        val knockoutFilters = optionalObjList(config = schema, field = "knockoutFilters") match {
           case Some(s) =>
             val x = for {
               cf <- s
@@ -1151,7 +1056,7 @@ object ProjectConfig {
                   case o if booleanVariantFilters.map(e => e.id) contains o => ()
                   case p if categoricalVariantFilters.map(e => e.id) contains p => ()
                   case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                  case _ => throw new CfgException("models.knockoutFilters: model " + id + " knockout filter '" + f + "' not found")
+                  case _ => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "' not found")
                 }
               }
               CohortFilter(
@@ -1164,16 +1069,16 @@ object ProjectConfig {
         }
 
         (knockoutFilters, cohorts.size) match {
-          case (Some(f), n) if n == 1 => throw new CfgException("models.knockoutFilters: cohort specific knockout filters require > 1 cohort for model " + id)
+          case (Some(f), n) if n == 1 => throw new CfgException("schemas.knockoutFilters: cohort specific knockout filters require > 1 cohort for schema " + id)
           case (Some(f), n) if n > 1 =>
             (design, knockoutFilters) match {
-              case ("strat", Some(s)) => throw new CfgException("models.knockoutFilters: model " + id + " 'strat' design and knockoutFilters are not allowed")
+              case ("strat", Some(s)) => throw new CfgException("schemas.knockoutFilters: schema " + id + " 'strat' design and knockoutFilters are not allowed")
               case _ => ()
             }
           case _ => ()
         }
 
-        val masks = optionalObjList(config = model, field = "masks") match {
+        val masks = optionalObjList(config = schema, field = "masks") match {
           case Some(s) =>
             val x = for {
               cf <- s
@@ -1186,7 +1091,7 @@ object ProjectConfig {
                   case o if booleanVariantFilters.map(e => e.id) contains o => ()
                   case p if categoricalVariantFilters.map(e => e.id) contains p => ()
                   case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                  case _ => throw new CfgException("models.masks: model " + id + " mask filter '" + f + "' not found")
+                  case _ => throw new CfgException("schemas.masks: schema " + id + " mask filter '" + f + "' not found")
                 }
               }
               MaskFilter(
@@ -1196,20 +1101,6 @@ object ProjectConfig {
               )
             }
             Some(x)
-          case None => None
-        }
-
-        val knowns = optionalStrList(config = model, field = "knowns") match {
-          case Some(s) =>
-            for {
-              f <- s
-            } yield {
-              f match {
-                case n if Knowns.map(e => e.id) contains n => ()
-                case _ => throw new CfgException("models.knowns: model " + id + " known '" + f + "' not found")
-              }
-            }
-            Some(s)
           case None => None
         }
 
@@ -1241,46 +1132,85 @@ object ProjectConfig {
           case _ => ()
         }
 
-        ConfigModel(
+        ConfigSchema(
           id = id,
-          pheno = pheno,
-          unrelatedOnly = requiredBool(config = model, field = "unrelatedOnly"),
-          trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
-          tests = tests,
-          assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
-          covars = requiredStrList(config = model, field = "covars").mkString("+"),
           design = design,
           cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
-            case ("strat", false, _) => throw new CfgException("models.cohorts: model " + id + " 'strat' design requires more than 1 cohort")
-            case ("full", true, true) => throw new CfgException("models.cohorts: model " + id + " 'full' design requires cohorts from same array")
+            case ("strat", false, _) => throw new CfgException("schemas.cohorts: schema " + id + " 'strat' design requires more than 1 cohort")
+            case ("full", true, true) => throw new CfgException("schemas.cohorts: schema " + id + " 'full' design requires cohorts from same array")
             case _ => cohorts
           },
+          samplesKeep = optionalStr(config = schema, field = "samplesKeep"),
+          samplesExclude = optionalStr(config = schema, field = "samplesExclude"),
           metas = (design, metas) match {
-            case ("full", Some(s)) => throw new CfgException("models.metas: model " + id + " 'full' design and metas are not allowed")
+            case ("full", Some(s)) => throw new CfgException("schemas.metas: schema " + id + " 'full' design and metas are not allowed")
             case _ => metas
           },
           merges = (design, merges) match {
-            case ("full", Some(s)) => throw new CfgException("models.merges: model " + id + " 'full' design and merges are not allowed")
+            case ("full", Some(s)) => throw new CfgException("schemas.merges: schema " + id + " 'full' design and merges are not allowed")
             case _ => merges
           },
           filters = filters,
-          maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
           cohortFilters = cohortFilters,
           knockoutFilters = knockoutFilters,
-          masks = tests match {
-            case s if groupTests.intersect(s).size > 0 => masks
-            case _ => 
-              masks match {
-                case Some(s) => throw new CfgException("models.masks: model " + id + " masks are only allowed for collapsing variant (ie. group|gene) tests")
-                case None => None
-              }
-          },
-          knowns = knowns,
+          masks = masks,
           filterCohorts = filterCohorts
         )
 
       }
     
+    }
+
+    val Models = {
+
+      for {
+        model <- requiredObjList(config = config, field = "models")
+      } yield {
+
+        val id = requiredStr(config = model, field = "id")
+
+        val schema = requiredStr(config = model, field = "schema")
+        Schemas.map(e => e.id) contains schema match {
+          case true => ()
+          case false => throw new CfgException("models.schema: model " + id + " schema '" + schema + "' not found")
+        }
+
+        val pheno = requiredStr(config = model, field = "pheno")
+        Phenos.map(e => e.id) contains pheno match {
+          case true => ()
+          case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
+        }
+
+        val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+
+        val knowns = optionalStrList(config = model, field = "knowns") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if Knowns.map(e => e.id) contains n => ()
+                case _ => throw new CfgException("models.knowns: model " + id + " known '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
+        ConfigModel(
+          id = id,
+          schema = schema,
+          pheno = pheno,
+          trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
+          tests = tests,
+          assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
+          maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
+          covars = requiredStrList(config = model, field = "covars").mkString("+"),
+          knowns = knowns
+        )
+
+      }
+
     }
 
     val Reports = {
@@ -1304,7 +1234,7 @@ object ProjectConfig {
                 case false => throw new CfgException("reports.sections.models: model '" + m + "' not found")
               }
             }
-    
+
             ConfigSection(
               id = requiredStr(config = section, field = "id"),
               title = requiredStr(config = section, field = "title"),
@@ -1387,8 +1317,9 @@ object ProjectConfig {
       Cohorts = Cohorts,
       Metas = Metas,
       Merges = Merges,
-      Phenos = Phenos,
       Knowns = Knowns,
+      Phenos = Phenos,
+      Schemas = Schemas,
       Models = Models,
       Reports = Reports
 
@@ -1444,7 +1375,8 @@ object ProjectConfig {
       pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
       pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
-      pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
+      //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
+      pyHailSchemaVariantStats = path(s"${scriptsDir}/hail_schema_variant_stats.py"),
       pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
       pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
       pyHailGenerateGroupfile = path(s"${scriptsDir}/hail_generate_groupfile.py"),
@@ -1502,7 +1434,8 @@ object ProjectConfig {
       rIstatsAdjGmmPlotMetrics = path(s"${scriptsDir}/istats_adj_gmm_plot_metrics.r"),
       rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
       rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
-      rModelCohortSamplesAvailable = path(s"${scriptsDir}/model_cohort_samples_available.r"),
+      //rModelCohortSamplesAvailable = path(s"${scriptsDir}/model_cohort_samples_available.r"),
+      rSchemaCohortSamplesAvailable = path(s"${scriptsDir}/schema_cohort_samples_available.r"),
       rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
       rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
       rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),

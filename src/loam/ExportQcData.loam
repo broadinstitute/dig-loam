@@ -94,7 +94,7 @@ def ExportQcData(array: ConfigArray): Unit = {
   
     case false =>
   
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterHail.cpus, mem = projectConfig.resources.filterHail.mem, maxRunTime = projectConfig.resources.filterHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailExportQcData}
           --reference-genome ${projectConfig.referenceGenome}
@@ -114,14 +114,14 @@ def ExportQcData(array: ConfigArray): Unit = {
   
   }
   
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.prunePlink.cpus, mem = projectConfig.resources.prunePlink.mem, maxRunTime = projectConfig.resources.prunePlink.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
   
     cmd"""${utils.binary.binPlink}
       --bfile ${arrayStores(array).filteredData.plink.base.local.get}
       --allow-no-sex 
       --indep-pairwise 1000kb 1 0.2
       --out ${arrayStores(array).filteredData.plink.base.local.get}
-      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}
+      --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}
       --seed 1"""
       .in(arrayStores(array).filteredData.plink.data.local.get)
       .out(arrayStores(array).filteredData.pruneIn)
@@ -134,7 +134,7 @@ def ExportQcData(array: ConfigArray): Unit = {
       --keep-allele-order
       --make-bed
       --out ${arrayStores(array).prunedData.plink.base}
-      --memory ${projectConfig.resources.prunePlink.mem * 0.9 * 1000}
+      --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}
       --seed 1"""
       .in(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.pruneIn)
       .out(arrayStores(array).prunedData.plink.data)

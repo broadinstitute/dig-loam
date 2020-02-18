@@ -22,5 +22,5 @@ else
 	touch ${possDupPlinkBase}.bim
 	touch ${possDupPlinkBase}.fam
 	touch ${possDupFreq}.frq
-	touch ${possDupFreq}.lmiss
+	touch ${possDupMissing}.lmiss
 fi

@@ -8,11 +8,11 @@ import ArrayStores._
 
 def Pca(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.pca.cpus, mem = projectConfig.resources.pca.mem, maxRunTime = projectConfig.resources.pca.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.flashPca.cpus, mem = projectConfig.resources.flashPca.mem, maxRunTime = projectConfig.resources.flashPca.maxRunTime) {
   
     cmd"""${utils.binary.binFlashPca} --verbose
       --seed 1
-      --numthreads ${projectConfig.resources.pca.cpus}
+      --numthreads ${projectConfig.resources.flashPca.cpus}
       --ndim 20
       --bfile ${arrayStores(array).prunedData.plink.base}
       --outpc ${arrayStores(array).pcaData.scores}

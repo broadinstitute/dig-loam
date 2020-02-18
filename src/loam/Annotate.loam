@@ -10,9 +10,9 @@ import ArrayStores._
 
 def Annotate(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.annotate.cpus, mem = projectConfig.resources.annotate.mem, maxRunTime = projectConfig.resources.annotate.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
 
-    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf.local.get} ${projectConfig.resources.annotate.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations.local.get} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
+    cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf.local.get} ${projectConfig.resources.vep.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations.local.get} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader}"""
     .in(arrayStores(array).refData.sitesVcf.local.get, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP)
     .out(arrayStores(array).refData.annotations.local.get, arrayStores(array).refData.annotationWarnings, arrayStores(array).refData.annotationHeader)
     .tag(s"${arrayStores(array).refData.annotations.local.get}".split("/").last)
@@ -46,7 +46,7 @@ def Annotate(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.annotateHailLoad.cpus, mem = projectConfig.resources.annotateHailLoad.mem, maxRunTime = projectConfig.resources.annotateHailLoad.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailLoadAnnotations}
           --annotations ${arrayStores(array).refData.annotations.local.get}

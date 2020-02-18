@@ -21,19 +21,6 @@ final case class DirTreeDataArray(
   filterPostQc: MultiPath,
   clean: MultiPath) extends Debug
 
-final case class DirTreeAnalysisTest(
-  base: MultiPath,
-  groups: MultiPath,
-  groupsMap: scala.collection.mutable.Map[String, MultiPath]) extends Debug
-
-final case class DirTreeAnalysisModel(
-  base: MultiPath,
-  testsMap: Map[String, DirTreeAnalysisTest]) extends Debug
-
-final case class DirTreeAnalysisPheno(
-  base: MultiPath,
-  modelsMap: Map[ConfigModel, DirTreeAnalysisModel]) extends Debug
-
 final case class DirTree(
   base: MultiPath,
   data: MultiPath,
@@ -44,7 +31,14 @@ final case class DirTree(
   dataGlobalKinship: MultiPath,
   dataGlobalKinshipMap: Map[ConfigMeta, MultiPath],
   analysis: MultiPath,
-  analysisPhenoMap: Map[ConfigPheno, DirTreeAnalysisPheno],
+  analysisSchema: MultiPath,
+  analysisSchemaMap: Map[ConfigSchema, MultiPath],
+  analysisModel: MultiPath,
+  analysisModelGroups: MultiPath,
+  analysisModelGroupsMap: scala.collection.mutable.Map[String, MultiPath],
+  analysisModelRegions: MultiPath,
+  analysisModelRegionsMap: scala.collection.mutable.Map[String, MultiPath],
+  analysisModelMap: Map[ConfigModel, MultiPath],
   report: MultiPath,
   reportQc: MultiPath,
   reportAnalysis: MultiPath,
@@ -109,38 +103,16 @@ object DirTree {
       meta -> appendSubDir(dataGlobalKinship, meta.id)
     }.toMap
 
-    val analysisPhenoMap = projectConfig.Phenos.filter(e => projectConfig.Models.map(e => e.pheno).contains(e.id)).map { pheno =>
-
-      val base_pheno = appendSubDir(analysis, pheno.id)
-
-      pheno -> DirTreeAnalysisPheno(
-        base = base_pheno,
-        modelsMap = projectConfig.Models.filter(e => e.pheno == pheno.id).map { model =>
-          val base_model = appendSubDir(base_pheno, model.id)
-          val tests_map = model.tests.map { test =>
-            val base_test = appendSubDir(base_model, test)
-            val base_groups = appendSubDir(base_test, "groups")
-            test -> DirTreeAnalysisTest(
-              base = base_test,
-              groups = base_groups,
-              groupsMap = scala.collection.mutable.Map[String, MultiPath]()
-              //groupsMap = model.groupFile match {
-              //  case Some(_) =>
-              //    val groups = fileToList(model.groupFile.get).map(e => e.split("\t")(0))
-              //    groups.map { group =>
-              //      group -> appendSubDir(base_groups, group)
-              //    }.toMap
-              //  case _ => scala.collection.mutable.Map[String, MultiPath]()
-              //}
-            )
-          }.toMap
-          model -> DirTreeAnalysisModel(
-            base = base_model,
-            testsMap = tests_map
-          )
-        }.toMap
-      )
-
+    val analysisSchema = appendSubDir(analysis, "schema")
+    val analysisSchemaMap = projectConfig.Schemas.map { schema =>
+      schema -> appendSubDir(analysisSchema, schema.id)
+    }.toMap
+    val analysisModel = appendSubDir(analysis, "model")
+    val analysisModelGroups = appendSubDir(analysisModel, "groups")
+    val analysisModelRegions = appendSubDir(analysisModel, "regions")
+    val analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath]()
+    val analysisModelMap = projectConfig.Models.map { model =>
+      model -> appendSubDir(analysisModel, model.id)
     }.toMap
     
     val reportAnalysisMap = cfg.Reports.map { report =>
@@ -157,7 +129,14 @@ object DirTree {
       dataGlobalKinship = dataGlobalKinship,
       dataGlobalKinshipMap = dataGlobalKinshipMap,
       analysis = analysis,
-      analysisPhenoMap = analysisPhenoMap,
+      analysisSchema = analysisSchema,
+      analysisSchemaMap = analysisSchemaMap,
+      analysisModel = analysisModel,
+      analysisModelGroups = analysisModelGroups,
+      analysisModelGroupsMap = scala.collection.mutable.Map[String, MultiPath](),
+      analysisModelRegions = analysisModelRegions,
+      analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath](),
+      analysisModelMap = analysisModelMap,
       report = report,
       reportQc = reportQc,
       reportAnalysis = reportAnalysis,

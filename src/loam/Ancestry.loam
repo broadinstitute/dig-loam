@@ -43,7 +43,7 @@ def AncestryPca(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.ancestryPcaHail.cpus, mem = projectConfig.resources.ancestryPcaHail.mem, maxRunTime = projectConfig.resources.ancestryPcaHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailAncestryPcaMerge1kg}
           --reference-genome ${projectConfig.referenceGenome}
@@ -61,11 +61,11 @@ def AncestryPca(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.ancestryPcaFlashPca.cpus, mem = projectConfig.resources.ancestryPcaFlashPca.mem, maxRunTime = projectConfig.resources.ancestryPcaFlashPca.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.flashPca.cpus, mem = projectConfig.resources.flashPca.mem, maxRunTime = projectConfig.resources.flashPca.maxRunTime) {
   
     cmd"""${utils.binary.binFlashPca} --verbose
       --seed 1
-      --numthreads ${projectConfig.resources.ancestryPcaFlashPca.cpus}
+      --numthreads ${projectConfig.resources.flashPca.cpus}
       --ndim 20
       --bfile ${arrayStores(array).ref1kgData.plink.base.local.get}
       --outpc ${arrayStores(array).ancestryPcaData.scores}
@@ -118,7 +118,7 @@ def AncestryCluster(array: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.ancestryClusterKlustakwik.cpus, mem = projectConfig.resources.ancestryClusterKlustakwik.mem, maxRunTime = projectConfig.resources.ancestryClusterKlustakwik.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.klustakwik.cpus, mem = projectConfig.resources.klustakwik.mem, maxRunTime = projectConfig.resources.klustakwik.maxRunTime) {
   
     cmd"""${utils.binary.binKlustakwik} ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
       .in(arrayStores(array).ancestryClusterData.fet)

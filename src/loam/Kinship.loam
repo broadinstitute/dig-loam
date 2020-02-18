@@ -11,9 +11,9 @@ import ArrayStores._
 
 def Kinship(array: ConfigArray): Unit = {
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.kinshipKing.cpus, mem = projectConfig.resources.kinshipKing.mem, maxRunTime = projectConfig.resources.kinshipKing.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.king.cpus, mem = projectConfig.resources.king.mem, maxRunTime = projectConfig.resources.king.maxRunTime) {
 
-    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${projectConfig.resources.kinshipKing.cpus} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0}"""
+    cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${projectConfig.resources.king.cpus} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0}"""
     .in(arrayStores(array).filteredData.plink.data.local.get)
     .out(arrayStores(array).kinshipData.log, arrayStores(array).kinshipData.kin0)
     .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.binKing".split("/").last)

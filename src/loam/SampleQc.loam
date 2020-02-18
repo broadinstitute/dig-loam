@@ -44,7 +44,7 @@ def SampleQc(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.sampleQcHail.cpus, mem = projectConfig.resources.sampleQcHail.mem, maxRunTime = projectConfig.resources.sampleQcHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailSampleqc}
           --reference-genome ${projectConfig.referenceGenome}
@@ -99,7 +99,7 @@ def SampleQc(array: ConfigArray): Unit = {
    *  Requires: Klustakwik, R
    */
   
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.sampleQcKlustakwikPca.cpus, mem = projectConfig.resources.sampleQcKlustakwikPca.mem, maxRunTime = projectConfig.resources.sampleQcKlustakwikPca.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.klustakwik.cpus, mem = projectConfig.resources.klustakwik.mem, maxRunTime = projectConfig.resources.klustakwik.maxRunTime) {
 
     cmd"""${utils.bash.shKlustakwikPca} ${utils.binary.binKlustakwik} ${arrayStores(array).sampleQcData.pcaScores} ${arrayStores(array).sampleQcPcaClusterData.fet} ${arrayStores(array).sampleQcPcaClusterData.base} ${arrayStores(array).sampleQcPcaClusterData.log}"""
       .in(arrayStores(array).sampleQcData.pcaScores)
@@ -136,7 +136,7 @@ def SampleQc(array: ConfigArray): Unit = {
   
   } yield { 
 
-    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.sampleQcKlustakwikPca.cpus, mem = projectConfig.resources.sampleQcKlustakwikPca.mem, maxRunTime = projectConfig.resources.sampleQcKlustakwikPca.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.klustakwik.cpus, mem = projectConfig.resources.klustakwik.mem, maxRunTime = projectConfig.resources.klustakwik.maxRunTime) {
 
       cmd"""${utils.bash.shKlustakwikMetric} ${utils.binary.binKlustakwik} ${arrayStores(array).sampleQcData.statsAdj} ${metric} ${metricData.base} ${metricData.fet} ${metricData.log}"""
         .in(arrayStores(array).sampleQcData.statsAdj)

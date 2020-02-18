@@ -14,7 +14,7 @@ import scala.collection.immutable.ListMap
 
 def Harmonize(arrayCfg: ConfigArray): Unit = {
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
     cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --snps-only --write-snplist --out ${arrayStores(arrayCfg).annotatedData.get.plink.base}.variants"""
       .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
@@ -28,9 +28,9 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
   } yield {
 
-    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
-	  cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --snps-only --chr $chr --keep-allele-order --make-bed --out ${chrData.snpsPlink.base} --output-chr MT --memory ${(projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000)} --seed 1"""
+	  cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --snps-only --chr $chr --keep-allele-order --make-bed --out ${chrData.snpsPlink.base} --output-chr MT --memory ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)} --seed 1"""
         .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
         .out(chrData.snpsPlink.data)
         .tag(s"${chrData.snpsPlink.base}".split("/").last)
@@ -41,9 +41,9 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
       case true =>
 
-        drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
+        drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
-          cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --exclude ${arrayStores(arrayCfg).annotatedData.get.snplist} --chr $chr --keep-allele-order --make-bed --out ${chrData.otherPlink.get.base} --output-chr MT --memory ${(projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000)} --seed 1"""
+          cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --exclude ${arrayStores(arrayCfg).annotatedData.get.snplist} --chr $chr --keep-allele-order --make-bed --out ${chrData.otherPlink.get.base} --output-chr MT --memory ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)} --seed 1"""
             .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
             .out(chrData.otherPlink.get.data)
             .tag(s"${chrData.otherPlink.get.base}".split("/").last)
@@ -54,9 +54,9 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     }
 
-    val harmMem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem * 0.9 * 1000
+    val harmMem = projectConfig.resources.genotypeHarmonizer.mem * 0.9 * 1000
 
-    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizeGenotypeHarmonizer.cpus, mem = projectConfig.resources.harmonizeGenotypeHarmonizer.mem, maxRunTime = projectConfig.resources.harmonizeGenotypeHarmonizer.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.genotypeHarmonizer.cpus, mem = projectConfig.resources.genotypeHarmonizer.mem, maxRunTime = projectConfig.resources.genotypeHarmonizer.maxRunTime) {
     
       cmd"""java -Xms${harmMem.toInt}m -Xmx${harmMem.toInt}m -jar ${utils.binary.binGenotypeHarmonizer}
       --input ${chrData.snpsPlink.base}
@@ -78,7 +78,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
     
     }
 
-    drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.harmonizeAlignNon1kgVariants.cpus, mem = projectConfig.resources.harmonizeAlignNon1kgVariants.mem, maxRunTime = projectConfig.resources.harmonizeAlignNon1kgVariants.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
       
       cmd"""${utils.binary.binPython} ${utils.python.pyAlignNon1kgVariants}
       --kg-ids ${projectStores.kgIds(chr)}
@@ -100,7 +100,7 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
       case true =>
 
-        drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.harmonizeAlignNon1kgVariants.cpus, mem = projectConfig.resources.harmonizeAlignNon1kgVariants.mem, maxRunTime = projectConfig.resources.harmonizeAlignNon1kgVariants.maxRunTime) {
+        drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
 
           cmd"""${utils.binary.binPython} ${utils.python.pyAlignNon1kgVariants}
           --bim ${chrData.otherPlink.get.base}.bim
@@ -121,9 +121,9 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
     }
 
-    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkChr.cpus, mem = projectConfig.resources.harmonizePlinkChr.mem, maxRunTime = projectConfig.resources.harmonizePlinkChr.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
       
-      cmd"""${utils.binary.binPlink} --bfile ${chrData.mergedKgPlink.base} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000} --seed 1"""
+      cmd"""${utils.binary.binPlink} --bfile ${chrData.mergedKgPlink.base} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
         .in(chrData.mergedKgPlink.data :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
         .out(chrData.mergedKgHuRefPlink.data)
         .tag(s"${chrData.mergedKgHuRefPlink.base}".split("/").last)
@@ -134,9 +134,9 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
       case true =>
 
-        drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkChr.cpus, mem = projectConfig.resources.harmonizePlinkChr.mem, maxRunTime = projectConfig.resources.harmonizePlinkChr.maxRunTime) {
+        drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
       
-          cmd"""${utils.binary.binPlink} --bfile ${chrData.otherPlink.get.base} --allow-no-sex --exclude ${chrData.otherRemove.get} --flip ${chrData.otherFlip.get} --a1-allele ${chrData.otherForceA1.get} --output-chr MT --make-bed --out ${chrData.otherHuRefPlink.get.base} --memory ${projectConfig.resources.harmonizePlinkChr.mem * 0.9 * 1000} --seed 1"""
+          cmd"""${utils.binary.binPlink} --bfile ${chrData.otherPlink.get.base} --allow-no-sex --exclude ${chrData.otherRemove.get} --flip ${chrData.otherFlip.get} --a1-allele ${chrData.otherForceA1.get} --output-chr MT --make-bed --out ${chrData.otherHuRefPlink.get.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
             .in(chrData.otherPlink.get.data :+ chrData.otherRemove.get :+ chrData.otherFlip.get :+ chrData.otherForceA1.get)
             .out(chrData.otherHuRefPlink.get.data)
             .tag(s"${chrData.otherHuRefPlink.get.base}".split("/").last)
@@ -189,9 +189,9 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
   }
       
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-    cmd"""${utils.binary.binPlink} --bfile ${mergedKgHuRefLines.head} --allow-no-sex --merge-list ${arrayStores(arrayCfg).harmonizedData.get.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} --seed 1"""
+    cmd"""${utils.binary.binPlink} --bfile ${mergedKgHuRefLines.head} --allow-no-sex --merge-list ${arrayStores(arrayCfg).harmonizedData.get.mergeList} --output-chr MT --make-bed --keep-allele-order --out ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
       .in(chrInputData :+ arrayStores(arrayCfg).harmonizedData.get.mergeList)
       .out(arrayStores(arrayCfg).harmonizedData.get.plink.data)
       .tag(s"${arrayStores(arrayCfg).harmonizedData.get.plink.base}".split("/").last)
@@ -207,14 +207,14 @@ def Harmonize(arrayCfg: ConfigArray): Unit = {
 
   }
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.harmonizePlinkFull.cpus, mem = projectConfig.resources.harmonizePlinkFull.mem, maxRunTime = projectConfig.resources.harmonizePlinkFull.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base.local.get} --memory ${projectConfig.resources.harmonizePlinkFull.mem * 0.9 * 1000} --seed 1"""
+    cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base.local.get} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
       .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
       .out(arrayStores(arrayCfg).refData.plink.get.data.local.get)
       .tag(s"${arrayStores(arrayCfg).refData.plink.get.base.local.get}".split("/").last)
 
-    //cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.get.base.local.get} ${projectConfig.resources.harmonizePlinkFull.mem * 0.75 * 1000} ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
+    //cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.get.base.local.get} ${projectConfig.resources.standardPlink.mem * 0.75 * 1000} ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
     //  .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
     //  .out(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
     //  .tag(s"${arrayStores(arrayCfg).refData.vcf.get.data.local.get}".split("/").last)

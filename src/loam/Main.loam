@@ -12,13 +12,13 @@ import Kinship._
 import Load._
 import Pca._
 import Prepare._
-import PrepareModel._
+import PrepareSchema._
 import ProjectConfig._
 import ProjectStores._
 import SampleQc._
 import Tracking._
 import Upload._
-import AssocTest._
+//import AssocTest._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -122,32 +122,32 @@ projectStores.phenoFile.local match {
     
     }
     
-    // Prepare standard cohort model
+    // Prepare standard cohort schema
     for {
-      x <- modelCohorts
+      x <- schemaCohorts
     } yield {
     
-      PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = None)
+      PrepareSchema(configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
     
     }
     
-    // Prepare meta cohort model
-    for {
-      x <- modelMetaCohorts
-    } yield {
-    
-      PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
-    
-    }
-    
-    //Cohort variant association
-    for {
-      x <- modelCohorts
-    } yield {
-    
-      AssocTest(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
-    
-    }
+    //// Prepare meta cohort model
+    //for {
+    //  x <- modelMetaCohorts
+    //} yield {
+    //
+    //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
+    //
+    //}
+    //
+    ////Cohort variant association
+    //for {
+    //  x <- modelCohorts
+    //} yield {
+    //
+    //  AssocTest(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
+    //
+    //}
     
     //// Cohort variant association for known loci
     //for {

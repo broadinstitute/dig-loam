@@ -1,10 +1,10 @@
 import Fxns._
 import DirTree._
 import ProjectConfig._
-import Collections._
+//import Collections._
 import ProjectStores._
 import ArrayStores._
-import ModelStores._
+//import ModelStores._
 //import AssocStores._
 
 def trackObjects(): Unit = {
@@ -13,14 +13,14 @@ def trackObjects(): Unit = {
   writeObject(obj = utils, filename = s"${dirTree.base.local.get}/cfg.utils")
   writeObject(obj = dirTree, filename = s"${dirTree.base.local.get}/cfg.dirTree")
   
-  writeObject(obj = modelCohorts, filename = s"${dirTree.base.local.get}/cfg.modelCohorts")
-  writeObject(obj = modelMetaCohorts, filename = s"${dirTree.base.local.get}/cfg.modelMetaCohorts")
-  writeObject(obj = modelCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelCohortKnowns")
-  writeObject(obj = modelMetaCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelMetaCohortKnowns")
+  //writeObject(obj = modelCohorts, filename = s"${dirTree.base.local.get}/cfg.modelCohorts")
+  //writeObject(obj = modelMetaCohorts, filename = s"${dirTree.base.local.get}/cfg.modelMetaCohorts")
+  //writeObject(obj = modelCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelCohortKnowns")
+  //writeObject(obj = modelMetaCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelMetaCohortKnowns")
   
   writeObject(obj = projectStores, filename = s"${dirTree.base.local.get}/cfg.projectStores")
   writeObject(obj = arrayStores, filename = s"${dirTree.base.local.get}/cfg.arrayStores")
-  writeObject(obj = modelStores, filename = s"${dirTree.base.local.get}/cfg.modelStores")
+  //writeObject(obj = modelStores, filename = s"${dirTree.base.local.get}/cfg.modelStores")
   //writeObject(obj = assocStores, filename = s"${dirTree.base.local.get}/cfg.assocStores")
 
 }

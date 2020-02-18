@@ -39,7 +39,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
   
     case false =>
   
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.exportCleanHail.cpus, mem = projectConfig.resources.exportCleanHail.mem, maxRunTime = projectConfig.resources.exportCleanHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanArrayData}
           --reference-genome ${projectConfig.referenceGenome}
@@ -56,7 +56,7 @@ def ExportCleanData(array: ConfigArray): Unit = {
   
   }
 
-  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabixClean.cpus, mem = projectConfig.resources.tabixClean.mem, maxRunTime = projectConfig.resources.tabixClean.maxRunTime) {
+  drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.tabix.maxRunTime) {
 
     cmd"""${utils.binary.binTabix} -p vcf ${arrayStores(array).cleanData.get.vcf.data.local.get}"""
       .in(arrayStores(array).cleanData.get.vcf.data.local.get)

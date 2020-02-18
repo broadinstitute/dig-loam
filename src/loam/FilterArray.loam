@@ -118,7 +118,7 @@ def FilterArray(array: ConfigArray): Unit = {
 
     case false =>
 
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterFinalHail.cpus, mem = projectConfig.resources.filterFinalHail.mem, maxRunTime = projectConfig.resources.filterFinalHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
         cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
           --reference-genome ${projectConfig.referenceGenome}
