@@ -8,6 +8,7 @@ import ProjectStores._
 import SchemaStores._
 import MetaStores._
 import Fxns._
+import Collections._
 
 final case class CfgException(s: String) extends Exception(s)
 
@@ -32,18 +33,6 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
     }
   }
   
-  val modelCohortSamplesAvailableIn = configMeta match {
-    case Some(s) => 
-      val x = for {
-        c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
-      } yield {
-        schemaStores((configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
-      }
-      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
-    case None =>
-      arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
-  }
-  
   drmWith(imageName = s"${utils.image.imgR}") {
 
     cmd"""${utils.binary.binRscript} --vanilla --verbose
@@ -65,130 +54,129 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   
   }
   
-  var filters = Seq[String]()
-  var cohortFilters = Seq[String]()
-  var knockoutFilters = Seq[String]()
-  var masks = Seq[String]()
-  var filterFields = Seq[String]()
-  configSchema.filters match {
-    case Some(l) =>
-      filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
-      filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
-    case None => ()
+  //var filters = Seq[String]()
+  //var cohortFilters = Seq[String]()
+  //var knockoutFilters = Seq[String]()
+  //var masks = Seq[String]()
+  //configSchema.filters match {
+  //  case Some(l) =>
+  //    filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = l)
+  //  case None => ()
+  //}
+  //(configSchema.design, configSchema.cohortFilters) match {
+  //  case ("full", Some(l)) =>
+  //    for {
+  //      cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+  //    } yield {
+  //      cohortFilters = cohortFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
+  //    }
+  //  case ("strat", Some(l)) =>
+  //    for {
+  //      cf <- l if configCohorts.head.id == cf.cohort
+  //    } yield {
+  //      filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters)
+  //    }
+  //  case _ => ()
+  //}
+  //(configSchema.design, configSchema.knockoutFilters) match {
+  //  case ("full", Some(l)) =>
+  //    for {
+  //      cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
+  //    } yield {
+  //      knockoutFilters = knockoutFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
+  //    }
+  //  case _ => ()
+  //}
+  //configSchema.masks match {
+  //  case Some(l) =>
+  //    for {
+  //      mf <- l
+  //    } yield {
+  //      masks = masks ++ variantFiltersToPrintableList(cfg = projectConfig, filters = mf.filters, id = Some(mf.id))
+  //    }
+  //  case None => ()
+  //}
+
+  val fetMissPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.fet_miss")).size match {
+    case n if n > 0 => projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
+    case _ => Seq[ConfigPheno]()
   }
-  (configSchema.design, configSchema.cohortFilters) match {
-    case ("full", Some(l)) =>
-      for {
-        cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
-      } yield {
-        cohortFilters = cohortFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
-        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
-      }
-    case ("strat", Some(l)) =>
-      for {
-        cf <- l if configCohorts.head.id == cf.cohort
-      } yield {
-        filters = filters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters)
-        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
-      }
-    case _ => ()
-  }
-  (configSchema.design, configSchema.knockoutFilters) match {
-    case ("full", Some(l)) =>
-      for {
-        cf <- l if configCohorts.map(e => e.id).contains(cf.cohort)
-      } yield {
-        knockoutFilters = knockoutFilters ++ variantFiltersToPrintableList(cfg = projectConfig, filters = cf.filters, id = Some(cf.cohort))
-        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
-      }
-    case _ => ()
-  }
-  configSchema.masks match {
-    case Some(l) =>
-      for {
-        mf <- l
-      } yield {
-        masks = masks ++ variantFiltersToPrintableList(cfg = projectConfig, filters = mf.filters, id = Some(mf.id))
-        filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
-      }
-    case None => ()
-  }
-  
-  val fString = filters.size match {
-  
-    case n if n > 0 => s"""echo "${filters.mkString("\n")}" > """
-    case _ => "touch "
-  
-  }
-  
-  drmWith(imageName = s"${utils.image.imgTools}") {
-  
-    cmd"""${fString} ${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}"""
-      .out(schemaStores((configSchema, configCohorts, configMeta)).filters.local.get)
-      .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}".split("/").last)
-  
-  }
-  
-  schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local match {
-  
-    case Some(_) =>
-  
-      val cfString = cohortFilters.size match {
-      
-        case n if n > 0 => s"""echo "${cohortFilters.mkString("\n")}" > """
-        case _ => "touch "
-      
-      }
-      
-      drmWith(imageName = s"${utils.image.imgTools}") {
-      
-        cmd"""${cfString} ${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get}"""
-          .out(schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get)
-          .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get}".split("/").last)
-      
-      }
-  
-    case None => ()
-  
-  }
-  
-  schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local match {
-  
-    case Some(_) =>
-  
-      val kfString = knockoutFilters.size match {
-      
-        case n if n > 0 => s"""echo "${knockoutFilters.mkString("\n")}" > """
-        case _ => "touch "
-      
-      }
-      
-      drmWith(imageName = s"${utils.image.imgTools}") {
-      
-        cmd"""${kfString} ${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get}"""
-          .out(schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get)
-          .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get}".split("/").last)
-      
-      }
-  
-    case None => ()
-  
-  }
-  
-  val mString = masks.size match {
-  
-    case n if n > 0 => s"""echo "${masks.mkString("\n")}" > """
-    case _ => "touch "
-  
-  }
-  
-  drmWith(imageName = s"${utils.image.imgTools}") {
-  
-    cmd"""${mString} ${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}"""
-      .out(schemaStores((configSchema, configCohorts, configMeta)).masks.local.get)
-      .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}".split("/").last)
-  
-  }
+
+  //val fString = filters.size match {
+  //
+  //  case n if n > 0 => s"""echo "${filters.mkString("\n")}" > """
+  //  case _ => "touch "
+  //
+  //}
+  //
+  //drmWith(imageName = s"${utils.image.imgTools}") {
+  //
+  //  cmd"""${fString} ${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}"""
+  //    .out(schemaStores((configSchema, configCohorts, configMeta)).filters.local.get)
+  //    .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}".split("/").last)
+  //
+  //}
+  //
+  //schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local match {
+  //
+  //  case Some(_) =>
+  //
+  //    val cfString = cohortFilters.size match {
+  //    
+  //      case n if n > 0 => s"""echo "${cohortFilters.mkString("\n")}" > """
+  //      case _ => "touch "
+  //    
+  //    }
+  //    
+  //    drmWith(imageName = s"${utils.image.imgTools}") {
+  //    
+  //      cmd"""${cfString} ${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get}"""
+  //        .out(schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get)
+  //        .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get}".split("/").last)
+  //    
+  //    }
+  //
+  //  case None => ()
+  //
+  //}
+  //
+  //schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local match {
+  //
+  //  case Some(_) =>
+  //
+  //    val kfString = knockoutFilters.size match {
+  //    
+  //      case n if n > 0 => s"""echo "${knockoutFilters.mkString("\n")}" > """
+  //      case _ => "touch "
+  //    
+  //    }
+  //    
+  //    drmWith(imageName = s"${utils.image.imgTools}") {
+  //    
+  //      cmd"""${kfString} ${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get}"""
+  //        .out(schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get)
+  //        .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get}".split("/").last)
+  //    
+  //    }
+  //
+  //  case None => ()
+  //
+  //}
+  //
+  //val mString = masks.size match {
+  //
+  //  case n if n > 0 => s"""echo "${masks.mkString("\n")}" > """
+  //  case _ => "touch "
+  //
+  //}
+  //
+  //drmWith(imageName = s"${utils.image.imgTools}") {
+  //
+  //  cmd"""${mString} ${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}"""
+  //    .out(schemaStores((configSchema, configCohorts, configMeta)).masks.local.get)
+  //    .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}".split("/").last)
+  //
+  //}
   
   projectConfig.hailCloud match {
   
@@ -223,6 +211,41 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
         googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.local.get)
       
       }
+
+      for {
+
+        pheno <- fetMissPhenos
+
+      } yield {
+
+        googleWith(projectConfig.cloudResources.mtCluster) {
+
+          hail"""${utils.python.pyHailSchemaPhenoFetMiss} --
+            --hail-utils ${projectStores.hailUtils.google.get}
+            --reference-genome ${projectConfig.referenceGenome}
+            --mt-in ${arrayStores(array).refData.mt.google.get}
+            --pheno-in ${projectStores.phenoFile.google.get}
+	        --pheno-col ${pheno.id}
+            --iid-col ${projectConfig.phenoFileId}
+            --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get}
+            --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.google.get}
+            --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).base.google.get}
+            --cloud
+            --log ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).base.google.get}"""
+              .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.phenoFile.google.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get)
+              .out(schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).base.google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).base.google.get)
+              .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.local.get}.google".split("/").last)
+        
+        }
+
+        local {
+
+          googleCopy(schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.local.get)
+          googleCopy(schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).base.google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).base.local.get)
+        
+        }
+
+      }
   
     case false =>
   
@@ -239,6 +262,32 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
             .out(schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.base.local.get)
             .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.base.local.get}".split("/").last)
       
+      }
+
+      for {
+
+        pheno <- fetMissPhenos
+
+      } yield {
+
+        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+
+          cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoFetMiss}
+            --reference-genome ${projectConfig.referenceGenome}
+            --mt-in ${arrayStores(array).refData.mt.local.get}
+            --pheno-in ${projectStores.phenoFile.local.get}
+	        --pheno-col ${pheno.id}
+            --iid-col ${projectConfig.phenoFileId}
+            --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get}
+            --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.local.get}
+            --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).base.local.get}
+            --log ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).base.local.get}"""
+              .in(arrayStores(array).refData.mt.local.get, projectStores.phenoFile.local.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get)
+              .out(schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.local.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).base.local.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).base.local.get)
+              .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).base.local.get}".split("/").last)
+        
+        }
+
       }
   
   }
@@ -281,6 +330,41 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
               googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHailLog.cohorts(cohort).local.get)
             
             }
+
+            for {
+
+              pheno <- fetMissPhenos
+            
+            } yield {
+            
+              googleWith(projectConfig.cloudResources.mtCluster) {
+            
+                hail"""${utils.python.pyHailSchemaPhenoFetMiss} --
+                  --hail-utils ${projectStores.hailUtils.google.get}
+                  --reference-genome ${projectConfig.referenceGenome}
+                  --mt-in ${arrayStores(array).refData.mt.google.get}
+                  --pheno-in ${projectStores.phenoFile.google.get}
+	              --pheno-col ${pheno.id}
+                  --iid-col ${projectConfig.phenoFileId}
+                  --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get}
+                  --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).google.get}
+                  --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).cohorts(cohort).google.get}
+                  --cloud
+                  --log ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).cohorts(cohort).google.get}"""
+                    .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.phenoFile.google.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.google.get)
+                    .out(schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).cohorts(cohort).google.get)
+                    .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).local.get}.google".split("/").last)
+              
+              }
+            
+              local {
+            
+                googleCopy(schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).local.get)
+                googleCopy(schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).cohorts(cohort).local.get)
+              
+              }
+            
+            }
       
           case false =>
           
@@ -299,6 +383,32 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
                     .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantsStats.cohorts(cohort).local.get}".split("/").last)
               
             }
+
+            for {
+
+              pheno <- fetMissPhenos
+            
+            } yield {
+            
+              drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+            
+                cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoFetMiss}
+                  --reference-genome ${projectConfig.referenceGenome}
+                  --mt-in ${arrayStores(array).refData.mt.local.get}
+                  --pheno-in ${projectStores.phenoFile.local.get}
+	              --pheno-col ${pheno.id}
+                  --iid-col ${projectConfig.phenoFileId}
+                  --cohorts-map-in ${schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get}
+                  --variants-stats-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).local.get}
+                  --variants-stats-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).cohorts(cohort).local.get}
+                  --log ${schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).cohorts(cohort).local.get}"""
+                    .in(arrayStores(array).refData.mt.local.get, projectStores.phenoFile.local.get, schemaStores((configSchema, configCohorts, configMeta)).cohortMap.local.get)
+                    .out(schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailTable(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts, configMeta)).fetMissHailLog(pheno).cohorts(cohort).local.get)
+                    .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).fetMissTable(pheno).cohorts(cohort).local.get}".split("/").last)
+              
+              }
+            
+            }
       
         }
       
@@ -314,19 +424,19 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   //
   //    local {
   //
-  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).filters.local.get, modelStores((configModel, configCohorts, configMeta)).filters.google.get)
-  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).masks.local.get, modelStores((configModel, configCohorts, configMeta)).masks.google.get)
+  //      googleCopy(schemaStores((configSchema, configCohorts, configMeta)).filters.local.get, schemaStores((configSchema, configCohorts, configMeta)).filters.google.get)
+  //      googleCopy(schemaStores((configSchema, configCohorts, configMeta)).masks.local.get, schemaStores((configSchema, configCohorts, configMeta)).masks.google.get)
   //
   //    }
   //
-  //    configModel.design match {
+  //    configSchema.design match {
   //
   //      case "full" =>
   //
   //        local {
   //
-  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).cohortFilters.local.get, modelStores((configModel, configCohorts, configMeta)).cohortFilters.google.get)
-  //          googleCopy(modelStores((configModel, configCohorts, configMeta)).knockoutFilters.local.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.google.get)
+  //          googleCopy(schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get, schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.google.get)
+  //          googleCopy(schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get, schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.google.get)
   //
   //        }
   //
@@ -335,11 +445,11 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   //    }
   //
   //    val cohortStatsInString = {
-  //      modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //      schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
   //        case n if n > 0 =>
   //          val x = "--cohort-stats-in"
   //          val y = for {
-  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //            (k, v) <- schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts
   //          } yield {
   //            s"""${k.id},${v.google.get.toString.split("@")(1)}"""
   //          }
@@ -348,23 +458,23 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   //      }
   //    }
   //
-  //    val cohortFiltersInString = configModel.design match {
-  //      case "full" => s"""--cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFilters.google.get.toString.split("@")(1)}"""
+  //    val cohortFiltersInString = configSchema.design match {
+  //      case "full" => s"""--cohort-filters ${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.google.get.toString.split("@")(1)}"""
   //      case _ => ""
   //    }
   //
-  //    val knockoutFiltersInString = configModel.design match {
-  //      case "full" => s"""--knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters.google.get.toString.split("@")(1)}"""
+  //    val knockoutFiltersInString = configSchema.design match {
+  //      case "full" => s"""--knockout-filters ${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.google.get.toString.split("@")(1)}"""
   //      case _ => ""
   //    }
   //
-  //    var cohortStatsIn = Seq(projectStores.hailUtils.google.get, modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.google.get, arrayStores(array).refData.annotationsHt.google.get, modelStores((configModel, configCohorts, configMeta)).filters.google.get, modelStores((configModel, configCohorts, configMeta)).masks.google.get, arrayStores(array).filterPostQc.variantsExclude.google.get)
+  //    var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.google.get, arrayStores(array).refData.annotationsHt.google.get, schemaStores((configSchema, configCohorts, configMeta)).filters.google.get, schemaStores((configSchema, configCohorts, configMeta)).masks.google.get, arrayStores(array).filterPostQc.variantsExclude.google.get)
   //    
-  //    modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //    schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
   //      case n if n > 0 =>
   //        cohortStatsIn = cohortStatsIn ++ {
   //          for {
-  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //            (k, v) <- schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts
   //          } yield {
   //            v.google.get
   //          }
@@ -372,51 +482,51 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   //      case _ => ()
   //    }
   //    
-  //    configModel.design match {
-  //        case "full" => cohortStatsIn = cohortStatsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).cohortFilters.google.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.google.get)
+  //    configSchema.design match {
+  //        case "full" => cohortStatsIn = cohortStatsIn ++ Seq(schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.google.get, schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.google.get)
   //        case _ => ()
   //    }
   //    
   //    googleWith(projectConfig.cloudResources.mtCluster) {
   //    
-  //      hail"""${utils.python.pyHailFilterModelVariants} --
+  //      hail"""${utils.python.pyHailFilterSchemaVariants} --
   //        --cloud
   //        --hail-utils ${projectStores.hailUtils.google.get}
   //        --reference-genome ${projectConfig.referenceGenome}
-  //        --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.google.get}
+  //        --full-stats-in ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.google.get}
   //        ${cohortStatsInString}
   //        --annotation ${arrayStores(array).refData.annotationsHt.google.get}
-  //        --filters ${modelStores((configModel, configCohorts, configMeta)).filters.google.get}
+  //        --filters ${schemaStores((configSchema, configCohorts, configMeta)).filters.google.get}
   //        ${cohortFiltersInString}
   //        ${knockoutFiltersInString}
-  //        --masks ${modelStores((configModel, configCohorts, configMeta)).masks.google.get}
+  //        --masks ${schemaStores((configSchema, configCohorts, configMeta)).masks.google.get}
   //        --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.google.get}
-  //        --design ${configModel.design}
-  //        --variant-filters-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.google.get}
-  //        --ht-checkpoint ${modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.google.get}
-  //        --variant-filters-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get}
-  //        --log ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.google.get}"""
+  //        --design ${configSchema.design}
+  //        --variant-filters-out ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.google.get}
+  //        --ht-checkpoint ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterHtCheckpoint.google.get}
+  //        --variant-filters-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailTable.google.get}
+  //        --log ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailLog.google.get}"""
   //          .in(cohortStatsIn)
-  //          .out(modelStores((configModel, configCohorts, configMeta)).variantFilterTable.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.google.get)
-  //          .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get}.google".split("/").last)
+  //          .out(schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHtCheckpoint.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailTable.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailLog.google.get)
+  //          .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.local.get}.google".split("/").last)
   //    
   //    }
   //    
   //    local {
   //    
-  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterTable.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get)
-  //      googleCopy(modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.google.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.local.get)
+  //      googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.local.get)
+  //      googleCopy(schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailLog.google.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailLog.local.get)
   //    
   //    }
   //
   //  case false =>
   //
   //    val cohortStatsInString = {
-  //      modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //      schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
   //        case n if n > 0 =>
   //          val x = "--cohort-stats-in"
   //          val y = for {
-  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //            (k, v) <- schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts
   //          } yield {
   //            s"""${k.id},${v.local.get.toString.split("@")(1)}"""
   //          }
@@ -425,23 +535,23 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   //      }
   //    }
   //    
-  //    val cohortFiltersInString = configModel.design match {
-  //      case "full" => s"""--cohort-filters ${modelStores((configModel, configCohorts, configMeta)).cohortFilters.local.get.toString.split("@")(1)}"""
+  //    val cohortFiltersInString = configSchema.design match {
+  //      case "full" => s"""--cohort-filters ${schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get.toString.split("@")(1)}"""
   //      case _ => ""
   //    }
   //    
-  //    val knockoutFiltersInString = configModel.design match {
-  //      case "full" => s"""--knockout-filters ${modelStores((configModel, configCohorts, configMeta)).knockoutFilters.local.get.toString.split("@")(1)}"""
+  //    val knockoutFiltersInString = configSchema.design match {
+  //      case "full" => s"""--knockout-filters ${schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get.toString.split("@")(1)}"""
   //      case _ => ""
   //    }
   //    
-  //    var cohortStatsIn = Seq(modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.local.get, arrayStores(array).refData.annotationsHt.local.get, modelStores((configModel, configCohorts, configMeta)).filters.local.get, modelStores((configModel, configCohorts, configMeta)).masks.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get)
+  //    var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.local.get, arrayStores(array).refData.annotationsHt.local.get, schemaStores((configSchema, configCohorts, configMeta)).filters.local.get, schemaStores((configSchema, configCohorts, configMeta)).masks.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get)
   //    
-  //    modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
+  //    schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts.size match {
   //      case n if n > 0 =>
   //        cohortStatsIn = cohortStatsIn ++ {
   //          for {
-  //            (k, v) <- modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.cohorts
+  //            (k, v) <- schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.cohorts
   //          } yield {
   //            v.local.get
   //          }
@@ -449,36 +559,36 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], 
   //      case _ => ()
   //    }
   //    
-  //    configModel.design match {
-  //      case "full" => cohortStatsIn = cohortStatsIn ++ Seq(modelStores((configModel, configCohorts, configMeta)).cohortFilters.local.get, modelStores((configModel, configCohorts, configMeta)).knockoutFilters.local.get)
+  //    configSchema.design match {
+  //      case "full" => cohortStatsIn = cohortStatsIn ++ Seq(schemaStores((configSchema, configCohorts, configMeta)).cohortFilters.local.get, schemaStores((configSchema, configCohorts, configMeta)).knockoutFilters.local.get)
   //      case _ => ()
   //    }
   //    
   //    drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
   //    
-  //      cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterModelVariants}
+  //      cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaVariants}
   //        --reference-genome ${projectConfig.referenceGenome}
-  //        --full-stats-in ${modelStores((configModel, configCohorts, configMeta)).variantsStatsHt.base.local.get}
+  //        --full-stats-in ${schemaStores((configSchema, configCohorts, configMeta)).variantsStatsHt.base.local.get}
   //        ${cohortStatsInString}
   //        --annotation ${arrayStores(array).refData.annotationsHt.local.get}
-  //        --filters ${modelStores((configModel, configCohorts, configMeta)).filters.local.get}
+  //        --filters ${schemaStores((configSchema, configCohorts, configMeta)).filters.local.get}
   //        ${cohortFiltersInString}
   //        ${knockoutFiltersInString}
-  //        --masks ${modelStores((configModel, configCohorts, configMeta)).masks.local.get}
+  //        --masks ${schemaStores((configSchema, configCohorts, configMeta)).masks.local.get}
   //        --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.local.get}
-  //        --design ${configModel.design}
-  //        --variant-filters-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get}
-  //        --ht-checkpoint ${modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.local.get}
-  //        --variant-filters-ht-out ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get}
-  //        --log ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.local.get}"""
+  //        --design ${configSchema.design}
+  //        --variant-filters-out ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.local.get}
+  //        --ht-checkpoint ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterHtCheckpoint.local.get}
+  //        --variant-filters-ht-out ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailTable.local.get}
+  //        --log ${schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailLog.local.get}"""
   //          .in(cohortStatsIn)
-  //          .out(modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHtCheckpoint.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get, modelStores((configModel, configCohorts, configMeta)).variantFilterHailLog.local.get)
-  //          .tag(s"${modelStores((configModel, configCohorts, configMeta)).variantFilterTable.local.get}".split("/").last)
+  //          .out(schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHtCheckpoint.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailTable.local.get, schemaStores((configSchema, configCohorts, configMeta)).variantFilterHailLog.local.get)
+  //          .tag(s"${schemaStores((configSchema, configCohorts, configMeta)).variantFilterTable.local.get}".split("/").last)
   //    
   //    }
   //
   //}
-  //
+  
   //groupTests.intersect(configModel.tests).size match {
   //
   //  case n if n > 0 =>

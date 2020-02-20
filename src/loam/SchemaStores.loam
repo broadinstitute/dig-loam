@@ -9,6 +9,10 @@ final case class SchemaBaseCohortStore(
   base: MultiStore,
   cohorts: Map[ConfigCohort, MultiStore])
 
+final case class SchemaBasePhenoStore(
+  base: MultiStore,
+  phenos: Map[ConfigPheno, MultiStore])
+
 final case class SchemaBaseMaskStore(
   base: MultiStore,
   masks: Map[MaskFilter, MultiStore])
@@ -25,10 +29,13 @@ final case class Schema(
   variantsStats: SchemaBaseCohortStore,
   variantsStatsHt: SchemaBaseCohortStore,
   variantsStatsHailLog: SchemaBaseCohortStore,
-  variantFilterTable: MultiStore,
-  variantFilterHailTable: MultiStore,
-  variantFilterHtCheckpoint: MultiStore,
-  variantFilterHailLog: MultiStore,
+  fetMissTable: Map[ConfigPheno, SchemaBaseCohortStore],
+  fetMissHailTable: Map[ConfigPheno, SchemaBaseCohortStore],
+  fetMissHailLog: Map[ConfigPheno, SchemaBaseCohortStore],
+  variantFilterTable: SchemaBasePhenoStore,
+  variantFilterHailTable: SchemaBasePhenoStore,
+  variantFilterHtCheckpoint: SchemaBasePhenoStore,
+  variantFilterHailLog: SchemaBasePhenoStore,
   groupFile: Option[SchemaBaseMaskStore],
   groupFileHailLog: Option[MultiStore],
   vcf: Option[MultiPathVcf],
@@ -194,7 +201,7 @@ val schemaStores = (
           )
         case "strat" => 
           MultiStore(
-            local = Some(store(local_dir / s"${baseString}.variant.stats.hail.log")),
+            local = Some(store(local_dir / s"${nullString}.${cohorts.head.id}.variant.stats.hail.log")),
             google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohorts.head.id}.variant.stats.hail.log")); case false => None }
           )
       },
@@ -209,6 +216,96 @@ val schemaStores = (
         case _ => Map[ConfigCohort, MultiStore]()
       }
     ),
+    fetMissTable = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.fet_miss")).size match {
+      case n if n > 0 =>
+        projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+          pheno -> SchemaBaseCohortStore(
+            base = schema.design match {
+              case "full" => 
+                MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.${pheno.id}.fetmiss.tsv.bgz")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.fetmiss.tsv.bgz")); case false => None }
+                )
+              case "strat" => 
+                MultiStore(
+                  local = Some(store(local_dir / s"${nullString}.${cohorts.head.id}.${pheno.id}.fetmiss.tsv.bgz")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohorts.head.id}.${pheno.id}.fetmiss.tsv.bgz")); case false => None }
+                )
+            },
+            cohorts = (schema.design, schema.filterCohorts.size) match {
+              case ("full", n) if n > 0 =>
+                cohorts.filter(e => schema.filterCohorts.contains(e.id)).map { cohort =>
+                  cohort -> MultiStore(
+                    local = Some(store(local_dir / s"${nullString}.${cohort.id}.${pheno.id}.fetmiss.tsv.bgz")),
+                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohort.id}.${pheno.id}.fetmiss.tsv.bgz")); case false => None }
+                  )
+                }.toMap
+              case _ => Map[ConfigCohort, MultiStore]()
+            }
+          )
+        }.toMap
+      case _ => Map[ConfigPheno, SchemaBaseCohortStore]()
+    },
+    fetMissHailTable = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.fet_miss")).size match {
+      case n if n > 0 =>
+        projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+          pheno -> SchemaBaseCohortStore(
+            base = schema.design match {
+              case "full" => 
+                MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.${pheno.id}.fetmiss.ht")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.fetmiss.ht")); case false => None }
+                )
+              case "strat" => 
+                MultiStore(
+                  local = Some(store(local_dir / s"${nullString}.${cohorts.head.id}.${pheno.id}.fetmiss.ht")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohorts.head.id}.${pheno.id}.fetmiss.ht")); case false => None }
+                )
+            },
+            cohorts = (schema.design, schema.filterCohorts.size) match {
+              case ("full", n) if n > 0 =>
+                cohorts.filter(e => schema.filterCohorts.contains(e.id)).map { cohort =>
+                  cohort -> MultiStore(
+                    local = Some(store(local_dir / s"${nullString}.${cohort.id}.${pheno.id}.fetmiss.ht")),
+                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohort.id}.${pheno.id}.fetmiss.ht")); case false => None }
+                  )
+                }.toMap
+              case _ => Map[ConfigCohort, MultiStore]()
+            }
+          )
+        }.toMap
+      case _ => Map[ConfigPheno, SchemaBaseCohortStore]()
+    },
+    fetMissHailLog = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.fet_miss")).size match {
+      case n if n > 0 =>
+        projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+          pheno -> SchemaBaseCohortStore(
+            base = schema.design match {
+              case "full" => 
+                MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.${pheno.id}.fetmiss.hail.log")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.fetmiss.hail.log")); case false => None }
+                )
+              case "strat" => 
+                MultiStore(
+                  local = Some(store(local_dir / s"${nullString}.${cohorts.head.id}.${pheno.id}.fetmiss.hail.log")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohorts.head.id}.${pheno.id}.fetmiss.hail.log")); case false => None }
+                )
+            },
+            cohorts = (schema.design, schema.filterCohorts.size) match {
+              case ("full", n) if n > 0 =>
+                cohorts.filter(e => schema.filterCohorts.contains(e.id)).map { cohort =>
+                  cohort -> MultiStore(
+                    local = Some(store(local_dir / s"${nullString}.${cohort.id}.${pheno.id}.fetmiss.hail.log")),
+                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${nullString}.${cohort.id}.${pheno.id}.fetmiss.hail.log")); case false => None }
+                  )
+                }.toMap
+              case _ => Map[ConfigCohort, MultiStore]()
+            }
+          )
+        }.toMap
+      case _ => Map[ConfigPheno, SchemaBaseCohortStore]()
+    },
     variantFilterTable = MultiStore(
       local = Some(store(local_dir / s"${baseString}.variant.filters.tsv.bgz")),
       google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.filters.tsv.bgz")); case false => None }

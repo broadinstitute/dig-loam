@@ -144,7 +144,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 
 	return mt
 
-def add_case_ctrl_stats(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr, is_case: hl.tstr = None) -> hl.MatrixTable:
+def add_case_ctrl_stats(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr, is_case: hl.tstr) -> hl.MatrixTable:
 
 	num_case_males = mt.aggregate_cols(hl.agg.count_where((~ mt[is_female]) & (mt.pheno[is_case] == 1)))
 	num_case_females = mt.aggregate_cols(hl.agg.count_where((mt[is_female]) & (mt.pheno[is_case] == 1)))
@@ -312,49 +312,11 @@ def add_case_ctrl_stats(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.t
 				mt[variant_qc].AF_ctrl <= 0.5,
 				mt[variant_qc].AF_ctrl,
 				1 - mt[variant_qc].AF_ctrl
-			)
+			),
+			fet_miss = hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)),
+			fet_assoc = hl.fisher_exact_test(hl.int32(mt[variant_qc].AC_case), hl.int32(mt[variant_qc].AC_ref_case), hl.int32(mt[variant_qc].AC_ctrl), hl.int32(mt[variant_qc].AC_ref_ctrl))
 		)}
 	)
-
-	return mt
-
-def add_fet_miss(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = None) -> hl.MatrixTable:
-
-	if 'variant_qc' not in list(mt.row_value):
-		mt = mt.annotate_rows(
-			variant_qc = hl.struct()
-		)
-
-	if 'n_case_called' not in list(mt[variant_qc].keys()):
-		mt = mt.annotate_rows(
-			**{variant_qc: mt[variant_qc].annotate(
-				n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
-				n_case_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 1)),
-				n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
-				n_ctrl_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 0)),
-			)}
-		)
-
-	mt = mt.annotate_rows(
-		**{variant_qc: mt[variant_qc].annotate(
-			fet_miss = hl.cond((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0), hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64)), hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)))
-		)}
-	)
-
-	return mt
-
-def add_fet_assoc(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = None) -> hl.MatrixTable:
-
-	if 'variant_qc' not in list(mt.row_value):
-		print("ERROR: must run methods 'variant_qc' and 'add_case_ctrl_stats' prior to running 'add_fet_assoc'")
-	elif 'AC_case' not in list(mt[variant_qc].keys()):
-		print("ERROR: must run method 'add_case_ctrl_stats' prior to running 'add_fet_assoc'")
-	else:
-		mt = mt.annotate_rows(
-			**{variant_qc: mt[variant_qc].annotate(
-				fet_assoc = hl.fisher_exact_test(hl.int32(mt[variant_qc].AC_case), hl.int32(mt[variant_qc].AC_ref_case), hl.int32(mt[variant_qc].AC_ctrl), hl.int32(mt[variant_qc].AC_ref_ctrl))
-			)}
-		)
 
 	return mt
 

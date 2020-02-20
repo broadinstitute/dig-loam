@@ -1,4 +1,5 @@
 import ProjectConfig._
+import Fxns._
 
 final case class SchemaCohort(
     schema: ConfigSchema,
@@ -94,6 +95,24 @@ final case class SchemaMetaCohort(
       result
   }
 }
+
+final case class SchemaFilterField(
+    schema: ConfigSchema,
+    fields: Seq[String]) {
+  def canEqual(a: Any) = a.isInstanceOf[SchemaFilterField]
+  override def equals(that: Any): Boolean = that match {
+    case that: SchemaFilterField => that.canEqual(this) && this.hashCode == that.hashCode
+    case _ => false
+  }
+  override def hashCode: Int = {
+      val prime = 31
+      var result = 1
+      result = prime * result + schema.id.hashCode
+      result = prime * result + fields.hashCode
+      result
+  }
+}
+
 
 //final case class SchemaModelMetaCohort(
 //    schema: ConfigSchema,
@@ -262,6 +281,55 @@ val schemaMetaCohorts: Seq[SchemaMetaCohort] = {
     )
   }
 }.distinct
+
+val schemaFilterFields: Seq[SchemaFilterField] = {
+  for {
+    schema <- projectConfig.Schemas
+  } yield {
+    var filterFields = Seq[String]()
+    schema.filters match {
+      case Some(l) => filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = l)
+      case None => ()
+    }
+    (schema.design, schema.cohortFilters) match {
+      case ("full", Some(l)) =>
+        for {
+          cf <- l if schema.cohorts.contains(cf.cohort)
+        } yield {
+          filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+        }
+      case ("strat", Some(l)) =>
+        for {
+          cf <- l if schema.cohorts.head == cf.cohort
+        } yield {
+          filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+        }
+      case _ => ()
+    }
+    (schema.design, schema.knockoutFilters) match {
+      case ("full", Some(l)) =>
+        for {
+          cf <- l if schema.cohorts.contains(cf.cohort)
+        } yield {
+          filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = cf.filters)
+        }
+      case _ => ()
+    }
+    schema.masks match {
+      case Some(l) =>
+        for {
+          mf <- l
+        } yield {
+          filterFields = filterFields ++ getFilterFields(cfg = projectConfig, filters = mf.filters)
+        }
+      case None => ()
+    }
+    SchemaFilterField(
+      schema = schema,
+      fields = filterFields
+    )
+  }
+}
 
 //val schemaModelMetaCohorts: Seq[SchemaModelMetaCohort] = {
 //  for {
