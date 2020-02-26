@@ -361,6 +361,7 @@ final case class Python(
   pyHailExportCleanArrayData: Path,
   //pyHailFilterModelVariants: Path,
   pyHailFilterSchemaVariants: Path,
+  pyHailFilterSchemaPhenoVariants: Path,
   pyHailGenerateGroupfile: Path,
   pyHailGenerateModelVcf: Path
   //pyHailFilterResults: Path,
@@ -1383,6 +1384,7 @@ object ProjectConfig {
       pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
       //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
       pyHailFilterSchemaVariants = path(s"${scriptsDir}/hail_filter_schema_variants.py"),
+      pyHailFilterSchemaPhenoVariants = path(s"${scriptsDir}/hail_filter_schema_pheno_variants.py"),
       pyHailGenerateGroupfile = path(s"${scriptsDir}/hail_generate_groupfile.py"),
       pyHailGenerateModelVcf = path(s"${scriptsDir}/hail_generate_model_vcf.py")
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
