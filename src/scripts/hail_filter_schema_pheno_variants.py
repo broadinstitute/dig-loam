@@ -41,6 +41,7 @@ def main(args=None):
 	print("annotate hail table with schema filters")
 	tbl = hl.read_table(args.schema_filters_in, )
 	tbl = tbl.key_by('locus','alleles','rsid')
+	schema_fields_keep = [x for x in list(tbl.row_value.keys()) if x != 'annotation']
 	ht = ht.join(tbl)
 
 	print("key rows by locus and alleles")
@@ -120,7 +121,7 @@ def main(args=None):
 			cohort_stats[x.split(",")[0]] = x.split(",")[1]
 
 	exclude_any_fields = []
-	fields_out = ['rsid','annotation']
+	fields_out = ['rsid','annotation'] + schema_fields_keep
 
 	# read in each cohort table and add cohort_filters and knockout_filters
 	knockout_fields = []
@@ -158,13 +159,15 @@ def main(args=None):
 			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
 			fields_out = fields_out + ['ls_mask_' + m]
 
-	fields_out = fields_out + ['ls_global_exclude', 'ls_pheno_global_exclude']
+	fields_out = fields_out + ['ls_schema_global_exclude', 'ls_pheno_global_exclude']
+	ht = ht.annotate(ls_schema_global_exclude = ht.ls_global_exclude)
 	ht = ht.annotate(ls_pheno_global_exclude = 0)
-	ht = ht.annotate(ls_pheno_global_exclude = hl.cond(ht.ls_global_exclude == 1, 1, ht.ls_pheno_global_exclude))
+	ht = ht.annotate(ls_global_exclude = 0)
 	for f in exclude_any_fields:
 		print("update global exclusion column based on " + f)
 		ls_struct, ls_field = f.split(".")
 		ht = ht.annotate(ls_pheno_global_exclude = hl.cond(ht[ls_struct][ls_field] == 1, 1, ht.ls_pheno_global_exclude))
+	ht = ht.annotate(ls_global_exclude = hl.cond((ht.ls_schema_global_exclude == 1) | (ht.ls_pheno_global_exclude == 1), 1, ht.ls_global_exclude))
 
 	# select fields to keep from hail table and write to file
 	ht = ht.select(*fields_out)

@@ -12,6 +12,7 @@ import Kinship._
 import Load._
 import Pca._
 import Prepare._
+import PrepareModel._
 import PrepareSchema._
 import ProjectConfig._
 import ProjectStores._
@@ -122,12 +123,21 @@ projectStores.phenoFile.local match {
     
     }
     
-    // Prepare standard cohort schema
+    // Prepare schema cohorts
     for {
       x <- schemaCohorts
     } yield {
     
-      PrepareSchema(configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+      PrepareSchema(configSchema = x.schema, configCohorts = x.cohorts)
+    
+    }
+
+    // Prepare model cohorts
+    for {
+      x <- schemaModelCohorts
+    } yield {
+    
+      PrepareModel(configSchema = x.schema, configModel = x.model, configCohorts = x.cohorts, configMeta = None)
     
     }
     

@@ -1081,6 +1081,56 @@ object ProjectConfig {
           case _ => ()
         }
 
+        val knockoutPhenoFilters = knockoutFilters match {
+          case Some(s) => s.map(e => e.filters).flatten
+          case None => Seq()
+        }
+        for {
+          f <- knockoutPhenoFilters
+        } yield {
+          f match {
+            case n if numericVariantFilters.map(e => e.id) contains n =>
+              numericVariantFilters.filter(e => e.id == n).head.field.startsWith("variant_qc.fet_miss") match {
+                case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
+                case false => ()
+              }
+            case o if booleanVariantFilters.map(e => e.id) contains o =>
+              booleanVariantFilters.filter(e => e.id == o).head.field.startsWith("variant_qc.fet_miss") match {
+                case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
+                case false => ()
+              }
+            case p if categoricalVariantFilters.map(e => e.id) contains p =>
+              categoricalVariantFilters.filter(e => e.id == p).head.field.startsWith("variant_qc.fet_miss") match {
+                case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
+                case false => ()
+              }
+            case q if compoundVariantFilters.map(e => e.id) contains q =>
+              for {
+                cf <- compoundVariantFilters.filter(e => e.id == q).head.filters
+              } yield {
+                cf match {
+                  case n if numericVariantFilters.map(e => e.id) contains n =>
+                    n.startsWith("variant_qc.fet_miss") match {
+                      case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
+                      case false => ()
+                    }
+                  case b if booleanVariantFilters.map(e => e.id) contains b =>
+                    b.startsWith("variant_qc.fet_miss") match {
+                      case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
+                      case false => ()
+                    }
+                  case c if categoricalVariantFilters.map(e => e.id) contains c =>
+                    c.startsWith("variant_qc.fet_miss") match {
+                      case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
+                      case false => ()
+                    }
+                  case _ => ()
+                }
+              }
+            case _ => ()
+          }
+        }
+
         val masks = optionalObjList(config = schema, field = "masks") match {
           case Some(s) =>
             val x = for {
