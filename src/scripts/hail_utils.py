@@ -346,10 +346,10 @@ def add_diff_miss(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = No
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
-			diff_miss_expected_c1 = (hl.int32(mt[variant_qc].diff_miss_row1_sum) * hl.int32(mt[variant_qc].diff_miss_col1_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
-			diff_miss_expected_c2 = (hl.int32(mt[variant_qc].diff_miss_row1_sum) * hl.int32(mt[variant_qc].diff_miss_col2_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
-			diff_miss_expected_c3 = (hl.int32(mt[variant_qc].diff_miss_row2_sum) * hl.int32(mt[variant_qc].diff_miss_col1_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
-			diff_miss_expected_c4 = (hl.int32(mt[variant_qc].diff_miss_row2_sum) * hl.int32(mt[variant_qc].diff_miss_col2_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
+			diff_miss_expected_c1 = (mt[variant_qc].diff_miss_row1_sum * mt[variant_qc].diff_miss_col1_sum) / mt[variant_qc].diff_miss_tbl_sum,
+			diff_miss_expected_c2 = (mt[variant_qc].diff_miss_row1_sum * mt[variant_qc].diff_miss_col2_sum) / mt[variant_qc].diff_miss_tbl_sum,
+			diff_miss_expected_c3 = (mt[variant_qc].diff_miss_row2_sum * mt[variant_qc].diff_miss_col1_sum) / mt[variant_qc].diff_miss_tbl_sum,
+			diff_miss_expected_c4 = (mt[variant_qc].diff_miss_row2_sum * mt[variant_qc].diff_miss_col2_sum) / mt[variant_qc].diff_miss_tbl_sum
 		)}
 	)
 
@@ -359,7 +359,7 @@ def add_diff_miss(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = No
 				((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0)), 
 				hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'NA'),
 				hl.cond(
-					((hl.int32(mt[variant_qc].diff_miss_expected_c1) < diff_miss_min_expected_cell_count) | (hl.int32(mt[variant_qc].diff_miss_expected_c2) < diff_miss_min_expected_cell_count) | (hl.int32(mt[variant_qc].diff_miss_expected_c3) < diff_miss_min_expected_cell_count) | (hl.int32(mt[variant_qc].diff_miss_expected_c4) < diff_miss_min_expected_cell_count)),
+					((mt[variant_qc].diff_miss_expected_c1 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c2 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c3 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c4 < diff_miss_min_expected_cell_count)),
 					hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(test = 'fisher_exact'),
 					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'chi_squared')
 				)
