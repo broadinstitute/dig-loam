@@ -59,9 +59,9 @@ def main(args=None):
 		mt = mt.filter_cols(mt.COHORT == args.cohort)
 		
 	start_time = time.time()
-	mt = hail_utils.add_fet_miss(mt, variant_qc = "variant_qc", is_case = args.pheno_col)
+	mt = hail_utils.add_diff_miss(mt, variant_qc = "variant_qc", is_case = args.pheno_col, diff_miss_min_expected_cell_count = args.diff_miss_min_expected_cell_count)
 	elapsed_time = time.time() - start_time
-	print(time.strftime("calculate fisher exact test for differential missingness on " + str(mt.cols().count()) + " samples and " + str(mt.rows().count()) + " variants - %H:%M:%S", time.gmtime(elapsed_time)))
+	print(time.strftime("calculate contingency table test for differential missingness on " + str(mt.cols().count()) + " samples and " + str(mt.rows().count()) + " variants - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	print("write variant stats to hail table")
 	tbl = mt.rows().drop("info","variant_qc_raw")
@@ -81,6 +81,7 @@ if __name__ == "__main__":
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cohort', help='a cohort id')
+	parser.add_argument('--diff-miss-min-expected-cell-count', type=int, default = 5, help='the minimum expected cell count value needed to trigger a chi square test over a fisher exact test')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

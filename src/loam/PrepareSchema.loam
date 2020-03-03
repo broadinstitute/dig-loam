@@ -54,7 +54,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
   
   }
 
-  val fetMissPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.fet_miss")).size match {
+  val fetMissPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
     case n if n > 0 => projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
     case _ => Seq[ConfigPheno]()
   }
@@ -101,13 +101,14 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
         googleWith(projectConfig.cloudResources.mtCluster) {
 
-          hail"""${utils.python.pyHailSchemaPhenoFetMiss} --
+          hail"""${utils.python.pyHailSchemaPhenoDiffMiss} --
             --hail-utils ${projectStores.hailUtils.google.get}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.google.get}
             --pheno-in ${projectStores.phenoFile.google.get}
 	        --pheno-col ${pheno.id}
             --iid-col ${projectConfig.phenoFileId}
+            --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
             --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
             --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.google.get}
             --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
@@ -153,12 +154,13 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
-          cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoFetMiss}
+          cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoDiffMiss}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --pheno-in ${projectStores.phenoFile.local.get}
 	        --pheno-col ${pheno.id}
             --iid-col ${projectConfig.phenoFileId}
+            --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
             --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
             --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}
             --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
@@ -220,13 +222,14 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
             
               googleWith(projectConfig.cloudResources.mtCluster) {
             
-                hail"""${utils.python.pyHailSchemaPhenoFetMiss} --
+                hail"""${utils.python.pyHailSchemaPhenoDiffMiss} --
                   --hail-utils ${projectStores.hailUtils.google.get}
                   --reference-genome ${projectConfig.referenceGenome}
                   --mt-in ${arrayStores(array).refData.mt.google.get}
                   --pheno-in ${projectStores.phenoFile.google.get}
 	              --pheno-col ${pheno.id}
                   --iid-col ${projectConfig.phenoFileId}
+                  --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
                   --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
                   --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).google.get}
                   --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).google.get}
@@ -273,12 +276,13 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
             
               drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
             
-                cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoFetMiss}
+                cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoDiffMiss}
                   --reference-genome ${projectConfig.referenceGenome}
                   --mt-in ${arrayStores(array).refData.mt.local.get}
                   --pheno-in ${projectStores.phenoFile.local.get}
 	              --pheno-col ${pheno.id}
                   --iid-col ${projectConfig.phenoFileId}
+                  --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
                   --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
                   --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}
                   --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get}
@@ -342,10 +346,10 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
     case None => ()
   }
 
-  val baseFilters = filters.filter(e => ! e.contains("variant_qc.fet_miss"))
-  val baseCohortFilters = cohortFilters.filter(e => ! e.contains("variant_qc.fet_miss"))
-  val baseKnockoutFilters = knockoutFilters.filter(e => ! e.contains("variant_qc.fet_miss"))
-  val baseMasks = masks.filter(e => ! e.contains("variant_qc.fet_miss"))
+  val baseFilters = filters.filter(e => ! e.contains("variant_qc.diff_miss"))
+  val baseCohortFilters = cohortFilters.filter(e => ! e.contains("variant_qc.diff_miss"))
+  val baseKnockoutFilters = knockoutFilters.filter(e => ! e.contains("variant_qc.diff_miss"))
+  val baseMasks = masks.filter(e => ! e.contains("variant_qc.diff_miss"))
 
   val fString = baseFilters.size match {
   
@@ -533,10 +537,10 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
   
   }
 
-  val phenoFilters = filters.filter(e => e.contains("variant_qc.fet_miss"))
-  val phenoCohortFilters = cohortFilters.filter(e => e.contains("variant_qc.fet_miss"))
-  val phenoKnockoutFilters = knockoutFilters.filter(e => e.contains("variant_qc.fet_miss"))
-  val phenoMasks = masks.filter(e => e.contains("variant_qc.fet_miss"))
+  val phenoFilters = filters.filter(e => e.contains("variant_qc.diff_miss"))
+  val phenoCohortFilters = cohortFilters.filter(e => e.contains("variant_qc.diff_miss"))
+  val phenoKnockoutFilters = knockoutFilters.filter(e => e.contains("variant_qc.diff_miss"))
+  val phenoMasks = masks.filter(e => e.contains("variant_qc.diff_miss"))
 
   for {
   

@@ -290,6 +290,7 @@ final case class ProjectConfig(
   minPCs: Int,
   maxPCs: Int,
   nStddevs: Int,
+  diffMissMinExpectedCellCount: Int,
   cloudResources: ConfigCloudResources,
   resources: ConfigResources,
   nArrays: Int,
@@ -356,7 +357,7 @@ final case class Python(
   pyHailUtils: Path,
   //pyHailModelVariantStats: Path,
   pyHailSchemaVariantStats: Path,
-  pyHailSchemaPhenoFetMiss: Path,
+  pyHailSchemaPhenoDiffMiss: Path,
   pyHailAssoc: Path,
   pyHailExportCleanArrayData: Path,
   //pyHailFilterModelVariants: Path,
@@ -492,6 +493,7 @@ object ProjectConfig {
     val minPCs = requiredInt(config = config, field = "minPCs", min = Some(0), max = Some(20))
     val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
     val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
+    val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
 
     val cloudResources = ConfigCloudResources(
       mtCluster = {
@@ -1090,17 +1092,17 @@ object ProjectConfig {
         } yield {
           f match {
             case n if numericVariantFilters.map(e => e.id) contains n =>
-              numericVariantFilters.filter(e => e.id == n).head.field.startsWith("variant_qc.fet_miss") match {
+              numericVariantFilters.filter(e => e.id == n).head.field.startsWith("variant_qc.diff_miss") match {
                 case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
                 case false => ()
               }
             case o if booleanVariantFilters.map(e => e.id) contains o =>
-              booleanVariantFilters.filter(e => e.id == o).head.field.startsWith("variant_qc.fet_miss") match {
+              booleanVariantFilters.filter(e => e.id == o).head.field.startsWith("variant_qc.diff_miss") match {
                 case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
                 case false => ()
               }
             case p if categoricalVariantFilters.map(e => e.id) contains p =>
-              categoricalVariantFilters.filter(e => e.id == p).head.field.startsWith("variant_qc.fet_miss") match {
+              categoricalVariantFilters.filter(e => e.id == p).head.field.startsWith("variant_qc.diff_miss") match {
                 case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
                 case false => ()
               }
@@ -1110,17 +1112,17 @@ object ProjectConfig {
               } yield {
                 cf match {
                   case n if numericVariantFilters.map(e => e.id) contains n =>
-                    n.startsWith("variant_qc.fet_miss") match {
+                    n.startsWith("variant_qc.diff_miss") match {
                       case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
                       case false => ()
                     }
                   case b if booleanVariantFilters.map(e => e.id) contains b =>
-                    b.startsWith("variant_qc.fet_miss") match {
+                    b.startsWith("variant_qc.diff_miss") match {
                       case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
                       case false => ()
                     }
                   case c if categoricalVariantFilters.map(e => e.id) contains c =>
-                    c.startsWith("variant_qc.fet_miss") match {
+                    c.startsWith("variant_qc.diff_miss") match {
                       case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
                       case false => ()
                     }
@@ -1352,6 +1354,7 @@ object ProjectConfig {
       minPCs = minPCs,
       maxPCs = maxPCs,
       nStddevs = nStddevs,
+      diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
       cloudResources = cloudResources,
       resources = resources,
       nArrays = nArrays,
@@ -1430,7 +1433,7 @@ object ProjectConfig {
       pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
       //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
       pyHailSchemaVariantStats = path(s"${scriptsDir}/hail_schema_variant_stats.py"),
-      pyHailSchemaPhenoFetMiss = path(s"${scriptsDir}/hail_schema_pheno_fet_miss.py"),
+      pyHailSchemaPhenoDiffMiss = path(s"${scriptsDir}/hail_schema_pheno_diff_miss.py"),
       pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
       //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
       pyHailFilterSchemaVariants = path(s"${scriptsDir}/hail_filter_schema_variants.py"),

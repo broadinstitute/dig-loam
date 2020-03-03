@@ -318,26 +318,52 @@ def add_case_ctrl_stats(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.t
 
 	return mt
 
-def add_fet_miss(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = None) -> hl.MatrixTable:
+def add_diff_miss(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = None, diff_miss_min_expected_cell_count: hl.tint32 = 5) -> hl.MatrixTable:
 
 	if 'variant_qc' not in list(mt.row_value):
 		mt = mt.annotate_rows(
 			variant_qc = hl.struct()
 		)
 
-	if 'n_case_called' not in list(mt[variant_qc].keys()):
-		mt = mt.annotate_rows(
-			**{variant_qc: mt[variant_qc].annotate(
-				n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
-				n_case_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 1)),
-				n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
-				n_ctrl_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 0)),
-			)}
-		)
+	mt = mt.annotate_rows(
+		**{variant_qc: mt[variant_qc].annotate(
+			n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
+			n_case_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 1)),
+			n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
+			n_ctrl_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 0))
+		)}
+	)
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
-			fet_miss = hl.cond((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0), hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64)), hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)))
+			diff_miss_row1_sum = hl.int32(mt[variant_qc].n_case_called) + hl.int32(mt[variant_qc].n_ctrl_called),
+			diff_miss_row2_sum = hl.int32(mt[variant_qc].n_case_not_called) + hl.int32(mt[variant_qc].n_ctrl_not_called),
+			diff_miss_col1_sum = hl.int32(mt[variant_qc].n_case_called) + hl.int32(mt[variant_qc].n_case_not_called),
+			diff_miss_col2_sum = hl.int32(mt[variant_qc].n_ctrl_called) + hl.int32(mt[variant_qc].n_ctrl_not_called),
+			diff_miss_tbl_sum = hl.int32(mt[variant_qc].n_case_called) + hl.int32(mt[variant_qc].n_ctrl_called) + hl.int32(mt[variant_qc].n_case_not_called) + hl.int32(mt[variant_qc].n_ctrl_not_called)
+		)}
+	)
+
+	mt = mt.annotate_rows(
+		**{variant_qc: mt[variant_qc].annotate(
+			diff_miss_expected_c1 = (hl.int32(mt[variant_qc].diff_miss_row1_sum) * hl.int32(mt[variant_qc].diff_miss_col1_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
+			diff_miss_expected_c2 = (hl.int32(mt[variant_qc].diff_miss_row1_sum) * hl.int32(mt[variant_qc].diff_miss_col2_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
+			diff_miss_expected_c3 = (hl.int32(mt[variant_qc].diff_miss_row2_sum) * hl.int32(mt[variant_qc].diff_miss_col1_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
+			diff_miss_expected_c4 = (hl.int32(mt[variant_qc].diff_miss_row2_sum) * hl.int32(mt[variant_qc].diff_miss_col2_sum)) / hl.int32(mt[variant_qc].diff_miss_tbl_sum),
+		)}
+	)
+
+	mt = mt.annotate_rows(
+		**{variant_qc: mt[variant_qc].annotate(
+			diff_miss = hl.cond(
+				((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0)), 
+				hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'NA'),
+				hl.cond(
+					((hl.int32(mt[variant_qc].diff_miss_expected_c1) < diff_miss_min_expected_cell_count) | (hl.int32(mt[variant_qc].diff_miss_expected_c2) < diff_miss_min_expected_cell_count) | (hl.int32(mt[variant_qc].diff_miss_expected_c3) < diff_miss_min_expected_cell_count) | (hl.int32(mt[variant_qc].diff_miss_expected_c4) < diff_miss_min_expected_cell_count)),
+					hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(test = 'fisher_exact'),
+					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'chi_squared')
+				)
+			)
 		)}
 	)
 
