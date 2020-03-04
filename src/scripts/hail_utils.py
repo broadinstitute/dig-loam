@@ -336,11 +336,11 @@ def add_diff_miss(mt: hl.MatrixTable, variant_qc: hl.tstr, is_case: hl.tstr = No
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
-			diff_miss_row1_sum = hl.int32(mt[variant_qc].n_case_called) + hl.int32(mt[variant_qc].n_ctrl_called),
-			diff_miss_row2_sum = hl.int32(mt[variant_qc].n_case_not_called) + hl.int32(mt[variant_qc].n_ctrl_not_called),
-			diff_miss_col1_sum = hl.int32(mt[variant_qc].n_case_called) + hl.int32(mt[variant_qc].n_case_not_called),
-			diff_miss_col2_sum = hl.int32(mt[variant_qc].n_ctrl_called) + hl.int32(mt[variant_qc].n_ctrl_not_called),
-			diff_miss_tbl_sum = hl.int32(mt[variant_qc].n_case_called) + hl.int32(mt[variant_qc].n_ctrl_called) + hl.int32(mt[variant_qc].n_case_not_called) + hl.int32(mt[variant_qc].n_ctrl_not_called)
+			diff_miss_row1_sum = mt[variant_qc].n_case_called + mt[variant_qc].n_ctrl_called,
+			diff_miss_row2_sum = mt[variant_qc].n_case_not_called + mt[variant_qc].n_ctrl_not_called,
+			diff_miss_col1_sum = mt[variant_qc].n_case_called + mt[variant_qc].n_case_not_called,
+			diff_miss_col2_sum = mt[variant_qc].n_ctrl_called + mt[variant_qc].n_ctrl_not_called,
+			diff_miss_tbl_sum = mt[variant_qc].n_case_called + mt[variant_qc].n_ctrl_called + mt[variant_qc].n_case_not_called + mt[variant_qc].n_ctrl_not_called
 		)}
 	)
 
