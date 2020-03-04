@@ -16,8 +16,8 @@ def trackObjects(): Unit = {
 
   writeObject(obj = schemaCohorts, filename = s"${dirTree.base.local.get}/cfg.schemaCohorts")
   writeObject(obj = schemaFilterFields, filename = s"${dirTree.base.local.get}/cfg.schemaFilterFields")
-  writeObject(obj = schemaModelCohorts, filename = s"${dirTree.base.local.get}/cfg.schemaModelCohorts")
-  writeObject(obj = schemaModelMetaCohorts, filename = s"${dirTree.base.local.get}/cfg.schemaModelMetaCohorts")
+  writeObject(obj = modelSchemaCohorts, filename = s"${dirTree.base.local.get}/cfg.modelSchemaCohorts")
+  writeObject(obj = modelSchemaMetaCohorts, filename = s"${dirTree.base.local.get}/cfg.modelSchemaMetaCohorts")
   //writeObject(obj = modelCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelCohortKnowns")
   //writeObject(obj = modelMetaCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelMetaCohortKnowns")
   

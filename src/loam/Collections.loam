@@ -54,40 +54,40 @@ final case class SchemaFilterField(
   }
 }
 
-final case class SchemaModelCohort(
-    schema: ConfigSchema,
+final case class ModelSchemaCohort(
     model: ConfigModel,
+    schema: ConfigSchema,
     cohorts: Seq[ConfigCohort]) {
-  def canEqual(a: Any) = a.isInstanceOf[SchemaModelCohort]
+  def canEqual(a: Any) = a.isInstanceOf[ModelSchemaCohort]
   override def equals(that: Any): Boolean = that match {
-    case that: SchemaModelCohort => that.canEqual(this) && this.hashCode == that.hashCode
+    case that: ModelSchemaCohort => that.canEqual(this) && this.hashCode == that.hashCode
     case _ => false
   }
   override def hashCode: Int = {
       val prime = 31
       var result = 1
-      result = prime * result + schema.id.hashCode
       result = prime * result + model.id.hashCode
+      result = prime * result + schema.id.hashCode
       result = prime * result + cohorts.map(e => e.id).hashCode
       result
   }
 }
 
-final case class SchemaModelMetaCohort(
-    schema: ConfigSchema,
+final case class ModelSchemaMetaCohort(
     model: ConfigModel,
+    schema: ConfigSchema,
     meta: ConfigMeta,
     cohorts: Seq[ConfigCohort]) {
-  def canEqual(a: Any) = a.isInstanceOf[SchemaModelMetaCohort]
+  def canEqual(a: Any) = a.isInstanceOf[ModelSchemaMetaCohort]
   override def equals(that: Any): Boolean = that match {
-    case that: SchemaModelMetaCohort => that.canEqual(this) && this.hashCode == that.hashCode
+    case that: ModelSchemaMetaCohort => that.canEqual(this) && this.hashCode == that.hashCode
     case _ => false
   }
   override def hashCode: Int = {
       val prime = 31
       var result = 1
-      result = prime * result + schema.id.hashCode
       result = prime * result + model.id.hashCode
+      result = prime * result + schema.id.hashCode
       result = prime * result + meta.id.hashCode
       result = prime * result + cohorts.map(e => e.id).hashCode
       result
@@ -95,8 +95,8 @@ final case class SchemaModelMetaCohort(
 }
 
 val schemaCohorts: Seq[SchemaCohort] = {
-  val x = for {
-    schema <- projectConfig.Schemas.filter(e => ! e.metas.isDefined)
+  for {
+    schema <- projectConfig.Schemas
   } yield {
     schema.design match {
       case "full" =>
@@ -115,26 +115,7 @@ val schemaCohorts: Seq[SchemaCohort] = {
         }
     }
   }
-  val y = for {
-    schema <- projectConfig.Schemas.filter(e => e.metas.isDefined && e.design == "strat")
-  } yield {
-    val metaCohorts = for {
-      meta <- projectConfig.Metas.filter(e => schema.metas.get.contains(e.id))
-      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
-    } yield {
-      cohort
-    }
-    for {
-      cohort <- projectConfig.Cohorts.filter(e => schema.cohorts.contains(e.id)) diff metaCohorts
-    } yield {
-      SchemaCohort(
-        schema = schema,
-        cohorts = Seq(cohort)
-      )
-    }
-  }
-  (x ++ y).flatten
-}.distinct
+}.flatten.distinct
 
 //val schemaMetaCohorts: Seq[SchemaMetaCohort] = {
 //  for {
@@ -199,61 +180,40 @@ val schemaFilterFields: Seq[SchemaFilterField] = {
   }
 }
 
-val schemaModelCohorts: Seq[SchemaModelCohort] = {
-  val x = for {
-    schema <- projectConfig.Schemas.filter(e => ! e.metas.isDefined)
-    model <- projectConfig.Models.filter(e => e.schema == schema.id)
+val modelSchemaCohorts: Seq[ModelSchemaCohort] = {
+  for {
+    model <- projectConfig.Models
+    schema <- projectConfig.Schemas.filter(e => e.id == model.schema)
   } yield {
     schema.design match {
       case "full" =>
-        Seq(SchemaModelCohort(
-          schema = schema,
+        Seq(ModelSchemaCohort(
           model = model,
-          cohorts = projectConfig.Cohorts.filter(e => schema.cohorts.contains(e.id))
+          schema = schema,
+          cohorts = projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id))
         ))
       case "strat" =>
         for {
-          cohort <- projectConfig.Cohorts.filter(e => schema.cohorts.contains(e.id))
+          cohort <- projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id))
         } yield {
-         SchemaModelCohort(
-           schema = schema,
-           model = model,
-           cohorts = Seq(cohort)
-         )
+          ModelSchemaCohort(
+            model = model,
+            schema = schema,
+            cohorts = Seq(cohort)
+          )
         }
     }
   }
-  val y = for {
-    schema <- projectConfig.Schemas.filter(e => e.metas.isDefined && e.design == "strat")
-    model <- projectConfig.Models.filter(e => e.schema == schema.id)
-  } yield {
-    val metaCohorts = for {
-      meta <- projectConfig.Metas.filter(e => schema.metas.get.contains(e.id))
-      cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
-    } yield {
-      cohort
-    }
-    for {
-      cohort <- projectConfig.Cohorts.filter(e => schema.cohorts.contains(e.id)) diff metaCohorts
-    } yield {
-      SchemaModelCohort(
-        schema = schema,
-        model = model,
-        cohorts = Seq(cohort)
-      )
-    }
-  }
-  (x ++ y).flatten
-}.distinct
+}.flatten.distinct
 
-val schemaModelMetaCohorts: Seq[SchemaModelMetaCohort] = {
+val modelSchemaMetaCohorts: Seq[ModelSchemaMetaCohort] = {
   for {
-    schema <- projectConfig.Schemas.filter(e => e.metas.isDefined && e.design == "strat")
-    model <- projectConfig.Models.filter(e => e.schema == schema.id)
-    meta <- projectConfig.Metas.filter(e => schema.metas.get.contains(e.id))
+    model <- projectConfig.Models.filter(e => e.metas.isDefined)
+    schema <- projectConfig.Schemas.filter(e => e.id == model.schema)
+    meta <- projectConfig.Metas.filter(e => model.metas.get.contains(e.id))
     cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
   } yield {
-    SchemaModelMetaCohort(
+    ModelSchemaMetaCohort(
       schema = schema,
       model = model,
       meta = meta,

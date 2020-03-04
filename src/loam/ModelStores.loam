@@ -67,18 +67,18 @@ final case class Model(
 
 val modelStores = (
   (for {
-    x <- schemaModelCohorts
+    x <- modelSchemaCohorts
   } yield {
-    (x.schema, x.model, x.cohorts, None)
+    (x.model, x.schema, x.cohorts, None)
   }) ++
   (for {
-    x <- schemaModelMetaCohorts
+    x <- modelSchemaMetaCohorts
   } yield {
-    (x.schema, x.model, x.cohorts, Some(x.meta))
+    (x.model, x.schema, x.cohorts, Some(x.meta))
   })).map { sm =>
 
-  val schema = sm._1
-  val model = sm._2
+  val model = sm._1
+  val schema = sm._2
   val cohorts = sm._3
   val meta: Option[ConfigMeta] = sm._4
 

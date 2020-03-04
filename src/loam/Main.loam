@@ -134,10 +134,10 @@ projectStores.phenoFile.local match {
 
     // Prepare model cohorts
     for {
-      x <- schemaModelCohorts
+      x <- modelSchemaCohorts
     } yield {
     
-      PrepareModel(configSchema = x.schema, configModel = x.model, configCohorts = x.cohorts, configMeta = None)
+      PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
     
     }
     

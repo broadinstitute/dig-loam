@@ -216,8 +216,6 @@ final case class ConfigSchema(
   cohorts: Seq[String],
   samplesKeep: Option[String],
   samplesExclude: Option[String],
-  metas: Option[Seq[String]],
-  merges: Option[Seq[String]],
   filters: Option[Seq[String]],
   cohortFilters: Option[Seq[CohortFilter]],
   knockoutFilters: Option[Seq[CohortFilter]],
@@ -233,6 +231,9 @@ final case class ConfigModel(
   assocPlatforms: Seq[String],
   maxPcaOutlierIterations: Int,
   covars: String,
+  cohorts: Seq[String],
+  metas: Option[Seq[String]],
+  merges: Option[Seq[String]],
   knowns: Option[Seq[String]]) extends Debug
 
 final case class ConfigSection(
@@ -954,53 +955,6 @@ object ProjectConfig {
 
         val cohorts = requiredStrList(config = schema, field = "cohorts")
 
-        val metas = optionalStrList(config = schema, field = "metas") match {
-          case Some(s) =>
-            for {
-              f <- s
-            } yield {
-              f match {
-                case n if Metas.map(e => e.id) contains n =>
-                  val x = Metas.filter(e => e.id == n).head.cohorts
-                  cohorts.intersect(x) == x match {
-                    case false => throw new CfgException("schemas.metas: schema " + id + " meta cohorts must be subset of schema cohorts")
-                    case true => ()
-                  }
-                case _ => throw new CfgException("schemas.metas: schema " + id + " meta '" + f + "' not found")
-              }
-            }
-            Some(s)
-          case None => None
-        }
- 
-        val merges = optionalStrList(config = schema, field = "merges") match {
-          case Some(s) =>
-            for {
-              f <- s
-            } yield {
-              f match {
-                case n if Merges.map(e => e.id) contains n =>
-                  val x = Cohorts.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
-                  cohorts.intersect(x) == x match {
-                    case false => throw new CfgException("schemas.merges: schema " + id + " merge cohorts must be subset of schema cohorts")
-                    case true => ()
-                  }
-                  metas match {
-                    case Some(t) =>
-                      val y = Metas.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
-                      metas.get.intersect(y) == y match {
-                        case false => throw new CfgException("schemas.merges: schema " + id + " merge metas must be subset of schema metas")
-                        case true => ()
-                      }
-                    case None => ()
-                  }
-                case _ => throw new CfgException("schemas.merges: schema " + id + " merge '" + f + "' not found")
-              }
-            }
-            Some(s)
-          case None => None
-        }
-
         val filters = optionalStrList(config = schema, field = "filters") match {
           case Some(s) =>
             for {
@@ -1197,14 +1151,6 @@ object ProjectConfig {
           },
           samplesKeep = optionalStr(config = schema, field = "samplesKeep"),
           samplesExclude = optionalStr(config = schema, field = "samplesExclude"),
-          metas = (design, metas) match {
-            case ("full", Some(s)) => throw new CfgException("schemas.metas: schema " + id + " 'full' design and metas are not allowed")
-            case _ => metas
-          },
-          merges = (design, merges) match {
-            case ("full", Some(s)) => throw new CfgException("schemas.merges: schema " + id + " 'full' design and merges are not allowed")
-            case _ => merges
-          },
           filters = filters,
           cohortFilters = cohortFilters,
           knockoutFilters = knockoutFilters,
@@ -1238,6 +1184,62 @@ object ProjectConfig {
 
         val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
 
+        val cohorts = optionalStrList(config = model, field = "cohorts") match {
+          case Some(s) =>
+            (Schemas.filter(e => e.id == schema).head.design, s.toSet.subsetOf(Schemas.filter(e => e.id == schema).head.cohorts.toSet)) match {
+              case ("strat", false) => throw new CfgException("models.cohorts: model " + id + " cohorts must be members of schema " + schema + " cohort list")
+              case _ => s
+            }
+          case None => Schemas.filter(e => e.id == schema).head.cohorts
+        }
+
+        val metas = optionalStrList(config = model, field = "metas") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if Metas.map(e => e.id) contains n =>
+                  val x = Metas.filter(e => e.id == n).head.cohorts
+                  Schemas.filter(e => e.id == schema).head.cohorts.intersect(x) == x match {
+                    case false => throw new CfgException("models.metas: model " + id + " meta cohorts must be subset of schema cohorts")
+                    case true => ()
+                  }
+                case _ => throw new CfgException("models.metas: model " + id + " meta '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+ 
+        val merges = optionalStrList(config = model, field = "merges") match {
+          case Some(s) =>
+            for {
+              f <- s
+            } yield {
+              f match {
+                case n if Merges.map(e => e.id) contains n =>
+                  val x = Cohorts.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
+                  Schemas.filter(e => e.id == schema).head.cohorts.intersect(x) == x match {
+                    case false => throw new CfgException("models.merges: model " + id + " merge cohorts must be subset of schema cohorts")
+                    case true => ()
+                  }
+                  metas match {
+                    case Some(t) =>
+                      val y = Metas.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
+                      metas.get.intersect(y) == y match {
+                        case false => throw new CfgException("models.merges: model " + id + " merge metas must be subset of schema metas")
+                        case true => ()
+                      }
+                    case None => ()
+                  }
+                case _ => throw new CfgException("models.merges: model " + id + " merge '" + f + "' not found")
+              }
+            }
+            Some(s)
+          case None => None
+        }
+
         val knowns = optionalStrList(config = model, field = "knowns") match {
           case Some(s) =>
             for {
@@ -1261,6 +1263,15 @@ object ProjectConfig {
           assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
           maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
           covars = requiredStrList(config = model, field = "covars").mkString("+"),
+          cohorts = cohorts,
+          metas = (Schemas.filter(e => e.id == schema).head.design, metas) match {
+            case ("full", Some(s)) => throw new CfgException("models.metas:  model " + id + " schema " + schema + " 'full' design and metas are not allowed")
+            case _ => metas
+          },
+          merges = (Schemas.filter(e => e.id == schema).head.design, merges) match {
+            case ("full", Some(s)) => throw new CfgException("models.merges: model " + id + " schema " + schema + " 'full' design and merges are not allowed")
+            case _ => merges
+          },
           knowns = knowns
         )
 
