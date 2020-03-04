@@ -13,7 +13,7 @@ final case class CfgException(s: String) extends Exception(s)
 
 def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
-  throw new CfgException(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}")
+  println(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}")
 
   //val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
   //val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
