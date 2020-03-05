@@ -5,6 +5,7 @@
 import ProjectConfig._
 import ArrayStores._
 import ProjectStores._
+import MetaStores._
 import SchemaStores._
 import ModelStores._
 import Fxns._
@@ -15,128 +16,109 @@ def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCoh
 
   println(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}")
 
-  //val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
-  //val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
-  //
-  //val stratStrings = {
-  //  for {
-  //    cohort <- configCohorts
-  //  } yield {
-  //    var s = "--strat " + cohort.id + " " + cohort.ancestry.mkString(",")
-  //    cohort.stratCol match {
-  //      case Some(a) => s = s + " " + a
-  //      case None => s = s + " " + """"N/A""""
-  //    }
-  //    cohort.stratCodes match {
-  //      case Some(a) => s = s + " " + a.mkString(",")
-  //      case None => s = s + " " + """"N/A""""
-  //    }
-  //    s
-  //  }
-  //}
-  //
-  //val metaPriorSamplesString = configMeta match {
-  //  case Some(s) =>
-  //    var mpss = s"--cohorts ${configCohorts.map(e => e.id).mkString(",")}"
-  //    val x = for {
-  //      c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
-  //    } yield {
-  //      s"${modelStores((configModel, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable.toString.split("@")(1)}"
-  //    }
-  //    x.size match {
-  //      case n if n > 0 => mpss = mpss + " --meta-prior-samples " + x.mkString(",") + " --meta-cohorts " + configMeta.get.cohorts.mkString(",") + " --cckinship " + s"${metaKinshipStores(configMeta.get).kin0.toString.split("@")(1)}"
-  //      case _ => ""
-  //    }
-  //    mpss
-  //  case None => ""
-  //}
-  //
-  //val modelCohortSamplesAvailableIn = configMeta match {
-  //  case Some(s) => 
-  //    val x = for {
-  //      c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
-  //    } yield {
-  //      modelStores((configModel, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
-  //    }
-  //    (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
-  //  case None =>
-  //    arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0 :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
-  //}
-  //
-  //val keepRelated = famTests.intersect(configModel.tests).size match {
-  //  case n if n > 0 => "--keep-related"
-  //  case _ => ""
-  //}
-  //
-  //drmWith(imageName = s"${utils.image.imgR}") {
-  //
-  //  cmd"""${utils.binary.binRscript} --vanilla --verbose
-  //    ${utils.r.rModelCohortSamplesAvailable}
-  //    --pheno-in ${projectStores.phenoFile.local.get}
-  //    --fam-in ${arrayStores(array).filteredData.plink.base.local.get}.fam
-  //    --ancestry-in ${projectStores.ancestryInferred.local.get}
-  //    ${stratStrings.mkString(" ")}
-  //    ${metaPriorSamplesString}
-  //    --pheno-col ${configModel.pheno}
-  //    --iid-col ${projectConfig.phenoFileId}
-  //    --sampleqc-in ${arrayStores(array).sampleQcData.stats.local.get}
-  //    --kinship-in ${arrayStores(array).kinshipData.kin0}
-  //    --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude.local.get}
-  //    --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude.local.get}
-  //    ${keepRelated}
-  //    --covars "${configModel.covars}"
-  //    --out-pheno-prelim ${modelStores((configModel, configCohorts, configMeta)).phenoPrelim}
-  //    --out-id-map ${modelStores((configModel, configCohorts, configMeta)).sampleMap}
-  //    --out-cohorts-map ${modelStores((configModel, configCohorts, configMeta)).cohortMap.local.get}
-  //    --out ${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}
-  //    > ${modelStores((configModel, configCohorts, configMeta)).samplesAvailableLog}"""
-  //    .in(modelCohortSamplesAvailableIn)
-  //    .out(modelStores((configModel, configCohorts, configMeta)).sampleMap, modelStores((configModel, configCohorts, configMeta)).phenoPrelim, modelStores((configModel, configCohorts, configMeta)).samplesAvailable, modelStores((configModel, configCohorts, configMeta)).samplesAvailableLog)
-  //    .tag(s"${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}".split("/").last)
-  //
-  //}
-  //
-  //val trans = configModel.trans match {
-  //  case Some(s) => configModel.trans.get
-  //  case None => "N/A"
-  //}
-  //
-  //drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.generatePheno.cpus, mem = projectConfig.resources.generatePheno.mem, maxRunTime = projectConfig.resources.generatePheno.maxRunTime) {
-  //
-  //  cmd"""${utils.bash.shFlashPca}
-  //    ${utils.binary.binFlashPca}
-  //    ${utils.binary.binRscript}
-  //    ${utils.binary.binPlink}
-  //    ${utils.r.rGeneratePheno}
-  //    ${projectConfig.resources.generatePheno.cpus}
-  //    ${arrayStores(array).prunedData.plink.base}
-  //    ${modelStores((configModel, configCohorts, configMeta)).samplesAvailable}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaBase}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaScores}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaEigenVecs}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaLoadings}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaEigenVals}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaPve}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcaMeansd}
-  //    ${configModel.maxPcaOutlierIterations}
-  //    ${modelStores((configModel, configCohorts, configMeta)).phenoPrelim}
-  //    ${configModel.pheno}
-  //    ${projectConfig.phenoFileId}
-  //    "${trans}"
-  //    "${configModel.covars}"
-  //    ${projectConfig.minPCs}
-  //    ${projectConfig.maxPCs}
-  //    ${projectConfig.nStddevs}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pheno.local.get}
-  //    ${modelStores((configModel, configCohorts, configMeta)).pcsInclude.local.get}
-  //    ${modelStores((configModel, configCohorts, configMeta)).outliers}
-  //    > ${modelStores((configModel, configCohorts, configMeta)).pcaLog}"""
-  //    .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configCohorts, configMeta)).phenoPrelim :+ projectStores.phenoFile.local.get)
-  //    .out(modelStores((configModel, configCohorts, configMeta)).pcaScores, modelStores((configModel, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configCohorts, configMeta)).pcaPve, modelStores((configModel, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configCohorts, configMeta)).outliers, modelStores((configModel, configCohorts, configMeta)).pcaLog)
-  //    .tag(s"${modelStores((configModel, configCohorts, configMeta)).pheno.local.get}".split("/").last)
-  //
-  //}
-  //
+  val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+  val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
+
+  val metaPriorSamplesString = configMeta match {
+    case Some(s) =>
+      var mpss = s"--cohorts ${configCohorts.map(e => e.id).mkString(",")}"
+      val x = for {
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
+      } yield {
+        s"${modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable.toString.split("@")(1)}"
+      }
+      x.size match {
+        case n if n > 0 => mpss = mpss + " --meta-prior-samples " + x.mkString(",") + " --meta-cohorts " + configMeta.get.cohorts.mkString(",") + " --cckinship " + s"${metaKinshipStores(configMeta.get).kin0.toString.split("@")(1)}"
+        case _ => ""
+      }
+      mpss
+    case None => ""
+  }
+  
+  val modelCohortSamplesAvailableIn = configMeta match {
+    case Some(s) => 
+      val x = for {
+        c <- configMeta.get.cohorts.takeWhile(_ != configCohorts.head.id)
+      } yield {
+        modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
+      }
+      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0
+    case None =>
+      arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0
+  }
+  
+  val keepRelated = famTests.intersect(configModel.tests).size match {
+    case n if n > 0 => "--keep-related"
+    case _ => ""
+  }
+
+  drmWith(imageName = s"${utils.image.imgR}") {
+  
+    cmd"""${utils.binary.binRscript} --vanilla --verbose
+      ${utils.r.rModelCohortSamplesAvailable}
+      --pheno-in ${projectStores.phenoFile.local.get}
+      --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
+      --ancestry-in ${projectStores.ancestryInferred.local.get}
+      --cohorts "${configModel.cohorts.mkString(",")}"
+      ${metaPriorSamplesString}
+      --pheno-col ${configModel.pheno}
+      --iid-col ${projectConfig.phenoFileId}
+      --sampleqc-in ${arrayStores(array).sampleQcData.stats.local.get}
+      --kinship-in ${arrayStores(array).kinshipData.kin0}
+      ${keepRelated}
+      --covars "${configModel.covars}"
+      --out-id-map ${modelStores((configModel, configSchema, configCohorts, configMeta)).sampleMap}
+      --out-cohorts-map ${modelStores((configModel, configSchema, configCohorts, configMeta)).cohortMap.local.get}
+      --out-pheno-prelim ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}
+      --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable}
+      > ${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailableLog}"""
+      .in(modelCohortSamplesAvailableIn)
+      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).sampleMap, modelStores((configModel, configSchema, configCohorts, configMeta)).cohortMap.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim, modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable, modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailableLog)
+      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable}".split("/").last)
+  
+  }
+  
+  val trans = configModel.trans match {
+    case Some(s) => configModel.trans.get
+    case None => "N/A"
+  }
+  
+  drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.flashPca.cpus, mem = projectConfig.resources.flashPca.mem, maxRunTime = projectConfig.resources.flashPca.maxRunTime) {
+  
+    cmd"""${utils.bash.shFlashPca}
+      ${utils.binary.binFlashPca}
+      ${utils.binary.binRscript}
+      ${utils.binary.binPlink}
+      ${utils.r.rGeneratePheno}
+      ${projectConfig.resources.flashPca.cpus}
+      ${arrayStores(array).prunedData.plink.base}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaBase}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd}
+      ${configModel.maxPcaOutlierIterations}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}
+      ${configModel.pheno}
+      ${projectConfig.phenoFileId}
+      "${trans}"
+      "${configModel.covars}"
+      ${projectConfig.minPCs}
+      ${projectConfig.maxPCs}
+      ${projectConfig.nStddevs}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).outliers}
+      > ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog}"""
+      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim :+ projectStores.phenoFile.local.get)
+      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).outliers, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog)
+      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}".split("/").last)
+  
+  }
+  
   //var filters = Seq[String]()
   //var cohortFilters = Seq[String]()
   //var knockoutFilters = Seq[String]()

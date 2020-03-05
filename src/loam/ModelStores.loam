@@ -33,20 +33,20 @@ final case class Model(
   cohortMap: MultiStore,
   phenoPrelim: Store,
   samplesAvailable: Store,
-  samplesAvailableLog: Store
-  //pcaBase: Path,
-  //pcaScores: Store, 
-  //pcaEigenVecs: Store, 
-  //pcaLoadings: Store, 
-  //pcaEigenVals: Store, 
-  //pcaPve: Store, 
-  //pcaMeansd: Store, 
-  //outliers: Store, 
-  //pcaLog: Store,
-  //pheno: MultiStore,
+  samplesAvailableLog: Store,
+  pcaBase: Path,
+  pcaScores: Store, 
+  pcaEigenVecs: Store, 
+  pcaLoadings: Store, 
+  pcaEigenVals: Store, 
+  pcaPve: Store, 
+  pcaMeansd: Store, 
+  outliers: Store, 
+  pcaLog: Store,
+  pheno: MultiStore,
   //pedEpacts: Option[Store],
   //modelVarsEpacts: Option[Store],
-  //pcsInclude: MultiStore,
+  pcsInclude: MultiStore
   //filters: MultiStore,
   //cohortFilters: MultiStore,
   //knockoutFilters: MultiStore,
@@ -153,26 +153,26 @@ val modelStores = (
     ),
     phenoPrelim = store(local_dir / s"${baseString}.pheno.prelim.tsv"),
     samplesAvailable = store(local_dir / s"${baseString}.samples.available.txt"),
-    samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log")
-    //pcaBase = local_dir / s"${baseString}.pca",
-    //pcaScores = store(local_dir / s"${baseString}.pca.scores.tsv"),
-    //pcaEigenVecs = store(local_dir / s"${baseString}.pca.eigenvecs.tsv"),
-    //pcaLoadings = store(local_dir / s"${baseString}.pca.loadings.tsv"),
-    //pcaEigenVals = store(local_dir / s"${baseString}.pca.eigenvals.txt"),
-    //pcaPve = store(local_dir / s"${baseString}.pca.pve.txt"),
-    //pcaMeansd = store(local_dir / s"${baseString}.pca.meansd.tsv"),
-    //outliers = store(local_dir / s"${baseString}.pca.outliers.txt"),
-    //pcaLog = store(local_dir / s"${baseString}.pca.log"),
-    //pheno = MultiStore(
-    //  local = Some(store(local_dir / s"${baseString}.pheno.tsv")),
-    //  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None }
-    //),
+    samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
+    pcaBase = local_dir / s"${baseString}.pca",
+    pcaScores = store(local_dir / s"${baseString}.pca.scores.tsv"),
+    pcaEigenVecs = store(local_dir / s"${baseString}.pca.eigenvecs.tsv"),
+    pcaLoadings = store(local_dir / s"${baseString}.pca.loadings.tsv"),
+    pcaEigenVals = store(local_dir / s"${baseString}.pca.eigenvals.txt"),
+    pcaPve = store(local_dir / s"${baseString}.pca.pve.txt"),
+    pcaMeansd = store(local_dir / s"${baseString}.pca.meansd.tsv"),
+    outliers = store(local_dir / s"${baseString}.pca.outliers.txt"),
+    pcaLog = store(local_dir / s"${baseString}.pca.log"),
+    pheno = MultiStore(
+      local = Some(store(local_dir / s"${baseString}.pheno.tsv")),
+      google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None }
+    ),
     //pedEpacts = model.assocPlatforms.contains("epacts") match { case true => Some(store(local_dir / s"${baseString}.epacts.ped")); case false => None },
     //modelVarsEpacts = model.assocPlatforms.contains("epacts") match { case true => Some(store(local_dir / s"${baseString}.epacts.model.vars")); case false => None },
-    //pcsInclude = MultiStore(
-    //  local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),
-    //  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None }
-    //),
+    pcsInclude = MultiStore(
+      local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),
+      google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None }
+    )
     //filters = MultiStore(
     //  local = Some(store(local_dir / s"${baseString}.variant.filters.txt")),
     //  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.filters.txt")); case false => None }
