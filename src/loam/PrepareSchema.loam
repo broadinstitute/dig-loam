@@ -54,7 +54,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
   
   }
 
-  val fetMissPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+  val binaryFilterPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
     case n if n > 0 => projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
     case _ => Seq[ConfigPheno]()
   }
@@ -95,7 +95,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
       for {
 
-        pheno <- fetMissPhenos
+        pheno <- binaryFilterPhenos
 
       } yield {
 
@@ -148,7 +148,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
       for {
 
-        pheno <- fetMissPhenos
+        pheno <- binaryFilterPhenos
 
       } yield {
 
@@ -216,7 +216,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
             for {
 
-              pheno <- fetMissPhenos
+              pheno <- binaryFilterPhenos
             
             } yield {
             
@@ -270,7 +270,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
             for {
 
-              pheno <- fetMissPhenos
+              pheno <- binaryFilterPhenos
             
             } yield {
             
@@ -544,7 +544,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
   for {
   
-    pheno <- fetMissPhenos
+    pheno <- binaryFilterPhenos
   
   } yield {
 
@@ -854,7 +854,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
   for {
   
-    pheno <- fetMissPhenos
+    pheno <- binaryFilterPhenos
   
   } yield {
 
