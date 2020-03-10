@@ -101,7 +101,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
         googleWith(projectConfig.cloudResources.mtCluster) {
 
-          hail"""${utils.python.pyHailSchemaPhenoDiffMiss} --
+          hail"""${utils.python.pyHailSchemaVariantCaseCtrlStats} --
             --hail-utils ${projectStores.hailUtils.google.get}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.google.get}
@@ -154,7 +154,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
 
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
-          cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoDiffMiss}
+          cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --pheno-in ${projectStores.phenoFile.local.get}
@@ -222,7 +222,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
             
               googleWith(projectConfig.cloudResources.mtCluster) {
             
-                hail"""${utils.python.pyHailSchemaPhenoDiffMiss} --
+                hail"""${utils.python.pyHailSchemaVariantCaseCtrlStats} --
                   --hail-utils ${projectStores.hailUtils.google.get}
                   --reference-genome ${projectConfig.referenceGenome}
                   --mt-in ${arrayStores(array).refData.mt.google.get}
@@ -276,7 +276,7 @@ def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]):
             
               drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
             
-                cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaPhenoDiffMiss}
+                cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
                   --reference-genome ${projectConfig.referenceGenome}
                   --mt-in ${arrayStores(array).refData.mt.local.get}
                   --pheno-in ${projectStores.phenoFile.local.get}

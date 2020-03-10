@@ -57,11 +57,14 @@ def main(args=None):
 	if args.cohort:
 		print("filter samples to cohort " + args.cohort)
 		mt = mt.filter_cols(mt.COHORT == args.cohort)
+	else:
+		print("filter samples to cohorts")
+		mt = mt.filter_cols(hl.is_defined(mt.COHORT))
 		
 	start_time = time.time()
-	mt = hail_utils.add_diff_miss(mt, variant_qc = "variant_qc", is_case = args.pheno_col, diff_miss_min_expected_cell_count = args.diff_miss_min_expected_cell_count)
+	mt = hail_utils.add_case_ctrl_stats(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_col, diff_miss_min_expected_cell_count = args.diff_miss_min_expected_cell_count)
 	elapsed_time = time.time() - start_time
-	print(time.strftime("calculate contingency table test for differential missingness on " + str(mt.cols().count()) + " samples and " + str(mt.rows().count()) + " variants - %H:%M:%S", time.gmtime(elapsed_time)))
+	print(time.strftime("calculate case/ctrl stats on " + str(mt.cols().count()) + " samples and " + str(mt.rows().count()) + " variants - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	print("write variant stats to hail table")
 	tbl = mt.rows().drop("info","variant_qc_raw")

@@ -43,6 +43,9 @@ def main(args=None):
 	if args.cohort:
 		print("filter samples to cohort " + args.cohort)
 		mt = mt.filter_cols(mt.COHORT == args.cohort)
+	else:
+		print("filter samples to cohorts")
+		mt = mt.filter_cols(hl.is_defined(mt.COHORT))
 		
 	start_time = time.time()
 	mt = hl.variant_qc(mt, name="variant_qc")

@@ -29,12 +29,30 @@ while :; do
 				exit 1
 			fi
 			;;
-		--groupf)
+		--groupfin)
 			if [ "$2" ]; then
-				groupf=$2
+				groupfin=$2
 				shift
 			else
 				echo "ERROR: --groupf requires a non-empty argument."
+				exit 1
+			fi
+			;;
+		--groupfout)
+			if [ "$2" ]; then
+				groupfout=$2
+				shift
+			else
+				echo "ERROR: --groupf requires a non-empty argument."
+				exit 1
+			fi
+			;;
+        --groupid)
+			if [ "$2" ]; then
+				groupid=$2
+				shift
+			else
+				echo "ERROR: --group requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -117,12 +135,14 @@ done
 echo "bin: $bin"
 echo "type: $type"
 echo "vcf: $vcf"
-echo "groupf: $groupf"
+echo "groupfin: $groupfin"
+echo "groupid: $groupid"
 echo "region: $region"
 echo "ped: $ped"
 echo "vars: $vars"
 echo "test: $test"
 echo "field: $field"
+echo "groupfout: $groupfout"
 echo "out: $out"
 echo "run: $run"
 
@@ -139,20 +159,27 @@ done < $vars
 
 echo "parsed variable file $vars into epacts cli options '$phenoCovars'"
 
+if [[ ! -z "$groupid" && ! -z "${groupfin}" && ! -z "${groupfout}" ]]; then
+	grep -w "${groupid}" $groupfin > $groupfout
+fi
+
+outBase=`echo $out | sed 's/\.tsv\.bgz//g'`
+
 EXITCODE=0
 if [ "$type" == "group" ]; then
 	$bin $type \
 	--vcf $vcf \
-	--groupf $groupf \
+	--groupf $groupfout \
 	--ped $ped \
 	$phenoCovars \
 	--test $test \
 	--field $field \
-	--out $out \
+	--out $outBase \
 	--run $run \
 	--no-plot
-	if [ -f "${out}.epacts.OK" ]; then
-		mv ${out}.epacts $out
+	if [ -f "${outBase}.epacts.OK" ]; then
+		cat ${outBase}.epacts | bgzip -c > $out
+		rm ${outBase}.epacts
 	else
 		EXITCODE=1
 	fi
@@ -164,14 +191,18 @@ elif [ "$type" == "single" ]; then
 	$phenoCovars \
 	--test $test \
 	--field $field \
-	--out $out \
+	--out $outBase \
 	--run $run \
 	--no-plot
-	if [ ! -f "${out}.epacts.OK" ]; then
+	if [ -f "${outBase}.epacts.OK" ]; then
+		zcat ${outBase}.epacts.gz | bgzip -c > $out
+		rm ${outBase}.epacts.gz
+		rm ${outBase}.epacts.gz.tbi
+	else
 		EXITCODE=1
 	fi
 else
-	echo "ERROR: --type argument $type not recongnized."
+	echo "ERROR: --type argument $type not recognized."
 	EXITCODE=1
 fi
 

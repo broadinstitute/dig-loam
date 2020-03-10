@@ -19,7 +19,7 @@ import ProjectStores._
 import SampleQc._
 import Tracking._
 import Upload._
-//import AssocTest._
+import AssocTest._
 
 import loamstream.conf.DataConfig
 import loamstream.googlecloud.HailSupport._
@@ -149,15 +149,15 @@ projectStores.phenoFile.local match {
     //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
     //
     //}
-    //
-    ////Cohort variant association
-    //for {
-    //  x <- modelCohorts
-    //} yield {
-    //
-    //  AssocTest(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = None)
-    //
-    //}
+
+    //Cohort variant association
+    for {
+      x <- modelSchemaCohorts
+    } yield {
+    
+      AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None, configKnown = None)
+    
+    }
     
     //// Cohort variant association for known loci
     //for {
