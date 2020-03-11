@@ -129,10 +129,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                 cmd"""${utils.bash.shMergeResults}
                    --results ${maskResultsFile}
                    --groupf ${schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get}
-                   --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assoc.masks(test)(mask).results.local.get}"""
+                   --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assoc.masks(test)(mask).results.get.local.get}"""
                   .in(maskResultsFiles :+ schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get)
-                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assoc.masks(test)(mask).results.local.get)
-                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assoc.masks(test)(mask).results.local.get}".split("/").last)
+                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assoc.masks(test)(mask).results.get.local.get)
+                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assoc.masks(test)(mask).results.get.local.get}".split("/").last)
               
               }
             

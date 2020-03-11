@@ -314,15 +314,15 @@ val modelStores = (
       base = model.tests.map { test =>
         test -> ModelResult(
           results = (schema.masks.get.size, groupTests.contains(test)) match {
-            case (_, false) || (0, true) =>
-              MultiStore(
+            case (_, false) | (0, true) =>
+              Some(MultiStore(
                 local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
                 google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
-              )
+              ))
             case _ => None
           },
           resultsHailLog = (schema.masks.get.size, groupTests.contains(test), test.split("\\.")(0)) match {
-            case (_, false, "hail") || (0, true, "hail") => Some(MultiStore(
+            case (_, false, "hail") | (0, true, "hail") => Some(MultiStore(
                 local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
                 google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
               ))
@@ -361,10 +361,10 @@ val modelStores = (
                 test ->
                   schema.masks.get.map { mask =>
                     mask -> ModelResult(
-                      results = MultiStore(
+                      results = Some(MultiStore(
                         local = Some(store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz")),
                         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.${mask.id}.results.tsv.bgz")); case false => None }
-                      ),
+                      )),
                       resultsHailLog = None,
                       filteredResults = groupTests.contains(test) match {
                         case false => Some(store(local_dir / s"${baseString}.${test}.${mask.id}.results.filtered.tsv.bgz"))
