@@ -19,7 +19,7 @@ final case class ModelGroup(
   groupFile: Store)
 
 final case class ModelResult(
-  results: MultiStore,
+  results: Option[MultiStore],
   resultsHailLog: Option[MultiStore],
   filteredResults: Option[Store],
   groups: Map[String, ModelGroup]
@@ -313,12 +313,16 @@ val modelStores = (
     assoc = ModelTest(
       base = model.tests.map { test =>
         test -> ModelResult(
-          results = MultiStore(
-            local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
-            google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
-          ),
-          resultsHailLog = test.split("\\.")(0) match {
-            case "hail" => Some(MultiStore(
+          results = (schema.masks.get.size, groupTests.contains(test)) match {
+            case (_, false) || (0, true) =>
+              MultiStore(
+                local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
+                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
+              )
+            case _ => None
+          },
+          resultsHailLog = (schema.masks.get.size, groupTests.contains(test), test.split("\\.")(0)) match {
+            case (_, false, "hail") || (0, true, "hail") => Some(MultiStore(
                 local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
                 google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
               ))
@@ -328,8 +332,8 @@ val modelStores = (
             case false => Some(store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"))
             case true => None
           },
-          groups = test.split("\\.")(0) match {
-            case "epacts" =>
+          groups = (schema.masks.get.size, groupTests.contains(test)) match {
+            case (0, true) =>
               try {
                 val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
                 val l = fileToList(gFile).map(e => e.split("\t")(0))
@@ -366,8 +370,8 @@ val modelStores = (
                         case false => Some(store(local_dir / s"${baseString}.${test}.${mask.id}.results.filtered.tsv.bgz"))
                         case true => None
                       },
-                      groups = (test.split("\\.")(0), schemaStores((schema, cohorts)).groupFile.base.masks.size) match {
-                        case ("epacts", n) if n > 0 =>
+                      groups = (groupTests.contains(test), schemaStores((schema, cohorts)).groupFile.base.masks.size) match {
+                        case (true, n) if n > 0 =>
                           try {
                             val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
                             val l = fileToList(gFile).map(e => e.split("\t")(0))
