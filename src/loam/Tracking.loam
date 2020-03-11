@@ -6,7 +6,6 @@ import ProjectStores._
 import ArrayStores._
 import SchemaStores._
 import ModelStores._
-//import AssocStores._
 
 def trackObjects(): Unit = {
 
@@ -18,13 +17,46 @@ def trackObjects(): Unit = {
   writeObject(obj = schemaFilterFields, filename = s"${dirTree.base.local.get}/cfg.schemaFilterFields")
   writeObject(obj = modelSchemaCohorts, filename = s"${dirTree.base.local.get}/cfg.modelSchemaCohorts")
   writeObject(obj = modelSchemaMetaCohorts, filename = s"${dirTree.base.local.get}/cfg.modelSchemaMetaCohorts")
-  //writeObject(obj = modelCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelCohortKnowns")
-  //writeObject(obj = modelMetaCohortKnowns, filename = s"${dirTree.base.local.get}/cfg.modelMetaCohortKnowns")
   
   writeObject(obj = projectStores, filename = s"${dirTree.base.local.get}/cfg.projectStores")
   writeObject(obj = arrayStores, filename = s"${dirTree.base.local.get}/cfg.arrayStores")
   writeObject(obj = schemaStores, filename = s"${dirTree.base.local.get}/cfg.schemaStores")
   writeObject(obj = modelStores, filename = s"${dirTree.base.local.get}/cfg.modelStores")
-  //writeObject(obj = assocStores, filename = s"${dirTree.base.local.get}/cfg.assocStores")
+
+  for {
+    ms <- modelStores.keys
+  } yield {
+    val model = ms._1.id
+    val schema = ms._2.id
+    val cohorts = ms._3.map(e => e.id).mkString("_")
+    val meta = ms._4 match {
+      case Some(s) => s.id
+      case None => "none"
+    }
+    for {
+      test <- modelStores(ms).assocSingle.keys
+    } yield {
+      writeObject(obj = modelStores(ms).assocSingle(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocSingle.${test}")
+    }
+    
+    for {
+      test <- modelStores(ms).assocGroup.keys
+    } yield {
+      writeObject(obj = modelStores(ms).assocGroup(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroup.${test}")
+      writeObject(obj = modelStores(ms).assocGroup(test).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroup.${test}.groups.keys")
+    }
+    
+    for {
+      mask <- modelStores(ms).assocMaskGroup.keys
+    } yield {
+      for {
+        test <- modelStores(ms).assocMaskGroup(mask).keys
+      } yield {
+        writeObject(obj = modelStores(ms).assocMaskGroup(mask)(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${mask.id}.${test}")
+        writeObject(obj = modelStores(ms).assocMaskGroup(mask)(test).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${mask.id}.${test}.groups.keys")
+      }
+    }
+
+  }
 
 }

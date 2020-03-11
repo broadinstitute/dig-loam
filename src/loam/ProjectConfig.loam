@@ -86,7 +86,7 @@ val assocTests = Seq(
 
 val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
 val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
-val epactsTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
+val singleTests = assocTests.filter(e => e.split("\\.")(0) == "hail")
 val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
 
 final case class ConfigMachine(

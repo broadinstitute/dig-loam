@@ -14,20 +14,37 @@ import SchemaStores._
 //  base: MultiStore,
 //  masks: Map[MaskFilter, MultiStore])
 
-final case class ModelGroup(
-  results: Store,
-  groupFile: Store)
+//final case class ModelGroupResult(
+//  results: Store,
+//  groupFile: Store)
 
-final case class ModelResult(
-  results: Option[MultiStore],
+//final case class ModelResult(
+//  results: Option[MultiStore],
+//  resultsHailLog: Option[MultiStore],
+//  filteredResults: Option[Store],
+//  groups: Map[String, ModelGroup]
+//)
+
+final case class ModelAssocSingle(
+  results: MultiStore,
   resultsHailLog: Option[MultiStore],
-  filteredResults: Option[Store],
-  groups: Map[String, ModelGroup]
+  filteredResults: Store,
 )
 
-final case class ModelTest(
-  base: Map[String, ModelResult],
-  masks: Map[String, Map[MaskFilter, ModelResult]])
+final case class ModelAssocGroup(
+  results: Store,
+  groupFile: Store
+)
+
+final case class ModelAssocGroupBase(
+  results: Store,
+  groupFile: Store,
+  groups: Map[String, ModelAssocGroup]
+)
+
+//final case class ModelTest(
+//  base: Map[String, ModelResult],
+//  masks: Map[String, Map[MaskFilter, ModelResult]])
 
 final case class Model(
   sampleMap: Store,
@@ -48,7 +65,10 @@ final case class Model(
   pedEpacts: Option[Store],
   modelVarsEpacts: Option[Store],
   pcsInclude: MultiStore,
-  assoc: ModelTest
+  assocSingle: Map[String, ModelAssocSingle],
+  assocGroup: Map[String, ModelAssocGroupBase],
+  assocMaskGroup: Map[MaskFilter, Map[String, ModelAssocGroupBase]]
+  //assoc: ModelTest
 )
 
 val modelStores = (
@@ -91,7 +111,24 @@ val modelStores = (
     case Some(_) => schema.masks.get.size
     case None => 0
   }
-                
+
+  val modelSingleTests = model.tests.filter(e => ! groupTests.contains(e))
+  val modelGroupTests = model.tests.filter(e => groupTests.contains(e))
+
+  var masksAvailable = Seq[MaskFilter]()
+  for {
+    sm <- schema.masks.get
+  } yield {
+    try {
+      checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
+      masksAvailable = masksAvailable ++ Seq(sm)
+    }
+    catch {
+      case x: CfgException =>
+        println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
+    }
+  }
+
   sm -> Model(
     sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
     cohortMap = MultiStore(
@@ -120,89 +157,67 @@ val modelStores = (
       local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),
       google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None }
     ),
-    assoc = ModelTest(
-      base = model.tests.map { test =>
-        test -> ModelResult(
-          results = (nmasks, groupTests.contains(test)) match {
-            case (_, false) | (0, true) =>
-              Some(MultiStore(
-                local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
-                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
-              ))
-            case _ => None
-          },
-          resultsHailLog = (nmasks, groupTests.contains(test), test.split("\\.")(0)) match {
-            case (_, false, "hail") | (0, true, "hail") => Some(MultiStore(
-                local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
-                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
-              ))
-            case _ => None
-          },
-          filteredResults = groupTests.contains(test) match {
-            case false => Some(store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"))
-            case true => None
-          },
-          groups = (nmasks, groupTests.contains(test)) match {
-            case (0, true) =>
-              try {
-                val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
-                val l = fileToList(gFile).map(e => e.split("\t")(0))
-                l.map { group =>
-                  group -> ModelGroup(
-                    results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.results.tsv.bgz"),
-                    groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.groupfile.tsv")
-                  )
-                }.toMap
-              } 
-              catch {
-                case x: CfgException =>
-                  println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
-                  Map[String, ModelGroup]()
-              }
-            case _ => Map[String, ModelGroup]()
-          }
-        )
-      }.toMap,
-      masks = nmasks match {
-        case n if n > 0 =>
-          model.tests.map { test =>
-            test ->
-              schema.masks.get.map { mask =>
-                mask -> ModelResult(
-                  results = Some(MultiStore(
-                    local = Some(store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz")),
-                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.${mask.id}.results.tsv.bgz")); case false => None }
-                  )),
-                  resultsHailLog = None,
-                  filteredResults = groupTests.contains(test) match {
-                    case false => Some(store(local_dir / s"${baseString}.${test}.${mask.id}.results.filtered.tsv.bgz"))
-                    case true => None
-                  },
-                  groups = (groupTests.contains(test), schemaStores((schema, cohorts)).groupFile.base.masks.size) match {
-                    case (true, n) if n > 0 =>
-                      try {
-                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
-                        val l = fileToList(gFile).map(e => e.split("\t")(0))
-                        l.map { group =>
-                          group -> ModelGroup(
-                            results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
-                            groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
-                          )
-                        }.toMap
-                      } 
-                      catch {
-                        case x: CfgException =>
-                          println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
-                          Map[String, ModelGroup]()
-                      }
-                    case _ => Map[String, ModelGroup]()
-                  }
+    assocSingle = modelSingleTests.map { test =>
+      test -> ModelAssocSingle(
+        results = MultiStore(
+          local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
+          google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
+        ),
+        resultsHailLog = test.split("\\.")(0) match {
+          case "hail" => Some(MultiStore(
+              local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
+            ))
+          case _ => None
+        },
+        filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz")
+      )
+    }.toMap,
+    assocGroup = nmasks match {
+      case 0 =>
+        try {
+          val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
+          val l = fileToList(gFile).map(e => e.split("\t")(0))
+          modelGroupTests.map { test =>
+            test -> ModelAssocGroupBase(
+              results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
+              groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
+              groups = l.map { group =>
+                group -> ModelAssocGroup(
+                  results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.results.tsv.bgz"),
+                  groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.groupfile.tsv")
                 )
               }.toMap
+            )
           }.toMap
-        case _ => Map[String, Map[MaskFilter, ModelResult]]()
-      }
-    )
+        }
+        catch {
+          case x: CfgException =>
+            println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
+            Map[String, ModelAssocGroupBase]()
+        }
+      case _ => Map[String, ModelAssocGroupBase]()
+    },
+    assocMaskGroup = masksAvailable.size match {
+      case 0 => Map[MaskFilter, Map[String, ModelAssocGroupBase]]()
+      case _ =>
+        masksAvailable.map { mask =>
+          val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
+          val l = fileToList(gFile).map(e => e.split("\t")(0))
+          mask ->
+            modelGroupTests.map { test =>
+              test -> ModelAssocGroupBase(
+                results = store(local_dir / s"${baseString}.${mask.id}.${test}.results.tsv.bgz"),
+                groupFile = store(local_dir / s"${baseString}.${mask.id}.${test}.groupfile.tsv"),
+                groups = l.map { group =>
+                  group -> ModelAssocGroup(
+                    results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.results.tsv.bgz"),
+                    groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.groupfile.tsv")
+                  )
+                }.toMap
+              )
+            }.toMap
+        }.toMap
+    }
   )
-
 }.toMap
