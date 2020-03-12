@@ -29,6 +29,8 @@ final case class ModelAssocSingle(
   results: MultiStore,
   resultsHailLog: Option[MultiStore],
   filteredResults: Store,
+  qqPlot: Store,
+  mhtPlot: Store
 )
 
 final case class ModelAssocGroup(
@@ -39,6 +41,8 @@ final case class ModelAssocGroup(
 final case class ModelAssocGroupBase(
   results: Store,
   groupFile: Store,
+  qqPlot: Store,
+  mhtPlot: Store,
   groups: Map[String, ModelAssocGroup]
 )
 
@@ -170,7 +174,9 @@ val modelStores = (
             ))
           case _ => None
         },
-        filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz")
+        filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"),
+        qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
+        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png")
       )
     }.toMap,
     assocGroup = nmasks match {
@@ -182,6 +188,8 @@ val modelStores = (
             test -> ModelAssocGroupBase(
               results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
               groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
+              qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
+              mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
               groups = l.map { group =>
                 group -> ModelAssocGroup(
                   results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.results.tsv.bgz"),
@@ -209,6 +217,8 @@ val modelStores = (
               test -> ModelAssocGroupBase(
                 results = store(local_dir / s"${baseString}.${mask.id}.${test}.results.tsv.bgz"),
                 groupFile = store(local_dir / s"${baseString}.${mask.id}.${test}.groupfile.tsv"),
+                qqPlot = store(local_dir / s"${baseString}.${mask.id}.${test}.results.qqplot.png"),
+                mhtPlot = store(local_dir / s"${baseString}.${mask.id}.${test}.results.mhtplot.png"),
                 groups = l.map { group =>
                   group -> ModelAssocGroup(
                     results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.results.tsv.bgz"),

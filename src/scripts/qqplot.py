@@ -14,8 +14,8 @@ def qqplot(pvals, file, gc = False):
 
 	print "minimum p-value: {0:.3g}".format(np.min(pvals))
 
-	print "calculating genomic inflation rate"
 	lmda = np.median(scipy.chi2.ppf([1-x for x in pvals.tolist()], df=1))/scipy.chi2.ppf(0.5,1)
+	print "genomic inflation rate: " + str(lmda)
 
 	if gc and lmda > 1:
 		print "applying genomic control to p-values"
@@ -62,7 +62,7 @@ def main(args=None):
 	df.dropna(subset=[args.p], inplace=True)
 	df.reset_index(drop=True, inplace=True)
 
-	print "generating qq plot"
+	print "generating qq plot for " + str(df.shape[0]) + " variants"
 	qqplot(df[args.p], args.out, gc = args.gc)
 
 if __name__ == "__main__":

@@ -150,7 +150,11 @@ def main(args=None):
 	df.dropna(subset=[args.p], inplace=True)
 	df.reset_index(drop=True, inplace=True)
 
-	print "generating manhattan plot"
+	print "generating manhattan plot for " + str(df.shape[0]) + " variants"
+	split_pos = args.pos.split(",")
+	if len(split_pos) == 2:
+		args.pos = args.pos.replace(",","_")
+		df[args.pos] = (df[split_pos[0]] + df[split_pos[1]]) / 2
 	mhtplot(df, chr = args.chr, pos = args.pos, p = args.p, file = args.out, gc = args.gc, bicolor = args.bicolor)
 
 if __name__ == "__main__":
@@ -161,7 +165,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)
 	requiredArgs.add_argument('--chr', help='a chromosome column name in --results', required=True)
-	requiredArgs.add_argument('--pos', help='a position column name in --results', required=True)
+	requiredArgs.add_argument('--pos', help='a position column name in --results (group based tests must include both begin and end positions separated by a comma, ie. BEGIN,END)', required=True)
 	requiredArgs.add_argument('--p', help='a p-value column name in --results', required=True)
 	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
 	args = parser.parse_args()
