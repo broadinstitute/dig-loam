@@ -255,7 +255,7 @@ final case class ProjectConfig(
   projectId: String,
   referenceGenome: String,
   regionsExclude: String,
-  genePositions: String,
+  geneIdMap: String,
   kgPurcellVcf: String,
   kgSample: String,
   kgSampleId: String,
@@ -356,18 +356,20 @@ final case class Python(
   pyMergeVariantLists: Path,
   pyBimToUid: Path,
   pyHailUtils: Path,
-  //pyHailModelVariantStats: Path,
   pyHailSchemaVariantStats: Path,
   pyHailSchemaVariantCaseCtrlStats: Path,
   pyHailAssoc: Path,
   pyHailExportCleanArrayData: Path,
-  //pyHailFilterModelVariants: Path,
   pyHailFilterSchemaVariants: Path,
   pyHailFilterSchemaPhenoVariants: Path,
   pyHailGenerateGroupfile: Path,
   pyHailGenerateModelVcf: Path,
   pyQqPlot: Path,
   pyMhtPlot: Path,
+  pyTopResults: Path
+  //pyAddGeneAnnot: Path
+  //pyHailModelVariantStats: Path,
+  //pyHailFilterModelVariants: Path,
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
@@ -388,14 +390,13 @@ final case class Python(
   //pyGenerateAnalysisReportPhenoTopLoci: Path,
   //pyGenerateAnalysisReportPhenoKnownLoci: Path,
   //pyGenerateAnalysisReportBibliography: Path,
-  //pyTop1000: Path,
-  //pyAddGeneAnnot: Path,
   //pyPhenoDistPlot: Path
   ) extends Debug
 
 final case class Bash(
   shFindPossibleDuplicateVariants: Path,
   shAnnotate: Path,
+  shAnnotateResults: Path,
   shKing: Path,
   shPlinkPrepare: Path,
   shPlinkToVcfNoHalfCalls: Path,
@@ -405,8 +406,8 @@ final case class Bash(
   shFlashPca: Path,
   shEpacts: Path,
   shMergeResults: Path
+  //shTopResultsAddGenes: Path
   //shRegPlot: Path,
-  //shTop1000Genes: Path
   ) extends Debug
 
 final case class R(
@@ -458,7 +459,7 @@ object ProjectConfig {
     val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
     val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
     val regionsExclude = requiredStr(config = config, field = "regionsExclude")
-    val genePositions = requiredStr(config = config, field = "genePositions")
+    val geneIdMap = requiredStr(config = config, field = "geneIdMap")
     val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
     val kgSample = requiredStr(config = config, field = "kgSample")
     val kgSampleId = requiredStr(config = config, field = "kgSampleId")
@@ -1329,7 +1330,7 @@ object ProjectConfig {
       cloudShare = cloudShare,
       referenceGenome = referenceGenome,
       regionsExclude = regionsExclude,
-      genePositions = genePositions,
+      geneIdMap = geneIdMap,
       kgPurcellVcf = kgPurcellVcf,
       kgSample = kgSample,
       kgSampleId = kgSampleId,
@@ -1451,6 +1452,8 @@ object ProjectConfig {
       pyHailGenerateModelVcf = path(s"${scriptsDir}/hail_generate_model_vcf.py"),
       pyQqPlot = path(s"${scriptsDir}/qqplot.py"),
       pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
+      pyTopResults = path(s"${scriptsDir}/top_results.py")
+      //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
       //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
       //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
@@ -1473,14 +1476,13 @@ object ProjectConfig {
       //pyGenerateAnalysisReportPhenoTopLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_top_loci.py"),
       //pyGenerateAnalysisReportPhenoKnownLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_known_loci.py"),
       //pyGenerateAnalysisReportBibliography = path(s"${scriptsDir}/generate_analysis_report_bibliography.py"),
-      //pyTop1000 = path(s"${scriptsDir}/top1000.py"),
-      //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py"),
       //pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
     )
 
     val bash = Bash(
       shFindPossibleDuplicateVariants = path(s"${scriptsDir}/find_possible_duplicate_variants.sh"),
       shAnnotate = path(s"${scriptsDir}/annotate.sh"),
+      shAnnotateResults = path(s"${scriptsDir}/annotate_results.sh"),
       shKing = path(s"${scriptsDir}/king.sh"),
       shPlinkPrepare = path(s"${scriptsDir}/plink_prepare.sh"),
       shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh"),
@@ -1490,8 +1492,8 @@ object ProjectConfig {
       shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
       shEpacts = path(s"${scriptsDir}/epacts.sh"),
       shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
-      //shRegPlot = path(s"${scriptsDir}/regplot.sh"),
-      //shTop1000Genes = path(s"${scriptsDir}/top1000_genes.sh")
+      //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
+      //shRegPlot = path(s"${scriptsDir}/regplot.sh")
     )
 
     val r = R(

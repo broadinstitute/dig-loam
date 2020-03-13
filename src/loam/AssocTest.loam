@@ -140,9 +140,13 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
       cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
         --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
         --p pval
-        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlot}"""
+        --maf maf
+        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlot}
+        --out-low-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotLowMaf}
+        --out-mid-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotMidMaf}
+        --out-high-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotHighMaf}"""
         .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlot)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotLowMaf, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotMidMaf, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotHighMaf)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlot}".split("/").last)
       
       cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
@@ -155,6 +159,38 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).mhtPlot)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).mhtPlot}".split("/").last)
     
+    }
+
+    drmWith(imageName = s"${utils.image.imgPython2}") {
+  
+      cmd"""${utils.binary.binPython} ${utils.python.pyTopResults}
+        --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
+        --n 1000
+        --p pval 
+        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}"""
+        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}".split("/").last)
+    
+    }
+
+    drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
+
+      cmd"""${utils.bash.shAnnotateResults}
+        ${arrayStores(array).refData.sitesVcf.local.get}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}
+        ${projectConfig.resources.vep.cpus}
+        ${projectStores.fasta}
+        ${projectStores.vepCacheDir}
+        ${projectStores.vepPluginsDir}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotWarnings}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotHeader}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsSitesVcf.data}"""
+      .in(arrayStores(array).refData.sitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
+      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotWarnings, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotHeader, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsSitesVcf.data, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsSitesVcf.tbi)
+      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}".split("/").last)
+
     }
 
   }

@@ -132,6 +132,15 @@ def Load(array: ConfigArray): Unit = {
 
       }
 
+      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.tabix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.tabix.maxRunTime) {
+
+        cmd"""${utils.binary.binTabix} -p vcf ${arrayStores(array).refData.sitesVcf.local.get}"""
+          .in(arrayStores(array).refData.sitesVcf.local.get)
+          .out(arrayStores(array).refData.sitesVcfTbi)
+          .tag(s"${arrayStores(array).refData.sitesVcfTbi}".split("/").last)
+      
+      }
+
   }
 
 }

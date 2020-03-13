@@ -22,13 +22,14 @@ def main(args=None):
 	print "sorting by p value"
 	df.sort_values(by=[args.p],inplace=True)
 
-	print "extracting top 1000 variants"
-	df = df.head(n=1000)
+	print "extracting top " + str(args.n) + " variants"
+	df = df.head(n=args.n)
 	df.to_csv(args.out, header=True, index=False, sep="\t")
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--exclude', help='a variant exclusion file')
+	parser.add_argument('--n', type=int, default=1000, help='number of top variants to report')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)
 	requiredArgs.add_argument('--p', help='a p-value column name in --results', required=True)

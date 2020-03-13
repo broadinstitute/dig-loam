@@ -83,6 +83,7 @@ final case class RefData(
   hailLog: MultiStore,
   variantMetrics: MultiStore,
   sitesVcf: MultiStore,
+  sitesVcfTbi: Store,
   annotations: MultiStore,
   annotationsHt: MultiStore,
   annotationsHailLog: MultiStore,
@@ -479,6 +480,7 @@ val arrayStores = projectConfig.Arrays.map { arrayCfg =>
       local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz")),
       google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None }
     ),
+    sitesVcfTbi = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz.tbi"),
     annotations = MultiStore(
       local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.bgz")),
       google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.bgz")); case false => None }

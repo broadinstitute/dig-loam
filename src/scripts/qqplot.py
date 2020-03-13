@@ -10,8 +10,9 @@ import scipy.stats as scipy
 
 sns.set(context='notebook', style='darkgrid', palette='deep', font='sans-serif', font_scale=1, color_codes=False, rc=None)
 
-def qqplot(pvals, file, gc = False):
+def qqplot(pvals, file, gc = False, mafstring = None):
 
+	print "num variants: " + str(len(pvals))
 	print "minimum p-value: {0:.3g}".format(np.min(pvals))
 
 	lmda = np.median(scipy.chi2.ppf([1-x for x in pvals.tolist()], df=1))/scipy.chi2.ppf(0.5,1)
@@ -41,8 +42,24 @@ def qqplot(pvals, file, gc = False):
 	plt.ylabel(r"Observed $- log_{10} (p)$")
 	plt.xlim(0, expMax)
 	plt.ylim(0, max(obsMax, int(ceil(max(ci_upper))+1)))
+	if mafstring is not None:
+		plt.annotate(r"$MAF \in {0}$".format(mafstring), xy=(0, 1), xycoords='axes fraction', horizontalalignment='left', verticalalignment='bottom', size='small', weight='bold', annotation_clip = False)
+	plt.annotate(r"$N = {0:,}$".format(len(obs)), xy=(0.5, 1), xycoords='axes fraction', horizontalalignment='center', verticalalignment='bottom', size='small', weight='bold', annotation_clip = False)
 	if lmda is not None:
 		plt.annotate(r"$\lambda \approx {0:.3f}$".format(lmda), xy=(1, 1), xycoords='axes fraction', horizontalalignment='right', verticalalignment='bottom', size='small', weight='bold', annotation_clip = False)
+	plt.savefig(file, bbox_inches='tight', dpi=300)
+
+def empty_qqplot(file):
+
+	plt.clf()
+	plt.figure(figsize=(6,6))
+	plt.scatter([0], [0], c="#1F76B4", s=12)
+	plt.plot((0, 1),(0, 1), linewidth=0.75, c="#B8860B")
+	plt.xlabel(r"Expected $- log_{10} (p)$")
+	plt.ylabel(r"Observed $- log_{10} (p)$")
+	plt.xlim(0, 1)
+	plt.ylim(0, 1)
+	plt.annotate(r"$N = {0:,}$".format(0), xy=(0.5, 1), xycoords='axes fraction', horizontalalignment='center', verticalalignment='bottom', size='small', weight='bold', annotation_clip = False)
 	plt.savefig(file, bbox_inches='tight', dpi=300)
 
 def main(args=None):
@@ -62,12 +79,39 @@ def main(args=None):
 	df.dropna(subset=[args.p], inplace=True)
 	df.reset_index(drop=True, inplace=True)
 
-	print "generating qq plot for " + str(df.shape[0]) + " variants"
+	print "generating qq plot"
 	qqplot(df[args.p], args.out, gc = args.gc)
+
+	if args.maf:
+		if args.out_low_maf:
+			if len(df[args.p][(0.005 <= df[args.maf]) & (df[args.maf] < 0.01)]) > 0:
+				print "generating low maf qq plot"
+				qqplot(df[args.p][(0.005 <= df[args.maf]) & (df[args.maf] < 0.01)], args.out_low_maf, gc = args.gc, mafstring = "[0.005, 0.01)")
+			else:
+				print "no low maf variants found... generating empty qq plot"
+				empty_qqplot(args.out_low_maf)
+		if args.out_mid_maf:
+			if len(df[args.p][(0.01 <= df[args.maf]) & (df[args.maf] < 0.05)]) > 0:
+				print "generating mid maf qq plot"
+				qqplot(df[args.p][(0.01 <= df[args.maf]) & (df[args.maf] < 0.05)], args.out_mid_maf, gc = args.gc, mafstring = "[0.01, 0.05)")
+			else:
+				print "no mid maf variants found... generating empty qq plot"
+				empty_qqplot(args.out_mid_maf)
+		if args.out_high_maf:
+			if len(df[args.p][0.05 <= df[args.maf]]) > 0:
+				print "generating high maf qq plot"
+				qqplot(df[args.p][0.05 <= df[args.maf]], args.out_high_maf, gc = args.gc, mafstring = "[0.05, 0.5]")
+			else:
+				print "no high maf variants found... generating empty qq plot"
+				empty_qqplot(args.out_high_maf)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--gc', action='store_true', help='flag indicates that genomic control should be applied to results before plotting')
+	parser.add_argument('--maf', help='a minor allele frequency column name in --results')
+	parser.add_argument('--out-low-maf', help='an output filename for low maf plot ending in .png or .pdf')
+	parser.add_argument('--out-mid-maf', help='an output filename for mid maf plot ending in .png or .pdf')
+	parser.add_argument('--out-high-maf', help='an output filename for high maf plot ending in .png or .pdf')
 	parser.add_argument('--exclude', help='a variant exclusion file')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)

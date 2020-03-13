@@ -45,6 +45,14 @@ def Upload(): Unit = {
           }
       }
 
+      checkURI(s"${projectStores.geneIdMap.google.get.uri}") match {
+        case 0 => ()
+        case 1 => 
+          local {
+            googleCopy(projectStores.geneIdMap.local.get, projectStores.geneIdMap.google.get)
+          }
+      }
+
       projectStores.phenoFile.local match {
         case Some(r) =>
           projectStores.phenoFile.google match {

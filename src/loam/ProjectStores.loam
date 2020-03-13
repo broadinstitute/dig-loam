@@ -15,7 +15,7 @@ final case class ProjectStores(
   knownStores: Map[ConfigKnown, Known],
   hailUtils: MultiStore,
   regionsExclude: MultiStore,
-  genePositions: Store,
+  geneIdMap: MultiStore,
   kgPurcellVcf: MultiStore,
   kgSample: MultiStore,
   fasta: Store,
@@ -80,7 +80,10 @@ val projectStores = {
       local = Some(store(path(checkPath(projectConfig.regionsExclude))).asInput),
       google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
     ),
-    genePositions = store(path(checkPath(projectConfig.genePositions))).asInput,
+    geneIdMap = MultiStore(
+      local = Some(store(path(checkPath(projectConfig.geneIdMap))).asInput),
+      google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.geneIdMap}".split("/").last)); case false => None }
+    ),
     kgPurcellVcf = MultiStore(
       local = Some(store(path(checkPath(projectConfig.kgPurcellVcf))).asInput),
       google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgPurcellVcf}".split("/").last)); case false => None }

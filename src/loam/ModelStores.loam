@@ -30,7 +30,15 @@ final case class ModelAssocSingle(
   resultsHailLog: Option[MultiStore],
   filteredResults: Store,
   qqPlot: Store,
-  mhtPlot: Store
+  qqPlotLowMaf: Store,
+  qqPlotMidMaf: Store,
+  qqPlotHighMaf: Store,
+  mhtPlot: Store,
+  topResults: Store,
+  topResultsAnnot: Store,
+  topResultsAnnotWarnings: Store,
+  topResultsAnnotHeader: Store,
+  topResultsSitesVcf: Vcf
 )
 
 final case class ModelAssocGroup(
@@ -120,17 +128,21 @@ val modelStores = (
   val modelGroupTests = model.tests.filter(e => groupTests.contains(e))
 
   var masksAvailable = Seq[MaskFilter]()
-  for {
-    sm <- schema.masks.get
-  } yield {
-    try {
-      checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
-      masksAvailable = masksAvailable ++ Seq(sm)
-    }
-    catch {
-      case x: CfgException =>
-        println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
-    }
+  schema.masks match {
+    case Some(_) => 
+      for {
+        sm <- schema.masks.get
+      } yield {
+        try {
+          checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
+          masksAvailable = masksAvailable ++ Seq(sm)
+        }
+        catch {
+          case x: CfgException =>
+            println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
+        }
+      }
+    case None => ()
   }
 
   sm -> Model(
@@ -176,7 +188,19 @@ val modelStores = (
         },
         filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"),
         qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
-        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png")
+        qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
+        qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
+        qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
+        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
+        topResults = store(local_dir / s"${baseString}.${test}.topresults.tsv"),
+        topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.tsv"),
+        topResultsAnnotWarnings = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.warnings"),
+        topResultsAnnotHeader = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.header"),
+        topResultsSitesVcf = Vcf(
+          base = local_dir / s"${baseString}.${test}.topresults.sites",
+          data = store(local_dir / s"${baseString}.${test}.topresults.sites.vcf.bgz"),
+          tbi = store(local_dir / s"${baseString}.${test}.topresults.sites.vcf.bgz.tbi")
+        )
       )
     }.toMap,
     assocGroup = nmasks match {
