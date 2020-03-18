@@ -38,17 +38,26 @@ def main(args=None):
 		## table of contents
 		f.write("\n"); f.write(r"\tableofcontents"); f.write("\n")
 
-		print "writing introduction"
-		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
-		f.write("\n"); f.write(r"\section{Introduction}"); f.write("\n")
-		f.write(r"\label{Introduction}"); f.write("\n")
+		if args.include_intro:
 
-		text = r"\ExecuteMetaData[\currfilebase.input]{Introduction}"
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+			print "writing introduction"
+			f.write("\n"); f.write(r"\clearpage"); f.write("\n")
+			f.write("\n"); f.write(r"\section{Introduction}"); f.write("\n")
+			f.write(r"\label{Introduction}"); f.write("\n")
+
+			text = r"\ExecuteMetaData[\currfilebase.input]{Introduction}"
+			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
 
 	with open(args.out_input,'w') as f:
 
-		f.write("\n".join([r"%<*Introduction>","%</Introduction>"]).encode('utf-8')); f.write("\n")
+		if args.include_intro:
+
+			f.write("\n".join([r"%<*Introduction>","%</Introduction>"]).encode('utf-8')); f.write("\n")
+
+		else:
+
+			f.write("")
 
 	print "finished\n"
 
@@ -60,6 +69,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--authors', help='a comma separated list of authors', required=True)
 	requiredArgs.add_argument('--organization', help='an organization name', required=True)
 	requiredArgs.add_argument('--email', help='an email address', required=True)
+	requiredArgs.add_argument('--include-intro', action='store_true', help='flag indicates whether or not to include introduction section')
 	requiredArgs.add_argument('--out-tex', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--out-input', help='an output file name with extension .input', required=True)
 	args = parser.parse_args()

@@ -89,5 +89,7 @@ if(length(ids) <= 2) {
 	num_angles = -35
 }
 
+print(length(ids))
+
 upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size = line_size, number.angles = num_angles, point.size = point_size, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = text_scale, mb.ratio = mb_ratio)
 dev.off()

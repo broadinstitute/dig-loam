@@ -33,7 +33,12 @@ def main(args=None):
 		text2 = text2 + " samples " if len(nImiss) != 1 or nImiss[nImiss.keys()[0]] != 1 else text2 + " sample"
 
 		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. {1} removed from this data set.".format(text1, text2)
-		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
+		if args.fam is not None:
+			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
+			text= text + r" This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split(",")[0], fam.shape[0])
+
+		f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
 		if args.samples_upset_diagram is not None:
 			text=r"The following diagram (Figure \ref{{fig:samplesUpsetDiagram}}) describes the remaining sample distribution over the {0:d} genotype arrays, along with their intersection sizes.".format(args.narrays)
@@ -47,11 +52,6 @@ def main(args=None):
 				r"	\label{fig:samplesUpsetDiagram}",
 				r"\end{figure}"]
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
-
-		else:
-			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
-			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split(",")[0], fam.shape[0])
-			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Variants}"); f.write("\n")
 
@@ -140,6 +140,12 @@ def main(args=None):
 
 		text=r"After harmonization, the data is loaded into a Hail \cite{hail} matrix table for downstream use."
 
+		if args.bim is not None:
+			bim=pd.read_table(args.bim.split(",")[1], low_memory=False, header=None)
+			text = text + r" The resulting dataset consisted of {0:,d} total variants.".format(bim.shape[0])
+
+		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
 		if args.variants_upset_diagram is not None:
 
 			text = text + r" See Figure \ref{fig:variantsUpsetDiagram} for final variant counts by genotyping array."
@@ -153,11 +159,6 @@ def main(args=None):
 				r"	\label{fig:variantsUpsetDiagram}",
 				r"\end{figure}"]
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
-
-		else:
-			bim=pd.read_table(args.bim.split(",")[1], low_memory=False, header=None)
-			text = text + r"The resulting dataset consisted of {0:,d} total variants.".format(bim.shape[0])
-			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 

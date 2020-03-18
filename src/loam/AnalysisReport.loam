@@ -15,6 +15,11 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
+  val introString = projectConfig.IncludeAnalysisReportIntro match {
+    case true => "--include-intro"
+    case false => ""
+  }
+
   drmWith(imageName = s"$imgPython27") {
 
 	cmd"""$binPython $pyGenerateReportHeader
@@ -28,6 +33,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
       --authors "${projectConfig.authors.mkString(",")}"
       --organization "${projectConfig.organization}"
       --email "${projectConfig.email}"
+      ${introString}
       --out-tex ${analysisReportStores(configReport).globalData.intro}
       --out-input ${analysisReportStores(configReport).globalData.introInput}"""
       .in(arrayStores.map(e => e._2).flatMap(e => e.rawData.data))
@@ -81,6 +87,7 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
   }
 
   val cleanBimStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.bim").mkString(",") } }
+  val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
 
   if (projectConfig.nArrays > 1) {
 
@@ -103,12 +110,12 @@ def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
     drmWith(imageName = s"$imgPython27") {
     
       cmd"""$binPython $pyGenerateAnalysisReportData
-        --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --fam ${cleanFamStrings.head}
         --bim ${cleanBimStrings.head}
         --arrays ${arraysString.mkString(" ")}
         --out-tex ${analysisReportStores(configReport).globalData.data}
         --out-input ${analysisReportStores(configReport).globalData.dataInput}"""
-        .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq)
         .out(analysisReportStores(configReport).globalData.data, analysisReportStores(configReport).globalData.dataInput)
         .tag(s"${analysisReportStores(configReport).globalData.data}".split("/").last)
 

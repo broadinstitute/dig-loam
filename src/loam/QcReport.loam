@@ -223,38 +223,61 @@ def QcReport(): Unit = {
   }
 
   val cleanFamStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"${arrayStores(a).cleanData.base}.fam").mkString(",") } }
-
-  drmWith(imageName = s"$imgR34") {
-    
-    cmd"""$binRscript --vanilla --verbose
-      $rUpsetplotBimFam
-      --input ${cleanFamStrings.mkString(" ")}
-      --type fam
-      --ancestry ${ProjectStores.ancestryInferred}
-      --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
-      .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ ProjectStores.ancestryInferred)
-      .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
-      .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
-
-  }
-
   val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays.map(e => e.id).toSeq } yield { Seq(a, s"""${arrayStores(a).sampleQcData.metricPlots.path.toAbsolutePath()}""").mkString(",") } }
 
-  drmWith(imageName = s"$imgPython27") {
+  if (projectConfig.nArrays > 1) {
 
-    cmd"""$binPython $pyGenerateQcReportSampleqc
-      --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
-      --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
-      --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
-      --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
-      --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
-      --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
-      --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
-      --restore ${restoreStrings.mkString(" ")}
-      --out ${qcReportStores.texData.sampleQc}"""
-      .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
-      .out(qcReportStores.texData.sampleQc)
-      .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
+    drmWith(imageName = s"$imgR34") {
+      
+      cmd"""$binRscript --vanilla --verbose
+        $rUpsetplotBimFam
+        --input ${cleanFamStrings.mkString(" ")}
+        --type fam
+        --ancestry ${ProjectStores.ancestryInferred}
+        --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
+        .in(arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq :+ ProjectStores.ancestryInferred)
+        .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+        .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
+    
+    }
+    
+    drmWith(imageName = s"$imgPython27") {
+    
+      cmd"""$binPython $pyGenerateQcReportSampleqc
+        --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
+        --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
+        --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
+        --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
+        --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
+        --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
+        --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
+        --restore ${restoreStrings.mkString(" ")}
+        --out ${qcReportStores.texData.sampleQc}"""
+        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+        .out(qcReportStores.texData.sampleQc)
+        .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
+    
+    }
+
+  } else {
+
+    drmWith(imageName = s"$imgPython27") {
+    
+      cmd"""$binPython $pyGenerateQcReportSampleqc
+        --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
+        --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
+        --compare-dist-label ${projectConfig.Arrays.map(e => e.id).head}
+        --compare-dist-metric ${projectConfig.sampleQcMetrics.head}
+        --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
+        --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
+        --fam ${cleanFamStrings(0)}
+        --restore ${restoreStrings.mkString(" ")}
+        --out ${qcReportStores.texData.sampleQc}"""
+        .in((arrayStores.map(e => e._2).flatMap(e => e.cleanData.data).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlots).toSeq ++ arrayStores.map(e => e._2).map(e => e.finalData.samplesRestore).toSeq) :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc)
+        .out(qcReportStores.texData.sampleQc)
+        .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
+    
+    }
 
   }
 
