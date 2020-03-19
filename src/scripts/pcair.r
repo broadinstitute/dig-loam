@@ -69,15 +69,15 @@ if(! is.null(args$force_unrel) & ! is.null(kinship)) {
 	unrel_iids<-unrel_df[,grep(paste0("\\b",args$force_unrel[1],"\\b"),names(unrel_df), value=TRUE)]
 }
 
-print(iids)
-print(kinship)
-print(unrel_iids)
-
+npcs<-20
+if(length(iids) < 20) {
+	npcs<-length(iids)
+}
 
 print("running pcair")
-mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, v=NULL, snp.block.size = 10000))
+mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, v=npcs, snp.block.size = 10000))
 if(inherits(mypcair, "try-error")) {
-	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, v=NULL, snp.block.size = 10000))
+	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, v=npcs, snp.block.size = 10000))
 	if(inherits(mypcair, "try-error")) {
 		print("unable to run pcair with or without kinship adjustment")
 		quit(status=1)

@@ -15,7 +15,7 @@ import PhenotypeStores._
 
 def AnalysisReportGlobal(configReport: ConfigReport): Unit = {
 
-  val introString = projectConfig.IncludeAnalysisReportIntro match {
+  val introString = projectConfig.includeAnalysisReportIntro match {
     case true => "--include-intro"
     case false => ""
   }
