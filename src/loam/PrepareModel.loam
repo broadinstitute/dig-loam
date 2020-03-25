@@ -40,9 +40,9 @@ def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCoh
       } yield {
         modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
       }
-      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0
+      (x.toSeq ++ arrayStores(array).filteredData.plink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0
     case None =>
-      arrayStores(array).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0
+      arrayStores(array).filteredData.plink.data.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).sampleQcData.stats.local.get :+ arrayStores(array).kinshipData.kin0
   }
   
   val keepRelated = famTests.intersect(configModel.tests).size match {
@@ -111,7 +111,7 @@ def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCoh
       ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
       ${modelStores((configModel, configSchema, configCohorts, configMeta)).outliers}
       > ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog}"""
-      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim :+ projectStores.phenoFile.local.get)
+      .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
       .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).outliers, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog)
       .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}".split("/").last)
   
