@@ -236,15 +236,15 @@ final case class ConfigModel(
   merges: Option[Seq[String]],
   knowns: Option[Seq[String]]) extends Debug
 
-final case class ConfigSection(
-  id: String,
-  title: String,
-  models: Seq[String]) extends Debug
+//final case class ConfigSection(
+//  id: String,
+//  title: String,
+//  models: Seq[String]) extends Debug
 
-final case class ConfigReport(
-  id: String,
-  name: String,
-  sections: Seq[ConfigSection]) extends Debug
+//final case class ConfigReport(
+//  id: String,
+//  name: String,
+//  sections: Seq[ConfigSection]) extends Debug
 
 final case class ProjectConfig(
   loamstreamVersion: String,
@@ -313,8 +313,9 @@ final case class ProjectConfig(
   Knowns: Seq[ConfigKnown],
   Phenos: Seq[ConfigPheno],
   Schemas: Seq[ConfigSchema],
-  Models: Seq[ConfigModel],
-  Reports: Seq[ConfigReport]) extends Debug
+  Models: Seq[ConfigModel]
+  //Reports: Seq[ConfigReport]
+  ) extends Debug
 
 final case class Image(
   imgHail: Path,
@@ -1280,41 +1281,41 @@ object ProjectConfig {
 
     }
 
-    val Reports = {
-    
-      for {
-        report <- requiredObjList(config = config, field = "reports")
-      } yield {
-    
-        ConfigReport(
-          id = requiredStr(config = report, field = "id"),
-          name = requiredStr(config = report, field = "name"),
-          sections = for {
-            section <- requiredObjList(config = report, field = "sections")
-          } yield {
-
-            val models = for {
-              m <- requiredStrList(config = section, field = "models")
-            } yield {
-              Models.map(e => e.id) contains m match {
-                case true => m
-                case false => throw new CfgException("reports.sections.models: model '" + m + "' not found")
-              }
-            }
-
-            ConfigSection(
-              id = requiredStr(config = section, field = "id"),
-              title = requiredStr(config = section, field = "title"),
-              models = models
-            )
-          
-          }
-
-        )
-
-      }
-    
-    }
+    //val Reports = {
+    //
+    //  for {
+    //    report <- requiredObjList(config = config, field = "reports")
+    //  } yield {
+    //
+    //    ConfigReport(
+    //      id = requiredStr(config = report, field = "id"),
+    //      name = requiredStr(config = report, field = "name"),
+    //      sections = for {
+    //        section <- requiredObjList(config = report, field = "sections")
+    //      } yield {
+    //
+    //        val models = for {
+    //          m <- requiredStrList(config = section, field = "models")
+    //        } yield {
+    //          Models.map(e => e.id) contains m match {
+    //            case true => m
+    //            case false => throw new CfgException("reports.sections.models: model '" + m + "' not found")
+    //          }
+    //        }
+    //
+    //        ConfigSection(
+    //          id = requiredStr(config = section, field = "id"),
+    //          title = requiredStr(config = section, field = "title"),
+    //          models = models
+    //        )
+    //      
+    //      }
+    //
+    //    )
+    //
+    //  }
+    //
+    //}
 
     val nArrays = Arrays.size
     val nCohorts = Cohorts.size
@@ -1388,8 +1389,8 @@ object ProjectConfig {
       Knowns = Knowns,
       Phenos = Phenos,
       Schemas = Schemas,
-      Models = Models,
-      Reports = Reports
+      Models = Models
+      //Reports = Reports
 
     )
 
@@ -1549,7 +1550,7 @@ for ( d <- projectConfig.Merges ) { d.debugVars() }
 for ( d <- projectConfig.Phenos ) { d.debugVars() }
 for ( d <- projectConfig.Models ) { d.debugVars() }
 for ( d <- projectConfig.Knowns ) { d.debugVars() }
-for ( d <- projectConfig.Reports ) { d.debugVars() }
+//for ( d <- projectConfig.Reports ) { d.debugVars() }
 println("... Project Configuration Loaded Successfully!")
 
 println("Loading Pipeline Utilities Configuration ...")
@@ -1561,3 +1562,9 @@ utils.python.debugVars()
 utils.bash.debugVars()
 utils.r.debugVars()
 println("... Pipeline Utilities Configuration Loaded Successfully!")
+
+// verify phenotype file if defined
+projectConfig.phenoFile match {
+  case "" => ()
+  case _ => verifyPheno(phenoFile = projectConfig.phenoFile, models = projectConfig.Models)
+}

@@ -582,3 +582,44 @@ def findCycles(graph: LoamGraph): Set[Seq[Tool]] = {
 def pathToString(graph: LoamGraph)(path: Seq[Tool]): String = {
   path.map(t => s"'${graph.nameOf(t).get}'").mkString(" => ")
 }
+
+def getHeader(f: String): Option[String] = {
+  val src = io.Source.fromFile(f)
+  try {
+    src.getLines.find(_ => true)
+  } finally {
+    src.close()
+  }
+}
+
+def verifyPheno(phenoFile: String, models: Seq[ConfigModel]): Unit = {
+  val p = checkPath(phenoFile)
+  val h = getHeader(p)
+  var fp = Seq[String]()
+  for {
+    x <- models.map(e => e.pheno)
+  } yield {
+    fp = fp ++ Seq(x)
+  }
+  var fc = Seq[String]()
+  for {
+    x <- models.map(e => e.covars)
+    y <- x.split("\\+")
+  } yield {
+    fc = fc ++ Seq(y.replace("[","").replace("]",""))
+  }
+  fp = fp.distinct
+  fc = fc.distinct
+  h match {
+    case Some(_) =>
+      val mp = fp.filter(e => ! h.get.split("\t").intersect(fp).contains(e))
+      val mc = fc.filter(e => ! h.get.split("\t").intersect(fc).contains(e))
+      (mp.size, mc.size) match {
+        case (a, 0) if a > 0 => throw new CfgException("verifyPheno: pheno/s " + mp.mkString(",") + " not found in header of pheno file " + phenoFile)
+        case (a, b) if (a > 0 && b > 0) => throw new CfgException("verifyPheno: pheno/s " + mp.mkString(",") + " and covar/s " + mc.mkString(",") + " not found in header of pheno file " + phenoFile)
+        case (0, b) if b > 0 => throw new CfgException("verifyPheno: covar/s " + mc.mkString(",") + " not found in header of pheno file " + phenoFile)
+        case _ => println("Phenotype file " + phenoFile + " verified with pheno field/s " + fp.mkString(",") + " and covar field/s " + fc.mkString(","))
+      }
+    case None => throw new CfgException("verifyPheno: pheno file " + phenoFile + " is empty")
+  }
+}
