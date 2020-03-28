@@ -47,13 +47,13 @@ def trackObjects(): Unit = {
     }
     
     for {
-      mask <- modelStores(ms).assocMaskGroup.keys
+      test <- modelStores(ms).assocMaskGroup.keys
     } yield {
       for {
-        test <- modelStores(ms).assocMaskGroup(mask).keys
+        mask <- modelStores(ms).assocMaskGroup(test).keys
       } yield {
-        writeObject(obj = modelStores(ms).assocMaskGroup(mask)(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${mask.id}.${test}")
-        writeObject(obj = modelStores(ms).assocMaskGroup(mask)(test).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${mask.id}.${test}.groups.keys")
+        writeObject(obj = modelStores(ms).assocMaskGroup(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${test}.${mask.id}")
+        writeObject(obj = modelStores(ms).assocMaskGroup(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${test}.${mask.id}.groups.keys")
       }
     }
 

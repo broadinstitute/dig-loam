@@ -307,13 +307,13 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
   for {
 
-    mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup.keys.toList
+    test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup.keys.toList
   
   } yield {
 
     for {
     
-      test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask).keys.toList
+      mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList
     
     } yield {
 
@@ -321,11 +321,11 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
           
         case "epacts" =>
         
-          val modelTestMaskGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups.keys
+          val modelMaskTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups.keys
           
           for {
           
-            group <- modelTestMaskGroupsKeys.toList
+            group <- modelMaskTestGroupsKeys.toList
           
           } yield {
           
@@ -350,31 +350,31 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                 ${vcfString}
                 --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get}
                 --groupid "${groupid}"
-                --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(groupid).groupFile}
+                --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).groupFile}
                 --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
                 --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
                 --test ${test.replace("epacts.","")}
                 --field "DS"
-                --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(groupid).results}
+                --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).results}
                 --run 1"""
                 .in(epactsIn)
-                .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(groupid).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(groupid).results)
-                .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(groupid).results}".split("/").last)
+                .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).results)
+                .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).results}".split("/").last)
             
             }
         
           }
         
-          modelTestMaskGroupsKeys.size match {
+          modelMaskTestGroupsKeys.size match {
           
             case n if n > 0 =>
           
-              val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(modelTestMaskGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelTestMaskGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
+              val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(modelMaskTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
               
               val maskResultsFiles = for {
-                group <- modelTestMaskGroupsKeys.toList
+                group <- modelMaskTestGroupsKeys.toList
               } yield {
-                modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).groups(group.split("\t")(0)).results
+                modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(group.split("\t")(0)).results
               }
         
               drmWith(imageName = s"${utils.image.imgTools}") {
@@ -382,10 +382,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                 cmd"""${utils.bash.shMergeResults}
                    --results ${maskResultsFile}
                    --groupf ${schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get}
-                   --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results}"""
+                   --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}"""
                   .in(maskResultsFiles :+ schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get)
-                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results)
-                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results}".split("/").last)
+                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results)
+                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}".split("/").last)
               
               }
           
@@ -396,22 +396,22 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
           drmWith(imageName = s"${utils.image.imgPython2}") {
     
             cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
-              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}
               --p PVALUE
-              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).qqPlot}"""
-              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results)
-              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).qqPlot)
-              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).qqPlot}".split("/").last)
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).qqPlot}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).qqPlot)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).qqPlot}".split("/").last)
             
             cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
-              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}
               --chr "#CHROM"
               --pos "BEGIN,END"
               --p PVALUE
-              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).mhtPlot}"""
-              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).results)
-              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).mhtPlot)
-              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(mask)(test).mhtPlot}".split("/").last)
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).mhtPlot}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).mhtPlot)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).mhtPlot}".split("/").last)
           
           }
         

@@ -167,16 +167,32 @@ outBase=`echo $out | sed 's/\.tsv\.bgz//g'`
 
 EXITCODE=0
 if [ "$type" == "group" ]; then
-	$bin $type \
-	--vcf $vcf \
-	--groupf $groupfout \
-	--ped $ped \
-	$phenoCovars \
-	--test $test \
-	--field $field \
-	--out $outBase \
-	--run $run \
-	--no-plot
+	if [ "$test" == "b.collapse" ]; then
+		$bin $type \
+		--vcf $vcf \
+		--groupf $groupfout \
+		--ped $ped \
+		$phenoCovars \
+		--test $test \
+		--field $field \
+		--out $outBase \
+		--run $run \
+		--no-plot
+	elif [[ "$test" == "b.skat" || "$test" == "q.skat" ]]; then
+		$bin $type \
+		--vcf $vcf \
+		--groupf $groupfout \
+		--ped $ped \
+		$phenoCovars \
+		--test skat \
+		--skat-o \
+		--field $field \
+		--out $outBase \
+		--run $run \
+		--no-plot
+	else
+		EXITCODE=1
+	fi
 	if [ -f "${outBase}.epacts.OK" ]; then
 		cat ${outBase}.epacts | bgzip -c > $out
 		rm ${outBase}.epacts

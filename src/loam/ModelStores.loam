@@ -79,8 +79,8 @@ final case class Model(
   pcsInclude: MultiStore,
   assocSingle: Map[String, ModelAssocSingle],
   assocGroup: Map[String, ModelAssocGroupBase],
-  assocMaskGroup: Map[MaskFilter, Map[String, ModelAssocGroupBase]]
-  //assoc: ModelTest
+  //assocMaskGroup: Map[MaskFilter, Map[String, ModelAssocGroupBase]]
+  assocMaskGroup: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
 )
 
 val modelStores = (
@@ -231,27 +231,51 @@ val modelStores = (
       case _ => Map[String, ModelAssocGroupBase]()
     },
     assocMaskGroup = masksAvailable.size match {
-      case 0 => Map[MaskFilter, Map[String, ModelAssocGroupBase]]()
+      case 0 => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
       case _ =>
-        masksAvailable.map { mask =>
-          val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
-          val l = fileToList(gFile).map(e => e.split("\t")(0))
-          mask ->
-            modelGroupTests.map { test =>
-              test -> ModelAssocGroupBase(
-                results = store(local_dir / s"${baseString}.${mask.id}.${test}.results.tsv.bgz"),
-                groupFile = store(local_dir / s"${baseString}.${mask.id}.${test}.groupfile.tsv"),
-                qqPlot = store(local_dir / s"${baseString}.${mask.id}.${test}.results.qqplot.png"),
-                mhtPlot = store(local_dir / s"${baseString}.${mask.id}.${test}.results.mhtplot.png"),
-                groups = l.map { group =>
-                  group -> ModelAssocGroup(
-                    results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.results.tsv.bgz"),
-                    groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.groupfile.tsv")
-                  )
-                }.toMap
-              )
+        modelGroupTests.map { test =>
+          test ->
+            masksAvailable.map { mask =>
+              val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
+              val l = fileToList(gFile).map(e => e.split("\t")(0))
+              mask ->
+                ModelAssocGroupBase(
+                  results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
+                  groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
+                  qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
+                  mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
+                  groups = l.map { group =>
+                    group -> ModelAssocGroup(
+                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
+                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
+                    )
+                  }.toMap
+                )
             }.toMap
         }.toMap
     }
+    //assocMaskGroup = masksAvailable.size match {
+    //  case 0 => Map[MaskFilter, Map[String, ModelAssocGroupBase]]()
+    //  case _ =>
+    //    masksAvailable.map { mask =>
+    //      val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
+    //      val l = fileToList(gFile).map(e => e.split("\t")(0))
+    //      mask ->
+    //        modelGroupTests.map { test =>
+    //          test -> ModelAssocGroupBase(
+    //            results = store(local_dir / s"${baseString}.${mask.id}.${test}.results.tsv.bgz"),
+    //            groupFile = store(local_dir / s"${baseString}.${mask.id}.${test}.groupfile.tsv"),
+    //            qqPlot = store(local_dir / s"${baseString}.${mask.id}.${test}.results.qqplot.png"),
+    //            mhtPlot = store(local_dir / s"${baseString}.${mask.id}.${test}.results.mhtplot.png"),
+    //            groups = l.map { group =>
+    //              group -> ModelAssocGroup(
+    //                results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.results.tsv.bgz"),
+    //                groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${mask.id}.${test}.${group}.groupfile.tsv")
+    //              )
+    //            }.toMap
+    //          )
+    //        }.toMap
+    //    }.toMap
+    //}
   )
 }.toMap
