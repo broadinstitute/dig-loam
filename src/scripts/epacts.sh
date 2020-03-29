@@ -101,6 +101,15 @@ while :; do
 				exit 1
 			fi
 			;;
+		--masks)
+			if [ "$2" ]; then
+				masks=$2
+				shift
+			else
+				echo "ERROR: --masks requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--out)
 			if [ "$2" ]; then
 				out=$2
@@ -142,9 +151,14 @@ echo "ped: $ped"
 echo "vars: $vars"
 echo "test: $test"
 echo "field: $field"
+echo "masks: $masks"
 echo "groupfout: $groupfout"
 echo "out: $out"
 echo "run: $run"
+
+if [ -z "$masks" ]; then
+	masks="DEFAULT"
+fi
 
 i=0
 phenoCovars=""
@@ -159,18 +173,64 @@ done < $vars
 
 echo "parsed variable file $vars into epacts cli options '$phenoCovars'"
 
-if [[ ! -z "$groupid" && ! -z "${groupfin}" && ! -z "${groupfout}" ]]; then
-	grep -w "${groupid}" $groupfin > $groupfout
-fi
+for mask in $(echo $masks | sed 's/,/ /g'); do
 
-outBase=`echo $out | sed 's/\.tsv\.bgz//g'`
+	echo "running epacts for mask ${mask}"
 
-EXITCODE=0
-if [ "$type" == "group" ]; then
-	if [ "$test" == "b.collapse" ]; then
+	if [ "$mask" != "DEFAULT" ]; then
+		tmpgroupfin=`echo $groupfin | sed "s/___MASK___/${mask}/g"`
+		tmpgroupfout=`echo $groupfout | sed "s/___MASK___/${mask}/g"`
+		tmpout=`echo $out | sed "s/___MASK___/${mask}/g"`
+	else
+		tmpgroupfin=`echo $groupfin | sed "s/___MASK___\.//g"`
+		tmpgroupfout=`echo $groupfout | sed "s/___MASK___\.//g"`
+		tmpout=`echo $out | sed "s/___MASK___\.//g"`
+	fi
+
+	if [[ ! -z "$groupid" && ! -z "${groupfin}" && ! -z "${groupfout}" ]]; then
+		grep -w "${groupid}" $tmpgroupfin > $tmpgroupfout
+	fi
+	
+	outBase=`echo $tmpout | sed 's/\.tsv\.bgz//g'`
+	
+	EXITCODE=0
+	if [ "$type" == "group" ]; then
+		if [ "$test" == "b.collapse" ]; then
+			$bin $type \
+			--vcf $vcf \
+			--groupf $tmpgroupfout \
+			--ped $ped \
+			$phenoCovars \
+			--test $test \
+			--field $field \
+			--out $outBase \
+			--run $run \
+			--no-plot
+		elif [[ "$test" == "b.skat" || "$test" == "q.skat" ]]; then
+			$bin $type \
+			--vcf $vcf \
+			--groupf $tmpgroupfout \
+			--ped $ped \
+			$phenoCovars \
+			--test skat \
+			--skat-o \
+			--field $field \
+			--out $outBase \
+			--run $run \
+			--no-plot
+		else
+			EXITCODE=1
+		fi
+		if [ -f "${outBase}.epacts.OK" ]; then
+			cat ${outBase}.epacts | bgzip -c > $tmpout
+			rm ${outBase}.epacts
+		else
+			EXITCODE=1
+		fi
+	elif [ "$type" == "single" ]; then
 		$bin $type \
 		--vcf $vcf \
-		--groupf $groupfout \
+		--region $region \
 		--ped $ped \
 		$phenoCovars \
 		--test $test \
@@ -178,48 +238,18 @@ if [ "$type" == "group" ]; then
 		--out $outBase \
 		--run $run \
 		--no-plot
-	elif [[ "$test" == "b.skat" || "$test" == "q.skat" ]]; then
-		$bin $type \
-		--vcf $vcf \
-		--groupf $groupfout \
-		--ped $ped \
-		$phenoCovars \
-		--test skat \
-		--skat-o \
-		--field $field \
-		--out $outBase \
-		--run $run \
-		--no-plot
+		if [ -f "${outBase}.epacts.OK" ]; then
+			zcat ${outBase}.epacts.gz | bgzip -c > $tmpout
+			rm ${outBase}.epacts.gz
+			rm ${outBase}.epacts.gz.tbi
+		else
+			EXITCODE=1
+		fi
 	else
+		echo "ERROR: --type argument $type not recognized."
 		EXITCODE=1
 	fi
-	if [ -f "${outBase}.epacts.OK" ]; then
-		cat ${outBase}.epacts | bgzip -c > $out
-		rm ${outBase}.epacts
-	else
-		EXITCODE=1
-	fi
-elif [ "$type" == "single" ]; then
-	$bin $type \
-	--vcf $vcf \
-	--region $region \
-	--ped $ped \
-	$phenoCovars \
-	--test $test \
-	--field $field \
-	--out $outBase \
-	--run $run \
-	--no-plot
-	if [ -f "${outBase}.epacts.OK" ]; then
-		zcat ${outBase}.epacts.gz | bgzip -c > $out
-		rm ${outBase}.epacts.gz
-		rm ${outBase}.epacts.gz.tbi
-	else
-		EXITCODE=1
-	fi
-else
-	echo "ERROR: --type argument $type not recognized."
-	EXITCODE=1
-fi
+
+done
 
 exit $EXITCODE

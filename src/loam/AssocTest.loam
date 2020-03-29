@@ -8,6 +8,7 @@ import ArrayStores._
 import Fxns._
 import SchemaStores._
 import ProjectStores._
+import DirTree._
 
 final case class CfgException(s: String) extends Exception(s)
 
@@ -311,60 +312,90 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
   
   } yield {
 
-    for {
-    
-      mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList
-    
-    } yield {
-
-      test.split("\\.")(0) match {
-          
-        case "epacts" =>
+    test.split("\\.")(0) match {
         
+      case "epacts" =>
+
+        val allGroups = dirTree.analysisModelGroupsMap.keys
+        
+        for {
+        
+          group <- allGroups.toList
+        
+        } yield {
+        
+          //val groupid = group.split("\t")(0)
+
+          val groupMasks = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList.filter(e => modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(e).groups.keys.toList.contains(group))
+
+          ! groupMasks.isEmpty match {
+
+            case true =>
+
+              val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
+                case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
+                case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+              }
+              
+              var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
+
+              for {
+                gm <- groupMasks
+              } yield {
+                epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get)
+              }
+
+              schemaStores((configSchema, configCohorts)).vcf match {
+                case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
+                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+              }
+
+              var epactsOut = Seq[Store]()
+
+              for {
+                gm <- groupMasks
+              } yield {
+                epactsOut = epactsOut ++ Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups(group).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups(group).results)
+              }
+
+              val groupMasksString = groupMasks.map(e => e.id).mkString(",")
+
+              drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
+              
+                cmd"""${utils.bash.shEpacts}
+                  --bin ${utils.binary.binEpacts}
+                  --type group
+                  ${vcfString}
+                  --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}
+                  --groupid "${group}"
+                  --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).groupFile.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
+                  --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
+                  --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
+                  --test ${test.replace("epacts.","")}
+                  --field "DS"
+                  --masks ${groupMasksString}
+                  --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
+                  --run 1"""
+                  .in(epactsIn)
+                  .out(epactsOut)
+                  .tag(s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}""".split("/").last)
+              
+              }
+            
+            case false => ()
+
+          }
+      
+        }
+
+        for {
+        
+          mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList
+        
+        } yield {
+
           val modelMaskTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups.keys
           
-          for {
-          
-            group <- modelMaskTestGroupsKeys.toList
-          
-          } yield {
-          
-            val groupid = group.split("\t")(0)
-                  
-            val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
-              case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-              case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
-            }
-            
-            var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get, schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get)
-            schemaStores((configSchema, configCohorts)).vcf match {
-              case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-              case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
-            }
-            
-            drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
-            
-              cmd"""${utils.bash.shEpacts}
-                --bin ${utils.binary.binEpacts}
-                --type group
-                ${vcfString}
-                --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get}
-                --groupid "${groupid}"
-                --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).groupFile}
-                --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
-                --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
-                --test ${test.replace("epacts.","")}
-                --field "DS"
-                --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).results}
-                --run 1"""
-                .in(epactsIn)
-                .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).results)
-                .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(groupid).results}".split("/").last)
-            
-            }
-        
-          }
-        
           modelMaskTestGroupsKeys.size match {
           
             case n if n > 0 =>
@@ -376,7 +407,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
               } yield {
                 modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(group.split("\t")(0)).results
               }
-        
+          
               drmWith(imageName = s"${utils.image.imgTools}") {
               
                 cmd"""${utils.bash.shMergeResults}
@@ -392,9 +423,9 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             case _ => ()
           
           }
-
+          
           drmWith(imageName = s"${utils.image.imgPython2}") {
-    
+          
             cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
               --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}
               --p PVALUE
@@ -414,10 +445,14 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
               .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).mhtPlot}".split("/").last)
           
           }
-        
-      }
-    
+
+        }
+
+      case _ => ()
+      
     }
+    
+    //}
 
   }
 
