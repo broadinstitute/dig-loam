@@ -134,7 +134,7 @@ projectStores.phenoFile.local match {
 
     // Prepare model cohorts
     for {
-      x <- modelSchemaCohorts
+      x <- modelSchemaCohorts if x.model.runAssoc
     } yield {
     
       PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
@@ -152,7 +152,7 @@ projectStores.phenoFile.local match {
 
     //Cohort variant association
     for {
-      x <- modelSchemaCohorts
+      x <- modelSchemaCohorts if x.model.runAssoc
     } yield {
     
       AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None, configKnown = None)

@@ -234,7 +234,8 @@ final case class ConfigModel(
   cohorts: Seq[String],
   metas: Option[Seq[String]],
   merges: Option[Seq[String]],
-  knowns: Option[Seq[String]]) extends Debug
+  knowns: Option[Seq[String]],
+  runAssoc: Boolean) extends Debug
 
 //final case class ConfigSection(
 //  id: String,
@@ -1274,7 +1275,8 @@ object ProjectConfig {
             case ("full", Some(s)) => throw new CfgException("models.merges: model " + id + " schema " + schema + " 'full' design and merges are not allowed")
             case _ => merges
           },
-          knowns = knowns
+          knowns = knowns,
+          runAssoc = requiredBool(config = model, field = "runAssoc", default = Some(true))
         )
 
       }
