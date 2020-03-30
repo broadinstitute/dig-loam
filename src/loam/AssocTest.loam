@@ -12,7 +12,7 @@ import DirTree._
 
 final case class CfgException(s: String) extends Exception(s)
 
-def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None, configKnown: Option[ConfigKnown] = None): Unit = {
+def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
   val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
@@ -70,69 +70,77 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
     test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle.keys
   
   } yield {
+
+    configModel.runAssoc match {
+
+      case true =>
   
-    test.split("\\.")(0) match {
-  
-      case "hail" =>
-
-        projectConfig.hailCloud match {
-
-          case true =>
-            
-            googleWith(projectConfig.cloudResources.mtCluster) {
-            
-              hail"""${utils.python.pyHailAssoc} --
-                --hail-utils ${projectStores.hailUtils.google.get}
-                --mt-in ${arrayStores(array).refData.mt.google.get}
-                --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
-                --iid-col ${projectConfig.phenoFileId}
-                --pheno-col ${configModel.pheno}
-                --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
-                --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
-                --test ${test}
-                --trans "${configModel.trans}"
-                --covars "${configModel.covars}"
-                --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get}
-                --cloud
-                --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get}"""
-                  .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get)
-                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get)
-                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}.google".split("/").last)
-            
+        test.split("\\.")(0) match {
+        
+          case "hail" =>
+        
+            projectConfig.hailCloud match {
+        
+              case true =>
+                
+                googleWith(projectConfig.cloudResources.mtCluster) {
+                
+                  hail"""${utils.python.pyHailAssoc} --
+                    --hail-utils ${projectStores.hailUtils.google.get}
+                    --mt-in ${arrayStores(array).refData.mt.google.get}
+                    --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
+                    --iid-col ${projectConfig.phenoFileId}
+                    --pheno-col ${configModel.pheno}
+                    --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
+                    --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
+                    --test ${test}
+                    --trans "${configModel.trans}"
+                    --covars "${configModel.covars}"
+                    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get}
+                    --cloud
+                    --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get}"""
+                      .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get)
+                      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get)
+                      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}.google".split("/").last)
+                
+                }
+                
+                local {
+                
+                  googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
+                  googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get)
+                
+                }
+              
+              case false =>
+              
+                drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+                
+                  cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+                    --mt-in ${arrayStores(array).refData.mt.local.get}
+                    --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+                    --iid-col ${projectConfig.phenoFileId}
+                    --pheno-col ${configModel.pheno}
+                    --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+                    --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
+                    --test ${test}
+                    --trans "${configModel.trans}"
+                    --covars "${configModel.covars}"
+                    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
+                    --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get}"""
+                      .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get :+ schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
+                      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get)
+                      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}".split("/").last)
+                
+                }
+        
             }
-            
-            local {
-            
-              googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
-              googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get)
-            
-            }
-          
-          case false =>
-          
-            drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
-            
-              cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
-                --mt-in ${arrayStores(array).refData.mt.local.get}
-                --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-                --iid-col ${projectConfig.phenoFileId}
-                --pheno-col ${configModel.pheno}
-                --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
-                --test ${test}
-                --trans "${configModel.trans}"
-                --covars "${configModel.covars}"
-                --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
-                --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get}"""
-                  .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get :+ schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
-                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get)
-                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}".split("/").last)
-            
-            }
-
+        
+          case _ => ()
+        
         }
 
-      case _ => ()
+      case false => ()
 
     }
 
@@ -184,12 +192,9 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         ${projectStores.fasta}
         ${projectStores.vepCacheDir}
         ${projectStores.vepPluginsDir}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotWarnings}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotHeader}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsSitesVcf.data}"""
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}"""
       .in(arrayStores(array).refData.sitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
-      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotWarnings, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnotHeader, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsSitesVcf.data, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsSitesVcf.tbi)
+      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot)
       .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}".split("/").last)
 
     }
@@ -206,76 +211,84 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
   
       case "epacts" =>
 
-        val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups.keys
+        configModel.runAssoc match {
 
-        for {
-        
-          group <- modelTestGroupsKeys.toList
-        
-        } yield {
-        
-          val groupid = group.split("\t")(0)
-          
-          val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
-            case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-            case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
-          }
-          
-          var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get, schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
-          schemaStores((configSchema, configCohorts)).vcf match {
-            case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-            case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
-          }
-        
-          drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
-          
-            cmd"""${utils.bash.shEpacts}
-              --bin ${utils.binary.binEpacts}
-              --type group
-              ${vcfString}
-              --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}
-              --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).groupFile}
-              --groupid "${groupid}"
-              --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
-              --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
-              --test ${test.replace("epacts.","")}
-              --field "DS"
-              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results}
-              --run 1"""
-              .in(epactsIn)
-              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results)
-              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results}".split("/").last)
-          
-          }
-        
-        }
+          case true =>
 
-        modelTestGroupsKeys.size match {
-        
-          case n if n > 0 =>
-        
-            val resultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(modelTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
-        
-            val resultsFiles = for {
+            val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups.keys
+            
+            for {
+            
               group <- modelTestGroupsKeys.toList
+            
             } yield {
-              modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(group.split("\t")(0)).results
+            
+              val groupid = group.split("\t")(0)
+              
+              val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
+                case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
+                case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+              }
+              
+              var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get, schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
+              schemaStores((configSchema, configCohorts)).vcf match {
+                case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
+                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+              }
+            
+              drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
+              
+                cmd"""${utils.bash.shEpacts}
+                  --bin ${utils.binary.binEpacts}
+                  --type group
+                  ${vcfString}
+                  --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}
+                  --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).groupFile}
+                  --groupid "${groupid}"
+                  --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
+                  --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
+                  --test ${test.replace("epacts.","")}
+                  --field "DS"
+                  --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results}
+                  --run 1"""
+                  .in(epactsIn)
+                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results)
+                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results}".split("/").last)
+              
+              }
+            
             }
             
-            drmWith(imageName = s"${utils.image.imgTools}") {
+            modelTestGroupsKeys.size match {
             
-              cmd"""${utils.bash.shMergeResults}
-                 --results ${resultsFile}
-                 --groupf ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}
-                 --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results}"""
-                .in(resultsFiles :+ schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
-                .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results)
-                .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results}".split("/").last)
+              case n if n > 0 =>
+            
+                val resultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(modelTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
+            
+                val resultsFiles = for {
+                  group <- modelTestGroupsKeys.toList
+                } yield {
+                  modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(group.split("\t")(0)).results
+                }
+                
+                drmWith(imageName = s"${utils.image.imgTools}") {
+                
+                  cmd"""${utils.bash.shMergeResults}
+                     --results ${resultsFile}
+                     --groupf ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}
+                     --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results}"""
+                    .in(resultsFiles :+ schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
+                    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results)
+                    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results}".split("/").last)
+                
+                }
+            
+              case _ => ()
             
             }
-        
-          case _ => ()
-        
+
+          case false => ()
+
         }
 
         drmWith(imageName = s"${utils.image.imgPython2}") {
@@ -316,76 +329,84 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         
       case "epacts" =>
 
-        val allGroups = dirTree.analysisModelGroupsMap.keys
-        
-        for {
-        
-          group <- allGroups.toList
-        
-        } yield {
-        
-          //val groupid = group.split("\t")(0)
+        configModel.runAssoc match {
 
-          val groupMasks = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList.filter(e => modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(e).groups.keys.toList.contains(group))
+          case true =>
 
-          ! groupMasks.isEmpty match {
-
-            case true =>
-
-              val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
-                case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-                case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
-              }
-              
-              var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
-
-              for {
-                gm <- groupMasks
-              } yield {
-                epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get)
-              }
-
-              schemaStores((configSchema, configCohorts)).vcf match {
-                case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
-              }
-
-              var epactsOut = Seq[Store]()
-
-              for {
-                gm <- groupMasks
-              } yield {
-                epactsOut = epactsOut ++ Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups(group).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups(group).results)
-              }
-
-              val groupMasksString = groupMasks.map(e => e.id).mkString(",")
-
-              drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
-              
-                cmd"""${utils.bash.shEpacts}
-                  --bin ${utils.binary.binEpacts}
-                  --type group
-                  ${vcfString}
-                  --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}
-                  --groupid "${group}"
-                  --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).groupFile.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
-                  --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
-                  --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
-                  --test ${test.replace("epacts.","")}
-                  --field "DS"
-                  --masks ${groupMasksString}
-                  --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
-                  --run 1"""
-                  .in(epactsIn)
-                  .out(epactsOut)
-                  .tag(s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}""".split("/").last)
-              
+            val allGroups = dirTree.analysisModelGroupsMap.keys
+            
+            for {
+            
+              group <- allGroups.toList
+            
+            } yield {
+            
+              //val groupid = group.split("\t")(0)
+            
+              val groupMasks = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList.filter(e => modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(e).groups.keys.toList.contains(group))
+            
+              ! groupMasks.isEmpty match {
+            
+                case true =>
+            
+                  val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
+                    case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
+                    case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+                  }
+                  
+                  var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
+            
+                  for {
+                    gm <- groupMasks
+                  } yield {
+                    epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get)
+                  }
+            
+                  schemaStores((configSchema, configCohorts)).vcf match {
+                    case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
+                    case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+                  }
+            
+                  var epactsOut = Seq[Store]()
+            
+                  for {
+                    gm <- groupMasks
+                  } yield {
+                    epactsOut = epactsOut ++ Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups(group).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups(group).results)
+                  }
+            
+                  val groupMasksString = groupMasks.map(e => e.id).mkString(",")
+            
+                  drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
+                  
+                    cmd"""${utils.bash.shEpacts}
+                      --bin ${utils.binary.binEpacts}
+                      --type group
+                      ${vcfString}
+                      --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}
+                      --groupid "${group}"
+                      --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).groupFile.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
+                      --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
+                      --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
+                      --test ${test.replace("epacts.","")}
+                      --field "DS"
+                      --masks ${groupMasksString}
+                      --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
+                      --run 1"""
+                      .in(epactsIn)
+                      .out(epactsOut)
+                      .tag(s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}""".split("/").last)
+                  
+                  }
+                
+                case false => ()
+            
               }
             
-            case false => ()
+            }
 
-          }
-      
+          case false => ()
+
         }
 
         for {
@@ -394,34 +415,42 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         
         } yield {
 
-          val modelMaskTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups.keys
-          
-          modelMaskTestGroupsKeys.size match {
-          
-            case n if n > 0 =>
-          
-              val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(modelMaskTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
+          configModel.runAssoc match {
+
+            case true =>
+
+              val modelMaskTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups.keys
               
-              val maskResultsFiles = for {
-                group <- modelMaskTestGroupsKeys.toList
-              } yield {
-                modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(group.split("\t")(0)).results
+              modelMaskTestGroupsKeys.size match {
+              
+                case n if n > 0 =>
+              
+                  val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(modelMaskTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
+                  
+                  val maskResultsFiles = for {
+                    group <- modelMaskTestGroupsKeys.toList
+                  } yield {
+                    modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(group.split("\t")(0)).results
+                  }
+              
+                  drmWith(imageName = s"${utils.image.imgTools}") {
+                  
+                    cmd"""${utils.bash.shMergeResults}
+                       --results ${maskResultsFile}
+                       --groupf ${schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get}
+                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}"""
+                      .in(maskResultsFiles :+ schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get)
+                      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results)
+                      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}".split("/").last)
+                  
+                  }
+              
+                case _ => ()
+              
               }
-          
-              drmWith(imageName = s"${utils.image.imgTools}") {
-              
-                cmd"""${utils.bash.shMergeResults}
-                   --results ${maskResultsFile}
-                   --groupf ${schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get}
-                   --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}"""
-                  .in(maskResultsFiles :+ schemaStores((configSchema, configCohorts)).groupFile.base.masks(mask).local.get)
-                  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results)
-                  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results}".split("/").last)
-              
-              }
-          
-            case _ => ()
-          
+
+            case false => ()
+
           }
           
           drmWith(imageName = s"${utils.image.imgPython2}") {

@@ -35,10 +35,7 @@ final case class ModelAssocSingle(
   qqPlotHighMaf: Store,
   mhtPlot: Store,
   topResults: Store,
-  topResultsAnnot: Store,
-  topResultsAnnotWarnings: Store,
-  topResultsAnnotHeader: Store,
-  topResultsSitesVcf: Vcf
+  topResultsAnnot: Store
 )
 
 final case class ModelAssocGroup(
@@ -85,12 +82,12 @@ final case class Model(
 
 val modelStores = (
   (for {
-    x <- modelSchemaCohorts
+    x <- modelCollections
   } yield {
     (x.model, x.schema, x.cohorts, None)
   }) ++
   (for {
-    x <- modelSchemaMetaCohorts
+    x <- modelMetaCollections
   } yield {
     (x.model, x.schema, x.cohorts, Some(x.meta))
   })).map { sm =>
@@ -193,14 +190,7 @@ val modelStores = (
         qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
         mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
         topResults = store(local_dir / s"${baseString}.${test}.topresults.tsv"),
-        topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.tsv"),
-        topResultsAnnotWarnings = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.warnings"),
-        topResultsAnnotHeader = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.header"),
-        topResultsSitesVcf = Vcf(
-          base = local_dir / s"${baseString}.${test}.topresults.sites",
-          data = store(local_dir / s"${baseString}.${test}.topresults.sites.vcf.bgz"),
-          tbi = store(local_dir / s"${baseString}.${test}.topresults.sites.vcf.bgz.tbi")
-        )
+        topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.tsv")
       )
     }.toMap,
     assocGroup = nmasks match {
