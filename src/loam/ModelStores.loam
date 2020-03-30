@@ -45,6 +45,7 @@ final case class ModelAssocGroup(
 
 final case class ModelAssocGroupBase(
   results: Store,
+  topResults: Store,
   groupFile: Store,
   qqPlot: Store,
   mhtPlot: Store,
@@ -190,7 +191,7 @@ val modelStores = (
         qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
         mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
         topResults = store(local_dir / s"${baseString}.${test}.topresults.tsv"),
-        topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.sites.annot.tsv")
+        topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.annot.tsv")
       )
     }.toMap,
     assocGroup = nmasks match {
@@ -201,15 +202,20 @@ val modelStores = (
           modelGroupTests.map { test =>
             test -> ModelAssocGroupBase(
               results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
+              topResults = store(local_dir  / s"${baseString}.${test}.topresults.tsv"),
               groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
               qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
               mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
-              groups = l.map { group =>
-                group -> ModelAssocGroup(
-                  results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.results.tsv.bgz"),
-                  groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.groupfile.tsv")
-                )
-              }.toMap
+              groups = model.runAssoc match {
+                case true =>
+                  l.map { group =>
+                    group -> ModelAssocGroup(
+                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.results.tsv.bgz"),
+                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.groupfile.tsv")
+                    )
+                  }.toMap
+                case false => Map[String, ModelAssocGroup]()
+              }
             )
           }.toMap
         }
@@ -231,15 +237,20 @@ val modelStores = (
               mask ->
                 ModelAssocGroupBase(
                   results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
+                  topResults = store(local_dir / s"${baseString}.${test}.${mask.id}.topresults.tsv"),
                   groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
                   qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
                   mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
-                  groups = l.map { group =>
-                    group -> ModelAssocGroup(
-                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
-                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
-                    )
-                  }.toMap
+                  groups = model.runAssoc match {
+                    case true =>
+                      l.map { group =>
+                        group -> ModelAssocGroup(
+                          results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
+                          groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
+                        )
+                      }.toMap
+                    case false => Map[String, ModelAssocGroup]()
+                  }
                 )
             }.toMap
         }.toMap

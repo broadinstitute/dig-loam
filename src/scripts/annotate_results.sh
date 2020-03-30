@@ -142,8 +142,12 @@ while read line; do
 	fi
 done < <(sed '1d' ${results}.2.tmp)
 
-h1=`head -1 ${topResults}`
+(head -1 $topResults | awk 'BEGIN{OFS="\t"}{print "#Uploaded variation\t"$0}'; sed '1d' $topResults | awk 'BEGIN{OFS="\t"}{print $3"\t"$0}') > ${results}.4.tmp
+
+p=`head -1 $topResults | tr '\t' '\n' | grep -n "pval" | awk -F':' '{print $1}'`
+
+h1=`head -1 ${results}.4.tmp | cut -f2-`
 h2=`head -1 ${results}.3.tmp | cut -f2-`
-(echo -e "${h1}\t${h2}"; join -1 3 -2 1 <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1)) > $results
+(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1)) | sort -n -k${p},${p} > $results
 
 rm ${results}.*.tmp*

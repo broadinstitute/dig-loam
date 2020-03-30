@@ -368,7 +368,8 @@ final case class Python(
   pyHailGenerateModelVcf: Path,
   pyQqPlot: Path,
   pyMhtPlot: Path,
-  pyTopResults: Path
+  pyTopResults: Path,
+  pyTopGroupResults: Path
   //pyAddGeneAnnot: Path
   //pyHailModelVariantStats: Path,
   //pyHailFilterModelVariants: Path,
@@ -1455,7 +1456,8 @@ object ProjectConfig {
       pyHailGenerateModelVcf = path(s"${scriptsDir}/hail_generate_model_vcf.py"),
       pyQqPlot = path(s"${scriptsDir}/qqplot.py"),
       pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
-      pyTopResults = path(s"${scriptsDir}/top_results.py")
+      pyTopResults = path(s"${scriptsDir}/top_results.py"),
+      pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py")
       //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
       //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
       //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),

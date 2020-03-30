@@ -134,7 +134,7 @@ projectStores.phenoFile.local match {
 
     // Prepare model cohorts
     for {
-      x <- modelCollections if x.model.runAssoc
+      x <- modelCollections
     } yield {
     
       PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
