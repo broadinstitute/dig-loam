@@ -323,12 +323,40 @@ def booleanToExpression(s: String, i: String): String = {
   }
 }
 
-def categoricalToExpression(s: String, i: Seq[String]): String = {
-  s match {
-    case "chr" =>
-      "hl.literal({'" + expandChrList(i).mkString("','") + "'}).contains(" + s + ")"
-    case _ =>
-      "hl.literal({'" + i.mkString("','") + "'}).contains(" + s + ")"
+def categoricalToExpression(s: String, i: Option[Seq[String]] = None, e: Option[Seq[String]] = None): String = {
+  val incl = i match {
+    case Some(_) =>
+      i.get.size match {
+        case n if n > 0 =>
+          s match {
+            case "chr" =>
+              Some("hl.literal({'" + expandChrList(i.get).mkString("','") + "'}).contains(" + s + ")")
+            case _ =>
+              Some("hl.literal({'" + i.get.mkString("','") + "'}).contains(" + s + ")")
+          }
+        case _ => None
+      }
+    case None => None
+  }
+  val excl = e match {
+    case Some(_) =>
+      e.get.size match {
+        case n if n > 0 =>
+          s match {
+            case "chr" =>
+              Some("~ hl.literal({'" + expandChrList(e.get).mkString("','") + "'}).contains(" + s + ")")
+            case _ =>
+              Some("~ hl.literal({'" + e.get.mkString("','") + "'}).contains(" + s + ")")
+          }
+        case _ => None
+      }
+    case None => None
+  }
+  (incl, excl) match {
+    case (Some(_), Some(_)) => "(" + incl.get  + ") & (" + excl.get + ")"
+    case (None, Some(_)) => excl.get
+    case (Some(_), None) => incl.get
+    case _ => throw new CfgException("categoricalToExpression: user supplied values resulted in an empty expression")
   }
 }
 

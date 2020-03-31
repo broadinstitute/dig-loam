@@ -109,7 +109,8 @@ final case class ConfigBooleanFilters(
 final case class ConfigCategoricalFilters(
   id: String,
   field: String,
-  values: Seq[String],
+  incl: Option[Seq[String]],
+  excl: Option[Seq[String]],
   expression: String) extends Debug
 
 final case class ConfigCompoundFilters(
@@ -636,8 +637,9 @@ object ProjectConfig {
         ConfigCategoricalFilters(
           id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           field = requiredStr(config = vfilter, field = "field"),
-          values = requiredStrList(config = vfilter, field = "values"),
-          expression = categoricalToExpression(requiredStr(config = vfilter, field = "field"), requiredStrList(config = vfilter, field = "values"))
+          incl = optionalStrList(config = vfilter, field = "incl"),
+          excl = optionalStrList(config = vfilter, field = "excl"),
+          expression = categoricalToExpression(s = requiredStr(config = vfilter, field = "field"), i = optionalStrList(config = vfilter, field = "incl"), e = optionalStrList(config = vfilter, field = "excl"))
         )
       }
     }
@@ -700,8 +702,9 @@ object ProjectConfig {
         ConfigCategoricalFilters(
           id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           field = requiredStr(config = sfilter, field = "field"),
-          values = requiredStrList(config = sfilter, field = "values"),
-          expression = categoricalToExpression(requiredStr(config = sfilter, field = "field"), requiredStrList(config = sfilter, field = "values"))
+          incl = optionalStrList(config = sfilter, field = "incl"),
+          excl = optionalStrList(config = sfilter, field = "excl"),
+          expression = categoricalToExpression(s = requiredStr(config = sfilter, field = "field"), i = optionalStrList(config = sfilter, field = "incl"), e = optionalStrList(config = sfilter, field = "excl"))
         )
       }
     }
