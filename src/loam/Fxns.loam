@@ -323,40 +323,78 @@ def booleanToExpression(s: String, i: String): String = {
   }
 }
 
-def categoricalToExpression(s: String, i: Option[Seq[String]] = None, e: Option[Seq[String]] = None): String = {
-  val incl = i match {
-    case Some(_) =>
-      i.get.size match {
-        case n if n > 0 =>
-          s match {
-            case "chr" =>
-              Some("hl.literal({'" + expandChrList(i.get).mkString("','") + "'}).contains(" + s + ")")
-            case _ =>
-              Some("hl.literal({'" + i.get.mkString("','") + "'}).contains(" + s + ")")
+def categoricalToExpression(s: String, i: Option[Seq[String]] = None, e: Option[Seq[String]] = None, substrings: Boolean = false): String = {
+  substrings match {
+    case false =>
+      val incl = i match {
+        case Some(_) =>
+          i.get.size match {
+            case n if n > 0 =>
+              s match {
+                case "chr" =>
+                  Some("hl.literal({'" + expandChrList(i.get).mkString("','") + "'}).contains(" + s + ")")
+                case _ =>
+                  Some("hl.literal({'" + i.get.mkString("','") + "'}).contains(" + s + ")")
+              }
+            case _ => None
           }
-        case _ => None
+        case None => None
       }
-    case None => None
-  }
-  val excl = e match {
-    case Some(_) =>
-      e.get.size match {
-        case n if n > 0 =>
-          s match {
-            case "chr" =>
-              Some("~ hl.literal({'" + expandChrList(e.get).mkString("','") + "'}).contains(" + s + ")")
-            case _ =>
-              Some("~ hl.literal({'" + e.get.mkString("','") + "'}).contains(" + s + ")")
+      val excl = e match {
+        case Some(_) =>
+          e.get.size match {
+            case n if n > 0 =>
+              s match {
+                case "chr" =>
+                  Some("~ hl.literal({'" + expandChrList(e.get).mkString("','") + "'}).contains(" + s + ")")
+                case _ =>
+                  Some("~ hl.literal({'" + e.get.mkString("','") + "'}).contains(" + s + ")")
+              }
+            case _ => None
           }
-        case _ => None
+        case None => None
       }
-    case None => None
-  }
-  (incl, excl) match {
-    case (Some(_), Some(_)) => "(" + incl.get  + ") & (" + excl.get + ")"
-    case (None, Some(_)) => excl.get
-    case (Some(_), None) => incl.get
-    case _ => throw new CfgException("categoricalToExpression: user supplied values resulted in an empty expression")
+      (incl, excl) match {
+        case (Some(_), Some(_)) => "(" + incl.get  + ") & (" + excl.get + ")"
+        case (None, Some(_)) => excl.get
+        case (Some(_), None) => incl.get
+        case _ => throw new CfgException("categoricalToExpression: user supplied values resulted in an empty expression")
+      }
+    case true =>
+      val incl = i match {
+        case Some(_) =>
+          i.get.size match {
+            case n if n > 0 =>
+              s match {
+                case "chr" =>
+                  Some("hl.any(lambda l: " + s + ".contains(l), hl.literal({'" + expandChrList(i.get).mkString("','") + "'}))")
+                case _ =>
+                  Some("hl.any(lambda l: " + s + ".contains(l), hl.literal({'" + i.get.mkString("','") + "'}))")
+              }
+            case _ => None
+          }
+        case None => None
+      }
+      val excl = e match {
+        case Some(_) =>
+          e.get.size match {
+            case n if n > 0 =>
+              s match {
+                case "chr" =>
+                  Some("~ hl.any(lambda l: " + s + ".contains(l), hl.literal({'" + expandChrList(e.get).mkString("','") + "'}))")
+                case _ =>
+                  Some("~ hl.any(lambda l: " + s + ".contains(l), hl.literal({'" + e.get.mkString("','") + "'}))")
+              }
+            case _ => None
+          }
+        case None => None
+      }
+      (incl, excl) match {
+        case (Some(_), Some(_)) => "(" + incl.get  + ") & (" + excl.get + ")"
+        case (None, Some(_)) => excl.get
+        case (Some(_), None) => incl.get
+        case _ => throw new CfgException("categoricalToExpression: user supplied values resulted in an empty expression")
+      }
   }
 }
 
@@ -385,7 +423,7 @@ def variantFiltersToCliString(cfg: ProjectConfig, filters: Seq[String], cliOptio
           cliOption + " " + id_string + cfg.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + cfg.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
         case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
           val ids = for {
-            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.include
           } yield {
             ff match {
               case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
@@ -433,7 +471,7 @@ def variantFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String], id: 
           (v ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.id, cfg.categoricalVariantFilters.filter(e => e.id == c).head.field, cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression)).mkString("\t")
         case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
           val ids = for {
-            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+            ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.include
           } yield {
             ff match {
               case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>
@@ -469,7 +507,7 @@ def sampleFiltersToPrintableList(cfg: ProjectConfig, filters: Seq[String]): Seq[
           Seq(cfg.categoricalSampleFilters.filter(e => e.id == c).head.id, cfg.categoricalSampleFilters.filter(e => e.id == c).head.field, cfg.categoricalSampleFilters.filter(e => e.id == c).head.expression).mkString("\t")
         case d if cfg.compoundSampleFilters.map(e => e.id) contains d =>
           val ids = for {
-            ff <- cfg.compoundSampleFilters.filter(e => e.id == d).head.filters
+            ff <- cfg.compoundSampleFilters.filter(e => e.id == d).head.include
           } yield {
             ff match {
               case nn if cfg.numericSampleFilters.map(e => e.id) contains nn =>
@@ -505,7 +543,7 @@ def getFilterFields(cfg: ProjectConfig, filters: Seq[String]): Seq[String] = {
         x = x ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.field)
       case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
         for {
-          ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.filters
+          ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.include
         } yield {
           ff match {
             case nn if cfg.numericVariantFilters.map(e => e.id) contains nn =>

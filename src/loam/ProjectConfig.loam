@@ -111,11 +111,13 @@ final case class ConfigCategoricalFilters(
   field: String,
   incl: Option[Seq[String]],
   excl: Option[Seq[String]],
+  substrings: Boolean,
   expression: String) extends Debug
 
 final case class ConfigCompoundFilters(
   id: String,
-  filters: Seq[String],
+  filter: String,
+  include: Seq[String],
   expression: String) extends Debug
 
 final case class ConfigCloudResources(
@@ -639,7 +641,8 @@ object ProjectConfig {
           field = requiredStr(config = vfilter, field = "field"),
           incl = optionalStrList(config = vfilter, field = "incl"),
           excl = optionalStrList(config = vfilter, field = "excl"),
-          expression = categoricalToExpression(s = requiredStr(config = vfilter, field = "field"), i = optionalStrList(config = vfilter, field = "incl"), e = optionalStrList(config = vfilter, field = "excl"))
+          substrings = requiredBool(config = vfilter, field = "substrings", default = Some(false)),
+          expression = categoricalToExpression(s = requiredStr(config = vfilter, field = "field"), i = optionalStrList(config = vfilter, field = "incl"), e = optionalStrList(config = vfilter, field = "excl"), substrings = requiredBool(config = vfilter, field = "substrings", default = Some(false)))
         )
       }
     }
@@ -648,23 +651,25 @@ object ProjectConfig {
       for {
         vfilter <- requiredObjList(config = config, field = "compoundVariantFilters")
       } yield {
-        val expressions = for {
-          f <- requiredStrList(config = vfilter, field = "filters")
-        } yield {
-          f match {
+        val filter = requiredStr(config = vfilter, field = "filter")
+        val include = filter.replace("|",",").replace("(",",").replace("~",",").replace("&",",").replace(")",",").replace(" ",",").replaceAll(",{2,}",",").replaceAll("^,","").replaceAll(",$","").split(",")
+        val expressions = include.map { f =>
+          val expr = f match {
             case n if numericVariantFilters.map(e => e.id) contains n =>
-              numericVariantFilters.filter(e => e.id == n).head.expression
+              "(" + numericVariantFilters.filter(e => e.id == n).head.expression + ")"
             case b if booleanVariantFilters.map(e => e.id) contains b =>
-              booleanVariantFilters.filter(e => e.id == b).head.expression
+              "(" + booleanVariantFilters.filter(e => e.id == b).head.expression + ")"
             case c if categoricalVariantFilters.map(e => e.id) contains c =>
-              categoricalVariantFilters.filter(e => e.id == c).head.expression
+              "(" + categoricalVariantFilters.filter(e => e.id == c).head.expression + ")"
             case _ => throw new CfgException("compoundVariantFilters: variant filter '" + f + "' not found")
           }
-        }
+          f -> expr
+        }.toMap
         ConfigCompoundFilters(
           id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-          filters = requiredStrList(config = vfilter, field = "filters"),
-          expression = "(" + expressions.mkString(") & (") + ")"
+          filter = filter,
+          include = include,
+          expression = expressions.foldLeft(filter)((a,b) => a.replaceAllLiterally(b._1, b._2))
         )
       }
     }
@@ -704,7 +709,8 @@ object ProjectConfig {
           field = requiredStr(config = sfilter, field = "field"),
           incl = optionalStrList(config = sfilter, field = "incl"),
           excl = optionalStrList(config = sfilter, field = "excl"),
-          expression = categoricalToExpression(s = requiredStr(config = sfilter, field = "field"), i = optionalStrList(config = sfilter, field = "incl"), e = optionalStrList(config = sfilter, field = "excl"))
+          substrings = requiredBool(config = sfilter, field = "substrings", default = Some(false)),
+          expression = categoricalToExpression(s = requiredStr(config = sfilter, field = "field"), i = optionalStrList(config = sfilter, field = "incl"), e = optionalStrList(config = sfilter, field = "excl"), substrings = requiredBool(config = sfilter, field = "substrings", default = Some(false)))
         )
       }
     }
@@ -713,23 +719,25 @@ object ProjectConfig {
       for {
         sfilter <- requiredObjList(config = config, field = "compoundSampleFilters")
       } yield {
-        val expressions = for {
-          f <- requiredStrList(config = sfilter, field = "filters")
-        } yield {
-          f match {
+        val filter = requiredStr(config = sfilter, field = "filter")
+        val include = filter.replace("|",",").replace("(",",").replace("~",",").replace("&",",").replace(")",",").replace(" ",",").replaceAll(",{2,}",",").replaceAll("^,","").replaceAll(",$","").split(",")
+        val expressions = include.map { f =>
+          val expr = f match {
             case n if numericSampleFilters.map(e => e.id) contains n =>
-              numericSampleFilters.filter(e => e.id == n).head.expression
+              "(" + numericSampleFilters.filter(e => e.id == n).head.expression + ")"
             case b if booleanSampleFilters.map(e => e.id) contains b =>
-              booleanSampleFilters.filter(e => e.id == b).head.expression
+              "(" + booleanSampleFilters.filter(e => e.id == b).head.expression + ")"
             case c if categoricalSampleFilters.map(e => e.id) contains c =>
-              categoricalSampleFilters.filter(e => e.id == c).head.expression
+              "(" + categoricalSampleFilters.filter(e => e.id == c).head.expression + ")"
             case _ => throw new CfgException("compoundSampleFilters: sample filter '" + f + "' not found")
           }
-        }
+          f -> expr
+        }.toMap
         ConfigCompoundFilters(
           id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-          filters = requiredStrList(config = sfilter, field = "filters"),
-          expression = "(" + expressions.mkString(") & (") + ")"
+          filter = filter,
+          include = include,
+          expression = expressions.foldLeft(filter)((a,b) => a.replaceAllLiterally(b._1, b._2))
         )
       }
     }
@@ -1069,7 +1077,7 @@ object ProjectConfig {
               }
             case q if compoundVariantFilters.map(e => e.id) contains q =>
               for {
-                cf <- compoundVariantFilters.filter(e => e.id == q).head.filters
+                cf <- compoundVariantFilters.filter(e => e.id == q).head.include
               } yield {
                 cf match {
                   case n if numericVariantFilters.map(e => e.id) contains n =>
