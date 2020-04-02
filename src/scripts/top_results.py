@@ -24,7 +24,7 @@ def main(args=None):
 
 	print "extracting top " + str(args.n) + " variants"
 	df = df.head(n=args.n)
-	df.to_csv(args.out, header=True, index=False, sep="\t")
+	df.to_csv(args.out, header=True, index=False, sep="\t", na_rep="NA")
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
