@@ -98,6 +98,7 @@ final case class ConfigNumericFilters(
   id: String,
   field: String,
   range: String,
+  missingFalse: Boolean,
   expression: String) extends Debug
 
 final case class ConfigBooleanFilters(
@@ -614,7 +615,8 @@ object ProjectConfig {
           id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           field = requiredStr(config = vfilter, field = "field"),
           range = requiredStr(config = vfilter, field = "range"),
-          expression = intervalToExpression(requiredStr(config = vfilter, field = "field"), requiredStr(config = vfilter, field = "range"))
+          missingFalse = requiredBool(config = vfilter, field = "missingFalse", default = Some(true)),
+          expression = intervalToExpression(requiredStr(config = vfilter, field = "field"), requiredStr(config = vfilter, field = "range"), missing_false = requiredBool(config = vfilter, field = "missingFalse", default = Some(true)))
         )
       }
     }
@@ -682,7 +684,8 @@ object ProjectConfig {
           id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
           field = requiredStr(config = sfilter, field = "field"),
           range = requiredStr(config = sfilter, field = "range"),
-          expression = intervalToExpression(requiredStr(config = sfilter, field = "field"), requiredStr(config = sfilter, field = "range"))
+          missingFalse = requiredBool(config = sfilter, field = "missingFalse", default = Some(true)),
+          expression = intervalToExpression(requiredStr(config = sfilter, field = "field"), requiredStr(config = sfilter, field = "range"), missing_false = requiredBool(config = sfilter, field = "missingFalse", default = Some(true)))
         )
       }
     }

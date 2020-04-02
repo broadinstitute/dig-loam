@@ -274,7 +274,7 @@ def fileToList(s: String): Seq[String] = {
   lines
 }
 
-def intervalToExpression(s: String, i: String): String = {
+def intervalToExpression(s: String, i: String, missing_false: Boolean): String = {
   val intervals = i.replace(" ","").split("\\+")
   val expressions = {
     for {
@@ -309,9 +309,13 @@ def intervalToExpression(s: String, i: String): String = {
       }
     }
   }
-  expressions.size match {
+  val final_expr = expressions.size match {
     case x if x > 1 => expressions.map(e => "(" + e + ")").mkString(" | ")
     case _ => expressions.mkString("")
+  }
+  missing_false match {
+    case false => "hl.cond(" + final_expr + ", True, False, missing_false = False)"
+    case true => final_expr
   }
 }
 

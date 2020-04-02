@@ -482,7 +482,7 @@ def add_sample_qc_stats(mt: hl.MatrixTable, sample_qc: hl.tstr, variant_qc: hl.t
 		)}
 	)
 
-def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
+def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr, missing_false: hl.tbool = True) -> hl.MatrixTable:
 	mt = mt.annotate_cols(**{struct_name: hl.struct(exclude = 0)})
 	for f in filters:
 		absent = False
@@ -507,7 +507,7 @@ def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 			print("filter samples based on configuration filter " + f[0] + " for field/s " + f[1])
 			mt = mt.annotate_cols(
 				**{struct_name: mt[struct_name].annotate(
-					**{f[0]: hl.cond(eval(f[2]), 0, 1, missing_false = True)}
+					**{f[0]: hl.cond(eval(f[2]), 0, 1, missing_false = missing_false)}
 				)}
 			)
 		else:
@@ -536,7 +536,7 @@ def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 		)
 	return mt
 
-def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr) -> hl.MatrixTable:
+def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.tstr, missing_false: hl.tbool = True) -> hl.MatrixTable:
 	mt = mt.annotate_rows(**{struct_name: hl.struct(exclude = 0)})
 	for f in filters:
 		absent = False
@@ -561,7 +561,7 @@ def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 			print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 			mt = mt.annotate_rows(
 				**{struct_name: mt[struct_name].annotate(
-					**{f[0]: hl.cond(eval(f[2]), 0, 1, missing_false = True)}
+					**{f[0]: hl.cond(eval(f[2]), 0, 1, missing_false = missing_false)}
 				)}
 			)
 		else:
@@ -590,7 +590,7 @@ def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 		)
 	return mt
 
-def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr) -> hl.Table:
+def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr, missing_false: hl.tbool = True) -> hl.Table:
 	import hail as hl
 	local_scope = locals()
 	ht = ht.annotate(**{struct_name: hl.struct(exclude = 0)})
@@ -601,7 +601,11 @@ def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr) -> hl
 		single_val = False
 		for field in list(set(f[1].split(","))):
 			if field not in ht.row_value.flatten():
+				print("missing field: " + field)
 				absent = True
+			f[1] = f[1].replace(field, field.split(".")[0] + "".join(["['" + x + "']" for x in field.split(".")[1:]]))
+			f[2] = f[2].replace(field, field.split(".")[0] + "".join(["['" + x + "']" for x in field.split(".")[1:]]))
+		for field in list(set(f[1].split(","))):
 			dt = eval("ht." + field).dtype
 			if dt in [hl.tint32, hl.tint64, hl.tfloat32, hl.tfloat64]:
 				field_stats = ht.aggregate(hl.agg.stats(eval("ht." + field)))
@@ -618,7 +622,7 @@ def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr) -> hl
 			print("filter table based on configuration filter " + f[0] + " for field/s " + f[1])
 			ht = ht.annotate(
 				**{struct_name: ht[struct_name].annotate(
-					**{f[0]: hl.cond(eval(f[2], local_scope), 0, 1, missing_false = True)}
+					**{f[0]: hl.cond(eval(f[2], local_scope), 0, 1, missing_false = missing_false)}
 				)}
 			)
 		else:
