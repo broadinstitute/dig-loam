@@ -112,9 +112,10 @@ def main(args=None):
 		ht = ht.annotate(annotation = tbl[ht.rsid])
 
 	start_time = time.time()
-	ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+	#ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+	ht = ht.checkpoint("ht.checkpoint1", overwrite=True)
 	elapsed_time = time.time() - start_time
-	print(time.strftime("write checkpoint hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
+	print(time.strftime("write ht.checkpoint1 hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	cohort_stats = {}
 	if args.cohort_stats_in:
@@ -171,9 +172,10 @@ def main(args=None):
 		fields_out = fields_out + ['ls_filters']
 
 	start_time = time.time()
-	ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+	#ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+	ht = ht.checkpoint("ht.checkpoint2", overwrite=True)
 	elapsed_time = time.time() - start_time
-	print(time.strftime("write checkpoint hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
+	print(time.strftime("write ht.checkpoint2 hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	mask_fields = []
 	if len(masks) > 0:
@@ -187,9 +189,10 @@ def main(args=None):
 			elapsed_time = time.time() - start_time
 			print(time.strftime("add mask " + m + " to filters - %H:%M:%S", time.gmtime(elapsed_time)))
 			start_time = time.time()
-			ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+			#ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+			ht = ht.checkpoint("ht.checkpoint." + m, overwrite=True)
 			elapsed_time = time.time() - start_time
-			print(time.strftime("write checkpoint hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
+			print(time.strftime("write ht.checkpoint" + m + " hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	fields_out = fields_out + ['ls_previous_exclude','ls_global_exclude']
 	ht = ht.annotate(ls_global_exclude = 0)

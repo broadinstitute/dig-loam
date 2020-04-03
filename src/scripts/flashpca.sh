@@ -26,6 +26,7 @@ nStddevs=${23}
 phenoFile=${24}
 pcsIncludeFile=${25}
 outlierFile=${26}
+mem=${27}
 
 echo "binFlashpca: $binFlashpca"
 echo "binRscript: $binRscript"
@@ -53,12 +54,13 @@ echo "nStddevs: $nStddevs"
 echo "phenoFile: $phenoFile"
 echo "pcsIncludeFile: $pcsIncludeFile"
 echo "outlierFile: $outlierFile"
+echo "mem: $mem"
 
 # copy samples available to plink keep file
 awk '{print $1"\t"$1}' $samplesAvailable > ${outPrefix}.tmp.samples.keep
 
 # use Plink to extract available samples for this cohort
-$binPlink --bfile $plinkData --keep ${outPrefix}.tmp.samples.keep --make-bed --out ${outPrefix}.tmp
+$binPlink --bfile $plinkData --keep ${outPrefix}.tmp.samples.keep --make-bed --out ${outPrefix}.tmp --memory $mem --seed 1
 
 # run flashpca first time
 $binFlashpca \
@@ -96,7 +98,7 @@ if [[ -s ${outPrefix}.tmp.outliers && $maxiter -gt 1 ]]; then
 	for (( i=2; i<=$maxiter; i++ )); do
 
 		# use Plink to remove outliers found in previous iterations
-		$binPlink --bfile ${outPrefix}.tmp --remove ${outPrefix}.outliers --make-bed --out ${outPrefix}.tmp.outliers.removed
+		$binPlink --bfile ${outPrefix}.tmp --remove $outlierFile --make-bed --out ${outPrefix}.tmp.outliers.removed
 	
 		# run flashpca
 		$binFlashpca \
@@ -104,7 +106,7 @@ if [[ -s ${outPrefix}.tmp.outliers && $maxiter -gt 1 ]]; then
 		--seed 1 \
 		--numthreads $cpus \
 		--ndim 20 \
-		--bfile ${outPrefix}.tmp \
+		--bfile ${outPrefix}.tmp.outliers.removed \
 		--outpc ${outPrefix}.tmp.outpc \
 		--outvec ${outPrefix}.tmp.outvec \
 		--outload ${outPrefix}.tmp.outload \

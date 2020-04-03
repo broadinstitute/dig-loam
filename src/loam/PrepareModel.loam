@@ -110,6 +110,7 @@ def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCoh
       ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
       ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
       ${modelStores((configModel, configSchema, configCohorts, configMeta)).outliers}
+      ${projectConfig.resources.flashPca.mem * 0.9 * 1000}
       > ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog}"""
       .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
       .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).outliers, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog)
