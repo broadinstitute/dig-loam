@@ -170,6 +170,11 @@ def main(args=None):
 		ht = hail_utils.ht_add_filters(ht, standard_filters, 'ls_filters')
 		fields_out = fields_out + ['ls_filters']
 
+	start_time = time.time()
+	ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+	elapsed_time = time.time() - start_time
+	print(time.strftime("write checkpoint hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
+
 	mask_fields = []
 	if len(masks) > 0:
 		mask_ids = [x[0] for x in masks]
@@ -181,6 +186,10 @@ def main(args=None):
 			fields_out = fields_out + ['ls_mask_' + m]
 			elapsed_time = time.time() - start_time
 			print(time.strftime("add mask " + m + " to filters - %H:%M:%S", time.gmtime(elapsed_time)))
+			start_time = time.time()
+			ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+			elapsed_time = time.time() - start_time
+			print(time.strftime("write checkpoint hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
 
 	fields_out = fields_out + ['ls_previous_exclude','ls_global_exclude']
 	ht = ht.annotate(ls_global_exclude = 0)

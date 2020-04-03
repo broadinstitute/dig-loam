@@ -149,6 +149,9 @@ def main(args=None):
 		ht = hail_utils.ht_add_filters(ht, standard_filters, 'ls_pheno_filters')
 		fields_out = fields_out + ['ls_pheno_filters']
 
+	print("write checkpoint hail table to disk")
+	ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
+
 	mask_fields = []
 	if len(masks) > 0:
 		mask_ids = [x[0] for x in masks]
@@ -158,6 +161,8 @@ def main(args=None):
 			ht = hail_utils.ht_add_filters(ht, [[x[1],x[2],x[3]] for x in masks_row], 'ls_mask_' + m)
 			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
 			fields_out = fields_out + ['ls_mask_' + m]
+			print("write checkpoint hail table to disk")
+			ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
 
 	fields_out = fields_out + ['ls_schema_global_exclude', 'ls_pheno_global_exclude']
 	ht = ht.annotate(ls_schema_global_exclude = ht.ls_global_exclude)

@@ -87,11 +87,11 @@ def main(args=None):
 	else:
 		pheno_analyzed = args.pheno_col
 		pheno_df = mt.cols().to_pandas()
-		for i in range(len(covars)):
-			if covars[i][0] == "[" and covars[i][-1] == "]":
-				for val in sorted(pheno_df['pheno.' + covars[i][1:-1]].unique())[1:]:
-					covars = covars + [covars[i][1:-1] + str(val)]
-				covars = [x for x in covars if x != covars[i]]
+		for cov in covars:
+			if cov[0] == "[" and cov[-1] == "]":
+				for val in sorted(pheno_df['pheno.' + cov[1:-1]].unique())[1:]:
+					covars = covars + [cov[1:-1] + str(val)]
+				covars = [x for x in covars if x != cov]
 		covars = covars + pcs
 
 	n_all = mt.rows().count()
