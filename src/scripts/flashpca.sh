@@ -94,11 +94,20 @@ $binRscript --vanilla --verbose $rScript \
 # copy initial outliers to file
 cat ${outPrefix}.tmp.outliers > $outlierFile
 
+initoutliers=`wc -l $outlierFile | awk '{print $1}'`
+
 if [[ -s ${outPrefix}.tmp.outliers && $maxiter -gt 1 ]]; then
+
+	echo "iter 1: ${initoutliers} outliers found in initial PCA iteration"
+
 	for (( i=2; i<=$maxiter; i++ )); do
 
 		# use Plink to remove outliers found in previous iterations
+		nsamples=`wc -l $outlierFile`
+		echo "iter ${i}: removing ${nsamples} outliers from ${outPrefix}.tmp using Plink"
 		$binPlink --bfile ${outPrefix}.tmp --remove $outlierFile --make-bed --out ${outPrefix}.tmp.outliers.removed
+		nsamplesremaining=`wc -l ${outPrefix}.tmp.outliers.removed.fam`
+		echo "iter ${i}: ${nsamplesremaining} samples remaining for PCA analysis"
 	
 		# run flashpca
 		$binFlashpca \
@@ -131,10 +140,14 @@ if [[ -s ${outPrefix}.tmp.outliers && $maxiter -gt 1 ]]; then
 
 		# break or add new temp outliers to permanent file and continue
 		if [ ! -s ${outPrefix}.tmp.outliers ]; then
+			echo "iter ${i}: no outliers found in iteration ${i}"
 			break
 		else
+			nsamplestoremove=`wc -l ${outPrefix}.tmp.outliers | awk '{print $1}'`
+			echo "iter ${i}: ${nsamplestoremove} outliers will be added to ${outlierFile}"
 			cat ${outPrefix}.tmp.outliers >> $outlierFile
 		fi
+
 	done
 fi
 

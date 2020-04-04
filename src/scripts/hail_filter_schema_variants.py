@@ -239,7 +239,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--full-stats-in', help='a hail table with variant stats on full sample set', required=True)
-	requiredArgs.add_argument('--ht-checkpoint', help='a checkpoint filename', required=True)
+	#requiredArgs.add_argument('--ht-checkpoint', help='a checkpoint filename', required=True)
 	requiredArgs.add_argument('--variant-filters-ht-out', help='a filename for variant filters hail table', required=True)
 	args = parser.parse_args()
 	main(args)

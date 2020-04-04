@@ -210,7 +210,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--full-stats-in', help='a hail table with variant stats on full sample set', required=True)
 	requiredArgs.add_argument('--pheno-stats-in', help='a hail table with variant stats on sample set non-missing for phenotype', required=True)
 	requiredArgs.add_argument('--schema-filters-in', help='a hail table with schema level variant filters on full sample set', required=True)
-	requiredArgs.add_argument('--ht-checkpoint', help='a checkpoint filename', required=True)
+	#requiredArgs.add_argument('--ht-checkpoint', help='a checkpoint filename', required=True)
 	requiredArgs.add_argument('--variant-filters-ht-out', help='a filename for variant filters hail table', required=True)
 	args = parser.parse_args()
 	main(args)
