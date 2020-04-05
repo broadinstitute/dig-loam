@@ -125,12 +125,10 @@ for(pc in pcsin) {
 	hi <- pc_mean + args$n_stddevs * pc_sd
 	pc_outliers <- c(pc_outliers,out[,args$iid_col][out[,pc] < lo | out[,pc] > hi])
 }
+pc_outliers <- unique(pc_outliers)
 
 if(length(pc_outliers) > 0) {
-	cat("the following",length(pc_outliers),"PC outliers were removed\n")
-	for(o in pc_outliers) {
-		cat(o,"\n")
-	}
+	cat(length(pc_outliers)," PC outliers were removed\n")
 } else {
 	cat("no PC outliers were found\n")
 }

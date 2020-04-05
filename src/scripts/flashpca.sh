@@ -57,111 +57,111 @@ echo "outlierFile: $outlierFile"
 echo "mem: $mem"
 
 # copy samples available to plink keep file
-awk '{print $1"\t"$1}' $samplesAvailable > ${outPrefix}.tmp.samples.keep
+awk '{print $1"\t"$1}' $samplesAvailable > ${outPrefix}.tmp.1.samples.keep
 
 # use Plink to extract available samples for this cohort
-$binPlink --bfile $plinkData --keep ${outPrefix}.tmp.samples.keep --make-bed --out ${outPrefix}.tmp --memory $mem --seed 1
+$binPlink --bfile $plinkData --keep ${outPrefix}.tmp.1.samples.keep --make-bed --out ${outPrefix}.tmp.1 --memory $mem --seed 1
 
 # run flashpca first time
 $binFlashpca \
---verbose \
 --seed 1 \
 --numthreads $cpus \
 --ndim 20 \
---bfile ${outPrefix}.tmp \
---outpc ${outPrefix}.tmp.outpc \
---outvec ${outPrefix}.tmp.outvec \
---outload ${outPrefix}.tmp.outload \
---outval ${outPrefix}.tmp.outval \
---outpve ${outPrefix}.tmp.outpve \
---outmeansd ${outPrefix}.tmp.outmeansd
+--bfile ${outPrefix}.tmp.1 \
+--outpc ${outPrefix}.tmp.1.outpc \
+--outvec ${outPrefix}.tmp.1.outvec \
+--outload ${outPrefix}.tmp.1.outload \
+--outval ${outPrefix}.tmp.1.outval \
+--outpve ${outPrefix}.tmp.1.outpve \
+--outmeansd ${outPrefix}.tmp.1.outmeansd
 
 ## use r script to check for outliers and generate phenotype file
 $binRscript --vanilla --verbose $rScript \
 --pheno-in $preliminaryPheno \
 --pheno-col $phenotype \
---pcs-in ${outPrefix}.tmp.outpc \
+--pcs-in ${outPrefix}.tmp.1.outpc \
 --iid-col $iidCol \
 --trans "$trans" \
 --covars "$covars" \
 --min-pcs $minPcs \
 --max-pcs $maxPcs \
 --n-stddevs $nStddevs \
---out-pheno ${outPrefix}.tmp.pheno \
---out-pcs ${outPrefix}.tmp.pcs.include \
---out-outliers ${outPrefix}.tmp.outliers
+--out-pheno ${outPrefix}.tmp.1.pheno \
+--out-pcs ${outPrefix}.tmp.1.pcs.include \
+--out-outliers ${outPrefix}.tmp.1.outliers
 
 # copy initial outliers to file
-cat ${outPrefix}.tmp.outliers > $outlierFile
-awk '{print $1"\t"$1}' $outlierFile > ${outPrefix}.tmp.outliers.all
+cat ${outPrefix}.tmp.1.outliers > $outlierFile
+awk '{print $1"\t"$1}' $outlierFile > ${outPrefix}.tmp.1.outliers.plink
 
 initoutliers=`wc -l $outlierFile | awk '{print $1}'`
 
-if [[ -s ${outPrefix}.tmp.outliers && $maxiter -gt 1 ]]; then
+if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 
 	echo "iter 1: ${initoutliers} outliers found in initial PCA iteration"
 
 	for (( i=2; i<=$maxiter; i++ )); do
 
+		n=$((i-1))
+
 		# use Plink to remove outliers found in previous iterations
 		nsamples=`wc -l $outlierFile | awk '{print $1}'`
 		echo "iter ${i}: removing ${nsamples} outliers from ${outPrefix}.tmp using Plink"
-		$binPlink --bfile ${outPrefix}.tmp --remove ${outPrefix}.tmp.outliers.all --make-bed --out ${outPrefix}.tmp.outliers.removed
-		nsamplesremaining=`wc -l ${outPrefix}.tmp.outliers.removed.fam | awk '{print $1}'`
+		$binPlink --bfile ${outPrefix}.tmp.${n} --remove ${outPrefix}.tmp.${n}.outliers.plink --make-bed --out ${outPrefix}.tmp.${i}
+		nsamplesremaining=`wc -l ${outPrefix}.tmp.${i}.fam | awk '{print $1}'`
 		echo "iter ${i}: ${nsamplesremaining} samples remaining for PCA analysis"
 	
 		# run flashpca
 		$binFlashpca \
-		--verbose \
 		--seed 1 \
 		--numthreads $cpus \
 		--ndim 20 \
-		--bfile ${outPrefix}.tmp.outliers.removed \
-		--outpc ${outPrefix}.tmp.outpc \
-		--outvec ${outPrefix}.tmp.outvec \
-		--outload ${outPrefix}.tmp.outload \
-		--outval ${outPrefix}.tmp.outval \
-		--outpve ${outPrefix}.tmp.outpve \
-		--outmeansd ${outPrefix}.tmp.outmeansd
+		--bfile ${outPrefix}.tmp.${i} \
+		--outpc ${outPrefix}.tmp.${i}.outpc \
+		--outvec ${outPrefix}.tmp.${i}.outvec \
+		--outload ${outPrefix}.tmp.${i}.outload \
+		--outval ${outPrefix}.tmp.${i}.outval \
+		--outpve ${outPrefix}.tmp.${i}.outpve \
+		--outmeansd ${outPrefix}.tmp.${i}.outmeansd
 	
 		# use r script to check for outliers and generate phenotype file
 		$binRscript --vanilla --verbose $rScript \
 		--pheno-in $preliminaryPheno \
 		--pheno-col $phenotype \
-		--pcs-in ${outPrefix}.tmp.outpc \
+		--pcs-in ${outPrefix}.tmp.${i}.outpc \
 		--iid-col $iidCol \
 		--trans "$trans" \
 		--covars "$covars" \
 		--min-pcs $minPcs \
 		--max-pcs $maxPcs \
 		--n-stddevs $nStddevs \
-		--out-pheno ${outPrefix}.tmp.pheno \
-		--out-pcs ${outPrefix}.tmp.pcs.include \
-		--out-outliers ${outPrefix}.tmp.outliers
+		--out-pheno ${outPrefix}.tmp.${i}.pheno \
+		--out-pcs ${outPrefix}.tmp.${i}.pcs.include \
+		--out-outliers ${outPrefix}.tmp.${i}.outliers
 
 		# break or add new temp outliers to permanent file and continue
-		if [ ! -s ${outPrefix}.tmp.outliers ]; then
+		if [ ! -s ${outPrefix}.tmp.${i}.outliers ]; then
 			echo "iter ${i}: no outliers found in iteration ${i}"
 			break
 		else
-			nsamplestoremove=`wc -l ${outPrefix}.tmp.outliers | awk '{print $1}'`
+			nsamplestoremove=`wc -l ${outPrefix}.tmp.${i}.outliers | awk '{print $1}'`
 			echo "iter ${i}: ${nsamplestoremove} outliers will be added to ${outlierFile}"
-			cat ${outPrefix}.tmp.outliers >> $outlierFile
-			awk '{print $1"\t"$2}' ${outPrefix}.tmp.outliers >> ${outPrefix}.tmp.outliers.all
+			cat ${outPrefix}.tmp.${i}.outliers >> $outlierFile
+			awk '{print $1"\t"$1}' ${outPrefix}.tmp.${i}.outliers >> ${outPrefix}.tmp.${i}.outliers.plink
 		fi
 
 	done
 fi
 
 # mv tmp files to permanent
-mv ${outPrefix}.tmp.outpc $outpc
-mv ${outPrefix}.tmp.outvec $outvec
-mv ${outPrefix}.tmp.outload $outload
-mv ${outPrefix}.tmp.outval $outval
-mv ${outPrefix}.tmp.outpve $outpve
-mv ${outPrefix}.tmp.outmeansd $outmeansd
-mv ${outPrefix}.tmp.pheno $phenoFile
-mv ${outPrefix}.tmp.pcs.include $pcsIncludeFile
+mv ${outPrefix}.tmp.${i}.outpc $outpc
+mv ${outPrefix}.tmp.${i}.outvec $outvec
+mv ${outPrefix}.tmp.${i}.outload $outload
+mv ${outPrefix}.tmp.${i}.outval $outval
+mv ${outPrefix}.tmp.${i}.outpve $outpve
+mv ${outPrefix}.tmp.${i}.outmeansd $outmeansd
+mv ${outPrefix}.tmp.${i}.pheno $phenoFile
+mv ${outPrefix}.tmp.${i}.pcs.include $pcsIncludeFile
 
 # remove remaining temporary files
 rm ${outPrefix}.tmp*
