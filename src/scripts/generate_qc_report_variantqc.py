@@ -28,7 +28,7 @@ def main(args=None):
 		elif len(text_dict) > 2:
 			text1 = ", ".join([str(text_dict[x]) + " " + x.replace("_","\_") for x in text_dict.keys()[0:(len(text_dict.keys())-1)]]) + " and " + str(text_dict[text_dict.keys()[len(text_dict.keys())-1]]) + " " + text_dict.keys()[len(text_dict.keys())-1].replace("_","\_") + " variants"
 
-		text=r"Variant quality was assessed using call rate and Hardy Weinberg equilibrium (HWE). We calculate HWE using controls only within any of 4 major ancestral populations; EUR, AFR, SAS and EAS. There must have been at least 100 samples in a population to trigger a filter. This conservative approach minimizes the influence from admixture in other population groups. This procedure resulted in flagging {0} for removal.".format(text1)
+		text=r"Variant quality was assessed using call rate and Hardy Weinberg equilibrium (HWE). We calculate HWE p-values within any of 4 major ancestral populations; EUR, AFR, SAS and EAS. There must have been at least 100 samples in a population to trigger a filter. This conservative approach minimizes the influence from admixture in other population groups. This procedure resulted in flagging {0} for removal.".format(text1)
 
 		if args.variants_upset_diagram is not None:
 			text = text + r" Figure \ref{fig:variantsRemaining} shows the number of variants remaining for analysis after applying filters."
