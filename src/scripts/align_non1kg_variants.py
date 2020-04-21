@@ -58,36 +58,39 @@ def main(args=None):
 	snps = []
 	for idx, row in bim[bim['kg'] == 0].iterrows():
 		print idx
-		ref = ref_seq[row[3]-1]
-		bim.loc[idx,'ref'] = ref
-		bima1 = row[4]
-		bima2 = row[5]
-		bima1comp = complement(bima1)
-		bima2comp = complement(bima2)
-		if bima1 + bima2 not in ["AT","TA","GC","CG"]:
-			if bima1 == "0" or bima2 == "0":
-				print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
-				bim.loc[idx,'status'] = "remove_mono"
-			else:
-				if bima1 == ref:
-					print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : match"
-					bim.loc[idx,'alt'] = bima2
-					bim.loc[idx,'status'] = "match"
-				elif bima2 == ref:
-					print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : reverse"
-					bim.loc[idx,'alt'] = bima1
-					bim.loc[idx,'status'] = "reverse"
-				elif bima1comp == ref:
-					print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : flip"
-					bim.loc[idx,'alt'] = bima2comp
-					bim.loc[idx,'status'] = "flip"
-				elif bima2comp == ref:
-					print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : flip_reverse"
-					bim.loc[idx,'alt'] = bima1comp
-					bim.loc[idx,'status'] = "flip_reverse"
-				else:
+		if row[3] <= len(ref_seq):
+			ref = ref_seq[row[3]-1]
+			bim.loc[idx,'ref'] = ref
+			bima1 = row[4]
+			bima2 = row[5]
+			bima1comp = complement(bima1)
+			bima2comp = complement(bima2)
+			if bima1 + bima2 not in ["AT","TA","GC","CG"]:
+				if bima1 == "0" or bima2 == "0":
 					print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
-					bim.loc[idx,'status'] = "remove_nomatch"
+					bim.loc[idx,'status'] = "remove_mono"
+				else:
+					if bima1 == ref:
+						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : match"
+						bim.loc[idx,'alt'] = bima2
+						bim.loc[idx,'status'] = "match"
+					elif bima2 == ref:
+						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : reverse"
+						bim.loc[idx,'alt'] = bima1
+						bim.loc[idx,'status'] = "reverse"
+					elif bima1comp == ref:
+						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : flip"
+						bim.loc[idx,'alt'] = bima2comp
+						bim.loc[idx,'status'] = "flip"
+					elif bima2comp == ref:
+						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : flip_reverse"
+						bim.loc[idx,'alt'] = bima1comp
+						bim.loc[idx,'status'] = "flip_reverse"
+					else:
+						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
+						bim.loc[idx,'status'] = "remove_nomatch"
+		else:
+			bim.loc[idx,'status'] = "remove_nomatch"
 
 	bim['rsid'][bim['status'].isin(["remove_mono","remove_nomatch"])].to_csv(args.out_remove, header=False, index=False)
 	bim['rsid'][bim['status'] == "remove_mono"].to_csv(args.out_mono, header=False, index=False)

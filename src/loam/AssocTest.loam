@@ -10,11 +10,11 @@ import SchemaStores._
 import ProjectStores._
 import DirTree._
 
-final case class CfgException(s: String) extends Exception(s)
-
 def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
   val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+
+  val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
 
   configModel.assocPlatforms.contains("epacts") match {
   
@@ -201,6 +201,27 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
   }
 
+  val groupCountMap = scala.collection.mutable.Map[String, Int]()
+  val gFile = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+    case true => s"""${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}"""
+    case false => s"""${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1)}"""
+  }
+  try {
+    val gFileList = fileToList(checkPath(gFile))
+    println(s"""calculating group variant counts for group file: ${gFile}""")
+    for {
+      group <- gFileList
+    } yield {
+      val geneName = group.split("\t")(0)
+      val N = group.split("\t").tail.size
+      groupCountMap(geneName) = N
+    }
+  }
+  catch {
+    case x: CfgException =>
+      println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
+  }
+
   for {
   
     test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup.keys.toList
@@ -216,6 +237,28 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
           case true =>
 
             val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups.keys
+
+            val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
+              case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
+              case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+            }
+
+            val groupFileIn = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+              case true => s"""--groupfin ${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}"""
+              case false => s"""--groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1)}"""
+            }
+
+            var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
+
+            schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+              case true => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get)
+              case false => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
+            }
+
+            schemaStores((configSchema, configCohorts)).vcf match {
+              case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
+              case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+            }
             
             for {
             
@@ -224,25 +267,29 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             } yield {
             
               val groupid = group.split("\t")(0)
-              
-              val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
-                case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-                case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+
+              val groupCores = groupCountMap(group) match {
+                case n if n >= 1000 => projectConfig.resources.highMemEpacts.cpus
+                case _ => projectConfig.resources.lowMemEpacts.cpus
               }
-              
-              var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get, schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
-              schemaStores((configSchema, configCohorts)).vcf match {
-                case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+
+              val groupMem = groupCountMap(group) match {
+                case n if n >= 1000 => projectConfig.resources.highMemEpacts.mem
+                case _ => projectConfig.resources.lowMemEpacts.mem
               }
-            
-              drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
+
+              val groupTime = groupCountMap(group) match {
+                case n if n >= 1000 => projectConfig.resources.highMemEpacts.maxRunTime
+                case _ => projectConfig.resources.lowMemEpacts.maxRunTime
+              }
+
+              drmWith(imageName = s"${utils.image.imgUmichStatgen}", cores = groupCores, mem = groupMem, maxRunTime = groupTime) {
               
                 cmd"""${utils.bash.shEpacts}
                   --bin ${utils.binary.binEpacts}
                   --type group
                   ${vcfString}
-                  --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}
+                  ${groupFileIn}
                   --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).groupFile}
                   --groupid "${groupid}"
                   --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}
@@ -367,13 +414,21 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                     case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
                     case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
                   }
+
+                  val groupFileIn = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+                    case true => s"""--groupfin ${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}"""
+                    case false => s"""--groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}"""
+                  }
                   
                   var epactsIn = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
             
                   for {
                     gm <- groupMasks
                   } yield {
-                    epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get)
+                    schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+                      case true => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks(gm).local.get)
+                      case false => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get)
+                    }
                   }
             
                   schemaStores((configSchema, configCohorts)).vcf match {
@@ -390,14 +445,29 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                   }
             
                   val groupMasksString = groupMasks.map(e => e.id).mkString(",")
-            
-                  drmWith(imageName = s"${utils.image.imgUmichStatgen}") {
+
+                  val groupCores = groupCountMap(group) match {
+                    case n if n >= 1000 => projectConfig.resources.highMemEpacts.cpus
+                    case _ => projectConfig.resources.lowMemEpacts.cpus
+                  }
+                  
+                  val groupMem = groupCountMap(group) match {
+                    case n if n >= 1000 => projectConfig.resources.highMemEpacts.mem
+                    case _ => projectConfig.resources.lowMemEpacts.mem
+                  }
+                  
+                  val groupTime = groupCountMap(group) match {
+                    case n if n >= 1000 => projectConfig.resources.highMemEpacts.maxRunTime
+                    case _ => projectConfig.resources.lowMemEpacts.maxRunTime
+                  }
+                  
+                  drmWith(imageName = s"${utils.image.imgUmichStatgen}", cores = groupCores, mem = groupMem, maxRunTime = groupTime) {
                   
                     cmd"""${utils.bash.shEpacts}
                       --bin ${utils.binary.binEpacts}
                       --type group
                       ${vcfString}
-                      --groupfin ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}
+                      ${groupFileIn}
                       --groupid "${group}"
                       --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).groupFile.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
                       --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}

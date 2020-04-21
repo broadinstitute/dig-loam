@@ -46,7 +46,7 @@ final case class ModelAssocGroup(
 final case class ModelAssocGroupBase(
   results: Store,
   topResults: Store,
-  groupFile: Store,
+  //groupFile: Store,
   qqPlot: Store,
   mhtPlot: Store,
   groups: Map[String, ModelAssocGroup]
@@ -203,7 +203,7 @@ val modelStores = (
             test -> ModelAssocGroupBase(
               results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
               topResults = store(local_dir  / s"${baseString}.${test}.topresults.tsv"),
-              groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
+              //groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
               qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
               mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
               groups = model.runAssoc match {
@@ -238,7 +238,7 @@ val modelStores = (
                 ModelAssocGroupBase(
                   results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
                   topResults = store(local_dir / s"${baseString}.${test}.${mask.id}.topresults.tsv"),
-                  groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
+                  //groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
                   qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
                   mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
                   groups = model.runAssoc match {

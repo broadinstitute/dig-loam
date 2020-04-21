@@ -139,7 +139,9 @@ final case class ConfigResources(
   vep: ConfigMachine,
   king: ConfigMachine,
   klustakwik: ConfigMachine,
-  tabix: ConfigMachine) extends Debug
+  tabix: ConfigMachine,
+  lowMemEpacts: ConfigMachine,
+  highMemEpacts: ConfigMachine) extends Debug
 
 final case class ConfigArray(
   id: String,
@@ -600,6 +602,14 @@ object ProjectConfig {
       },
       tabix = {
         val thisConfig = requiredObj(config = config, field = "tabix")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      lowMemEpacts = {
+        val thisConfig = requiredObj(config = config, field = "lowMemEpacts")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      highMemEpacts = {
+        val thisConfig = requiredObj(config = config, field = "highMemEpacts")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       }
     )

@@ -96,6 +96,8 @@ awk '{print $1"\t"$1}' $outlierFile > ${outPrefix}.tmp.1.outliers.plink
 
 initoutliers=`wc -l $outlierFile | awk '{print $1}'`
 
+n=0
+
 if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 
 	echo "iter 1: ${initoutliers} outliers found in initial PCA iteration"
@@ -154,14 +156,14 @@ if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 fi
 
 # mv tmp files to permanent
-mv ${outPrefix}.tmp.${i}.outpc $outpc
-mv ${outPrefix}.tmp.${i}.outvec $outvec
-mv ${outPrefix}.tmp.${i}.outload $outload
-mv ${outPrefix}.tmp.${i}.outval $outval
-mv ${outPrefix}.tmp.${i}.outpve $outpve
-mv ${outPrefix}.tmp.${i}.outmeansd $outmeansd
-mv ${outPrefix}.tmp.${i}.pheno $phenoFile
-mv ${outPrefix}.tmp.${i}.pcs.include $pcsIncludeFile
+mv ${outPrefix}.tmp.${n+1}.outpc $outpc
+mv ${outPrefix}.tmp.${n+1}.outvec $outvec
+mv ${outPrefix}.tmp.${n+1}.outload $outload
+mv ${outPrefix}.tmp.${n+1}.outval $outval
+mv ${outPrefix}.tmp.${n+1}.outpve $outpve
+mv ${outPrefix}.tmp.${n+1}.outmeansd $outmeansd
+mv ${outPrefix}.tmp.${n+1}.pheno $phenoFile
+mv ${outPrefix}.tmp.${n+1}.pcs.include $pcsIncludeFile
 
 # remove remaining temporary files
 rm ${outPrefix}.tmp*
