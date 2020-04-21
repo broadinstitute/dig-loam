@@ -259,6 +259,11 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
               case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
               case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
             }
+
+            modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
+              case n if n == modelTestGroupsKeys.toList.size => println(s"""running model ${configModel.id} test ${test} for group file ${groupFileIn}""")
+              case _ => println(s"""unable to run model ${configModel.id} test ${test} for group file ${groupFileIn} due to missing group counts""")
+            }
             
             for {
             
@@ -395,6 +400,11 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
           case true =>
 
             val allGroups = dirTree.analysisModelGroupsMap.keys
+
+            allGroups.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
+              case n if n == allGroups.toList.size => println(s"""running model ${configModel.id} test ${test} for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}""")
+              case _ => println(s"""unable to run model ${configModel.id} test ${test} for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")} due to missing group counts""")
+            }
             
             for {
             
