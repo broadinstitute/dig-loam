@@ -608,6 +608,10 @@ object ProjectConfig {
         val thisConfig = requiredObj(config = config, field = "lowMemEpacts")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       },
+      midMemEpacts = {
+        val thisConfig = requiredObj(config = config, field = "midMemEpacts")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
       highMemEpacts = {
         val thisConfig = requiredObj(config = config, field = "highMemEpacts")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))

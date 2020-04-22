@@ -274,17 +274,20 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
               val groupid = group.split("\t")(0)
 
               val groupCores = groupCountMap(group) match {
-                case n if n >= 1000 => projectConfig.resources.highMemEpacts.cpus
+                case n if n >= 2000 => projectConfig.resources.highMemEpacts.cpus
+                case m if m >= 1000 => projectConfig.resources.midMemEpacts.cpus
                 case _ => projectConfig.resources.lowMemEpacts.cpus
               }
 
               val groupMem = groupCountMap(group) match {
-                case n if n >= 1000 => projectConfig.resources.highMemEpacts.mem
+                case n if n >= 2000 => projectConfig.resources.highMemEpacts.mem
+                case m if m >= 1000 => projectConfig.resources.midMemEpacts.mem
                 case _ => projectConfig.resources.lowMemEpacts.mem
               }
 
               val groupTime = groupCountMap(group) match {
-                case n if n >= 1000 => projectConfig.resources.highMemEpacts.maxRunTime
+                case n if n >= 2000 => projectConfig.resources.highMemEpacts.maxRunTime
+                case m if m >= 1000 => projectConfig.resources.midMemEpacts.maxRunTime
                 case _ => projectConfig.resources.lowMemEpacts.maxRunTime
               }
 
@@ -457,17 +460,20 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                   val groupMasksString = groupMasks.map(e => e.id).mkString(",")
 
                   val groupCores = groupCountMap(group) match {
-                    case n if n >= 1000 => projectConfig.resources.highMemEpacts.cpus
+                    case n if n >= 2000 => projectConfig.resources.highMemEpacts.cpus
+                    case m if m >= 1000 => projectConfig.resources.midMemEpacts.cpus
                     case _ => projectConfig.resources.lowMemEpacts.cpus
                   }
                   
                   val groupMem = groupCountMap(group) match {
-                    case n if n >= 1000 => projectConfig.resources.highMemEpacts.mem
+                    case n if n >= 2000 => projectConfig.resources.highMemEpacts.mem
+                    case m if m >= 1000 => projectConfig.resources.midMemEpacts.mem
                     case _ => projectConfig.resources.lowMemEpacts.mem
                   }
                   
                   val groupTime = groupCountMap(group) match {
-                    case n if n >= 1000 => projectConfig.resources.highMemEpacts.maxRunTime
+                    case n if n >= 2000 => projectConfig.resources.highMemEpacts.maxRunTime
+                    case m if m >= 1000 => projectConfig.resources.midMemEpacts.maxRunTime
                     case _ => projectConfig.resources.lowMemEpacts.maxRunTime
                   }
                   
