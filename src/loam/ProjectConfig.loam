@@ -141,6 +141,7 @@ final case class ConfigResources(
   klustakwik: ConfigMachine,
   tabix: ConfigMachine,
   lowMemEpacts: ConfigMachine,
+  midMemEpacts: ConfigMachine,
   highMemEpacts: ConfigMachine) extends Debug
 
 final case class ConfigArray(
