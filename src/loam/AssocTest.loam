@@ -388,6 +388,38 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
   }
 
+  val maskGroupCountMap = scala.collection.mutable.Map[String, Int]()
+  for {
+    gm <- schemaStores((configSchema, configCohorts)).groupFile.base.masks.keys.toList
+  } yield {
+    val gFile = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+      case true => s"""${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)}"""
+      case false => s"""${schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get.toString.split("@")(1)}"""
+    }
+    try {
+      val gFileList = fileToList(checkPath(gFile))
+      println(s"""calculating group variant counts for group file: ${gFile}""")
+      for {
+        group <- gFileList
+      } yield {
+        val geneName = group.split("\t")(0)
+        val N = group.split("\t").tail.size
+		maskGroupCountMap.keys.toList.contains(geneName) match {
+          case true =>
+            maskGroupCountMap(geneName) < N match {
+              case true => maskGroupCountMap(geneName) = N
+              case false => ()
+            }
+          case false => maskGroupCountMap(geneName) = N
+        }
+      }
+    }
+    catch {
+      case x: CfgException =>
+        println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
+    }
+  }
+
   for {
 
     test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup.keys.toList
@@ -402,16 +434,20 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
           case true =>
 
-            val allGroups = dirTree.analysisModelGroupsMap.keys
+            for {
+              gm <- schemaStores((configSchema, configCohorts)).groupFile.base.masks.keys.toList
+            } yield {
+              val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(gm).groups.keys
 
-            allGroups.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
-              case n if n == allGroups.toList.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")} under model ${configModel.id} and test ${test} (${n}/${groupCountMap.keys.toList.size})""")
-              case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")} under model ${configModel.id} and test ${test} (${m}/${groupCountMap.keys.toList.size})""")
+              modelTestGroupsKeys.toList.toSet.intersect(maskGroupCountMap.keys.toList.toSet).size match {
+                case n if n == modelTestGroupsKeys.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile." + gm.id)} under model ${configModel.id} and test ${test} (${n}/${maskGroupCountMap.keys.toList.size})""")
+                case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile." + gm.id)} under model ${configModel.id} and test ${test} (${m}/${maskGroupCountMap.keys.toList.size})""")
+              }
             }
 
             for {
             
-              group <- allGroups.toList
+              group <- maskGroupCountMap.keys.toList
             
             } yield {
             
