@@ -261,8 +261,8 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             }
 
             modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
-              case n if n == modelTestGroupsKeys.toList.size => println(s"""running model ${configModel.id} test ${test} for group file ${groupFileIn}""")
-              case _ => println(s"""unable to run model ${configModel.id} test ${test} for group file ${groupFileIn} due to missing group counts""")
+              case n if n == modelTestGroupsKeys.toList.size => println(s"""extracting group sizes for group file ${groupFileIn} under model ${configModel.id} and test ${test} (${n}/${groupCountMap.keys.toList.size})""")
+              case m => throw new CfgException(s"""unable to find some group sizes for group file ${groupFileIn} under model ${configModel.id} and test ${test} (${m}/${groupCountMap.keys.toList.size})""")
             }
             
             for {
@@ -402,10 +402,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             val allGroups = dirTree.analysisModelGroupsMap.keys
 
             allGroups.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
-              case n if n == allGroups.toList.size => println(s"""running model ${configModel.id} test ${test} for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")}""")
-              case _ => println(s"""unable to run model ${configModel.id} test ${test} for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")} due to missing group counts""")
+              case n if n == allGroups.toList.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")} under model ${configModel.id} and test ${test} (${n}/${groupCountMap.keys.toList.size})""")
+              case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1).replace("groupfile","groupfile.___MASK___")} under model ${configModel.id} and test ${test} (${m}/${groupCountMap.keys.toList.size})""")
             }
-            
+
             for {
             
               group <- allGroups.toList
