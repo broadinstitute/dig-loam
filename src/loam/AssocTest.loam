@@ -202,24 +202,33 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
   }
 
   val groupCountMap = scala.collection.mutable.Map[String, Int]()
-  val gFile = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
-    case true => s"""${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}"""
-    case false => s"""${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1)}"""
-  }
-  try {
-    val gFileList = fileToList(checkPath(gFile))
-    println(s"""calculating group variant counts for group file: ${gFile}""")
-    for {
-      group <- gFileList
-    } yield {
-      val geneName = group.split("\t")(0)
-      val N = group.split("\t").tail.size
-      groupCountMap(geneName) = N
-    }
-  }
-  catch {
-    case x: CfgException =>
-      println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
+
+  configModel.runAssoc match {
+
+    case true =>
+
+      val gFile = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+        case true => s"""${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}"""
+        case false => s"""${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get.toString.split("@")(1)}"""
+      }
+      try {
+        val gFileList = fileToList(checkPath(gFile))
+        println(s"""calculating group variant counts for group file: ${gFile}""")
+        for {
+          group <- gFileList
+        } yield {
+          val geneName = group.split("\t")(0)
+          val N = group.split("\t").tail.size
+          groupCountMap(geneName) = N
+        }
+      }
+      catch {
+        case x: CfgException =>
+          println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
+      }
+
+    case false => ()
+
   }
 
   for {
@@ -389,63 +398,72 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
   }
 
   val maskGroupCountMap = scala.collection.mutable.Map[String, Int]()
-  schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
-    case true => 
-      for {
-        gm <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.keys.toList
-      } yield {
-        val gFile = s"""${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)}"""
-        try {
-          val gFileList = fileToList(checkPath(gFile))
-          println(s"""calculating group variant counts for group file: ${gFile}""")
+
+  configModel.runAssoc match {
+
+    case true =>
+
+      schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+        case true => 
           for {
-            group <- gFileList
+            gm <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.keys.toList
           } yield {
-            val geneName = group.split("\t")(0)
-            val N = group.split("\t").tail.size
-	    	maskGroupCountMap.keys.toList.contains(geneName) match {
-              case true =>
-                maskGroupCountMap(geneName) < N match {
-                  case true => maskGroupCountMap(geneName) = N
-                  case false => ()
+            val gFile = s"""${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)}"""
+            try {
+              val gFileList = fileToList(checkPath(gFile))
+              println(s"""calculating group variant counts for group file: ${gFile}""")
+              for {
+                group <- gFileList
+              } yield {
+                val geneName = group.split("\t")(0)
+                val N = group.split("\t").tail.size
+	        	maskGroupCountMap.keys.toList.contains(geneName) match {
+                  case true =>
+                    maskGroupCountMap(geneName) < N match {
+                      case true => maskGroupCountMap(geneName) = N
+                      case false => ()
+                    }
+                  case false => maskGroupCountMap(geneName) = N
                 }
-              case false => maskGroupCountMap(geneName) = N
+              }
+            }
+            catch {
+              case x: CfgException =>
+                println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
             }
           }
-        }
-        catch {
-          case x: CfgException =>
-            println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
-        }
-      }
-    case false =>
-      for {
-        gm <- schemaStores((configSchema, configCohorts)).groupFile.base.masks.keys.toList
-      } yield {
-        val gFile = s"""${schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get.toString.split("@")(1)}"""
-        try {
-          val gFileList = fileToList(checkPath(gFile))
-          println(s"""calculating group variant counts for group file: ${gFile}""")
+        case false =>
           for {
-            group <- gFileList
+            gm <- schemaStores((configSchema, configCohorts)).groupFile.base.masks.keys.toList
           } yield {
-            val geneName = group.split("\t")(0)
-            val N = group.split("\t").tail.size
-	    	maskGroupCountMap.keys.toList.contains(geneName) match {
-              case true =>
-                maskGroupCountMap(geneName) < N match {
-                  case true => maskGroupCountMap(geneName) = N
-                  case false => ()
+            val gFile = s"""${schemaStores((configSchema, configCohorts)).groupFile.base.masks(gm).local.get.toString.split("@")(1)}"""
+            try {
+              val gFileList = fileToList(checkPath(gFile))
+              println(s"""calculating group variant counts for group file: ${gFile}""")
+              for {
+                group <- gFileList
+              } yield {
+                val geneName = group.split("\t")(0)
+                val N = group.split("\t").tail.size
+	        	maskGroupCountMap.keys.toList.contains(geneName) match {
+                  case true =>
+                    maskGroupCountMap(geneName) < N match {
+                      case true => maskGroupCountMap(geneName) = N
+                      case false => ()
+                    }
+                  case false => maskGroupCountMap(geneName) = N
                 }
-              case false => maskGroupCountMap(geneName) = N
+              }
+            }
+            catch {
+              case x: CfgException =>
+                println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
             }
           }
-        }
-        catch {
-          case x: CfgException =>
-            println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
-        }
       }
+
+    case false => ()
+
   }
 
   for {
