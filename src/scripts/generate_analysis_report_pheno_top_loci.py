@@ -50,10 +50,10 @@ def main(args=None):
 	types = {
 		'chr': 'string type',
 		'pos': 'string type',
-		'id': 'string type',
+		'id': 'verb string type',
 		'alt': 'verb string type',
 		'ref': 'verb string type',
-		'gene': 'string type',
+		'gene': 'verb string type',
 		'cohort': 'verb string type',
 		'dir': 'verb string type',
 		'mac': 'precision = 3, sci precision = 2',
