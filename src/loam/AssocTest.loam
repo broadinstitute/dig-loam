@@ -16,6 +16,11 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
   val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
 
+  val maxGroupSizeString = configSchema.maxGroupSize match {
+    case Some(_) => s"--max-group-size ${configSchema.maxGroupSize.get}"
+    case _ => ""
+  }
+
   configModel.assocPlatforms.contains("epacts") match {
   
     case true =>
@@ -313,6 +318,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                   --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
                   --test ${test.replace("epacts.","")}
                   --field "DS"
+                  ${maxGroupSizeString}
                   --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(groupid).results}
                   --run 1"""
                   .in(epactsIn)
@@ -586,6 +592,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
                       --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
                       --test ${test.replace("epacts.","")}
                       --field "DS"
+                      ${maxGroupSizeString}
                       --masks ${groupMasksString}
                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
                       --run 1"""

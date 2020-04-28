@@ -227,6 +227,7 @@ final case class ConfigSchema(
   cohortFilters: Option[Seq[CohortFilter]],
   knockoutFilters: Option[Seq[CohortFilter]],
   masks: Option[Seq[MaskFilter]],
+  maxGroupSize: Option[Int],
   filterCohorts: Seq[String]) extends Debug
 
 final case class ConfigModel(
@@ -1188,6 +1189,7 @@ object ProjectConfig {
           cohortFilters = cohortFilters,
           knockoutFilters = knockoutFilters,
           masks = masks,
+          maxGroupSize = optionalInt(config = schema, field = "maxGroupSize", min = Some(2)),
           filterCohorts = filterCohorts
         )
 

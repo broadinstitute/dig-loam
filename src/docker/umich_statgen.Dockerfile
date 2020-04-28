@@ -174,5 +174,8 @@ RUN wget http://csg.sph.umich.edu/abecasis/Metal/download/Linux-metal.tar.gz && 
 	rm generic-metal/LICENSE.twister && \
 	rm generic-metal/README
 
+# add custom epacts r scripts
+COPY . /usr/local/share/EPACTS/
+
 # open /work directory permissions
 RUN chmod -R 777 /work

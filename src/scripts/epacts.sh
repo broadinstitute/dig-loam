@@ -101,6 +101,15 @@ while :; do
 				exit 1
 			fi
 			;;
+        --max-group-size)
+			if [ "$2" ]; then
+				maxGroupSize=$2
+				shift
+			else
+				echo "ERROR: --max-group-size requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--masks)
 			if [ "$2" ]; then
 				masks=$2
@@ -151,6 +160,7 @@ echo "ped: $ped"
 echo "vars: $vars"
 echo "test: $test"
 echo "field: $field"
+echo "maxGroupSize: $maxGroupSize"
 echo "masks: $masks"
 echo "groupfout: $groupfout"
 echo "out: $out"
@@ -173,48 +183,64 @@ done < $vars
 
 echo "parsed variable file $vars into epacts cli options '$phenoCovars'"
 
-for mask in $(echo $masks | sed 's/,/ /g'); do
+EXITCODE=0
+if [ "$type" == "group" ]; then
 
-	echo "running epacts for mask ${mask}"
-
-	if [ "$mask" != "DEFAULT" ]; then
-		tmpgroupfin=`echo $groupfin | sed "s/___MASK___/${mask}/g"`
-		tmpgroupfout=`echo $groupfout | sed "s/___MASK___/${mask}/g"`
-		tmpout=`echo $out | sed "s/___MASK___/${mask}/g"`
-	else
-		tmpgroupfin=`echo $groupfin | sed "s/___MASK___\.//g"`
-		tmpgroupfout=`echo $groupfout | sed "s/___MASK___\.//g"`
-		tmpout=`echo $out | sed "s/___MASK___\.//g"`
-	fi
-
-	if [[ ! -z "$groupid" && ! -z "${groupfin}" && ! -z "${groupfout}" ]]; then
-		grep -w "${groupid}" $tmpgroupfin > $tmpgroupfout
-	fi
+	for mask in $(echo $masks | sed 's/,/ /g'); do
 	
-	outBase=`echo $tmpout | sed 's/\.tsv\.bgz//g'`
+		echo "running epacts for mask ${mask}"
 	
-	EXITCODE=0
-	if [ "$type" == "group" ]; then
-		if [ "$test" == "b.collapse" ]; then
+		if [ "$mask" != "DEFAULT" ]; then
+			tmpgroupfin=`echo $groupfin | sed "s/___MASK___/${mask}/g"`
+			tmpgroupfout=`echo $groupfout | sed "s/___MASK___/${mask}/g"`
+			tmpout=`echo $out | sed "s/___MASK___/${mask}/g"`
+		else
+			tmpgroupfin=`echo $groupfin | sed "s/___MASK___\.//g"`
+			tmpgroupfout=`echo $groupfout | sed "s/___MASK___\.//g"`
+			tmpout=`echo $out | sed "s/___MASK___\.//g"`
+		fi
+	
+		if [[ ! -z "$groupid" && ! -z "${groupfin}" && ! -z "${groupfout}" ]]; then
+			grep -w "${groupid}" $tmpgroupfin > $tmpgroupfout
+		fi
+	
+		N=`head -1 $tmpgroupfout | cut -d ' ' -f2- | wc -w`
+		tmpgroupfoutsingle=`echo $tmpgroupfout | awk '{print $0".single"}'`
+		
+		outBase=`echo $tmpout | sed 's/\.tsv\.bgz//g'`
+	
+		if [[ ! -z "$maxGroupSize" && "$N" -gt "$maxGroupSize" ]]; then
+			echo "group size $N exceeds --max-group-size $maxGroupSize for mask $mask, skipping association test"
+			filters="--min-maf 0.5"
+			head -1 $tmpgroupfout | cut -f-2 > $tmpgroupfoutsingle
+			groupFileString="--groupf $tmpgroupfoutsingle"
+		else
+			echo "group size $N for mask $mask, running association test"
+			groupFileString="--groupf $tmpgroupfout"
+		fi
+
+		if [[ "$test" == "b.collapse" || "$test" == "b.burden" || "$test" == "b.burdenFirth" || "$test" == "q.burden" ]]; then
 			$bin $type \
 			--vcf $vcf \
-			--groupf $tmpgroupfout \
+			$groupFileString \
 			--ped $ped \
 			$phenoCovars \
 			--test $test \
 			--field $field \
+			$filters \
 			--out $outBase \
 			--run $run \
 			--no-plot
 		elif [[ "$test" == "b.skat" || "$test" == "q.skat" ]]; then
 			$bin $type \
 			--vcf $vcf \
-			--groupf $tmpgroupfout \
+			$groupFileString \
 			--ped $ped \
 			$phenoCovars \
 			--test skat \
 			--skat-o \
 			--field $field \
+			$filters \
 			--out $outBase \
 			--run $run \
 			--no-plot
@@ -222,34 +248,47 @@ for mask in $(echo $masks | sed 's/,/ /g'); do
 			EXITCODE=1
 		fi
 		if [ -f "${outBase}.epacts.OK" ]; then
-			cat ${outBase}.epacts | bgzip -c > $tmpout
+			if [[ ! -z "$maxGroupSize" && "$N" -gt "$maxGroupSize" ]]; then
+				NAcol=`head -1 ${outBase}.epacts | tr '\t' '\n' | awk '{print NR" "$0}' | grep -n "NUM_ALL_VARS" | cut -d ':' -f1`
+				NScol=`head -1 ${outBase}.epacts | tr '\t' '\n' | awk '{print NR" "$0}' | grep -n "NUM_SING_VARS" | cut -d ':' -f1`
+				(head -1 ${outBase}.epacts; tail -1 ${outBase}.epacts | awk -v NAcol=$NAcol -v NScol=$NScol -v N=$N 'BEGIN { OFS="\t" } {$NAcol=N; $NScol="NA"; print $0}') | bgzip -c > $tmpout
+			else
+				cat ${outBase}.epacts | bgzip -c > $tmpout
+			fi
 			rm ${outBase}.epacts
 		else
 			EXITCODE=1
 		fi
-	elif [ "$type" == "single" ]; then
-		$bin $type \
-		--vcf $vcf \
-		--region $region \
-		--ped $ped \
-		$phenoCovars \
-		--test $test \
-		--field $field \
-		--out $outBase \
-		--run $run \
-		--no-plot
-		if [ -f "${outBase}.epacts.OK" ]; then
-			zcat ${outBase}.epacts.gz | bgzip -c > $tmpout
-			rm ${outBase}.epacts.gz
-			rm ${outBase}.epacts.gz.tbi
-		else
-			EXITCODE=1
-		fi
+	
+	done
+
+elif [ "$type" == "single" ]; then
+
+	outBase=`echo $tmpout | sed 's/\.tsv\.bgz//g'`
+
+	$bin $type \
+	--vcf $vcf \
+	--region $region \
+	--ped $ped \
+	$phenoCovars \
+	--test $test \
+	--field $field \
+	--out $outBase \
+	--run $run \
+	--no-plot
+	if [ -f "${outBase}.epacts.OK" ]; then
+		zcat ${outBase}.epacts.gz | bgzip -c > $out
+		rm ${outBase}.epacts.gz
+		rm ${outBase}.epacts.gz.tbi
 	else
-		echo "ERROR: --type argument $type not recognized."
 		EXITCODE=1
 	fi
 
-done
+else
+
+	echo "ERROR: --type argument $type not recognized."
+	EXITCODE=1
+
+fi
 
 exit $EXITCODE
