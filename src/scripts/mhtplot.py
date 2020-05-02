@@ -148,6 +148,7 @@ def main(args=None):
 		df.drop(columns=['excl_id'], inplace=True)
 
 	df.dropna(subset=[args.p], inplace=True)
+	df.loc[df[args.p] == 0, args.p] = 1e-300
 	df.reset_index(drop=True, inplace=True)
 
 	print "generating manhattan plot for " + str(df.shape[0]) + " variants"
