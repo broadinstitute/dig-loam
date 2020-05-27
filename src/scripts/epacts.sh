@@ -256,6 +256,11 @@ if [ "$type" == "group" ]; then
 				cat ${outBase}.epacts | bgzip -c > $tmpout
 			fi
 			rm ${outBase}.epacts
+			rm ${outBase}.epacts.OK
+			rm ${outBase}.Makefile
+			rm ${outBase}.cov
+			rm ${outBase}.ind
+			rm ${outBase}.phe
 		else
 			EXITCODE=1
 		fi
