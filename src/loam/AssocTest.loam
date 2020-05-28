@@ -155,6 +155,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
         --p pval
         --maf maf
+        --mac mac
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlot}
         --out-low-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotLowMaf}
         --out-mid-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).qqPlotMidMaf}
@@ -168,6 +169,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         --chr "#chr"
         --pos pos
         --p pval
+        --mac mac
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).mhtPlot}"""
         .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).mhtPlot)
@@ -180,7 +182,8 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
       cmd"""${utils.binary.binPython} ${utils.python.pyTopResults}
         --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
         --n 1000
-        --p pval 
+        --p pval
+        --mac mac 
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}"""
         .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults)

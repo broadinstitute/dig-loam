@@ -77,6 +77,10 @@ def main(args=None):
 		df.drop(columns=['excl_id'], inplace=True)
 
 	df.dropna(subset=[args.p], inplace=True)
+
+	print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
+	df = df[df[args.mac] >= 3]
+
 	df.loc[df[args.p] == 0, args.p] = 1e-300
 	df.reset_index(drop=True, inplace=True)
 
@@ -117,6 +121,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)
 	requiredArgs.add_argument('--p', help='a p-value column name in --results', required=True)
+	requiredArgs.add_argument('--mac', help='a minor allele count column name in --results', required=True)
 	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
 	args = parser.parse_args()
 	main(args)
