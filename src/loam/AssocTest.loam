@@ -148,7 +148,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         drmWith(imageName = s"${utils.image.imgTools}") {
 
           cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}"""
-            .in(assoc.results)
+            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
             .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsTbi)
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsTbi}".split("/").last)
         
