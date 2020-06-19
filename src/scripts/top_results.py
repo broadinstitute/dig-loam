@@ -18,8 +18,12 @@ def main(args=None):
 
 	df.dropna(subset=[args.p], inplace=True)
 
-	print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
-	df = df[df[args.mac] >= 3]
+	if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
+		print "removing {0:d} variants with mac < 20".format(df[df[args.mac] < 20].shape[0])
+		df = df[df[args.mac] >= 20]
+	else:
+		print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
+		df = df[df[args.mac] >= 3]
 
 	df.reset_index(drop=True, inplace=True)
 

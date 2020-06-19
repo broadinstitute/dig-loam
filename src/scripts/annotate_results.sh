@@ -148,6 +148,6 @@ p=`head -1 $topResults | tr '\t' '\n' | grep -n "pval" | awk -F':' '{print $1}'`
 
 h1=`head -1 ${results}.4.tmp | cut -f2-`
 h2=`head -1 ${results}.3.tmp | cut -f2-`
-(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1)) | sort -n -k${p},${p} > $results
+(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1)) | sort -n -k${p},${p} | awk 'BEGIN { OFS="\t" } {x=$1; $1=$2; $2=$3; $3=x; print $0}' > $results
 
 rm ${results}.*.tmp*
