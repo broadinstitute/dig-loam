@@ -37,6 +37,7 @@ final case class ModelAssocSingle(
   topResults: Store,
   topResultsAnnot: Store,
   top20AnnotAlignedRisk: Store,
+  sigRegions: Store,
   regPlotsBase: Path,
   regPlotsPdf: Store
 )
@@ -195,9 +196,10 @@ val modelStores = (
         mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
         topResults = store(local_dir / s"${baseString}.${test}.topresults.tsv"),
         topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.annot.tsv"),
-        top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.top20.annot.aligned_risk.tsv"),
-        regPlotsBase = local_dir / s"${baseString}.${test}.regplots",
-        regPlotsPdf = store(local_dir / s"${baseString}.${test}.regplots.pdf")
+        top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
+        sigRegions = store(local_dir / s"${baseString}.${test}.sigregions.tsv"),
+        regPlotsBase = local_dir / s"${baseString}.${test}.sigregions.plots",
+        regPlotsPdf = store(local_dir / s"${baseString}.${test}.sigregions.plots.pdf")
       )
     }.toMap,
     assocGroup = nmasks match {

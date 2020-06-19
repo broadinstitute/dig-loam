@@ -207,24 +207,20 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
     }
 
-    val hiLdFiles = configModel.known match {
+    var top20In = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot)
+    var hiLdStrings = Seq()
+
+    configModel.knowns match {
       case Some(_) =>
         for {
-          k <- configModel.known.get
+          k <- configModel.knowns.get
         } yield {
-          ProjectStores.knownStores(projectConfig.Knowns.filter(e => e.id == k).head).hiLd
+          top20In = top20In ++ Seq(projectStores.knownStores(projectConfig.Knowns.filter(e => e.id == k).head).hiLd)
+          hiLdStrings = hiLdStrings ++ Seq(s"${projectStores.knownStores(projectConfig.Knowns.filter(e => e.id == k).head).hiLd.toString.split("@")(1)}")
         }
-      case None => Seq()
+      case None => ()
     }
 
-    val hiLdStrings = {
-      for {
-        x <- hiLdFiles
-      } yield {
-        s"""${x.toString.split("@")(1)}"""
-      }
-    }.distinct
-    
     drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
@@ -236,10 +232,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         --p pval
         --test ${test}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top20AnnotAlignedRisk}"""
-        .in(hiLdFiles :+ modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot)
+        .in(top20In)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top20AnnotAlignedRisk)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top20AnnotAlignedRisk}".split("/").last)
-
+    
     }
 
     projectConfig.maxSigRegions match {
@@ -285,13 +281,13 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         ${utils.binary.binTabix}
         ${utils.binary.binLocuszoom}
         ${utils.binary.binGhostscript}
-        ${summaryStores.resultsSummaryData.sigRegions}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).sigRegions}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
         EUR
         hg19
         1000G_Nov2014
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).regPlotsBase}"""
-        .in(results, summaryStores.resultsSummaryData.sigRegions)
+        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).sigRegions)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).regPlotsPdf)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).regPlotsPdf}".split("/").last)
     

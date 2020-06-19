@@ -146,7 +146,7 @@ final case class ConfigResources(
   lowMemEpacts: ConfigMachine,
   midMemEpacts: ConfigMachine,
   highMemEpacts: ConfigMachine,
-  locuszoom: ConfigMachine,) extends Debug
+  locuszoom: ConfigMachine) extends Debug
 
 final case class ConfigArray(
   id: String,
