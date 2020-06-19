@@ -145,7 +145,8 @@ final case class ConfigResources(
   tabix: ConfigMachine,
   lowMemEpacts: ConfigMachine,
   midMemEpacts: ConfigMachine,
-  highMemEpacts: ConfigMachine) extends Debug
+  highMemEpacts: ConfigMachine,
+  locuszoom: ConfigMachine,) extends Debug
 
 final case class ConfigArray(
   id: String,
@@ -380,14 +381,14 @@ final case class Python(
   pyQqPlot: Path,
   pyMhtPlot: Path,
   pyTopResults: Path,
-  pyTopGroupResults: Path
+  pyTopGroupResults: Path,
+  pyExtractTopRegions: Path
   //pyAddGeneAnnot: Path
   //pyHailModelVariantStats: Path,
   //pyHailFilterModelVariants: Path,
   //pyHailFilterResults: Path,
   //pyHailMerge: Path,
   //pyHailMetaAnalysis: Path,
-  //pyExtractTopRegions: Path,
   //pyGenerateReportHeader: Path,
   //pyGenerateQcReportIntro: Path,
   //pyGenerateQcReportData: Path,
@@ -419,9 +420,9 @@ final case class Bash(
   shCrossCohortCommonVariants: Path,
   shFlashPca: Path,
   shEpacts: Path,
-  shMergeResults: Path
+  shMergeResults: Path,
+  shRegPlot: Path
   //shTopResultsAddGenes: Path
-  //shRegPlot: Path,
   ) extends Debug
 
 final case class R(
@@ -439,14 +440,14 @@ final case class R(
   rMetaCohortSamples: Path,
   rExcludeCrossArray: Path,
   rGeneratePheno: Path,
-  rConvertPhenoToPed: Path
+  rConvertPhenoToPed: Path,
+  rTop20: Path
   //rAncestryClusterTable: Path,
   //rPcair: Path,
   //rVariantsSummaryTable: Path,
   //rUpsetplotBimFam: Path,
   //rMakeOutlierTable: Path,
   //rMakeMetricDistPlot: Path,
-  //rTop20: Path,
   //rTop50Known: Path,
   //rMetaExclusionsTable: Path
   ) extends Debug
@@ -619,6 +620,10 @@ object ProjectConfig {
       },
       highMemEpacts = {
         val thisConfig = requiredObj(config = config, field = "highMemEpacts")
+        ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+      },
+      locuszoom = {
+        val thisConfig = requiredObj(config = config, field = "locuszoom")
         ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
       }
     )
@@ -1491,14 +1496,14 @@ object ProjectConfig {
       pyQqPlot = path(s"${scriptsDir}/qqplot.py"),
       pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
       pyTopResults = path(s"${scriptsDir}/top_results.py"),
-      pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py")
+      pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
+      pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py")
       //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
       //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
       //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
       //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
       //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
       //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
-      //pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
       //pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
       //pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
       //pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
@@ -1531,8 +1536,8 @@ object ProjectConfig {
       shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
       shEpacts = path(s"${scriptsDir}/epacts.sh"),
       shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
+      shRegPlot = path(s"${scriptsDir}/regplot.sh")
       //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
-      //shRegPlot = path(s"${scriptsDir}/regplot.sh")
     )
 
     val r = R(
@@ -1550,14 +1555,14 @@ object ProjectConfig {
       rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
       rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
       rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
-      rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r")
+      rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r"),
+      rTop20 = path(s"${scriptsDir}/top20.r")
       //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
       //rPcair = path(s"${scriptsDir}/pcair.r"),
       //rVariantsSummaryTable = path(s"${scriptsDir}/variants_summary_table.r"),
       //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
       //rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
       //rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r"),
-      //rTop20 = path(s"${scriptsDir}/top20.r"),
       //rTop50Known = path(s"${scriptsDir}/top50_known.r"),
       //rMetaExclusionsTable = path(s"${scriptsDir}/meta_exclusions_table.r")
     )

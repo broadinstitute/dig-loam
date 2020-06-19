@@ -4,7 +4,6 @@ parser <- ArgumentParser()
 parser$add_argument("--results", dest="results", type="character", help="results file")
 parser$add_argument("--chr", dest="chr", type="character", help="chromosome column name")
 parser$add_argument("--pos", dest="pos", type="character", help="position column name")
-parser$add_argument("--genes", dest="genes", type="character", help="a top results gene file")
 parser$add_argument("--known-loci", dest="known_loci", help='a comma separated list of known loci files')
 parser$add_argument("--p", dest="p", type="character", help="a pvalue column name")
 parser$add_argument("--test", dest="test", type="character", help="a statistical test")
@@ -15,28 +14,13 @@ print(args)
 
 x<-read.table(args$results,header=T,as.is=T,sep="\t",comment.char="")
 
-if(args$test %in% c("hail.wald","hail.lrt","hail.firth")) {
+if(args$test %in% c("hail.b.wald","hail.b.lrt","hail.b.firth","hail.b.score")) {
 	x$or <- exp(x$beta)
 	pre<-names(x)[1:(grep("\\bpval\\b",names(x))-1)]
 	pre<-pre[grep("\\bor\\b",pre,invert=TRUE)]
 	post<-names(x)[grep("\\bpval\\b",names(x)):length(names(x))]
 	post<-post[grep("\\bor\\b",post,invert=TRUE)]
 	x <- x[,c(pre,"or",post)]
-}
-
-y<-try(read.table(args$genes,header=F,as.is=T,sep="\t",comment.char=""), silent=TRUE)
-if(! inherits(y, "try-error")) {
-	names(y)[1]<-"gene"
-	if(grepl("#",args$chr )) {
-		names(y)[2]<-gsub("#","X.",args$chr)
-	} else {
-		names(y)[2]<-args$chr
-	}
-	names(y)[3]<-args$pos
-	x<-merge(x,y,all=T)
-	x$gene[is.na(x$gene)]<-"NA"
-} else {
-	x$gene<-NA
 }
 
 for(i in 1:nrow(x)) {
@@ -56,7 +40,7 @@ for(i in 1:nrow(x)) {
 }
 
 x <- x[order(x[,args$p]),]
-x <- x[! duplicated(x$gene),]
+x <- x[! duplicated(x$GENE),]
 x <- head(x, n=20)
 
 known_vars <- c()
@@ -74,7 +58,7 @@ known_vars <- unique(known_vars)
 known_genes <- unique(known_genes)
 
 x$id[x$id %in% known_vars]<-paste("\\large{\\textbf{",x$id[x$id %in% known_vars],"}}",sep="")
-x$gene[x$gene %in% known_genes]<-paste("\\large{\\textbf{",x$gene[x$gene %in% known_genes],"}}",sep="")
+x$GENE[x$GENE %in% known_genes]<-paste("\\large{\\textbf{",x$GENE[x$GENE %in% known_genes],"}}",sep="")
 
 ## replace _ with \_ to make compatible with pgfplotstabletypeset
 # depracated due to unknown changes
