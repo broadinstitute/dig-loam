@@ -488,7 +488,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             --group-id-map ${projectStores.geneIdMap.local.get}
             --n 20
             --p PVALUE 
-            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top20Results}"""
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).top20Results}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results, projectStores.geneIdMap.local.get)
             .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).top20Results)
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).top20Results}".split("/").last)
