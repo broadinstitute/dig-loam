@@ -27,6 +27,7 @@ import SchemaStores._
 
 final case class ModelAssocSingle(
   results: MultiStore,
+  resultsTbi: Store,
   resultsHailLog: Option[MultiStore],
   filteredResults: Store,
   qqPlot: Store,
@@ -34,8 +35,8 @@ final case class ModelAssocSingle(
   qqPlotMidMaf: Store,
   qqPlotHighMaf: Store,
   mhtPlot: Store,
-  topResults: Store,
-  topResultsAnnot: Store,
+  top1000Results: Store,
+  top1000ResultsAnnot: Store,
   top20AnnotAlignedRisk: Store,
   sigRegions: Store,
   regPlotsBase: Path,
@@ -49,7 +50,7 @@ final case class ModelAssocGroup(
 
 final case class ModelAssocGroupBase(
   results: Store,
-  topResults: Store,
+  top20Results: Store,
   //groupFile: Store,
   qqPlot: Store,
   mhtPlot: Store,
@@ -181,6 +182,7 @@ val modelStores = (
           local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
           google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
         ),
+        resultsTbi = store(local_dir / s"${baseString}.${test}.results.bgz.tbi"),
         resultsHailLog = test.split("\\.")(0) match {
           case "hail" => Some(MultiStore(
               local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
@@ -194,12 +196,12 @@ val modelStores = (
         qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
         qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
         mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
-        topResults = store(local_dir / s"${baseString}.${test}.topresults.tsv"),
-        topResultsAnnot = store(local_dir / s"${baseString}.${test}.topresults.annot.tsv"),
+        top1000Results = store(local_dir / s"${baseString}.${test}.results.top1000.tsv"),
+        top1000ResultsAnnot = store(local_dir / s"${baseString}.${test}.results.top1000.annot.tsv"),
         top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
-        sigRegions = store(local_dir / s"${baseString}.${test}.sigregions.tsv"),
-        regPlotsBase = local_dir / s"${baseString}.${test}.sigregions.plots",
-        regPlotsPdf = store(local_dir / s"${baseString}.${test}.sigregions.plots.pdf")
+        sigRegions = store(local_dir / s"${baseString}.${test}.results.sig.regions.tsv"),
+        regPlotsBase = local_dir / s"${baseString}.${test}.results.sig.regplots",
+        regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
       )
     }.toMap,
     assocGroup = nmasks match {
@@ -213,7 +215,7 @@ val modelStores = (
           modelGroupTests.map { test =>
             test -> ModelAssocGroupBase(
               results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
-              topResults = store(local_dir  / s"${baseString}.${test}.topresults.tsv"),
+              top20Results = store(local_dir  / s"${baseString}.${test}.results.top20.tsv"),
               //groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
               qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
               mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
@@ -250,7 +252,7 @@ val modelStores = (
                   mask ->
                     ModelAssocGroupBase(
                       results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
-                      topResults = store(local_dir / s"${baseString}.${test}.${mask.id}.topresults.tsv"),
+                      top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
                       //groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
                       qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
                       mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
@@ -276,7 +278,7 @@ val modelStores = (
                   mask ->
                     ModelAssocGroupBase(
                       results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
-                      topResults = store(local_dir / s"${baseString}.${test}.${mask.id}.topresults.tsv"),
+                      top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
                       //groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
                       qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
                       mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),

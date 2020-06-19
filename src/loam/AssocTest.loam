@@ -145,6 +145,15 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         
         }
 
+        drmWith(imageName = s"${utils.image.imgTools}") {
+
+          cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}"""
+            .in(assoc.results)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsTbi)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsTbi}".split("/").last)
+        
+        }
+
       case false => ()
 
     }
@@ -184,10 +193,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         --n 1000
         --p pval
         --mac mac 
-        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}"""
+        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results}"""
         .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}".split("/").last)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results}".split("/").last)
     
     }
 
@@ -195,19 +204,19 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
 
       cmd"""${utils.bash.shAnnotateResults}
         ${arrayStores(array).refData.sitesVcf.local.get}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results}
         ${projectConfig.resources.vep.cpus}
         ${projectStores.fasta}
         ${projectStores.vepCacheDir}
         ${projectStores.vepPluginsDir}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}"""
-      .in(arrayStores(array).refData.sitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
-      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot)
-      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}".split("/").last)
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}"""
+      .in(arrayStores(array).refData.sitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
+      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot)
+      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}".split("/").last)
 
     }
 
-    var top20In = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot)
+    var top20In = Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot)
     var hiLdStrings = Seq()
 
     configModel.knowns match {
@@ -225,7 +234,7 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rTop20}
-        --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResultsAnnot}
+        --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}
         --chr "#chr"
         --pos pos
         --known-loci "${hiLdStrings.mkString(",")}"
@@ -479,10 +488,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             --group-id-map ${projectStores.geneIdMap.local.get}
             --n 20
             --p PVALUE 
-            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).topResults}"""
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top20Results}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).results, projectStores.geneIdMap.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).topResults)
-            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).topResults}".split("/").last)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).top20Results)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).top20Results}".split("/").last)
         
         }
 
@@ -774,10 +783,10 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
               --group-id-map ${projectStores.geneIdMap.local.get}
               --n 20
               --p PVALUE 
-              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).topResults}"""
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).top20Results}"""
               .in(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).results, projectStores.geneIdMap.local.get)
-              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).topResults)
-              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).topResults}".split("/").last)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).top20Results)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).top20Results}".split("/").last)
           
           }
 
