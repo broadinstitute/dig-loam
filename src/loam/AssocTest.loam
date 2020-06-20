@@ -145,6 +145,8 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
         
         }
 
+      case false => ()
+
         drmWith(imageName = s"${utils.image.imgTools}") {
 
           cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}"""
@@ -153,8 +155,6 @@ def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohort
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsTbi}".split("/").last)
         
         }
-
-      case false => ()
 
     }
 
