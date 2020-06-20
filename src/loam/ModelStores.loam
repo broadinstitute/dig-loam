@@ -182,7 +182,7 @@ val modelStores = (
           local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
           google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
         ),
-        resultsTbi = store(local_dir / s"${baseString}.${test}.results.bgz.tbi"),
+        resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
         resultsHailLog = test.split("\\.")(0) match {
           case "hail" => Some(MultiStore(
               local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
