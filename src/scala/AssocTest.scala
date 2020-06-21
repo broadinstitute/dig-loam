@@ -226,7 +226,7 @@ object AssocTest extends loamstream.LoamFile {
           for {
             k <- configModel.knowns.get
           } yield {
-            top20In = top20In :+ projectStores.knownStores(projectConfig.Knowns.filter(e => e.id == k).head).hiLd
+            top20In = top20In :+ projectStores.knownStores(projectConfig.Knowns.filter(e => e.id == k).head).hiLd.local.get
             hiLdStrings = hiLdStrings ++ Seq(s"${projectStores.knownStores(projectConfig.Knowns.filter(e => e.id == k).head).hiLd.toString.split("@")(1)}")
           }
         case None => ()
