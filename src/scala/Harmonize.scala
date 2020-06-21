@@ -177,7 +177,7 @@ object Harmonize extends loamstream.LoamFile {
   
     drmWith(imageName = s"${utils.image.imgTools}") {
     
-      cmd"""echo "${(mergedKgHuRefLines ++ otherHuRefLines).drop(1).mkString("n")}" > ${arrayStores(arrayCfg).harmonizedData.get.mergeList}"""
+      cmd"""echo "${(mergedKgHuRefLines ++ otherHuRefLines).drop(1).mkString("\n")}" > ${arrayStores(arrayCfg).harmonizedData.get.mergeList}"""
         .out(arrayStores(arrayCfg).harmonizedData.get.mergeList)
         .tag(s"${arrayStores(arrayCfg).harmonizedData.get.mergeList}".split("/").last)
   

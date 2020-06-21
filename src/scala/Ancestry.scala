@@ -113,7 +113,7 @@ object Ancestry extends loamstream.LoamFile {
   
     drmWith(imageName = s"${utils.image.imgTools}") {
   
-      cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f3- | sed 's/t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
+      cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f3- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
         .in(arrayStores(array).ancestryPcaData.scores)
         .out(arrayStores(array).ancestryClusterData.fet)
         .tag(s"${arrayStores(array).ancestryClusterData.fet}".split("/").last)

@@ -82,7 +82,7 @@ object AssocTest extends loamstream.LoamFile {
   
         case true =>
     
-          test.split("\.")(0) match {
+          test.split("\\.")(0) match {
           
             case "hail" =>
           
@@ -322,8 +322,8 @@ object AssocTest extends loamstream.LoamFile {
           for {
             group <- gFileList
           } yield {
-            val geneName = group.split("t")(0)
-            val N = group.split("t").tail.size
+            val geneName = group.split("\t")(0)
+            val N = group.split("\t").tail.size
             groupCountMap(geneName) = N
           }
         }
@@ -342,7 +342,7 @@ object AssocTest extends loamstream.LoamFile {
     
     } yield {
     
-      test.split("\.")(0) match {
+      test.split("\\.")(0) match {
     
         case "epacts" =>
   
@@ -385,7 +385,7 @@ object AssocTest extends loamstream.LoamFile {
               
               } yield {
               
-                val groupid = group.split("t")(0)
+                val groupid = group.split("\t")(0)
   
                 val groupCores = groupCountMap(group) match {
                   case n if n >= 2000 => projectConfig.resources.highMemEpacts.cpus
@@ -433,12 +433,12 @@ object AssocTest extends loamstream.LoamFile {
               
                 case n if n > 0 =>
               
-                  val resultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(modelTestGroupsKeys.head.split("t")(0)).results.toString.split("@")(1).replace(modelTestGroupsKeys.head.split("t")(0), "___GROUP___")}"""
+                  val resultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(modelTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
               
                   val resultsFiles = for {
                     group <- modelTestGroupsKeys.toList
                   } yield {
-                    modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(group.split("t")(0)).results
+                    modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroup(test).groups(group.split("\t")(0)).results
                   }
                   
                   drmWith(imageName = s"${utils.image.imgTools}") {
@@ -521,8 +521,8 @@ object AssocTest extends loamstream.LoamFile {
                 for {
                   group <- gFileList
                 } yield {
-                  val geneName = group.split("t")(0)
-                  val N = group.split("t").tail.size
+                  val geneName = group.split("\t")(0)
+                  val N = group.split("\t").tail.size
   	        	maskGroupCountMap.keys.toList.contains(geneName) match {
                     case true =>
                       maskGroupCountMap(geneName) < N match {
@@ -549,8 +549,8 @@ object AssocTest extends loamstream.LoamFile {
                 for {
                   group <- gFileList
                 } yield {
-                  val geneName = group.split("t")(0)
-                  val N = group.split("t").tail.size
+                  val geneName = group.split("\t")(0)
+                  val N = group.split("\t").tail.size
   	        	maskGroupCountMap.keys.toList.contains(geneName) match {
                     case true =>
                       maskGroupCountMap(geneName) < N match {
@@ -578,7 +578,7 @@ object AssocTest extends loamstream.LoamFile {
     
     } yield {
   
-      test.split("\.")(0) match {
+      test.split("\\.")(0) match {
           
         case "epacts" =>
   
@@ -617,7 +617,7 @@ object AssocTest extends loamstream.LoamFile {
               
               } yield {
               
-                //val groupid = group.split("t")(0)
+                //val groupid = group.split("\t")(0)
               
                 val groupMasks = modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test).keys.toList.filter(e => modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(e).groups.keys.toList.contains(group))
               
@@ -728,12 +728,12 @@ object AssocTest extends loamstream.LoamFile {
                 
                   case n if n > 0 =>
                 
-                    val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(modelMaskTestGroupsKeys.head.split("t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("t")(0), "___GROUP___")}"""
+                    val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(modelMaskTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
                     
                     val maskResultsFiles = for {
                       group <- modelMaskTestGroupsKeys.toList
                     } yield {
-                      modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(group.split("t")(0)).results
+                      modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroup(test)(mask).groups(group.split("\t")(0)).results
                     }
                 
                     drmWith(imageName = s"${utils.image.imgTools}") {

@@ -171,7 +171,7 @@ object PrepareModel extends loamstream.LoamFile {
     //
     //val fString = filters.size match {
     //
-    //  case n if n > 0 => s"""echo "${filters.mkString("n")}" > """
+    //  case n if n > 0 => s"""echo "${filters.mkString("\n")}" > """
     //  case _ => "touch "
     //
     //}
@@ -190,7 +190,7 @@ object PrepareModel extends loamstream.LoamFile {
     //
     //    val cfString = cohortFilters.size match {
     //    
-    //      case n if n > 0 => s"""echo "${cohortFilters.mkString("n")}" > """
+    //      case n if n > 0 => s"""echo "${cohortFilters.mkString("\n")}" > """
     //      case _ => "touch "
     //    
     //    }
@@ -213,7 +213,7 @@ object PrepareModel extends loamstream.LoamFile {
     //
     //    val kfString = knockoutFilters.size match {
     //    
-    //      case n if n > 0 => s"""echo "${knockoutFilters.mkString("n")}" > """
+    //      case n if n > 0 => s"""echo "${knockoutFilters.mkString("\n")}" > """
     //      case _ => "touch "
     //    
     //    }
@@ -232,7 +232,7 @@ object PrepareModel extends loamstream.LoamFile {
     //
     //val mString = masks.size match {
     //
-    //  case n if n > 0 => s"""echo "${masks.mkString("n")}" > """
+    //  case n if n > 0 => s"""echo "${masks.mkString("\n")}" > """
     //  case _ => "touch "
     //
     //}

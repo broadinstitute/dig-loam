@@ -149,7 +149,7 @@ object Prepare extends loamstream.LoamFile {
     
         drmWith(imageName = s"${utils.image.imgTools}") {
         
-          cmd"""awk '{print "chr"$$1"t"$$4"t"$$4+1"t"$$2}' ${arrayStores(arrayCfg).preparedData.get.plink.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(arrayCfg).preparedData.get.bed.get}"""
+          cmd"""awk '{print "chr"$$1"\t"$$4"\t"$$4+1"\t"$$2}' ${arrayStores(arrayCfg).preparedData.get.plink.base}.bim | sed 's/^chrMT/chrM/g' > ${arrayStores(arrayCfg).preparedData.get.bed.get}"""
             .in(arrayStores(arrayCfg).preparedData.get.plink.data)
             .out(arrayStores(arrayCfg).preparedData.get.bed.get)
         
@@ -165,7 +165,7 @@ object Prepare extends loamstream.LoamFile {
         
         drmWith(imageName = s"${utils.image.imgTools}") {
     
-          cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(arrayCfg).preparedData.get.lifted.get} | sed 's/^chr//g' | awk '{print $$1"t"$$2"t"$$4}' > ${arrayStores(arrayCfg).preparedData.get.liftedUpdate.get}"""
+          cmd"""sed 's/^chrM/chrMT/g' ${arrayStores(arrayCfg).preparedData.get.lifted.get} | sed 's/^chr//g' | awk '{print $$1"\t"$$2"\t"$$4}' > ${arrayStores(arrayCfg).preparedData.get.liftedUpdate.get}"""
             .in(arrayStores(arrayCfg).preparedData.get.lifted.get)
             .out(arrayStores(arrayCfg).preparedData.get.liftedUpdate.get)
         
@@ -197,5 +197,5 @@ object Prepare extends loamstream.LoamFile {
       
     }
   
-
+  }
 }

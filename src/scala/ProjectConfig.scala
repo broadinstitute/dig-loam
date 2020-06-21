@@ -89,10 +89,10 @@ object ProjectConfig extends loamstream.LoamFile {
     "epacts.q.emmaxVT"
   )
   
-  val famTests = assocTests.filter(e => e.split("\.")(2).startsWith("emmax"))
-  val groupTests = assocTests.filter(e => e.split("\.")(0) == "epacts")
-  val singleTests = assocTests.filter(e => e.split("\.")(0) == "hail")
-  val nonHailTests = assocTests.filter(e => e.split("\.")(0) != "hail")
+  val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
+  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
+  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "hail")
+  val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
   
   final case class ConfigMachine(
     cpus: Int,
@@ -1305,7 +1305,7 @@ object ProjectConfig extends loamstream.LoamFile {
             pheno = pheno,
             trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
             tests = tests,
-            assocPlatforms = tests.map(e => e.split("\.")(0)).distinct,
+            assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = requiredStrList(config = model, field = "covars").mkString("+"),
             cohorts = cohorts,

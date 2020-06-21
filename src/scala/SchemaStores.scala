@@ -126,7 +126,7 @@ object SchemaStores extends loamstream.LoamFile {
   
     try {
       val gFile = checkPath(s"""${groupFile.base.base.local.get.toString.split("@")(1)}""")
-      val l = fileToList(gFile).map(e => e.split("t")(0))
+      val l = fileToList(gFile).map(e => e.split("\t")(0))
       for {
         group <- l
       } yield {
@@ -497,7 +497,7 @@ object SchemaStores extends loamstream.LoamFile {
   //  //  case "full" =>
   //  //    model.groupFile match {
   //  //      case Some(_) =>
-  //  //        val groups = fileToList(model.groupFile).map(e => e.split("t")(0))
+  //  //        val groups = fileToList(model.groupFile).map(e => e.split("\t")(0))
   //  //        groups.map { group =>
   //  //          group -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_tests(test).jobs(group).local.get / s"${group}.${model.test}.results.tsv")
   //  //        }.toMap
@@ -510,7 +510,7 @@ object SchemaStores extends loamstream.LoamFile {
   //  //  case "full" =>
   //  //    model.groupFile match {
   //  //      case Some(_) =>
-  //  //        val groups = fileToList(model.groupFile).map(e => e.split("t")(0))
+  //  //        val groups = fileToList(model.groupFile).map(e => e.split("\t")(0))
   //  //        groups.map { group =>
   //  //          group -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_tests.get.jobs(group).local.get / s"${group}.${model.test}.groupfile.tsv")
   //  //        }.toMap
@@ -526,7 +526,7 @@ object SchemaStores extends loamstream.LoamFile {
   //  //        model.masks.get.map { mask =>
   //  //          val x = mask.groupFile match {
   //  //            case Some(_) =>
-  //  //              val groups = fileToList(mask.groupFile).map(e => e.split("t")(0))
+  //  //              val groups = fileToList(mask.groupFile).map(e => e.split("\t")(0))
   //  //              groups.map { group =>
   //  //                group -> 
   //  //                  println(s"${group}")
@@ -545,7 +545,7 @@ object SchemaStores extends loamstream.LoamFile {
   //  //  case "full" =>
   //  //    (model.groupFile, model.masks) match {
   //  //      case (Some(_), Some(_)) =>
-  //  //        val groups = fileToList(model.groupFile).map(e => e.split("t")(0))
+  //  //        val groups = fileToList(model.groupFile).map(e => e.split("\t")(0))
   //  //        groups.map { group =>
   //  //          group -> model.masks.get.map { mask =>
   //  //            mask -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).base_tests.get.jobs(group).local.get / s"${group}.${model.test}.${mask.id}.groupfile.tsv")
@@ -582,7 +582,7 @@ object SchemaStores extends loamstream.LoamFile {
   //  //          projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
   //  //            model.cohortGroupFiles.get.contains(cohort.id) match {
   //  //              case true =>
-  //  //                val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("t")(0))
+  //  //                val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("\t")(0))
   //  //                cohort -> groups.map { group =>
   //  //                  group -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohort_tests(cohort).jobs(group).local.get / s"${group}.${model.test}.gz")
   //  //                }.toMap
@@ -601,7 +601,7 @@ object SchemaStores extends loamstream.LoamFile {
   //  //        projectConfig.Cohorts.filter(e => model.cohorts.contains(e.id)).map { cohort =>
   //  //          model.cohortGroupFiles.get.contains(cohort.id) match {
   //  //            case true =>
-  //  //              val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("t")(0))
+  //  //              val groups = fileToList(model.cohortGroupFiles.get.filter(e => e.cohort == cohort.id).head.groupFile).map(e => e.split("\t")(0))
   //  //              cohort -> groups.map { group =>
   //  //                group -> model.masks.get.map { mask =>
   //  //                  mask -> store(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).cohort_tests(cohort).jobs(group).local.get / s"${group}.${model.test}.${mask.id}.gz")

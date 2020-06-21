@@ -14,7 +14,7 @@ object Fxns extends loamstream.LoamFile {
   trait Debug{
     def debugVars(): Any = {
       val vars = this.getClass.getDeclaredFields
-      val name = this.getClass.getName.split("\$")(1)
+      val name = this.getClass.getName.split("\\$")(1)
       for(v <- vars) {
         v.setAccessible(true)
         println("Class: " + name + " Field: " + v.getName() + " => " + v.get(this))
@@ -259,7 +259,7 @@ object Fxns extends loamstream.LoamFile {
     }
     Seq(bed, bim, fam).contains(false) match {
       case true => 
-  	  throw new CfgException("checkPlinkPath: files missing from Plink fileset " + s + "n  " + s"${bedMessage}n  ${bimMessage}n  ${famMessage}")
+  	  throw new CfgException("checkPlinkPath: files missing from Plink fileset " + s + "\n  " + s"${bedMessage}\n  ${bimMessage}\n  ${famMessage}")
       case false => s
     }
   }
@@ -277,7 +277,7 @@ object Fxns extends loamstream.LoamFile {
   }
   
   def intervalToExpression(s: String, i: String, missing_false: Boolean): String = {
-    val intervals = i.replace(" ","").split("\+")
+    val intervals = i.replace(" ","").split("\\+")
     val expressions = {
       for {
         interval <- intervals
@@ -422,11 +422,11 @@ object Fxns extends loamstream.LoamFile {
       } yield {
         f match {
           case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
-            cliOption + " " + id_string + cfg.numericVariantFilters.filter(e => e.id == n).head.id + " " + cfg.numericVariantFilters.filter(e => e.id == n).head.field + " "" + cfg.numericVariantFilters.filter(e => e.id == n).head.expression + """
+            cliOption + " " + id_string + cfg.numericVariantFilters.filter(e => e.id == n).head.id + " " + cfg.numericVariantFilters.filter(e => e.id == n).head.field + " \"" + cfg.numericVariantFilters.filter(e => e.id == n).head.expression + "\""
           case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
-            cliOption + " " + id_string + cfg.booleanVariantFilters.filter(e => e.id == b).head.id + " " + cfg.booleanVariantFilters.filter(e => e.id == b).head.field + " "" + cfg.booleanVariantFilters.filter(e => e.id == b).head.expression + """
+            cliOption + " " + id_string + cfg.booleanVariantFilters.filter(e => e.id == b).head.id + " " + cfg.booleanVariantFilters.filter(e => e.id == b).head.field + " \"" + cfg.booleanVariantFilters.filter(e => e.id == b).head.expression + "\""
           case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
-            cliOption + " " + id_string + cfg.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + cfg.categoricalVariantFilters.filter(e => e.id == c).head.field + " "" + cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression + """
+            cliOption + " " + id_string + cfg.categoricalVariantFilters.filter(e => e.id == c).head.id + " " + cfg.categoricalVariantFilters.filter(e => e.id == c).head.field + " \"" + cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression + "\""
           case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
             val ids = for {
               ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.include
@@ -441,7 +441,7 @@ object Fxns extends loamstream.LoamFile {
                 case _ => throw new CfgException("filtersToCliString: " + id_exc + " filters '" + ff + "' not found")
               }
             }
-            cliOption + " " + id_string + cfg.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " "" + cfg.compoundVariantFilters.filter(e => e.id == d).head.expression + """
+            cliOption + " " + id_string + cfg.compoundVariantFilters.filter(e => e.id == d).head.id + " " + ids.mkString(",") + " \"" + cfg.compoundVariantFilters.filter(e => e.id == d).head.expression + "\""
           case _ => throw new CfgException("filtersToCliString: " + id_exc + " filters '" + f + "' not found")
         }
       }
@@ -470,11 +470,11 @@ object Fxns extends loamstream.LoamFile {
       } yield {
         f match {
           case n if cfg.numericVariantFilters.map(e => e.id) contains n =>
-            (v ++ Seq(cfg.numericVariantFilters.filter(e => e.id == n).head.id, cfg.numericVariantFilters.filter(e => e.id == n).head.field, cfg.numericVariantFilters.filter(e => e.id == n).head.expression)).mkString("t")
+            (v ++ Seq(cfg.numericVariantFilters.filter(e => e.id == n).head.id, cfg.numericVariantFilters.filter(e => e.id == n).head.field, cfg.numericVariantFilters.filter(e => e.id == n).head.expression)).mkString("\t")
           case b if cfg.booleanVariantFilters.map(e => e.id) contains b =>
-            (v ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == b).head.id, cfg.booleanVariantFilters.filter(e => e.id == b).head.field, cfg.booleanVariantFilters.filter(e => e.id == b).head.expression)).mkString("t")
+            (v ++ Seq(cfg.booleanVariantFilters.filter(e => e.id == b).head.id, cfg.booleanVariantFilters.filter(e => e.id == b).head.field, cfg.booleanVariantFilters.filter(e => e.id == b).head.expression)).mkString("\t")
           case c if cfg.categoricalVariantFilters.map(e => e.id) contains c =>
-            (v ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.id, cfg.categoricalVariantFilters.filter(e => e.id == c).head.field, cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression)).mkString("t")
+            (v ++ Seq(cfg.categoricalVariantFilters.filter(e => e.id == c).head.id, cfg.categoricalVariantFilters.filter(e => e.id == c).head.field, cfg.categoricalVariantFilters.filter(e => e.id == c).head.expression)).mkString("\t")
           case d if cfg.compoundVariantFilters.map(e => e.id) contains d =>
             val ids = for {
               ff <- cfg.compoundVariantFilters.filter(e => e.id == d).head.include
@@ -489,7 +489,7 @@ object Fxns extends loamstream.LoamFile {
                 case _ => throw new CfgException("variantFiltersToPrintableList: " + id_exc + " filters '" + ff + "' not found")
               }
             }
-            (v ++ Seq(cfg.compoundVariantFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundVariantFilters.filter(e => e.id == d).head.expression)).mkString("t")
+            (v ++ Seq(cfg.compoundVariantFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundVariantFilters.filter(e => e.id == d).head.expression)).mkString("\t")
           case _ => throw new CfgException("variantFiltersToPrintableList: " + id_exc + " filters '" + f + "' not found")
         }
       }
@@ -506,11 +506,11 @@ object Fxns extends loamstream.LoamFile {
       } yield {
         f match {
           case n if cfg.numericSampleFilters.map(e => e.id) contains n =>
-            Seq(cfg.numericSampleFilters.filter(e => e.id == n).head.id, cfg.numericSampleFilters.filter(e => e.id == n).head.field, cfg.numericSampleFilters.filter(e => e.id == n).head.expression).mkString("t")
+            Seq(cfg.numericSampleFilters.filter(e => e.id == n).head.id, cfg.numericSampleFilters.filter(e => e.id == n).head.field, cfg.numericSampleFilters.filter(e => e.id == n).head.expression).mkString("\t")
           case b if cfg.booleanSampleFilters.map(e => e.id) contains b =>
-            Seq(cfg.booleanSampleFilters.filter(e => e.id == b).head.id, cfg.booleanSampleFilters.filter(e => e.id == b).head.field, cfg.booleanSampleFilters.filter(e => e.id == b).head.expression).mkString("t")
+            Seq(cfg.booleanSampleFilters.filter(e => e.id == b).head.id, cfg.booleanSampleFilters.filter(e => e.id == b).head.field, cfg.booleanSampleFilters.filter(e => e.id == b).head.expression).mkString("\t")
           case c if cfg.categoricalSampleFilters.map(e => e.id) contains c =>
-            Seq(cfg.categoricalSampleFilters.filter(e => e.id == c).head.id, cfg.categoricalSampleFilters.filter(e => e.id == c).head.field, cfg.categoricalSampleFilters.filter(e => e.id == c).head.expression).mkString("t")
+            Seq(cfg.categoricalSampleFilters.filter(e => e.id == c).head.id, cfg.categoricalSampleFilters.filter(e => e.id == c).head.field, cfg.categoricalSampleFilters.filter(e => e.id == c).head.expression).mkString("\t")
           case d if cfg.compoundSampleFilters.map(e => e.id) contains d =>
             val ids = for {
               ff <- cfg.compoundSampleFilters.filter(e => e.id == d).head.include
@@ -525,7 +525,7 @@ object Fxns extends loamstream.LoamFile {
                 case _ => throw new CfgException("sampleFiltersToPrintableList: filter '" + ff + "' not found")
               }
             }
-            Seq(cfg.compoundSampleFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundSampleFilters.filter(e => e.id == d).head.expression).mkString("t")
+            Seq(cfg.compoundSampleFilters.filter(e => e.id == d).head.id, ids.mkString(","), cfg.compoundSampleFilters.filter(e => e.id == d).head.expression).mkString("\t")
           case _ => throw new CfgException("sampleFiltersToPrintableList: filter '" + f + "' not found")
         }
       }
@@ -574,23 +574,23 @@ object Fxns extends loamstream.LoamFile {
     a match {
       case s: String =>
         val replaceMap = Seq(
-          "n" -> "\n",
-          "r" -> "\r",
-          "t" -> "\t",
-          """ -> "\""
+          "\n" -> "\\n",
+          "\r" -> "\\r",
+          "\t" -> "\\t",
+          "\"" -> "\\\""
         )
         '"' + replaceMap.foldLeft(s) { case (acc, (c, r)) => acc.replace(c, r) } + '"'
       case opt: Some[_] =>
         val resultOneLine = s"Some(${nextDepth(opt.get)})"
         if (resultOneLine.length <= maxElementWidth) return resultOneLine
-        s"Some(n$fieldIndent${nextDepth(opt.get)}n$indent)"
+        s"Some(\n$fieldIndent${nextDepth(opt.get)}\n$indent)"
       case xs: Seq[_] if xs.isEmpty =>
         xs.toString()
       case map: Map[_, _] if map.isEmpty =>
         map.toString()
       case xs: Map[_, _] =>
-        val result = xs.map { case (key, value) => s"n$fieldIndent${nextDepth(key)} -> ${nextDepth(value)}" }.toString
-        "Map" + s"${result.substring(0, result.length - 1)}n$indent)".substring(4)
+        val result = xs.map { case (key, value) => s"\n$fieldIndent${nextDepth(key)} -> ${nextDepth(value)}" }.toString
+        "Map" + s"${result.substring(0, result.length - 1)}\n$indent)".substring(4)
       // Make Strings look similar to their literal form.
       // For an empty Seq just use its normal String representation.
       case xs: Seq[_] =>
@@ -598,8 +598,8 @@ object Fxns extends loamstream.LoamFile {
         val resultOneLine = xs.map(nextDepth).toString()
         if (resultOneLine.length <= maxElementWidth) return resultOneLine
         // Otherwise, build it with newlines and proper field indents.
-        val result = xs.map(x => s"n$fieldIndent${nextDepth(x)}").toString()
-        result.substring(0, result.length - 1) + "n" + indent + ")"
+        val result = xs.map(x => s"\n$fieldIndent${nextDepth(x)}").toString()
+        result.substring(0, result.length - 1) + "\n" + indent + ")"
       // Product should cover case classes.
       case p: Product =>
         val prefix = p.productPrefix
@@ -619,7 +619,7 @@ object Fxns extends loamstream.LoamFile {
             val resultOneLine = s"$prefix(${prettyFields.mkString(", ")})"
             if (resultOneLine.length <= maxElementWidth) return resultOneLine
             // Otherwise, build it with newlines and proper field indents.
-            s"$prefix(n${kvps.map { case (k, v) => s"$fieldIndent$k = ${nextDepth(v)}" }.mkString(",n")}n$indent)"
+            s"$prefix(\n${kvps.map { case (k, v) => s"$fieldIndent$k = ${nextDepth(v)}" }.mkString(",\n")}\n$indent)"
         }
       // If we haven't specialized this type, just use its toString.
       case _ => a.toString
@@ -629,7 +629,7 @@ object Fxns extends loamstream.LoamFile {
   def writeObject(obj: Any, filename: String): Unit = {
     val bw = new BufferedWriter(new FileWriter(new File(filename)))
     bw.write(prettyPrint(obj))
-    bw.write("n")
+    bw.write("\n")
     bw.close()
   }
   
@@ -676,7 +676,7 @@ object Fxns extends loamstream.LoamFile {
     var fc = Seq[String]()
     for {
       x <- models.map(e => e.covars)
-      y <- x.split("\+")
+      y <- x.split("\\+")
     } yield {
       fc = fc ++ Seq(y.replace("[","").replace("]",""))
     }
@@ -684,8 +684,8 @@ object Fxns extends loamstream.LoamFile {
     fc = fc.distinct
     h match {
       case Some(_) =>
-        val mp = fp.filter(e => ! h.get.split("t").intersect(fp).contains(e))
-        val mc = fc.filter(e => ! h.get.split("t").intersect(fc).contains(e))
+        val mp = fp.filter(e => ! h.get.split("\t").intersect(fp).contains(e))
+        val mc = fc.filter(e => ! h.get.split("\t").intersect(fc).contains(e))
         (mp.size, mc.size) match {
           case (a, 0) if a > 0 => throw new CfgException("verifyPheno: pheno/s " + mp.mkString(",") + " not found in header of pheno file " + phenoFile)
           case (a, b) if (a > 0 && b > 0) => throw new CfgException("verifyPheno: pheno/s " + mp.mkString(",") + " and covar/s " + mc.mkString(",") + " not found in header of pheno file " + phenoFile)

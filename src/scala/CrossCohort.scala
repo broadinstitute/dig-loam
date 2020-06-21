@@ -86,7 +86,7 @@ object CrossCohort extends loamstream.LoamFile {
   
     drmWith(imageName = s"${utils.image.imgTools}") {
   
-      cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"t"$$2"_"c"t"$$3"t"$$4"t"$$5"t"$$6}' ${metaKinshipStores(configMeta).metaCohort(configCohort).base}.fam > ${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}"""
+      cmd"""awk -v c=${configCohort.id} '{print $$1"_"c"\t"$$2"_"c"\t"$$3"\t"$$4"\t"$$5"\t"$$6}' ${metaKinshipStores(configMeta).metaCohort(configCohort).base}.fam > ${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}"""
       .in(metaKinshipStores(configMeta).metaCohort(configCohort).data)
       .out(metaKinshipStores(configMeta).metaCohort(configCohort).famMerge)
       .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).famMerge}".split("/").last)
@@ -97,7 +97,7 @@ object CrossCohort extends loamstream.LoamFile {
   
   def CrossCohortKinship(configMeta: ConfigMeta): Unit = {
   
-    val mergeString = metaKinshipStores(configMeta).metaCohort.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("n")
+    val mergeString = metaKinshipStores(configMeta).metaCohort.map(e => e._2.base.toString + ".bed " + e._2.base.toString + ".bim " + e._2.famMerge.toString.split("@")(1)).mkString("\n")
   
     drmWith(imageName = s"${utils.image.imgTools}") {
   

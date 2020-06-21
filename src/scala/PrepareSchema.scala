@@ -355,7 +355,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
     val fString = baseFilters.size match {
     
-      case n if n > 0 => s"""echo "${baseFilters.mkString("n")}" > """
+      case n if n > 0 => s"""echo "${baseFilters.mkString("\n")}" > """
       case _ => "touch "
     
     }
@@ -370,7 +370,7 @@ object PrepareSchema extends loamstream.LoamFile {
     
     val cfString = baseCohortFilters.size match {
     
-      case n if n > 0 => s"""echo "${baseCohortFilters.mkString("n")}" > """
+      case n if n > 0 => s"""echo "${baseCohortFilters.mkString("\n")}" > """
       case _ => "touch "
     
     }
@@ -385,7 +385,7 @@ object PrepareSchema extends loamstream.LoamFile {
     
     val kfString = baseKnockoutFilters.size match {
     
-      case n if n > 0 => s"""echo "${baseKnockoutFilters.mkString("n")}" > """
+      case n if n > 0 => s"""echo "${baseKnockoutFilters.mkString("\n")}" > """
       case _ => "touch "
     
     }
@@ -400,7 +400,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
     val mString = baseMasks.size match {
     
-      case n if n > 0 => s"""echo "${baseMasks.mkString("n")}" > """
+      case n if n > 0 => s"""echo "${baseMasks.mkString("\n")}" > """
       case _ => "touch "
     
     }
@@ -596,7 +596,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
       val fString = phenoFilters.size match {
       
-        case n if n > 0 => s"""echo "${phenoFilters.mkString("n")}" > """
+        case n if n > 0 => s"""echo "${phenoFilters.mkString("\n")}" > """
         case _ => "touch "
       
       }
@@ -611,7 +611,7 @@ object PrepareSchema extends loamstream.LoamFile {
       
       val cfString = phenoCohortFilters.size match {
       
-        case n if n > 0 => s"""echo "${phenoCohortFilters.mkString("n")}" > """
+        case n if n > 0 => s"""echo "${phenoCohortFilters.mkString("\n")}" > """
         case _ => "touch "
       
       }
@@ -626,7 +626,7 @@ object PrepareSchema extends loamstream.LoamFile {
       
       val kfString = phenoKnockoutFilters.size match {
       
-        case n if n > 0 => s"""echo "${phenoKnockoutFilters.mkString("n")}" > """
+        case n if n > 0 => s"""echo "${phenoKnockoutFilters.mkString("\n")}" > """
         case _ => "touch "
       
       }
@@ -641,7 +641,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
       val mString = phenoMasks.size match {
       
-        case n if n > 0 => s"""echo "${phenoMasks.mkString("n")}" > """
+        case n if n > 0 => s"""echo "${phenoMasks.mkString("\n")}" > """
         case _ => "touch "
       
       }

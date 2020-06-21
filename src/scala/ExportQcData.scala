@@ -27,7 +27,7 @@ object ExportQcData extends loamstream.LoamFile {
   
         drmWith(imageName = s"${utils.image.imgTools}") {
         
-          cmd"""echo "${vFilters.mkString("n")}" > ${arrayStores(array).filteredData.variantFilters.local.get}"""
+          cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filteredData.variantFilters.local.get}"""
             .out(arrayStores(array).filteredData.variantFilters.local.get)
             .tag(s"${arrayStores(array).filteredData.variantFilters.local.get}".split("/").last)
         

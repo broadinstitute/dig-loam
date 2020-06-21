@@ -33,7 +33,7 @@ object FilterArray extends loamstream.LoamFile {
   
         drmWith(imageName = s"${utils.image.imgTools}") {
         
-          cmd"""echo "${vFilters.mkString("n")}" > ${arrayStores(array).filterPostQc.vFilters.local.get}"""
+          cmd"""echo "${vFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.vFilters.local.get}"""
             .out(arrayStores(array).filterPostQc.vFilters.local.get)
             .tag(s"${arrayStores(array).filterPostQc.vFilters.local.get}".split("/").last)
   
@@ -57,7 +57,7 @@ object FilterArray extends loamstream.LoamFile {
   
         drmWith(imageName = s"${utils.image.imgTools}") {
         
-          cmd"""echo "${sFilters.mkString("n")}" > ${arrayStores(array).filterPostQc.sFilters.local.get}"""
+          cmd"""echo "${sFilters.mkString("\n")}" > ${arrayStores(array).filterPostQc.sFilters.local.get}"""
             .out(arrayStores(array).filterPostQc.sFilters.local.get)
             .tag(s"${arrayStores(array).filterPostQc.sFilters.local.get}".split("/").last)
         

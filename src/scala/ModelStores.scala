@@ -185,7 +185,7 @@ object ModelStores extends loamstream.LoamFile {
             google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
           ),
           resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
-          resultsHailLog = test.split("\.")(0) match {
+          resultsHailLog = test.split("\\.")(0) match {
             case "hail" => Some(MultiStore(
                 local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
                 google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
@@ -213,7 +213,7 @@ object ModelStores extends loamstream.LoamFile {
             case false => checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
           }
           try {
-            val l = fileToList(gFile).map(e => e.split("t")(0))
+            val l = fileToList(gFile).map(e => e.split("\t")(0))
             modelGroupTests.map { test =>
               test -> ModelAssocGroupBase(
                 results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
@@ -250,7 +250,7 @@ object ModelStores extends loamstream.LoamFile {
                 test ->
                   masksAvailable.map { mask =>
                     val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
-                    val l = fileToList(gFile).map(e => e.split("t")(0))
+                    val l = fileToList(gFile).map(e => e.split("\t")(0))
                     mask ->
                       ModelAssocGroupBase(
                         results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
@@ -276,7 +276,7 @@ object ModelStores extends loamstream.LoamFile {
                 test ->
                   masksAvailable.map { mask =>
                     val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
-                    val l = fileToList(gFile).map(e => e.split("t")(0))
+                    val l = fileToList(gFile).map(e => e.split("\t")(0))
                     mask ->
                       ModelAssocGroupBase(
                         results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
