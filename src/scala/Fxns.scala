@@ -633,27 +633,27 @@ object Fxns extends loamstream.LoamFile {
     bw.close()
   }
   
-  def findCycles(graph: LoamGraph): Set[Seq[Tool]] = {
-    def findCycleStartingFrom(t: Tool): Option[Seq[Tool]] = {
-      def walkFrom(current: Tool, soFar: Seq[Tool], seen: Set[Tool]): Option[Seq[Tool]] = {
-        val preceding = graph.toolsPreceding(current)
-        if(preceding.isEmpty) { None }
-        else if(preceding.exists(seen.contains(_))) { 
-          preceding.collectFirst { case p if seen.contains(p) => p }.map(offending => (offending +: soFar)) 
-        }
-        else { 
-          val cycles = preceding.iterator.map(p => walkFrom(p, p +: soFar, seen + p)).filter(_.isDefined)
-          cycles.toStream.headOption.flatten
-        }
-      }
-      walkFrom(t, Seq(t), Set(t))
-    }
-    graph.tools.map(findCycleStartingFrom(_).toSet).flatten
-  }
-  
-  def pathToString(graph: LoamGraph)(path: Seq[Tool]): String = {
-    path.map(t => s"'${graph.nameOf(t).get}'").mkString(" => ")
-  }
+  //def findCycles(graph: LoamGraph): Set[Seq[Tool]] = {
+  //  def findCycleStartingFrom(t: Tool): Option[Seq[Tool]] = {
+  //    def walkFrom(current: Tool, soFar: Seq[Tool], seen: Set[Tool]): Option[Seq[Tool]] = {
+  //      val preceding = graph.toolsPreceding(current)
+  //      if(preceding.isEmpty) { None }
+  //      else if(preceding.exists(seen.contains(_))) { 
+  //        preceding.collectFirst { case p if seen.contains(p) => p }.map(offending => (offending +: soFar)) 
+  //      }
+  //      else { 
+  //        val cycles = preceding.iterator.map(p => walkFrom(p, p +: soFar, seen + p)).filter(_.isDefined)
+  //        cycles.toStream.headOption.flatten
+  //      }
+  //    }
+  //    walkFrom(t, Seq(t), Set(t))
+  //  }
+  //  graph.tools.map(findCycleStartingFrom(_).toSet).flatten
+  //}
+  //
+  //def pathToString(graph: LoamGraph)(path: Seq[Tool]): String = {
+  //  path.map(t => s"'${graph.nameOf(t).get}'").mkString(" => ")
+  //}
   
   def getHeader(f: String): Option[String] = {
     val src = io.Source.fromFile(f)
