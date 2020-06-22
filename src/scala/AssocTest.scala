@@ -56,7 +56,7 @@ object AssocTest extends loamstream.LoamFile {
       case false => ()
     
     }
-  
+
     projectConfig.hailCloud match {
   
       case true =>

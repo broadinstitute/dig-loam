@@ -384,7 +384,8 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMhtPlot: Path,
     pyTopResults: Path,
     pyTopGroupResults: Path,
-    pyExtractTopRegions: Path
+    pyExtractTopRegions: Path,
+    pyPhenoDistPlot: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -406,8 +407,7 @@ object ProjectConfig extends loamstream.LoamFile {
     //pyGenerateAnalysisReportPhenoCalibration: Path,
     //pyGenerateAnalysisReportPhenoTopLoci: Path,
     //pyGenerateAnalysisReportPhenoKnownLoci: Path,
-    //pyGenerateAnalysisReportBibliography: Path,
-    //pyPhenoDistPlot: Path
+    //pyGenerateAnalysisReportBibliography: Path
     ) extends Debug
   
   final case class Bash(
@@ -1499,7 +1499,8 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
         pyTopResults = path(s"${scriptsDir}/top_results.py"),
         pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
-        pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py")
+        pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
+        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
@@ -1521,8 +1522,7 @@ object ProjectConfig extends loamstream.LoamFile {
         //pyGenerateAnalysisReportPhenoCalibration = path(s"${scriptsDir}/generate_analysis_report_pheno_calibration.py"),
         //pyGenerateAnalysisReportPhenoTopLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_top_loci.py"),
         //pyGenerateAnalysisReportPhenoKnownLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_known_loci.py"),
-        //pyGenerateAnalysisReportBibliography = path(s"${scriptsDir}/generate_analysis_report_bibliography.py"),
-        //pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
+        //pyGenerateAnalysisReportBibliography = path(s"${scriptsDir}/generate_analysis_report_bibliography.py")
       )
   
       val bash = Bash(

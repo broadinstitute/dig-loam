@@ -27,45 +27,26 @@ def main(args=None):
 	print "reading phenotypes from file"
 	df = pd.read_table(args.pheno, sep="\t", dtype = {args.iid_col: np.str})
 
-	anc = pd.read_table(args.ancestry, header=None, sep="\t", names=[args.iid_col,"POP"])
-	anc[args.iid_col] = anc[args.iid_col].astype(str)
-
-	df = df.merge(anc)
-
-	if args.pop:
-		pops = args.pop.split(",")
-	else:
-		pops = df['POP'].unique()
-
-	df = df[df['POP'].isin(pops)]
-
-	print "extracting samples in clean fam file"
-	samples_df = pd.read_table(args.fam, header=None, sep=" ")
-	samples = samples_df[1].astype(str).tolist()
-	df = df[df[args.iid_col].isin(samples)]
-	print "excluding samples in samples exclude file"
-	if args.samples_exclude != "":
-		with open(args.samples_exclude) as f:
-			exclude = [line.strip() for line in f]
-		df = df[~df[args.iid_col].isin(exclude)]
+	if args.cohorts_map:
+		cohorts = pd.read_table(args.cohorts_map, header=None, sep="\t", names=[args.iid_col,"COHORT"])
+		cohorts[args.iid_col] = cohorts[args.iid_col].astype(str)
+		df = df.merge(cohorts)
+		df['COHORT'] = df['COHORT'].astype('category')
 
 	df.dropna(subset = [args.pheno_name], inplace=True)
-	if args.strat:
-		df['POP'] = df['POP'].astype('category')
-		df['POP'] = df['POP'].cat.reorder_categories(pops, ordered=True)
 
 	if len(df[args.pheno_name].unique()) > 2:
 
-		if args.strat:
+		if args.cohorts_map:
 
-			print "generating distribution plots stratified by ancestry"
-			g = sns.FacetGrid(df, col="POP", col_order=np.sort(df['POP'].unique()), sharex=False, sharey=True, size=6, aspect=0.3)
+			print "generating distribution plots stratified by cohort"
+			g = sns.FacetGrid(df, col="COHORT", col_order=np.sort(df['COHORT'].unique()), sharex=False, sharey=True, size=6, aspect=0.3)
 			g.map(dist_boxplot, args.pheno_name)
 
 			## format facets
 			for k, axes_row in enumerate(g.axes):
 				for l, axes_col in enumerate(axes_row):
-					col = axes_col.get_title().replace('POP = ','')
+					col = axes_col.get_title().replace('COHORT = ','')
 					axes_col.set_title(col, size=16)
 					axes_col.set_xlabel('')
 					axes_col.minorticks_on()
@@ -86,13 +67,13 @@ def main(args=None):
 
 	else:
 
-		if args.strat:
-			print "generating distribution plots stratified by ancestry"
+		if args.cohorts_map:
+			print "generating distribution plots stratified by cohort"
 			vals = np.sort(df[args.pheno_name].unique())
 			df.replace({args.pheno_name: {vals[1]: 'Case', vals[0]: 'Control'}}, inplace=True)
 			print "generating count plot"
 			fig, ax = plt.subplots()
-			ax = sns.countplot(x="POP", hue=args.pheno_name, data=df, order=np.sort(df['POP'].unique()), hue_order=['Case','Control'])
+			ax = sns.countplot(x="COHORT", hue=args.pheno_name, data=df, order=np.sort(df['COHORT'].unique()), hue_order=['Case','Control'])
 			for p in ax.patches:
 				height = p.get_height() if not np.isnan(p.get_height()) else 0
 				ax.text(p.get_x() + p.get_width()/2., height, '%d' % int(height), ha="center", va="bottom")
@@ -121,15 +102,11 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
-	parser.add_argument('--strat', action='store_true', help='make a plot stratified by ancestry')
-	parser.add_argument('--ancestry', help='an ancestry file name')
-	parser.add_argument('--pop', help='a comma separated list of populations to limit the plot to')
+	parser.add_argument('--cohorts-map', help='a model cohort map')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--pheno', help='a phenotype file name', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a phenotype name', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
-	requiredArgs.add_argument('--fam', help='a fam file with clean samples', required=True)
-	requiredArgs.add_argument('--samples-exclude', help='a sample exclusions file ("" = ignored)', required=True)
 	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
 	args = parser.parse_args()
 	main(args)

@@ -119,6 +119,44 @@ object PrepareModel extends loamstream.LoamFile {
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}".split("/").last)
     
     }
+
+    configCohorts.size match {
+    
+      case x if x > 1 =>
+    
+        drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
+        
+          cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
+            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+            --pheno-name ${configModel.pheno}
+            --iid-col ${projectConfig.phenoFileId}
+            --cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}"""
+            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
+        
+        }
+    
+      case y if y == 1 =>
+    
+        drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
+        
+          cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
+            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+            --pheno-name ${configModel.pheno}
+            --iid-col ${projectConfig.phenoFileId}
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}"""
+            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
+        
+        }
+    
+      case _ => ()
+    
+    }
+
     
     //var filters = Seq[String]()
     //var cohortFilters = Seq[String]()
