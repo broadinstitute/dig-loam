@@ -63,7 +63,7 @@ if [ "$nSig" -ge "1" ]; then
 					fi
 				else
 					l=`tabix $results ${chr}:${pos}-${pos} | grep -w "${regionVar}" | wc -l`
-					if [ $l == 1]; then
+					if [ $l == 1 ]; then
 						refVarId=$regionVar
 					else
 						v=`tabix $results ${chr}:${pos}-${pos} | head -1 | awk '{print $3}'`
