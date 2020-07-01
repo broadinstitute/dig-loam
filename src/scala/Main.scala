@@ -33,62 +33,71 @@ object Main extends loamstream.LoamFile {
   
   // Upload input files to Google Cloud
   Upload()
-  
-  // Array specific QC steps up to ancestry inferrence
-  for {
-    array <- projectConfig.Arrays if array.technology == "gwas"
-  } yield {
+
+
+  projectConfig.skipQc match {
+
+    case false =>
+
+      // Array specific QC steps up to ancestry inferrence
+      for {
+        array <- projectConfig.Arrays if array.technology == "gwas"
+      } yield {
+          
+        Prepare(array)
+        Harmonize(array)
       
-    Prepare(array)
-    Harmonize(array)
-  
+      }
+      
+      for {
+        array <- projectConfig.Arrays
+      } yield {
+      
+        Load(array)
+        ExportQcData(array)
+        Annotate(array)
+        Kinship(array)
+        AncestryPca(array)
+        AncestryCluster(array)
+      
+      }
+      
+      // Reconcile inferred ancestry
+      MergeInferredAncestry()
+      
+      // Array specific QC steps post ancestry inference
+      for {
+        array <- projectConfig.Arrays
+      } yield { 
+      
+        Pca(array)
+        SampleQc(array)
+        FilterArray(array)
+      
+        array.exportCleanVcf match {
+      
+          case true => ExportCleanData(array)
+          case false => ()
+      
+        }
+      
+      }
+      
+      //// QC Report
+      //QcReport()
+      
+      //// Generate imputation ready data files
+      //for {
+      //  array <- projectConfig.Arrays
+      //} yield { 
+      //
+      //  FilterImpute(array.id)
+      //
+      //}
+
+    case true => ()
+
   }
-  
-  for {
-    array <- projectConfig.Arrays
-  } yield {
-  
-    Load(array)
-    ExportQcData(array)
-    Annotate(array)
-    Kinship(array)
-    AncestryPca(array)
-    AncestryCluster(array)
-  
-  }
-  
-  // Reconcile inferred ancestry
-  MergeInferredAncestry()
-  
-  // Array specific QC steps post ancestry inference
-  for {
-    array <- projectConfig.Arrays
-  } yield { 
-  
-    Pca(array)
-    SampleQc(array)
-    FilterArray(array)
-  
-    array.exportCleanVcf match {
-  
-      case true => ExportCleanData(array)
-      case false => ()
-  
-    }
-  
-  }
-  
-  //// QC Report
-  //QcReport()
-  
-  //// Generate imputation ready data files
-  //for {
-  //  array <- projectConfig.Arrays
-  //} yield { 
-  //
-  //  FilterImpute(array.id)
-  //
-  //}
   
   // Only proceed if phenoFile is defined
   projectStores.phenoFile.local match {

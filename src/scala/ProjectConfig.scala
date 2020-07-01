@@ -307,6 +307,7 @@ object ProjectConfig extends loamstream.LoamFile {
     maxPCs: Int,
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
+    skipQc: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
@@ -513,6 +514,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
+      val skipQc = requiredBool(config = config, field = "skipQc", default = Some(false))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -1412,6 +1414,7 @@ object ProjectConfig extends loamstream.LoamFile {
         maxPCs = maxPCs,
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
+        skipQc = skipQc,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
