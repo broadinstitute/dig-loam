@@ -26,7 +26,7 @@ pcs<-scan(file = args$pcs,what="character")
 
 if(! is.null(args$trans)) {
 	if(args$trans == 'invn') {
-		pheno_out <- paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")
+		pheno_out <- paste(args$pheno_col,"invn",gsub("\\]","",gsub("\\[","",paste(unlist(strsplit(args$covars,split="\\+")),collapse="_"))),sep="_")
 	} else if(args$trans == 'log') {
 		pheno_out <- paste(args$pheno_col,"_log",sep="")
 	} else {
