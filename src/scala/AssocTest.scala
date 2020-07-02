@@ -22,15 +22,15 @@ object AssocTest extends loamstream.LoamFile {
       case Some(_) => s"--max-group-size ${configSchema.maxGroupSize.get}"
       case _ => ""
     }
-  
+
+    val transString = configModel.trans match {
+      case Some(_) => s"--trans ${configModel.trans}"
+      case None => ""
+    }
+
     configModel.assocPlatforms.contains("epacts") match {
     
       case true =>
-      
-        val transString = configModel.trans match {
-          case Some(_) => "--trans ${configModel.trans}"
-          case None => ""
-        }
     
         drmWith(imageName = s"${utils.image.imgR}") {
         
@@ -101,7 +101,7 @@ object AssocTest extends loamstream.LoamFile {
                       --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
                       --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
                       --test ${test}
-                      --trans "${configModel.trans}"
+                      ${transString}
                       --covars "${configModel.covars}"
                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get}
                       --cloud
@@ -131,7 +131,7 @@ object AssocTest extends loamstream.LoamFile {
                       --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
                       --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
                       --test ${test}
-                      --trans "${configModel.trans}"
+                      ${transString}
                       --covars "${configModel.covars}"
                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
                       --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get}"""

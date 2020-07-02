@@ -110,6 +110,7 @@ def main(args=None):
 	mt_y = mt_y.filter_cols(mt_y.is_female, keep=False)
 
 	def linear_regression(mt):
+		print("running linear_regression: " + pheno_analyzed + " ~ 1 + " + "+".join(covars))
 		tbl = hl.linear_regression_rows(
 			y = mt.pheno[pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
@@ -150,6 +151,7 @@ def main(args=None):
 		return tbl
 
 	def logistic_regression(mt, test):
+		print("running logistic_regression (" + test + "): " + pheno_analyzed + " ~ 1 + " + "+".join(covars))
 		tbl = hl.logistic_regression_rows(
 			test = test.replace("hail.b.",""),
 			y = mt.pheno[pheno_analyzed],
