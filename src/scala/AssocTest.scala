@@ -24,7 +24,7 @@ object AssocTest extends loamstream.LoamFile {
     }
 
     val transString = configModel.trans match {
-      case Some(_) => s"--trans ${configModel.trans}"
+      case Some(_) => s"--trans ${configModel.trans.get}"
       case None => ""
     }
 
