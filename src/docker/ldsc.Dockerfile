@@ -1,4 +1,4 @@
-FROM continuumio/miniconda
+FROM continuumio/anaconda
 
 # all main work in work
 WORKDIR /work
@@ -15,12 +15,10 @@ RUN git clone https://github.com/bulik/ldsc.git && \
 	echo "- python=2.7" >> environment.yml && \
 	echo "- bitarray=0.8" >> environment.yml && \
 	echo "- nose=1.3" >> environment.yml && \
+	echo "- numpy=1.11" >> environment.yml && \
+	echo "- pandas=0.19" >> environment.yml && \
+	echo "- scipy=0.18" >> environment.yml && \
 	echo "- pybedtools=0.7" >> environment.yml && \
-	echo "- pip" >> environment.yml && \
-	echo "- pip:" >> environment.yml && \
-	echo "- cython" >> environment.yml && \
-	echo "- scipy" >> environment.yml && \
-	echo "- pandas" >> environment.yml && \
 	conda env update --name base --file environment.yml && \
 	conda clean -afy
 
