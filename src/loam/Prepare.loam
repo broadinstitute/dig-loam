@@ -64,27 +64,30 @@ def Prepare(array: String): Unit = {
 
   }
 
+  drmWith(imageName = s"$imgPython27") {
+
+    cmd"""$binPython $pyBimToUid --bim ${arrayStores(array).rawData.base}.bim --out ${arrayStores(array).rawData.uids}"""
+      .in(arrayStores(array).rawData.data)
+      .out(arrayStores(array).rawData.uids)
+      .tag(s"${arrayStores(array).rawData.uids}".split("/").last)
+
+  }
+
   drmWith(imageName = s"$imgTools", cores = projectConfig.resources.preparePlink.cpus, mem = projectConfig.resources.preparePlink.mem, maxRunTime = projectConfig.resources.preparePlink.maxRunTime) {
 
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --list-duplicate-vars 'ids-only' --out ${arrayStores(array).rawData.rawBase}.listdupvars --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
+    cmd"""$shFindPossibleDuplicateVariants
+      $binPlink
+      ${arrayStores(array).rawData.uids}
+      ${arrayStores(array).rawData.possDupVars}
+      ${arrayStores(array).rawData.base}
+      ${arrayStores(array).rawData.possDupBase}
+      ${arrayStores(array).rawData.possDupBase}.freq
+      ${arrayStores(array).rawData.possDupBase}.missing
+      ${projectConfig.resources.preparePlink.mem * 0.9 * 1000}
+      """
       .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.dupVars)
-      .tag(s"${arrayStores(array).rawData.dupVars}".split("/").last)
-
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.base} --allow-no-sex --extract ${arrayStores(array).rawData.dupVars} --make-bed --out ${arrayStores(array).rawData.dupVarsBase} --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.data)
-      .out(arrayStores(array).rawData.dupVarsData)
-      .tag(s"${arrayStores(array).rawData.dupVarsBase}".split("/").last)
-
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.dupVarsBase} --allow-no-sex --freq --out ${arrayStores(array).rawData.dupVarsBase}.freq --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.dupVarsData)
-      .out(arrayStores(array).rawData.dupVarsFreq)
-      .tag(s"${arrayStores(array).rawData.dupVarsBase}.freq".split("/").last)
-
-    cmd"""$binPlink --bfile ${arrayStores(array).rawData.dupVarsBase} --allow-no-sex --missing --out ${arrayStores(array).rawData.dupVarsBase}.missing --memory ${projectConfig.resources.preparePlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(array).rawData.dupVarsData)
-      .out(arrayStores(array).rawData.dupVarsImiss, arrayStores(array).rawData.dupVarsLmiss)
-      .tag(s"${arrayStores(array).rawData.dupVarsBase}.missing".split("/").last)
+      .out(arrayStores(array).rawData.possDupData :+ arrayStores(array).rawData.possDupVars :+ arrayStores(array).rawData.possDupFreq :+ arrayStores(array).rawData.possDupLmiss)
+      .tag(s"${arrayStores(array).rawData.possDupVars}".split("/").last)
 
   }
 
@@ -92,11 +95,11 @@ def Prepare(array: String): Unit = {
   
     cmd"""$binRscript --vanilla --verbose 
       $rFindBestDuplicateVariants
-      --bim-in ${arrayStores(array).rawData.dupVarsBase}.bim
-      --freq-in ${arrayStores(array).rawData.dupVarsFreq}
-      --miss-in ${arrayStores(array).rawData.dupVarsLmiss}
+      --bim-in ${arrayStores(array).rawData.possDupBase}.bim
+      --freq-in ${arrayStores(array).rawData.possDupFreq}
+      --miss-in ${arrayStores(array).rawData.possDupLmiss}
       --out ${arrayStores(array).rawData.dupVarsRemove}"""
-      .in(arrayStores(array).rawData.dupVarsData :+ arrayStores(array).rawData.dupVarsFreq :+ arrayStores(array).rawData.dupVarsLmiss)
+      .in(arrayStores(array).rawData.possDupData :+ arrayStores(array).rawData.possDupFreq :+ arrayStores(array).rawData.possDupLmiss)
       .out(arrayStores(array).rawData.dupVarsRemove)
       .tag(s"${arrayStores(array).rawData.dupVarsRemove}".split("/").last)
 

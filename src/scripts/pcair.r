@@ -69,15 +69,21 @@ if(! is.null(args$force_unrel) & ! is.null(kinship)) {
 	unrel_iids<-unrel_df[,grep(paste0("\\b",args$force_unrel[1],"\\b"),names(unrel_df), value=TRUE)]
 }
 
+npcs<-20
+if(length(iids) < 20) {
+	npcs<-length(iids)
+}
+
 print("running pcair")
-mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, snp.block.size = 10000))
+mypcair <- try(pcair(genoData = genoData, kinMat = kinship, divMat = kinship, unrel.set = unrel_iids, v=npcs, snp.block.size = 10000))
 if(inherits(mypcair, "try-error")) {
-	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, snp.block.size = 10000))
+	mypcair <- try(pcair(genoData = genoData, kinMat = NULL, divMat = NULL, unrel.set = NULL, v=npcs, snp.block.size = 10000))
 	if(inherits(mypcair, "try-error")) {
 		print("unable to run pcair with or without kinship adjustment")
 		quit(status=1)
 	}
 }
+nvectors<-dim(mypcair$vectors)[2]
 
 print(paste("memory after running pcair: ",mem_used() / (1024^2),sep=""))
 
@@ -88,7 +94,7 @@ if(! is.null(args$rdata)) {
 
 print("converting PCs to output format")
 out<-data.frame(mypcair$vectors)
-names(out)[1:20]<-paste("PC",seq(1,20),sep="")
+names(out)[1:nvectors]<-paste("PC",seq(1,nvectors),sep="")
 out$IID<-row.names(out)
 if(! is.null(args$id)) {
 	out$POP<-args$id
@@ -130,7 +136,7 @@ if(! is.null(args$update_group)) {
 	out$GROUP_NEW<-NULL
 }
 
-out_cols<-c("IID","POP","GROUP",paste("PC",seq(1,20),sep=""))
+out_cols<-c("IID","POP","GROUP",paste("PC",seq(1,nvectors),sep=""))
 if(all(is.na(out$POP))) {
 	out_cols<-out_cols[! out_cols == "POP"]
 }

@@ -25,9 +25,6 @@ def FilterFinal(array: String): Unit = {
           --mt-in ${arrayStores(array).harmonizedData.mtGoogle.get}
           --ancestry-in ${ProjectStores.ancestryInferredGoogle.get}
           --sexcheck-in ${arrayStores(array).sexcheckData.sexcheckGoogle.get}
-          --sample-in ${ProjectStores.sampleFileGoogle.get}
-          --iid-col ${projectConfig.sampleFileId}
-          --case-ctrl-col ${projectConfig.sampleFileStatus}
           --samples-remove ${arrayStores(array).finalData.samplesExcludeGoogle.get}
           --variantqc-out ${arrayStores(array).variantQcData.statsGoogle.get}
           --variants-exclude-out ${arrayStores(array).finalData.variantsExcludeGoogle.get}
@@ -35,7 +32,7 @@ def FilterFinal(array: String): Unit = {
           --mt-out ${arrayStores(array).cleanData.mtGoogle.get}
           --cloud
           --log ${arrayStores(array).cleanData.hailLogGoogle.get}"""
-          .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, ProjectStores.sampleFileGoogle.get, arrayStores(array).finalData.samplesExcludeGoogle.get)
+          .in(arrayStores(array).harmonizedData.mtGoogle.get, ProjectStores.ancestryInferredGoogle.get, arrayStores(array).sexcheckData.sexcheckGoogle.get, arrayStores(array).finalData.samplesExcludeGoogle.get)
           .out(arrayStores(array).cleanData.vcfGoogle.get, arrayStores(array).variantQcData.statsGoogle.get, arrayStores(array).finalData.variantsExcludeGoogle.get, arrayStores(array).cleanData.mtGoogle.get, arrayStores(array).cleanData.hailLogGoogle.get)
           .tag(s"${arrayStores(array).cleanData.vcf}.google".split("/").last)
       
@@ -58,16 +55,13 @@ def FilterFinal(array: String): Unit = {
           --mt-in ${arrayStores(array).harmonizedData.mt.get}
           --ancestry-in ${ProjectStores.ancestryInferred}
           --sexcheck-in ${arrayStores(array).sexcheckData.sexcheck}
-          --sample-in ${ProjectStores.sampleFile}
-          --iid-col ${projectConfig.sampleFileId}
-          --case-ctrl-col ${projectConfig.sampleFileStatus}
           --samples-remove ${arrayStores(array).finalData.samplesExclude}
           --variantqc-out ${arrayStores(array).variantQcData.stats}
           --variants-exclude-out ${arrayStores(array).finalData.variantsExclude}
           --vcf-out ${arrayStores(array).cleanData.vcf}
           --mt-out ${arrayStores(array).cleanData.mt.get}
           --log ${arrayStores(array).cleanData.hailLog}"""
-          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, ProjectStores.sampleFile, arrayStores(array).finalData.samplesExclude)
+          .in(arrayStores(array).harmonizedData.mt.get, ProjectStores.ancestryInferred, arrayStores(array).sexcheckData.sexcheck, arrayStores(array).finalData.samplesExclude)
           .out(arrayStores(array).cleanData.vcf, arrayStores(array).variantQcData.stats, arrayStores(array).finalData.variantsExclude, arrayStores(array).cleanData.mt.get, arrayStores(array).cleanData.hailLog)
           .tag(s"${arrayStores(array).cleanData.vcf}".split("/").last)
 

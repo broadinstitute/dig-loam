@@ -23,12 +23,6 @@ def main(args=None):
 	tbl = tbl.key_by('IID')
 	mt = mt.annotate_cols(is_female = tbl[mt.s].is_female)
 
-	print("add case/control status annotation")
-	tbl = hl.import_table(args.sample_in, no_header=False, types={args.case_ctrl_col: hl.tint})
-	tbl = tbl.key_by(args.iid_col)
-	mt = mt.annotate_cols(is_case = tbl[mt.s][args.case_ctrl_col] == 1)
-	mt.describe()
-
 	print("calculate pre sampleqc genotype call rate")
 	pre_sampleqc_callrate = mt.aggregate_entries(hl.agg.fraction(hl.is_defined(mt.GT)))
 	print('pre sampleqc call rate is %.3f' % pre_sampleqc_callrate)
@@ -42,9 +36,8 @@ def main(args=None):
 	print('post sampleqc call rate is %.3f' % post_sampleqc_callrate)
 
 	samples_df = mt.cols().to_pandas()
-	samples_df['is_case'] = samples_df['is_case'].astype('bool')
 	samples_df['is_female'] = samples_df['is_female'].astype('bool')
-	group_counts = samples_df['GROUP'][~samples_df['is_case']].value_counts().to_dict()
+	group_counts = samples_df['GROUP'].value_counts().to_dict()
 
 	mt = mt.annotate_rows(failed = 0)
     
@@ -74,10 +67,11 @@ def main(args=None):
 	for group in group_counts:
 		if group_counts[group] > 100 and group_counts[group] != 'AMR':
 			groups_used.extend([group])
-			print("filter autosomal variants with pHWE <= 1e-6 in " + group + " male and female controls")
+			print("filter autosomal variants with pHWE <= 1e-6 in " + group)
 			mt = mt.annotate_rows(**{
-				'p_hwe_ctrl_' + group: hl.cond(mt.locus.in_x_nonpar(), hl.agg.filter(mt.is_female & ~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.cond(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.agg.filter(~ mt.is_female & ~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.agg.filter(~ mt.is_case & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT))))})
-			mt = mt.annotate_rows(failed = hl.cond((mt.maf >= 0.01) & (mt['p_hwe_ctrl_' + group].p_value <= 1e-6), 1, mt.failed))
+				'p_hwe_' + group: hl.cond(mt.locus.in_x_nonpar(), hl.agg.filter(mt.is_female & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.cond(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.agg.filter(~ mt.is_female & (mt.GROUP == group), hl.agg.hardy_weinberg_test(mt.GT)), hl.agg.filter(mt.GROUP == group, hl.agg.hardy_weinberg_test(mt.GT))))
+			})
+			mt = mt.annotate_rows(failed = hl.cond((mt.maf >= 0.01) & (mt['p_hwe_' + group].p_value <= 1e-6), 1, mt.failed))
 
 	print("write variant qc results to file")
 	mt = mt.annotate_rows(id = mt.locus.contig + ':' + hl.str(mt.locus.position) + ':' + hl.str(mt.alleles[0]) + ':' + hl.str(mt.alleles[1]))
@@ -108,9 +102,6 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)
 	requiredArgs.add_argument('--ancestry-in', help='an inferred ancestry file', required=True)
 	requiredArgs.add_argument('--sexcheck-in', help='an imputed sexcheck output file from Hail', required=True)
-	requiredArgs.add_argument('--sample-in', help='a sample file', required=True)
-	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
-	requiredArgs.add_argument('--case-ctrl-col', help='column name for case/control status in phenotype file', required=True)
 	requiredArgs.add_argument('--samples-remove', help='a file containing sample IDs that failed QC', required=True)
 	requiredArgs.add_argument('--variantqc-out', help='a base filename for variantqc', required=True)
 	requiredArgs.add_argument('--variants-exclude-out', help='a base filename for failed variants', required=True)

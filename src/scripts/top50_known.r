@@ -85,7 +85,9 @@ if("cohort" %in% names(x)) {
 x<-x[,cols_keep]
 x<-x[! is.na(x['pval']),]
 
-for(i in 1:nrow(x)) {
+n<-nrow(x)
+for(i in 1:n) {
+	print(paste0("formatting variant result ",i," of ",n))
 	if("beta" %in% names(x)) {
 		if(x$beta[i] < 0) {
 			ref<-x$ref[i]
@@ -127,7 +129,9 @@ ld <- read.table(args$known_ld, header=T, as.is=T, stringsAsFactors=F)
 known$id <- NA
 known$ident <- 0
 known$r2 <- NA
+n<-nrow(known)
 for(i in 1:nrow(known)) {
+	print(paste0("adding ld values for known variant ",i," of ",n))
 	if(known$id_known[i] %in% x$id) {
 		known$id[i] <- known$id_known[i]
 		known$ident[i] <- 1
@@ -149,7 +153,9 @@ known$alt_known <- toupper(known$alt_known)
 x<-merge(x,known,all=F)
 
 x$status<-"remove"
+n<-nrow(x)
 for(i in 1:nrow(x)) {
+	print(paste0("adding allele alternatives to known variant result ",i," of ",n))
 	alleles <- paste(x$ref[i], x$alt[i], sep="")
 	alleles_comp <- complement(paste(x$ref[i], x$alt[i], sep=""))
 	alleles_rev <- paste(x$alt[i], x$ref[i], sep="")
@@ -168,7 +174,9 @@ for(i in 1:nrow(x)) {
 
 x <- x[x$status != "remove",]
 
+n<-nrow(x)
 for(i in 1:nrow(x)) {
+	print(paste0("flipping alleles for variant result ",i," of ",n))
 	if(x$status[i] == "rev") {
 		ref <- x$ref_known[i]
 		alt <- x$alt_known[i]

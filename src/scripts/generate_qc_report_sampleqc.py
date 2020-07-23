@@ -145,7 +145,12 @@ def main(args=None):
 		elif len(text_dict1) > 2:
 			text1 = ", ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:(len(text_dict1.keys())-1)]]) + " and " + str(text_dict1[text_dict1.keys()[len(text_dict1.keys())-1]]) + " " + text_dict1.keys()[len(text_dict1.keys())-1].replace("_","\_")
 
-		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis. Upon further inspection, {0} samples were manually reinstated during this step.".format(text1)
+		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all genotyping technologies. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Upon further inspection, {0} samples were manually reinstated during this step.".format(text1)
+
+		if args.fam is not None:
+			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
+			text = text + r" The resulting dataset consisted of {0:,d} samples.".format(fam.shape[0])
+
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -190,14 +195,20 @@ def main(args=None):
 					r"\end{table}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		text=[
-			r"\begin{figure}[H]",
-			r"	\centering",
-			r"	\includegraphics[width=0.75\linewidth,page=1]{" + args.samples_upset_diagram + r"}",
-			r"	\caption{Samples remaining for analysis}",
-			r"	\label{fig:samplesRemaining}",
-			r"\end{figure}"]
-		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		if args.samples_upset_diagram is not None:
+
+			text=r"Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis."
+			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
+
+			text=[
+				r"\begin{figure}[H]",
+				r"	\centering",
+				r"	\includegraphics[width=0.75\linewidth,page=1]{" + args.samples_upset_diagram + r"}",
+				r"	\caption{Samples remaining for analysis}",
+				r"	\label{fig:samplesRemaining}",
+				r"\end{figure}"]
+			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+			
 
 	print "finished\n"
 
@@ -211,7 +222,8 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--compare-dist-metric', help='a metric', required=True)
 	requiredArgs.add_argument('--metric-outlier-plots', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--sampleqc-summary-table', help='a sampleqc summary table', required=True)
-	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining', required=True)
+	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining')
+	requiredArgs.add_argument('--fam', help='a fam file')
 	requiredArgs.add_argument('--restore', nargs='+', help='a space separated list of array labels and sample restore files, each separated by comma', required=True)
 	args = parser.parse_args()
 	main(args)
