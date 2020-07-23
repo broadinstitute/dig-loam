@@ -14,7 +14,7 @@ files = unlist(strsplit(args$ancestry_in, split=","))
 
 x<-data.frame(FILE=files,stringsAsFactors=F)
 for(i in 1:length(files)) {
-	df<-read.table(files[i],header=F,as.is=T,stringsAsFactors=F)
+	df<-read.table(files[i],header=F,as.is=T,stringsAsFactors=F,colClasses=c("character","character"))
 	names(df)<-c("IID",as.character(i))
 	if(i == 1) {
 		out<-df
