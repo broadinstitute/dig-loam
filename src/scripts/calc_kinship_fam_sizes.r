@@ -7,7 +7,7 @@ args<-parser$parse_args()
 
 print(args)
 
-x<-try(read.table(args$kin0,header=T,as.is=T,stringsAsFactors=F), silent=TRUE)
+x<-try(read.table(args$kin0,header=T,as.is=T,stringsAsFactors=F,colClasses=c("FID1"="character","ID1"="character","FID2"="character","ID2"="character")), silent=TRUE)
 if(inherits(x, "try-error")) {
 	file.create(args$out)
 } else {

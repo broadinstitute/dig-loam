@@ -31,8 +31,8 @@ for(f in unlist(strsplit(args$ind_clu_files,","))) {
 }
 
 metrics<-names(clust_files_list)
-stats_unadj<-read.table(args$stats_unadj,header=T,as.is=T,stringsAsFactors=F)
-stats_adj<-read.table(args$stats_adj,header=T,as.is=T,stringsAsFactors=F)
+stats_unadj<-read.table(args$stats_unadj,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
+stats_adj<-read.table(args$stats_adj,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 stats_unadj<-stats_unadj[stats_unadj$IID %in% stats_adj$IID,]
 stats_adj_names<-names(stats_adj)[names(stats_adj) %in% paste0(metrics,"_res")]
 oliers<-readLines(args$metric_pca_outliers)

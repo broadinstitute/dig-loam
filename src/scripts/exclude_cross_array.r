@@ -17,7 +17,7 @@ if(args$cohort == meta[1]) {
 	write.table(data.frame(),args$out,col.names=F,row.names=F,quote=F,append=F)
 } else {
 
-	k <- read.table(args$kinship, header=T, as.is=T, stringsAsFactors=F)
+	k <- read.table(args$kinship, header=T, as.is=T, stringsAsFactors=F, colClasses=c("FID1"="character","ID1"="character","FID2"="character","ID2"="character"))
 	k$id1<-colsplit(k$ID1,"_",names=c("id1","X"))$id1
 	k$id2<-colsplit(k$ID2,"_",names=c("id2","X"))$id2
 	k$c1<-colsplit(k$ID1,"_",names=c("X","c1"))$c1
@@ -26,7 +26,7 @@ if(args$cohort == meta[1]) {
 	k <- k[which(k$c1 != k$c2),]
 	k <- k[which(k$c1 == args$cohort | k$c2 == args$cohort),]
 	
-	s <- read.table(args$samples, header=F, as.is=T, stringsAsFactors=F)
+	s <- read.table(args$samples, header=F, as.is=T, stringsAsFactors=F, colClasses=c("V1"="character","V2"="character"))
 	s$V2 <- paste(s$V2,args$cohort,sep="_")
 
 	k <- k[which(k$c1 %in% meta[1:(grep(args$cohort,meta)-1)] | k$c2 %in% meta[1:(grep(args$cohort,meta)-1)]),]

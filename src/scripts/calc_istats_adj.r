@@ -14,7 +14,7 @@ args<-parser$parse_args()
 
 print(args)
 
-data<-read.table(args$sampleqc_stats,header=T,as.is=T,stringsAsFactors=F)
+data<-read.table(args$sampleqc_stats,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 metrics <- names(data)[which(names(data) != "IID")]
 
 if(args$covars != "") {
@@ -25,12 +25,12 @@ if(args$covars != "") {
 }
 
 cat("extracting model specific columns from phenotype file\n")
-pheno<-read.table(args$sample_file,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+pheno<-read.table(args$sample_file,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(args$iid_col="character"))
 cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, covars), drop=FALSE]
 names(pheno)[1] <- "IID"
 
-pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F)
+pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 pcs$FID<-NULL
 out <- merge(data, pcs, all.x=T)
 out <- merge(out, pheno, all.x=T)

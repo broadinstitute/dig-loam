@@ -12,13 +12,13 @@ args<-parser$parse_args()
 
 print(args)
 
-data<-read.table(args$pca_scores, header=T, as.is=T)
+data<-read.table(args$pca_scores, header=T, as.is=T, colClasses=c("IID"="character"))
 data$POP<-args$id
 data$GROUP<-args$id
 
 if(! is.null(args$update_pop)) {
 	print("updating population information from file")
-	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_pop[1]="character"))
 	pop_df<-pop_df[,c(args$update_pop[1],args$update_pop[2])]
 	names(pop_df)[1]<-"IID"
 	names(pop_df)[2]<-"POP_NEW"
@@ -29,7 +29,7 @@ if(! is.null(args$update_pop)) {
 
 if(! is.null(args$update_group)) {
 	print("updating group information from file")
-	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_group[1]="character"))
 	group_df<-group_df[,c(args$update_group[1],args$update_group[2])]
 	names(group_df)[1]<-"IID"
 	names(group_df)[2]<-"GROUP_NEW"

@@ -31,13 +31,13 @@ gg_color_hue <- function(n) {
   hcl(h=hues, l=65, c=100)[1:n]
 }
 
-pcs<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F)
+pcs<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F,colClasses=c("IID"="character"))
 pcs$POP<-args$project_id
 pcs$GROUP<-args$project_id
 
 if(! is.null(args$update_pop)) {
 	print("updating population information from file")
-	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_pop[1]="character"))
 	pop_df<-pop_df[,c(args$update_pop[1],args$update_pop[2])]
 	names(pop_df)[1]<-"IID"
 	names(pop_df)[2]<-"POP_NEW"
@@ -48,7 +48,7 @@ if(! is.null(args$update_pop)) {
 
 if(! is.null(args$update_group)) {
 	print("updating group information from file")
-	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_group[1]="character"))
 	group_df<-group_df[,c(args$update_group[1],args$update_group[2])]
 	names(group_df)[1]<-"IID"
 	names(group_df)[2]<-"GROUP_NEW"
@@ -60,7 +60,7 @@ if(! is.null(args$update_group)) {
 cl<-read.table(args$cluster, as.is=T, skip=1, stringsAsFactors=F)
 names(cl)[1]<-"CLUSTER"
 pcs<-cbind(pcs,cl)
-sample_file<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t")
+sample_file<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t", colClasses=c(args$sample_id="character"))
 sample_file<-sample_file[,c(args$sample_id,args$sr_race)]
 sample_file[,args$sr_race]<-paste0("sr_",sample_file[,args$sr_race])
 names(sample_file)[1]<-"IID"

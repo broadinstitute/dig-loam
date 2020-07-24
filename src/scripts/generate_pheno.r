@@ -46,7 +46,7 @@ cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
 cat("read in preliminary phenotype file\n")
-pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(args$iid_col="character"))
 out_cols<-colnames(pheno)
 
 failed <- FALSE
@@ -85,7 +85,7 @@ covars_analysis<-paste(c(covars_factors,"1"),collapse="+")
 out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
 
 cat("read in pcs and merge pheno into them\n")
-pcs<-read.table(args$pcs_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+pcs<-read.table(args$pcs_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c("IID"="character"))
 pcs$FID<-NULL
 names(pcs)[1]<-args$iid_col
 out<-merge(pheno,pcs,all.y=T)

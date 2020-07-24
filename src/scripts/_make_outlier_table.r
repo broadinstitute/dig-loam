@@ -26,7 +26,7 @@ for(a in args$kinship_related) {
 	l<-unlist(strsplit(a,","))[1]
 	if(! l %in% ls(ids)) ids[[l]]<-list()
 	f<-unlist(strsplit(a,","))[2]
-	kinship_df<-read.table(f,header=T,as.is=T,stringsAsFactors=F)
+	kinship_df<-read.table(f,header=T,as.is=T,stringsAsFactors=F,colClasses=c("FID1"="character","ID1"="character","FID2"="character","ID2"="character"))
 	dups_df <- kinship_df[kinship_df$Kinship > 0.4,]
 	ids[[l]][['duplicate']]<-unique(c(dups_df$ID1,dups_df$ID2))
 }
@@ -36,7 +36,7 @@ for(a in args$kinship_famsizes) {
 	l<-unlist(strsplit(a,","))[1]
 	if(! l %in% ls(ids)) ids[[l]]<-list()
 	f<-unlist(strsplit(a,","))[2]
-	famsizes_df<-try(read.table(f,header=F,as.is=T,stringsAsFactors=F), silent=TRUE)
+	famsizes_df<-try(read.table(f,header=F,as.is=T,stringsAsFactors=F,colClasses=c("V1"="character")), silent=TRUE)
 	if(inherits(famsizes_df, "try-error")) {
 		ids[[l]][['cryptic relatedness']]<-c()
 	} else {
@@ -50,7 +50,7 @@ for(a in args$imiss) {
 	l<-unlist(strsplit(a,","))[1]
 	if(! l %in% ls(ids)) ids[[l]]<-list()
 	f<-unlist(strsplit(a,","))[2]
-	imiss_df<-try(read.table(f,header=F,as.is=T,stringsAsFactors=F), silent=TRUE)
+	imiss_df<-try(read.table(f,header=F,as.is=T,stringsAsFactors=F,colClasses=c("V1"="character","V2"="character")), silent=TRUE)
 	if(inherits(imiss_df, "try-error")) {
 		ids[[l]][['extreme missingness']]<-c()
 	} else {
@@ -63,7 +63,7 @@ for(a in args$sexcheck_problems) {
 	l<-unlist(strsplit(a,","))[1]
 	if(! l %in% ls(ids)) ids[[l]]<-list()
 	f<-unlist(strsplit(a,","))[2]
-	sexcheck_df<-read.table(f,header=T,as.is=T,stringsAsFactors=F)
+	sexcheck_df<-read.table(f,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 	ids[[l]][['sex check']]<-unique(sexcheck_df$IID)
 }
 
@@ -74,7 +74,7 @@ for(a in args$sampleqc_outliers) {
 	l<-unlist(strsplit(a,","))[1]
 	if(! l %in% ls(ids)) ids[[l]]<-list()
 	f<-unlist(strsplit(a,","))[2]
-	sampleqc_df<-read.table(f,header=T,as.is=T,stringsAsFactors=F)
+	sampleqc_df<-read.table(f,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 	for(metric in unique(sampleqc_df$METRIC)) {
 		ids[[l]][[metric]]<-unique(sampleqc_df$IID[sampleqc_df$METRIC == metric])
 		metrics[[l]] <- unique(c(metrics[[l]], metric))
