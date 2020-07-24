@@ -10,7 +10,7 @@ print(args)
 
 library(ggplot2)
 
-d<-read.table(args$sampleqc,header=T,as.is=T,stringsAsFactors=F)
+d<-read.table(args$sampleqc,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 
 pdf(args$out, width=8,height=1,onefile=FALSE)
 p<-ggplot(d,aes_string(x=args$metric)) +

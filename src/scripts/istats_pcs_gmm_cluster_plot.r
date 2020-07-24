@@ -13,7 +13,7 @@ args<-parser$parse_args()
 
 print(args)
 
-data<-read.table(args$pca_scores, header=T,as.is=T,stringsAsFactors=F)
+data<-read.table(args$pca_scores, header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 cl<-read.table(args$cluster, as.is=T, skip=1)
 names(cl)[1]<-"CLUSTER"
 data<-cbind(data,cl)

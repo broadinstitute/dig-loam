@@ -68,13 +68,13 @@ cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
 cat("extracting model specific columns from phenotype file\n")
-pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(args$iid_col="character"))
 cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 out_cols<-colnames(pheno)
 
 cat("reading inferred ancestry from file\n")
-ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c("IID"="character"))
 names(ancestry)[1]<-args$iid_col
 names(ancestry)[2]<-"ANCESTRY_INFERRED"
 pheno<-merge(pheno,ancestry,all.x=T)
@@ -117,12 +117,12 @@ if(args$samples_exclude_cross_array != "") {
 }
 
 cat("reading in kinship values for related pairs\n")
-kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c("FID1"="character","ID1"="character","FID2"="character","ID2"="character"))
 kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kinship_in$ID2 %in% pheno[,args$iid_col])),]
 kinship_in <- kinship_in[which((! kinship_in$ID1 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_kinship_cross_array == 1))]) & (! kinship_in$ID2 %in% id_map$ID[which((id_map$removed_nogeno == 1) | (id_map$removed_sampleqc == 1) | (id_map$removed_kinship_cross_array == 1))])),]
 if(nrow(kinship_in) > 0) {
 	kinship_in$pair_idx <- row.names(kinship_in)
-	sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+	sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c("IID"="character"))
 	sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
 	names(sampleqc_in)[1] <- args$iid_col
 	sampleqc_in <- merge(sampleqc_in, pheno[,c(args$iid_col, args$pheno_col)], all.x=TRUE)

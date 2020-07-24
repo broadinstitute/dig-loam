@@ -24,11 +24,11 @@ args<-parser$parse_args()
 
 print(args)
 
-dat<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F)
+dat<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F,colClasses=c("IID"="character"))
 cl<-read.table(args$cluster, as.is=T, skip=1, stringsAsFactors=F)
 names(cl)[1]<-"CLUSTER"
 dat<-cbind(dat,cl)
-pheno<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t")
+pheno<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t", colClasses=c(args$sample_id="character"))
 pheno<-pheno[,c(args$sample_id,args$sr_race)]
 pheno[,args$sr_race]<-paste0("sr_",pheno[,args$sr_race])
 names(pheno)[1]<-"IID"

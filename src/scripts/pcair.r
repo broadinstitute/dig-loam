@@ -65,7 +65,7 @@ iids <- getScanID(genoData)
 unrel_iids <- NULL
 if(! is.null(args$force_unrel) & ! is.null(kinship)) {
 	print("reading list of unrelated samples from file")
-	unrel_df<-read.table(file=args$force_unrel[2],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	unrel_df<-read.table(file=args$force_unrel[2],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$force_unrel[1]="character"))
 	unrel_iids<-unrel_df[,grep(paste0("\\b",args$force_unrel[1],"\\b"),names(unrel_df), value=TRUE)]
 }
 
@@ -106,8 +106,7 @@ if(! is.null(args$id)) {
 
 if(! is.null(args$ancestry)) {
 	print("adding inferred ancestry to output")
-	anc_df<-read.table(file=args$ancestry,header=FALSE,as.is=T,stringsAsFactors=FALSE)
-	names(anc_df)[1]<-"IID"
+	anc_df<-read.table(file=args$ancestry,header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c("IID"="character"))
 	names(anc_df)[2]<-"GROUP_NEW"
 	out<-merge(out,anc_df,all.x=TRUE)
 	out$GROUP[! is.na(out$GROUP_NEW)]<-out$GROUP_NEW[! is.na(out$GROUP_NEW)]
@@ -116,7 +115,7 @@ if(! is.null(args$ancestry)) {
 
 if(! is.null(args$update_pop)) {
 	print("updating population information from file")
-	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_pop[1]="character"))
 	pop_df<-pop_df[,c(args$update_pop[1],args$update_pop[2])]
 	names(pop_df)[1]<-"IID"
 	names(pop_df)[2]<-"POP_NEW"
@@ -127,7 +126,7 @@ if(! is.null(args$update_pop)) {
 
 if(! is.null(args$update_group)) {
 	print("updating group information from file")
-	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE)
+	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_group[1]="character"))
 	group_df<-group_df[,c(args$update_group[1],args$update_group[2])]
 	names(group_df)[1]<-"IID"
 	names(group_df)[2]<-"GROUP_NEW"

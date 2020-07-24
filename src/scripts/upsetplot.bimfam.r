@@ -15,10 +15,10 @@ ids<-list()
 for(inp in args$input) {
 	l<-unlist(strsplit(inp,","))[1]
 	f<-unlist(strsplit(inp,","))[2]
-	tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
 	if(args$type == "fam") {
+		tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F,colClasses=c("V1"="character","V2"="character"))
 		if(! is.null(args$ancestry)) {
-			anc<-read.table(args$ancestry,header=T,as.is=T,stringsAsFactors=F)
+			anc<-read.table(args$ancestry,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 			anc <- anc[! anc$FINAL == "OUTLIERS",]
 			anc <- anc[anc$IID %in% tbl[,2],]
 			for(c in unique(anc$FINAL)) {
@@ -29,6 +29,7 @@ for(inp in args$input) {
 		}
 		xLabel = "Samples"
 	} else if(args$type == "bim") {
+		tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
 		tbl$id<-paste(tbl$V1,tbl$V4,tbl$V5,tbl$V6,sep=":")
 		ids[[l]]<-tbl$id
 		xLabel = "Variants"

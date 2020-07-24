@@ -10,7 +10,7 @@ args<-parser$parse_args()
 
 print(args)
 
-data<-read.table(args$pca_scores, header=T, as.is=T)
+data<-read.table(args$pca_scores, header=T, as.is=T, colClasses=c("IID"="character"))
 data$GROUP<-factor(data$GROUP)
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length=n+1)

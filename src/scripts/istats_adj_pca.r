@@ -12,7 +12,7 @@ args<-parser$parse_args()
 
 print(args)
 
-x<-read.table(args$sampleqc_stats_adj,header=T,as.is=T,stringsAsFactors=F)
+x<-read.table(args$sampleqc_stats_adj,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 
 # note: the residuals of call rate based metrics are not normal, so a hard callrate threshold is now used
 # set samples whose values are high on unidirectional metrics to the mean of the metric across all samples

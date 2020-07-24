@@ -9,8 +9,8 @@ args<-parser$parse_args()
 
 print(args)
 
-data<-read.table(args$sampleqc_stats,header=T,as.is=T,stringsAsFactors=F)
-pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F)
+data<-read.table(args$sampleqc_stats,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
+pcs<-read.table(args$pca_scores,header=T,as.is=T,stringsAsFactors=F,colClasses=c("IID"="character"))
 pcs$POP<-NULL
 pcs$GROUP<-NULL
 out<-merge(data,pcs,all.y=T)
