@@ -68,7 +68,8 @@ cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
 cat("extracting model specific columns from phenotype file\n")
-pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(args$iid_col="character"))
+idcol<-args$iid_col
+pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(idcol="character"))
 cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
 out_cols<-colnames(pheno)

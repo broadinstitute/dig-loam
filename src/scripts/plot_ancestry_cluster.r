@@ -28,7 +28,8 @@ dat<-read.table(args$pca_scores, header=T, as.is=T, stringsAsFactors=F,colClasse
 cl<-read.table(args$cluster, as.is=T, skip=1, stringsAsFactors=F)
 names(cl)[1]<-"CLUSTER"
 dat<-cbind(dat,cl)
-pheno<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t", colClasses=c(args$sample_id="character"))
+idcol<-args$sample_id
+pheno<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t", colClasses=c(idcol="character"))
 pheno<-pheno[,c(args$sample_id,args$sr_race)]
 pheno[,args$sr_race]<-paste0("sr_",pheno[,args$sr_race])
 names(pheno)[1]<-"IID"

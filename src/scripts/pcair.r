@@ -65,7 +65,8 @@ iids <- getScanID(genoData)
 unrel_iids <- NULL
 if(! is.null(args$force_unrel) & ! is.null(kinship)) {
 	print("reading list of unrelated samples from file")
-	unrel_df<-read.table(file=args$force_unrel[2],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$force_unrel[1]="character"))
+	idcol<-args$force_unrel[1]
+	unrel_df<-read.table(file=args$force_unrel[2],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(idcol="character"))
 	unrel_iids<-unrel_df[,grep(paste0("\\b",args$force_unrel[1],"\\b"),names(unrel_df), value=TRUE)]
 }
 
@@ -115,7 +116,8 @@ if(! is.null(args$ancestry)) {
 
 if(! is.null(args$update_pop)) {
 	print("updating population information from file")
-	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_pop[1]="character"))
+	idcol<-args$update_pop[1]
+	pop_df<-read.table(file=args$update_pop[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(idcol="character"))
 	pop_df<-pop_df[,c(args$update_pop[1],args$update_pop[2])]
 	names(pop_df)[1]<-"IID"
 	names(pop_df)[2]<-"POP_NEW"
@@ -126,7 +128,8 @@ if(! is.null(args$update_pop)) {
 
 if(! is.null(args$update_group)) {
 	print("updating group information from file")
-	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(args$update_group[1]="character"))
+	idcol<-args$update_group[1]
+	group_df<-read.table(file=args$update_group[3],header=TRUE,as.is=T,stringsAsFactors=FALSE,colClasses=c(idcol="character"))
 	group_df<-group_df[,c(args$update_group[1],args$update_group[2])]
 	names(group_df)[1]<-"IID"
 	names(group_df)[2]<-"GROUP_NEW"
