@@ -46,7 +46,8 @@ cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
 cat("read in preliminary phenotype file\n")
-pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(args$iid_col="character"))
+idcol<-args$iid_col
+pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(idcol="character"))
 out_cols<-colnames(pheno)
 
 failed <- FALSE
