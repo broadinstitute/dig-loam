@@ -444,10 +444,10 @@ object ProjectConfig extends loamstream.LoamFile {
     rExcludeCrossArray: Path,
     rGeneratePheno: Path,
     rConvertPhenoToPed: Path,
-    rTop20: Path
+    rTop20: Path,
+    rRawVariantsSummaryTable: Path
     //rAncestryClusterTable: Path,
     //rPcair: Path,
-    //rVariantsSummaryTable: Path,
     //rUpsetplotBimFam: Path,
     //rMakeOutlierTable: Path,
     //rMakeMetricDistPlot: Path,
@@ -1561,10 +1561,10 @@ object ProjectConfig extends loamstream.LoamFile {
         rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
         rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
         rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r"),
-        rTop20 = path(s"${scriptsDir}/top20.r")
+        rTop20 = path(s"${scriptsDir}/top20.r"),
+        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r")
         //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         //rPcair = path(s"${scriptsDir}/pcair.r"),
-        //rVariantsSummaryTable = path(s"${scriptsDir}/variants_summary_table.r"),
         //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
         //rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
         //rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r"),

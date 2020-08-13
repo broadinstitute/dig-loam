@@ -51,7 +51,12 @@ for(cv in covars) {
 }
 
 cat(pheno_out, "\n", file=args$model_vars, append=FALSE)
-cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+
+if(! is.null(args$trans)) {
+	if(args$trans != 'invn') {
+		cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+	}
+}
 
 merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, pheno_out)
 header <- c(merlin_header, colnames(pheno)[! colnames(pheno) %in% c(args$iid_col, merlin_header)])

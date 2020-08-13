@@ -40,9 +40,9 @@ object DirTree extends loamstream.LoamFile {
     analysisModelGroupsMap: scala.collection.mutable.Map[String, MultiPath],
     analysisModelRegions: MultiPath,
     analysisModelRegionsMap: scala.collection.mutable.Map[String, MultiPath],
-    analysisModelMap: Map[ConfigModel, MultiPath]
-    //report: MultiPath,
-    //reportQc: MultiPath,
+    analysisModelMap: Map[ConfigModel, MultiPath],
+    report: MultiPath,
+    reportQc: MultiPath
     //reportAnalysis: MultiPath,
     //reportAnalysisMap: Map[ConfigReport, MultiPath]
     ) extends Debug
@@ -75,8 +75,8 @@ object DirTree extends loamstream.LoamFile {
       val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
       val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
       val analysis = appendSubDir(base, "analysis")
-      //val report = appendSubDir(base, "report")
-      //val reportQc = appendSubDir(report, "qc")
+      val report = appendSubDir(base, "report")
+      val reportQc = appendSubDir(report, "qc")
       //val reportAnalysis = appendSubDir(report, "analysis")
   
       val dataArrayMap = cfg.Arrays.map { array =>
@@ -139,9 +139,9 @@ object DirTree extends loamstream.LoamFile {
         analysisModelGroupsMap = scala.collection.mutable.Map[String, MultiPath](),
         analysisModelRegions = analysisModelRegions,
         analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath](),
-        analysisModelMap = analysisModelMap
-        //report = report,
-        //reportQc = reportQc,
+        analysisModelMap = analysisModelMap,
+        report = report,
+        reportQc = reportQc
         //reportAnalysis = reportAnalysis,
         //reportAnalysisMap = reportAnalysisMap
       )
