@@ -56,6 +56,8 @@ cat(pheno_out, "\n", file=args$model_vars, append=FALSE)
 if(! is.null(args$trans)) {
 	if(args$trans != 'invn') {
 		cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+	} else {
+		cat(paste(pcs, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
 	}
 } else {
 	cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
