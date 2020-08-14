@@ -49,6 +49,7 @@ for(cv in covars) {
 		covars <- covars[covars != cv]
 	}
 }
+covars <- c(covars,pcs)
 
 cat(pheno_out, "\n", file=args$model_vars, append=FALSE)
 
@@ -56,10 +57,12 @@ if(! is.null(args$trans)) {
 	if(args$trans != 'invn') {
 		cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
 	}
+} else {
+	cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
 }
 
 merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, pheno_out)
-header <- c(merlin_header, colnames(pheno)[! colnames(pheno) %in% c(args$iid_col, merlin_header)])
+header <- c(merlin_header, colnames(pheno)[! colnames(pheno) %in% c(args$iid_col, merlin_header, pcs)])
 
 pheno$FAT_ID <- 0
 pheno$MOT_ID <- 0
@@ -69,7 +72,7 @@ pheno[, paste0("IND_ID_", args$iid_col)] <- pheno[, paste0("#FAM_ID_", args$iid_
 
 pheno[,args$sex_col] <- mapvalues(pheno[,args$sex_col], from = c(args$male_code, args$female_code), to = c(1, 2))
 
-pheno<-pheno[,header]
+pheno<-pheno[,c(header,pcs)]
 
 cat("writing phenotype file","\n")
 write.table(pheno, args$ped, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")
