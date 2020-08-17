@@ -258,7 +258,9 @@ if [ "$type" == "group" ]; then
 			rm ${outBase}.epacts
 			rm ${outBase}.epacts.OK
 			rm ${outBase}.Makefile
-			rm ${outBase}.cov
+			if [ -f "${outBase}.cov" ]; then
+				rm ${outBase}.cov
+			fi
 			rm ${outBase}.ind
 			rm ${outBase}.phe
 		else
