@@ -23,12 +23,18 @@ x$call_rate_res <- NULL
 x$n_called_res <- NULL
 
 row.names(x)<-x$IID
+
+set.seed(1)
+
 trans = preProcess(x[,2:ncol(x)], method=c("BoxCox", "medianImpute", "center", "scale"),thresh=1.0)
 trans.data = predict(trans, x[,2:ncol(x)])
 correlations<-cor(trans.data)
 pdf(args$corr_plots,width=7, height=7)
 corrplot(correlations,method="color", order="hclust")
 dev.off()
+
+set.seed(1)
+
 trans = preProcess(x[,2:ncol(x)], method=c("BoxCox", "medianImpute", "center", "scale", "pca"),thresh=1.0)
 PC = predict(trans, x[,2:ncol(x)])
 sink(file=args$pca_loadings)
