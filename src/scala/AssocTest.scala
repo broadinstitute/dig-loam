@@ -797,8 +797,6 @@ object AssocTest extends loamstream.LoamFile {
         case _ => ()
         
       }
-      
-      //}
   
     }
   
