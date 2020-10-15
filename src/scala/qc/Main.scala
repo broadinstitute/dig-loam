@@ -16,7 +16,7 @@ object Main extends loamstream.LoamFile {
   import SampleQc._
   import Tracking._
   import Upload._
-  import QcReport._
+  //import QcReport._
   
   import loamstream.conf.DataConfig
   import loamstream.googlecloud.HailSupport._
@@ -74,7 +74,7 @@ object Main extends loamstream.LoamFile {
   }
   
   // QC Report
-  QcReport()
+  //QcReport()
   
   //// Generate imputation ready data files
   //for {

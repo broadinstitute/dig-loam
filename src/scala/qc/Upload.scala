@@ -55,22 +55,6 @@ object Upload extends loamstream.LoamFile {
             }
         }
   
-        projectStores.phenoFile.local match {
-          case Some(r) =>
-            projectStores.phenoFile.google match {
-              case Some(s) =>
-                checkURI(s"${s.uri}") match {
-                  case 0 => ()
-                  case 1 => 
-                    local {
-                      googleCopy(r, s)
-                    }
-                }
-              case _ => ()
-            }
-          case _ => ()
-        }
-  
         projectStores.hailUtils.local match {
           case Some(r) =>
             projectStores.hailUtils.google match {

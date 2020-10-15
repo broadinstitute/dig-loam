@@ -7,10 +7,7 @@ object QcReport extends loamstream.LoamFile {
     */
   import ProjectConfig._
   import ArrayStores._
-  import ModelStores._
-  import SchemaStores._
   import ProjectStores._
-  //import MetaStores._
   import QcReportStores._
   import DirTree._
   

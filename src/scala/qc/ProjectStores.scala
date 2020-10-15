@@ -14,7 +14,6 @@ object ProjectStores extends loamstream.LoamFile {
     kgVcf: Map[String, Store],
     kgIds: Map[String, Store],
     humanReference: Map[String, Store],
-    knownStores: Map[ConfigKnown, Known],
     hailUtils: MultiStore,
     regionsExclude: MultiStore,
     geneIdMap: MultiStore,
@@ -25,7 +24,6 @@ object ProjectStores extends loamstream.LoamFile {
     vepPluginsDir: Store,
     dbNSFP: Store,
     sampleFile: MultiStore,
-    phenoFile: MultiStore,
     ancestryInferred: MultiStore,
     ancestryOutliers: Store)
   
@@ -57,23 +55,10 @@ object ProjectStores extends loamstream.LoamFile {
     
     }.toMap
   
-    val knownStores = projectConfig.Knowns.filter(e => projectConfig.Models.filter(e => e.knowns.isDefined).map(e => e.knowns.get).flatten.toSeq.distinct.contains(e.id)).map { known =>
-  
-      known -> Known(
-        data = store(path(checkPath(known.data))).asInput,
-        hiLd = MultiStore(
-          local = Some(store(path(checkPath(known.hiLd))).asInput),
-          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
-        )
-      )
-  
-    }.toMap
-  
     ProjectStores(
       kgVcf = kgVcf,
       kgIds = kgIds,
       humanReference = humanReference,
-      knownStores = knownStores,
       hailUtils = MultiStore(
         local = projectConfig.hailCloud match { case true => Some(store(path(checkPath(utils.python.pyHailUtils.toString()))).asInput); case false => None },
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.base.google.get / s"${utils.python.pyHailUtils}".split("/").last)); case false => None }
@@ -101,10 +86,6 @@ object ProjectStores extends loamstream.LoamFile {
       sampleFile = MultiStore(
         local = Some(store(path(projectConfig.sampleFile)).asInput),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
-      ),
-      phenoFile = MultiStore(
-        local = projectConfig.phenoFile match { case "" => None; case _ => Some(store(path(checkPath(projectConfig.phenoFile))).asInput) },
-        google = projectConfig.phenoFile match { case "" => None; case _ => projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.phenoFile}".split("/").last)); case false => None } }
       ),
       ancestryInferred = MultiStore(
         local = Some(store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")),

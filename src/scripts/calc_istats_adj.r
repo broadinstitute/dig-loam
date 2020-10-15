@@ -25,7 +25,7 @@ if(args$covars != "") {
 }
 
 cat("extracting model specific columns from phenotype file\n")
-pheno<-read.table(args$sample_file,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(args$iid_col="character"))
+pheno<-read.table(args$sample_file,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
 cat(paste0("extracting model specific columns: ", paste(c(args$iid_col, covars), collapse=",")),"\n")
 pheno<-pheno[,c(args$iid_col, covars), drop=FALSE]
 names(pheno)[1] <- "IID"

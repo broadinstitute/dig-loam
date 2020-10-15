@@ -62,37 +62,6 @@ object ProjectConfig extends loamstream.LoamFile {
     "avg_ab",
     "avg_ab50"
   )
-  val modelDesigns = Seq("full","strat")
-  val modelTrans = Seq("log","invn")
-  val assocTests = Seq(
-    "hail.q.lm",
-    "hail.b.wald",
-    "hail.b.firth",
-    "hail.b.lrt",
-    "hail.b.score",
-    "epacts.b.burden",
-    "epacts.b.burdenFirth",
-    "epacts.b.collapse",
-    "epacts.b.madsen",
-    "epacts.b.wcnt",
-    "epacts.q.burden",
-    "epacts.q.reverse",
-    "epacts.q.wilcox",
-    "epacts.b.skat",
-    "epacts.b.VT",
-    "epacts.b.emmaxCMC",
-    "epacts.b.emmaxVT",
-    "epacts.q.mmskat",
-    "epacts.q.skat",
-    "epacts.q.VT",
-    "epacts.q.emmaxCMC",
-    "epacts.q.emmaxVT"
-  )
-  
-  val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
-  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
-  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "hail")
-  val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
   
   final case class ConfigMachine(
     cpus: Int,
@@ -144,11 +113,7 @@ object ProjectConfig extends loamstream.LoamFile {
     vep: ConfigMachine,
     king: ConfigMachine,
     klustakwik: ConfigMachine,
-    tabix: ConfigMachine,
-    lowMemEpacts: ConfigMachine,
-    midMemEpacts: ConfigMachine,
-    highMemEpacts: ConfigMachine,
-    locuszoom: ConfigMachine) extends Debug
+    tabix: ConfigMachine) extends Debug
   
   final case class ConfigArray(
     id: String,
@@ -175,82 +140,7 @@ object ProjectConfig extends loamstream.LoamFile {
     postQcSampleFilters: Option[Seq[String]],
     postQcVariantFilters: Option[Seq[String]],
     exportCleanVcf: Boolean) extends Debug
-  
-  final case class ConfigCohort(
-    id: String,
-    array: String,
-    ancestry: Seq[String],
-    stratCol: Option[String],
-    stratCodes: Option[Seq[String]],
-    minPartitions: Option[Int]) extends Debug
-  
-  final case class ConfigMeta(
-    id: String,
-    cohorts: Seq[String],
-    minPartitions: Option[Int]) extends Debug
-  
-  final case class ConfigMerge(
-    id: String,
-    cohorts_metas: Seq[String],
-    minPartitions: Option[Int]) extends Debug
-  
-  final case class ConfigPheno(
-    id: String,
-    name: String,
-    binary: Boolean,
-    desc: String) extends Debug
-  
-  final case class ConfigKnown(
-    id: String,
-    data: String,
-    hiLd: String,
-    n: String,
-    nCase: String,
-    nCtrl: String,
-    desc: String,
-    citation: String) extends Debug
-  
-  final case class CohortFilter(
-    cohort: String,
-    filters: Seq[String]) extends Debug
-  
-  final case class MaskFilter(
-    id: String,
-    filters: Seq[String],
-    groupFile: Option[String]) extends Debug
-  
-  final case class CohortGroupFile(
-    cohort: String,
-    groupFile: String) extends Debug
-  
-  final case class ConfigSchema(
-    id: String,
-    design: String,
-    cohorts: Seq[String],
-    samplesKeep: Option[String],
-    samplesExclude: Option[String],
-    filters: Option[Seq[String]],
-    cohortFilters: Option[Seq[CohortFilter]],
-    knockoutFilters: Option[Seq[CohortFilter]],
-    masks: Option[Seq[MaskFilter]],
-    maxGroupSize: Option[Int],
-    filterCohorts: Seq[String]) extends Debug
-  
-  final case class ConfigModel(
-    id: String,
-    schema: String,
-    pheno: String,
-    trans: Option[String],
-    tests: Seq[String],
-    assocPlatforms: Seq[String],
-    maxPcaOutlierIterations: Int,
-    covars: String,
-    cohorts: Seq[String],
-    metas: Option[Seq[String]],
-    merges: Option[Seq[String]],
-    knowns: Option[Seq[String]],
-    runAssoc: Boolean) extends Debug
-  
+
   //final case class ConfigSection(
   //  id: String,
   //  title: String,
@@ -260,7 +150,7 @@ object ProjectConfig extends loamstream.LoamFile {
   //  id: String,
   //  name: String,
   //  sections: Seq[ConfigSection]) extends Debug
-  
+
   final case class ProjectConfig(
     loamstreamVersion: String,
     pipelineVersion: String,
@@ -294,26 +184,15 @@ object ProjectConfig extends loamstream.LoamFile {
     sampleFileEURCodes: Option[Seq[String]],
     sampleFileEASCodes: Option[Seq[String]],
     sampleFileSASCodes: Option[Seq[String]],
-    phenoFile: String,
-    phenoFileId: String,
     authors: Seq[String],
     email: String,
     organization: String,
-    acknowledgementsAnalysisReport: Option[Seq[String]],
     acknowledgementsQcReport: Option[Seq[String]],
     nAncestryInferenceFeatures: Int,
     ancestryInferenceFeatures: String,
-    minPCs: Int,
-    maxPCs: Int,
-    nStddevs: Int,
-    diffMissMinExpectedCellCount: Int,
-    skipQc: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
-    nCohorts: Int,
-    nMetas: Int,
-    maxSigRegions: Option[Int],
     numericVariantFilters: Seq[ConfigNumericFilters],
     booleanVariantFilters: Seq[ConfigBooleanFilters],
     categoricalVariantFilters: Seq[ConfigCategoricalFilters],
@@ -322,14 +201,7 @@ object ProjectConfig extends loamstream.LoamFile {
     booleanSampleFilters: Seq[ConfigBooleanFilters],
     categoricalSampleFilters: Seq[ConfigCategoricalFilters],
     compoundSampleFilters: Seq[ConfigCompoundFilters],
-    Arrays: Seq[ConfigArray],
-    Cohorts: Seq[ConfigCohort],
-    Metas: Seq[ConfigMeta],
-    Merges: Seq[ConfigMerge],
-    Knowns: Seq[ConfigKnown],
-    Phenos: Seq[ConfigPheno],
-    Schemas: Seq[ConfigSchema],
-    Models: Seq[ConfigModel]
+    Arrays: Seq[ConfigArray]
     //Reports: Seq[ConfigReport]
     ) extends Debug
   
@@ -341,8 +213,7 @@ object ProjectConfig extends loamstream.LoamFile {
     imgTools: Path,
     imgTexLive: Path,
     imgEnsemblVep: Path,
-    imgFlashPca: Path,
-    imgUmichStatgen: Path) extends Debug
+    imgFlashPca: Path) extends Debug
   
   final case class Binary(
     binLiftOver: Path,
@@ -356,8 +227,7 @@ object ProjectConfig extends loamstream.LoamFile {
     binLocuszoom: Path,
     binPdflatex: Path,
     binRscript: Path,
-    binFlashPca: Path,
-    binEpacts: Path) extends Debug
+    binFlashPca: Path) extends Debug
   
   final case class Python(
     pyAlignNon1kgVariants: Path,
@@ -373,43 +243,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMergeVariantLists: Path,
     pyBimToUid: Path,
     pyHailUtils: Path,
-    pyHailSchemaVariantStats: Path,
-    pyHailSchemaVariantCaseCtrlStats: Path,
-    pyHailAssoc: Path,
-    pyHailExportCleanArrayData: Path,
-    pyHailFilterSchemaVariants: Path,
-    pyHailFilterSchemaPhenoVariants: Path,
-    pyHailGenerateGroupfile: Path,
-    pyHailGenerateModelVcf: Path,
-    pyQqPlot: Path,
-    pyMhtPlot: Path,
-    pyTopResults: Path,
-    pyTopGroupResults: Path,
-    pyExtractTopRegions: Path,
-    pyPhenoDistPlot: Path
-    //pyAddGeneAnnot: Path
-    //pyHailModelVariantStats: Path,
-    //pyHailFilterModelVariants: Path,
-    //pyHailFilterResults: Path,
-    //pyHailMerge: Path,
-    //pyHailMetaAnalysis: Path,
-    //pyGenerateReportHeader: Path,
-    //pyGenerateQcReportIntro: Path,
-    //pyGenerateQcReportData: Path,
-    //pyGenerateQcReportAncestry: Path,
-    //pyGenerateQcReportIbdSexcheck: Path,
-    //pyGenerateQcReportSampleqc: Path,
-    //pyGenerateQcReportVariantqc: Path,
-    //pyGenerateQcReportBibliography: Path,
-    //pyGenerateAnalysisReportIntro: Path,
-    //pyGenerateAnalysisReportData: Path,
-    //pyGenerateAnalysisReportStrategy: Path,
-    //pyGenerateAnalysisReportPhenoSummary: Path,
-    //pyGenerateAnalysisReportPhenoCalibration: Path,
-    //pyGenerateAnalysisReportPhenoTopLoci: Path,
-    //pyGenerateAnalysisReportPhenoKnownLoci: Path,
-    //pyGenerateAnalysisReportBibliography: Path
-    ) extends Debug
+    pyHailExportCleanArrayData: Path) extends Debug
   
   final case class Bash(
     shFindPossibleDuplicateVariants: Path,
@@ -419,14 +253,7 @@ object ProjectConfig extends loamstream.LoamFile {
     shPlinkPrepare: Path,
     shPlinkToVcfNoHalfCalls: Path,
     shKlustakwikPca: Path,
-    shKlustakwikMetric: Path,
-    shCrossCohortCommonVariants: Path,
-    shFlashPca: Path,
-    shEpacts: Path,
-    shMergeResults: Path,
-    shRegPlot: Path
-    //shTopResultsAddGenes: Path
-    ) extends Debug
+    shKlustakwikMetric: Path) extends Debug
   
   final case class R(
     rFindBestDuplicateVariants: Path,
@@ -438,22 +265,7 @@ object ProjectConfig extends loamstream.LoamFile {
     rIstatsAdjGmmPlotMetrics: Path,
     rCalcIstatsAdj: Path,
     rIstatsAdjPca: Path,
-    rModelCohortSamplesAvailable: Path,
-    rSchemaCohortSamplesAvailable: Path,
-    rMetaCohortSamples: Path,
-    rExcludeCrossArray: Path,
-    rGeneratePheno: Path,
-    rConvertPhenoToPed: Path,
-    rTop20: Path,
-    rRawVariantsSummaryTable: Path
-    //rAncestryClusterTable: Path,
-    //rPcair: Path,
-    //rUpsetplotBimFam: Path,
-    //rMakeOutlierTable: Path,
-    //rMakeMetricDistPlot: Path,
-    //rTop50Known: Path,
-    //rMetaExclusionsTable: Path
-    ) extends Debug
+    rRawVariantsSummaryTable: Path) extends Debug
   
   final case class Utils(
     imagesDir: Path,
@@ -501,20 +313,11 @@ object ProjectConfig extends loamstream.LoamFile {
       val sampleFileEURCodes = optionalStrList(config = config, field = "sampleFileEURCodes")
       val sampleFileEASCodes = optionalStrList(config = config, field = "sampleFileEASCodes")
       val sampleFileSASCodes = optionalStrList(config = config, field = "sampleFileSASCodes")
-      val phenoFile = requiredStr(config = config, field = "phenoFile")
-      val phenoFileId = requiredStr(config = config, field = "phenoFileId")
       val authors = requiredStrList(config = config, field = "authors")
       val email = requiredStr(config = config, field = "email")
       val organization = requiredStr(config = config, field = "organization")
-      val acknowledgementsAnalysisReport = optionalStrList(config = config, field = "acknowledgementsAnalysisReport")
       val acknowledgementsQcReport = optionalStrList(config = config, field = "acknowledgementsQcReport")
-      val maxSigRegions = optionalInt(config = config, field = "maxSigRegions", min = Some(0))
       val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
-      val minPCs = requiredInt(config = config, field = "minPCs", min = Some(0), max = Some(20))
-      val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
-      val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
-      val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
-      val skipQc = requiredBool(config = config, field = "skipQc", default = Some(false))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -612,22 +415,6 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         tabix = {
           val thisConfig = requiredObj(config = config, field = "tabix")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
-        lowMemEpacts = {
-          val thisConfig = requiredObj(config = config, field = "lowMemEpacts")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
-        midMemEpacts = {
-          val thisConfig = requiredObj(config = config, field = "midMemEpacts")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
-        highMemEpacts = {
-          val thisConfig = requiredObj(config = config, field = "highMemEpacts")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
-        locuszoom = {
-          val thisConfig = requiredObj(config = config, field = "locuszoom")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -872,461 +659,6 @@ object ProjectConfig extends loamstream.LoamFile {
       
       }
   
-      val Cohorts = {
-      
-        for {
-          cohort <- requiredObjList(config = config, field = "cohorts")
-        } yield {
-  
-          val array = requiredStr(config = cohort, field = "array")
-          Arrays.map(e => e.id) contains array match {
-            case true => ()
-            case false => throw new CfgException("cohorts.array: array '" + array + "' not found")
-          }
-  
-          ConfigCohort(
-            id = requiredStr(config = cohort, field = "id"),
-            array = array,
-            ancestry = requiredStrList(config = cohort, field = "ancestry", regex = ancestryCodes.mkString("|")),
-            minPartitions = optionalInt(config = cohort, field = "minPartitions", min = Some(1)),
-            stratCol = optionalStr(config = cohort, field = "stratCol"),
-            stratCodes = optionalStrList(config = cohort, field = "stratCodes")
-          )
-      
-        }
-      
-      }
-  
-      val Metas = {
-      
-        for {
-          meta <- requiredObjList(config = config, field = "metas")
-        } yield {
-  
-          val cohorts = for {
-            c <- requiredStrList(config = meta, field = "cohorts")
-          } yield {
-            Cohorts.map(e => e.id) contains c match {
-              case true => c
-              case false => throw new CfgException("metas.cohorts: cohort '" + c + "' not found")
-            }
-          }
-  
-          ConfigMeta(
-            id = requiredStr(config = meta, field = "id"),
-            cohorts = cohorts,
-            minPartitions = optionalInt(config = meta, field = "minPartitions", min = Some(1))
-          )
-      
-        }
-      
-      }
-  
-      val Merges = {
-      
-        for {
-          merge <- requiredObjList(config = config, field = "merges")
-        } yield {
-  
-          val cohorts_metas = for {
-            c <- requiredStrList(config = merge, field = "cohorts_metas")
-          } yield {
-            Cohorts.map(e => e.id) contains c match {
-              case true => c
-              case false =>
-                Metas.map(e => e.id) contains c match {
-                  case true => c
-                  case false => throw new CfgException("merges.cohorts_metas: cohorts_metas '" + c + "' not found")
-                }
-            }
-          }
-      
-          ConfigMerge(
-            id = requiredStr(config = merge, field = "id"),
-            cohorts_metas = cohorts_metas,
-            minPartitions = optionalInt(config = merge, field = "minPartitions", min = Some(1))
-          )
-      
-        }
-      
-      }
-  
-      val Phenos = {
-      
-        for {
-          pheno <- requiredObjList(config = config, field = "phenos")
-        } yield {
-      
-          ConfigPheno(
-            id = requiredStr(config = pheno, field = "id"),
-            name = requiredStr(config = pheno, field = "name"),
-            binary = requiredBool(config = pheno, field = "binary"),
-            desc = requiredStr(config = pheno, field = "desc")
-          )
-      
-        }
-      
-      }
-  
-      val Knowns = {
-      
-        for {
-          known <- requiredObjList(config = config, field = "knowns")
-        } yield {
-      
-          ConfigKnown(
-            id = requiredStr(config = known, field = "id"),
-            data = requiredStr(config = known, field = "data"),
-            hiLd = requiredStr(config = known, field = "hiLd"),
-            n = getStrOrBlank(config = known, field = "n"),
-            nCase = getStrOrBlank(config = known, field = "nCase"),
-            nCtrl = getStrOrBlank(config = known, field = "nCtrl"),
-            desc = requiredStr(config = known, field = "desc"),
-            citation = requiredStr(config = known, field = "citation")
-          )
-      
-        }
-      
-      }
-  
-      val Schemas = {
-  
-        for {
-          schema <- requiredObjList(config = config, field = "schemas")
-        } yield {
-  
-          val id = requiredStr(config = schema, field = "id")
-  
-          val design = requiredStr(config = schema, field = "design", regex = modelDesigns.mkString("|"))
-  
-          val cohorts = requiredStrList(config = schema, field = "cohorts")
-  
-          val filters = optionalStrList(config = schema, field = "filters") match {
-            case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if numericVariantFilters.map(e => e.id) contains n => ()
-                  case o if booleanVariantFilters.map(e => e.id) contains o => ()
-                  case p if categoricalVariantFilters.map(e => e.id) contains p => ()
-                  case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                  case _ => throw new CfgException("schemas.filters: schema " + id + " variant filter '" + f + "' not found")
-                }
-              }
-              Some(s)
-            case None => None
-          }
-  
-          val cohortFilters = optionalObjList(config = schema, field = "cohortFilters") match {
-            case Some(s) =>
-              val x = for {
-                cf <- s
-              } yield {
-                for {
-                  f <- requiredStrList(config = cf, field = "filters")
-                } yield {
-                  f match {
-                    case n if numericVariantFilters.map(e => e.id) contains n => ()
-                    case o if booleanVariantFilters.map(e => e.id) contains o => ()
-                    case p if categoricalVariantFilters.map(e => e.id) contains p => ()
-                    case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                    case _ => throw new CfgException("schemas.cohortFilters: schema " + id + " cohort filter '" + f + "' not found")
-                  }
-                }
-                CohortFilter(
-                  cohort = requiredStr(config = cf, field = "cohort"),
-                  filters = requiredStrList(config = cf, field = "filters")
-                )
-              }
-              Some(x)
-            case None => None
-          }
-  
-          (cohortFilters, cohorts.size) match {
-            case (Some(f), n) if n == 1 => throw new CfgException("schemas.cohortFilters: cohort specific filters require > 1 cohort for schema " + id)
-            case _ => ()
-          }
-  
-          val knockoutFilters = optionalObjList(config = schema, field = "knockoutFilters") match {
-            case Some(s) =>
-              val x = for {
-                cf <- s
-              } yield {
-                for {
-                  f <- requiredStrList(config = cf, field = "filters")
-                } yield {
-                  f match {
-                    case n if numericVariantFilters.map(e => e.id) contains n => ()
-                    case o if booleanVariantFilters.map(e => e.id) contains o => ()
-                    case p if categoricalVariantFilters.map(e => e.id) contains p => ()
-                    case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                    case _ => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "' not found")
-                  }
-                }
-                CohortFilter(
-                  cohort = requiredStr(config = cf, field = "cohort"),
-                  filters = requiredStrList(config = cf, field = "filters")
-                )
-              }
-              Some(x)
-            case None => None
-          }
-  
-          (knockoutFilters, cohorts.size) match {
-            case (Some(f), n) if n == 1 => throw new CfgException("schemas.knockoutFilters: cohort specific knockout filters require > 1 cohort for schema " + id)
-            case (Some(f), n) if n > 1 =>
-              (design, knockoutFilters) match {
-                case ("strat", Some(s)) => throw new CfgException("schemas.knockoutFilters: schema " + id + " 'strat' design and knockoutFilters are not allowed")
-                case _ => ()
-              }
-            case _ => ()
-          }
-  
-          val knockoutPhenoFilters = knockoutFilters match {
-            case Some(s) => s.map(e => e.filters).flatten
-            case None => Seq()
-          }
-          for {
-            f <- knockoutPhenoFilters
-          } yield {
-            f match {
-              case n if numericVariantFilters.map(e => e.id) contains n =>
-                numericVariantFilters.filter(e => e.id == n).head.field.startsWith("variant_qc.diff_miss") match {
-                  case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
-                  case false => ()
-                }
-              case o if booleanVariantFilters.map(e => e.id) contains o =>
-                booleanVariantFilters.filter(e => e.id == o).head.field.startsWith("variant_qc.diff_miss") match {
-                  case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
-                  case false => ()
-                }
-              case p if categoricalVariantFilters.map(e => e.id) contains p =>
-                categoricalVariantFilters.filter(e => e.id == p).head.field.startsWith("variant_qc.diff_miss") match {
-                  case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
-                  case false => ()
-                }
-              case q if compoundVariantFilters.map(e => e.id) contains q =>
-                for {
-                  cf <- compoundVariantFilters.filter(e => e.id == q).head.include
-                } yield {
-                  cf match {
-                    case n if numericVariantFilters.map(e => e.id) contains n =>
-                      n.startsWith("variant_qc.diff_miss") match {
-                        case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
-                        case false => ()
-                      }
-                    case b if booleanVariantFilters.map(e => e.id) contains b =>
-                      b.startsWith("variant_qc.diff_miss") match {
-                        case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
-                        case false => ()
-                      }
-                    case c if categoricalVariantFilters.map(e => e.id) contains c =>
-                      c.startsWith("variant_qc.diff_miss") match {
-                        case true => throw new CfgException("schemas.knockoutFilters: schema " + id + " knockout filter '" + f + "': knockout filters based on phenotype specific metrics are not currently supported")
-                        case false => ()
-                      }
-                    case _ => ()
-                  }
-                }
-              case _ => ()
-            }
-          }
-  
-          val masks = optionalObjList(config = schema, field = "masks") match {
-            case Some(s) =>
-              val x = for {
-                cf <- s
-              } yield {
-                for {
-                  f <- requiredStrList(config = cf, field = "filters")
-                } yield {
-                  f match {
-                    case n if numericVariantFilters.map(e => e.id) contains n => ()
-                    case o if booleanVariantFilters.map(e => e.id) contains o => ()
-                    case p if categoricalVariantFilters.map(e => e.id) contains p => ()
-                    case q if compoundVariantFilters.map(e => e.id) contains q => ()
-                    case _ => throw new CfgException("schemas.masks: schema " + id + " mask filter '" + f + "' not found")
-                  }
-                }
-                MaskFilter(
-                  id = requiredStr(config = cf, field = "id"),
-                  filters = requiredStrList(config = cf, field = "filters"),
-                  groupFile = optionalStr(config = cf, field = "groupFile"),
-                )
-              }
-              Some(x)
-            case None => None
-          }
-  
-          var filterCohorts = Seq[String]()
-          cohortFilters match {
-            case Some(f) =>
-              for {
-                cf <- f
-              } yield {
-                filterCohorts = filterCohorts ++ Seq(cf.cohort)
-              }
-            case _ => ()
-          }
-          knockoutFilters match {
-            case Some(f) =>
-              for {
-                kf <- f
-              } yield {
-                filterCohorts = filterCohorts ++ Seq(kf.cohort)
-              }
-            case _ => ()
-          }
-          (design, filters) match {
-            case ("strat", Some(_)) => filterCohorts = filterCohorts ++ cohorts
-            case _ => ()
-          }
-          filterCohorts.size match {
-            case n if n > 1 => filterCohorts = filterCohorts.distinct
-            case _ => ()
-          }
-  
-          ConfigSchema(
-            id = id,
-            design = design,
-            cohorts = (design, cohorts.size > 1, Cohorts.filter(e => cohorts.contains(e.id)).map(e => e.array).distinct.size > 1) match {
-              case ("strat", false, _) => throw new CfgException("schemas.cohorts: schema " + id + " 'strat' design requires more than 1 cohort")
-              case ("full", true, true) => throw new CfgException("schemas.cohorts: schema " + id + " 'full' design requires cohorts from same array")
-              case _ => cohorts
-            },
-            samplesKeep = optionalStr(config = schema, field = "samplesKeep"),
-            samplesExclude = optionalStr(config = schema, field = "samplesExclude"),
-            filters = filters,
-            cohortFilters = cohortFilters,
-            knockoutFilters = knockoutFilters,
-            masks = masks,
-            maxGroupSize = optionalInt(config = schema, field = "maxGroupSize", min = Some(2)),
-            filterCohorts = filterCohorts
-          )
-  
-        }
-      
-      }
-  
-      val Models = {
-  
-        for {
-          model <- requiredObjList(config = config, field = "models")
-        } yield {
-  
-          val id = requiredStr(config = model, field = "id")
-  
-          val schema = requiredStr(config = model, field = "schema")
-          Schemas.map(e => e.id) contains schema match {
-            case true => ()
-            case false => throw new CfgException("models.schema: model " + id + " schema '" + schema + "' not found")
-          }
-  
-          val pheno = requiredStr(config = model, field = "pheno")
-          Phenos.map(e => e.id) contains pheno match {
-            case true => ()
-            case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
-          }
-  
-          val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
-  
-          val cohorts = optionalStrList(config = model, field = "cohorts") match {
-            case Some(s) =>
-              (Schemas.filter(e => e.id == schema).head.design, s.toSet.subsetOf(Schemas.filter(e => e.id == schema).head.cohorts.toSet)) match {
-                case ("strat", false) => throw new CfgException("models.cohorts: model " + id + " cohorts must be members of schema " + schema + " cohort list")
-                case _ => s
-              }
-            case None => Schemas.filter(e => e.id == schema).head.cohorts
-          }
-  
-          val metas = optionalStrList(config = model, field = "metas") match {
-            case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if Metas.map(e => e.id) contains n =>
-                    val x = Metas.filter(e => e.id == n).head.cohorts
-                    Schemas.filter(e => e.id == schema).head.cohorts.intersect(x) == x match {
-                      case false => throw new CfgException("models.metas: model " + id + " meta cohorts must be subset of schema cohorts")
-                      case true => ()
-                    }
-                  case _ => throw new CfgException("models.metas: model " + id + " meta '" + f + "' not found")
-                }
-              }
-              Some(s)
-            case None => None
-          }
-   
-          val merges = optionalStrList(config = model, field = "merges") match {
-            case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if Merges.map(e => e.id) contains n =>
-                    val x = Cohorts.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
-                    Schemas.filter(e => e.id == schema).head.cohorts.intersect(x) == x match {
-                      case false => throw new CfgException("models.merges: model " + id + " merge cohorts must be subset of schema cohorts")
-                      case true => ()
-                    }
-                    metas match {
-                      case Some(t) =>
-                        val y = Metas.filter(e => Merges.filter(f => f.id == n).head.cohorts_metas.contains(e.id)).map(e => e.id)
-                        metas.get.intersect(y) == y match {
-                          case false => throw new CfgException("models.merges: model " + id + " merge metas must be subset of schema metas")
-                          case true => ()
-                        }
-                      case None => ()
-                    }
-                  case _ => throw new CfgException("models.merges: model " + id + " merge '" + f + "' not found")
-                }
-              }
-              Some(s)
-            case None => None
-          }
-  
-          val knowns = optionalStrList(config = model, field = "knowns") match {
-            case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if Knowns.map(e => e.id) contains n => ()
-                  case _ => throw new CfgException("models.knowns: model " + id + " known '" + f + "' not found")
-                }
-              }
-              Some(s)
-            case None => None
-          }
-  
-          ConfigModel(
-            id = id,
-            schema = schema,
-            pheno = pheno,
-            trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
-            tests = tests,
-            assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
-            maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
-            covars = requiredStrList(config = model, field = "covars").mkString("+"),
-            cohorts = cohorts,
-            metas = (Schemas.filter(e => e.id == schema).head.design, metas) match {
-              case ("full", Some(s)) => throw new CfgException("models.metas:  model " + id + " schema " + schema + " 'full' design and metas are not allowed")
-              case _ => metas
-            },
-            merges = (Schemas.filter(e => e.id == schema).head.design, merges) match {
-              case ("full", Some(s)) => throw new CfgException("models.merges: model " + id + " schema " + schema + " 'full' design and merges are not allowed")
-              case _ => merges
-            },
-            knowns = knowns,
-            runAssoc = requiredBool(config = model, field = "runAssoc", default = Some(true))
-          )
-  
-        }
-  
-      }
-  
       //val Reports = {
       //
       //  for {
@@ -1364,8 +696,6 @@ object ProjectConfig extends loamstream.LoamFile {
       //}
   
       val nArrays = Arrays.size
-      val nCohorts = Cohorts.size
-      val nMetas = Metas.size
   
       new ProjectConfig(
   
@@ -1401,26 +731,15 @@ object ProjectConfig extends loamstream.LoamFile {
         sampleFileEURCodes = sampleFileEURCodes,
         sampleFileEASCodes = sampleFileEASCodes,
         sampleFileSASCodes = sampleFileSASCodes,
-        phenoFile = phenoFile,
-        phenoFileId = phenoFileId,
         authors = authors,
         email = email,
         organization = organization,
-        acknowledgementsAnalysisReport = acknowledgementsAnalysisReport,
         acknowledgementsQcReport = acknowledgementsQcReport,
         nAncestryInferenceFeatures = nAncestryInferenceFeatures,
         ancestryInferenceFeatures = ancestryInferenceFeatures,
-        minPCs = minPCs,
-        maxPCs = maxPCs,
-        nStddevs = nStddevs,
-        diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
-        skipQc = skipQc,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
-        nCohorts = nCohorts,
-        nMetas = nMetas,
-        maxSigRegions = maxSigRegions,
         numericVariantFilters =  numericVariantFilters,
         booleanVariantFilters = booleanVariantFilters,
         categoricalVariantFilters = categoricalVariantFilters,
@@ -1429,16 +748,8 @@ object ProjectConfig extends loamstream.LoamFile {
         booleanSampleFilters = booleanSampleFilters,
         categoricalSampleFilters = categoricalSampleFilters,
         compoundSampleFilters = compoundSampleFilters,
-        Arrays = Arrays,
-        Cohorts = Cohorts,
-        Metas = Metas,
-        Merges = Merges,
-        Knowns = Knowns,
-        Phenos = Phenos,
-        Schemas = Schemas,
-        Models = Models
+        Arrays = Arrays
         //Reports = Reports
-  
       )
   
     }
@@ -1456,8 +767,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgTools = path(s"${imagesDir}/tools.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
-        imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
-        imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg")
+        imgFlashPca = path(s"${imagesDir}/flashpca.simg")
       )
   
       val binary = Binary(
@@ -1472,8 +782,7 @@ object ProjectConfig extends loamstream.LoamFile {
         binLocuszoom = path("/usr/local/bin/locuszoom"),
         binPdflatex = path("/usr/local/bin/pdflatex"),
         binRscript = path("/usr/local/bin/Rscript"),
-        binFlashPca = path("/usr/local/bin/flashpca"),
-        binEpacts = path("/usr/local/bin/epacts")
+        binFlashPca = path("/usr/local/bin/flashpca")
       )
   
       val python = Python(
@@ -1490,42 +799,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
         pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
         pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
-        pyHailAssoc = path(s"${scriptsDir}/hail_assoc.py"),
-        pyHailSchemaVariantStats = path(s"${scriptsDir}/hail_schema_variant_stats.py"),
-        pyHailSchemaVariantCaseCtrlStats = path(s"${scriptsDir}/hail_schema_variant_case_ctrl_stats.py"),
-        pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
-        pyHailFilterSchemaVariants = path(s"${scriptsDir}/hail_filter_schema_variants.py"),
-        pyHailFilterSchemaPhenoVariants = path(s"${scriptsDir}/hail_filter_schema_pheno_variants.py"),
-        pyHailGenerateGroupfile = path(s"${scriptsDir}/hail_generate_groupfile.py"),
-        pyHailGenerateModelVcf = path(s"${scriptsDir}/hail_generate_model_vcf.py"),
-        pyQqPlot = path(s"${scriptsDir}/qqplot.py"),
-        pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
-        pyTopResults = path(s"${scriptsDir}/top_results.py"),
-        pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
-        pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
-        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
-        //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
-        //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
-        //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
-        //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
-        //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
-        //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
-        //pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
-        //pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
-        //pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
-        //pyGenerateQcReportAncestry = path(s"${scriptsDir}/generate_qc_report_ancestry.py"),
-        //pyGenerateQcReportIbdSexcheck = path(s"${scriptsDir}/generate_qc_report_ibd_sexcheck.py"),
-        //pyGenerateQcReportSampleqc = path(s"${scriptsDir}/generate_qc_report_sampleqc.py"),
-        //pyGenerateQcReportVariantqc = path(s"${scriptsDir}/generate_qc_report_variantqc.py"),
-        //pyGenerateQcReportBibliography = path(s"${scriptsDir}/generate_qc_report_bibliography.py"),
-        //pyGenerateAnalysisReportIntro = path(s"${scriptsDir}/generate_analysis_report_intro.py"),
-        //pyGenerateAnalysisReportData = path(s"${scriptsDir}/generate_analysis_report_data.py"),
-        //pyGenerateAnalysisReportStrategy = path(s"${scriptsDir}/generate_analysis_report_strategy.py"),
-        //pyGenerateAnalysisReportPhenoSummary = path(s"${scriptsDir}/generate_analysis_report_pheno_summary.py"),
-        //pyGenerateAnalysisReportPhenoCalibration = path(s"${scriptsDir}/generate_analysis_report_pheno_calibration.py"),
-        //pyGenerateAnalysisReportPhenoTopLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_top_loci.py"),
-        //pyGenerateAnalysisReportPhenoKnownLoci = path(s"${scriptsDir}/generate_analysis_report_pheno_known_loci.py"),
-        //pyGenerateAnalysisReportBibliography = path(s"${scriptsDir}/generate_analysis_report_bibliography.py")
+        pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py")
       )
   
       val bash = Bash(
@@ -1536,13 +810,7 @@ object ProjectConfig extends loamstream.LoamFile {
         shPlinkPrepare = path(s"${scriptsDir}/plink_prepare.sh"),
         shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh"),
         shKlustakwikPca = path(s"${scriptsDir}/klustakwik_pca.sh"),
-        shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh"),
-        shCrossCohortCommonVariants = path(s"${scriptsDir}/cross_cohort_common_variants.sh"),
-        shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
-        shEpacts = path(s"${scriptsDir}/epacts.sh"),
-        shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
-        shRegPlot = path(s"${scriptsDir}/regplot.sh")
-        //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
+        shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh")
       )
   
       val r = R(
@@ -1555,21 +823,7 @@ object ProjectConfig extends loamstream.LoamFile {
         rIstatsAdjGmmPlotMetrics = path(s"${scriptsDir}/istats_adj_gmm_plot_metrics.r"),
         rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
         rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
-        rModelCohortSamplesAvailable = path(s"${scriptsDir}/model_cohort_samples_available.r"),
-        rSchemaCohortSamplesAvailable = path(s"${scriptsDir}/schema_cohort_samples_available.r"),
-        rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
-        rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
-        rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
-        rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r"),
-        rTop20 = path(s"${scriptsDir}/top20.r"),
         rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r")
-        //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
-        //rPcair = path(s"${scriptsDir}/pcair.r"),
-        //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
-        //rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
-        //rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r"),
-        //rTop50Known = path(s"${scriptsDir}/top50_known.r"),
-        //rMetaExclusionsTable = path(s"${scriptsDir}/meta_exclusions_table.r")
       )
   
       new Utils(
@@ -1592,12 +846,6 @@ object ProjectConfig extends loamstream.LoamFile {
   val projectConfig = ProjectConfig.parseConfig(dataConfig)
   projectConfig.debugVars()
   for ( d <- projectConfig.Arrays ) { d.debugVars() }
-  for ( d <- projectConfig.Cohorts ) { d.debugVars() }
-  for ( d <- projectConfig.Metas ) { d.debugVars() }
-  for ( d <- projectConfig.Merges ) { d.debugVars() }
-  for ( d <- projectConfig.Phenos ) { d.debugVars() }
-  for ( d <- projectConfig.Models ) { d.debugVars() }
-  for ( d <- projectConfig.Knowns ) { d.debugVars() }
   //for ( d <- projectConfig.Reports ) { d.debugVars() }
   println("... Project Configuration Loaded Successfully!")
   
@@ -1610,11 +858,5 @@ object ProjectConfig extends loamstream.LoamFile {
   utils.bash.debugVars()
   utils.r.debugVars()
   println("... Pipeline Utilities Configuration Loaded Successfully!")
-  
-  // verify phenotype file if defined
-  projectConfig.phenoFile match {
-    case "" => ()
-    case _ => verifyPheno(phenoFile = projectConfig.phenoFile, models = projectConfig.Models)
-  }
 
 }
