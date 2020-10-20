@@ -16,7 +16,7 @@ object CrossCohort extends loamstream.LoamFile {
       for {
         cohort <- configMeta.cohorts
       } yield {
-        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredPlink.base.toString + ".bim"
+        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredPlink.base.local.get.toString + ".bim"
       }
     }.distinct
   
@@ -24,7 +24,7 @@ object CrossCohort extends loamstream.LoamFile {
       for {
         cohort <- configMeta.cohorts
       } yield {
-        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredPlink.data
+        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredPlink.data.local.get
       }
     }.flatten.distinct
   
@@ -61,7 +61,7 @@ object CrossCohort extends loamstream.LoamFile {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rMetaCohortSamples}
-        --fam-in ${arrayStores(arrayCfg).filteredPlink.base}.fam
+        --fam-in ${arrayStores(arrayCfg).filteredPlink.base.local.get}.fam
         --ancestry-in ${arrayStores(arrayCfg).ancestryMap.local.get}
         --ancestry-keep "${configCohort.ancestry.mkString(",")}"
         --pheno-in ${arrayStores(arrayCfg).phenoFile.local.get}

@@ -42,9 +42,9 @@ object PrepareModel extends loamstream.LoamFile {
         } yield {
           modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
         }
-        (x.toSeq ++ arrayStores(array).filteredPlink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
+        (x.toSeq ++ arrayStores(array).filteredPlink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).sampleQcStats.local.get :+ arrayStores(array).kin0
       case None =>
-        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
+        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).sampleQcStats.local.get :+ arrayStores(array).kin0
     }
     
     val keepRelated = famTests.intersect(configModel.tests).size match {
@@ -57,25 +57,14 @@ object PrepareModel extends loamstream.LoamFile {
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rModelCohortSamplesAvailable}
         --pheno-in ${arrayStores(array).phenoFile.local.get}
-
-
-
-
-
-
-
-
-
-
-
         --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
-        --ancestry-in ${projectStores.ancestryInferred.local.get}
+        --ancestry-in ${arrayStores(array).ancestryMap.local.get}
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
         --pheno-col ${configModel.pheno}
-        --iid-col ${projectConfig.phenoFileId}
-        --sampleqc-in ${arrayStores(array).sampleQcData.stats.local.get}
-        --kinship-in ${arrayStores(array).kinshipData.kin0}
+        --iid-col ${array.phenoFileId}
+        --sampleqc-in ${arrayStores(array).sampleQcStats.local.get}
+        --kinship-in ${arrayStores(array).kin0}
         ${keepRelated}
         --covars "${configModel.covars}"
         --out-id-map ${modelStores((configModel, configSchema, configCohorts, configMeta)).sampleMap}
@@ -102,7 +91,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${utils.binary.binPlink}
         ${utils.r.rGeneratePheno}
         ${projectConfig.resources.flashPca.cpus}
-        ${arrayStores(array).prunedData.plink.base}
+        ${arrayStores(array).prunedPlink.base}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaBase}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores}
@@ -114,7 +103,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${configModel.maxPcaOutlierIterations}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}
         ${configModel.pheno}
-        ${projectConfig.phenoFileId}
+        ${array.phenoFileId}
         "${trans}"
         "${configModel.covars}"
         ${projectConfig.minPCs}
@@ -125,7 +114,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).outliers}
         ${projectConfig.resources.flashPca.mem * 0.9 * 1000}
         > ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog}"""
-        .in(arrayStores(array).prunedData.plink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
+        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).outliers, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}".split("/").last)
     
@@ -140,7 +129,7 @@ object PrepareModel extends loamstream.LoamFile {
           cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pheno-name ${configModel.pheno}
-            --iid-col ${projectConfig.phenoFileId}
+            --iid-col ${array.phenoFileId}
             --cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
@@ -156,7 +145,7 @@ object PrepareModel extends loamstream.LoamFile {
           cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pheno-name ${configModel.pheno}
-            --iid-col ${projectConfig.phenoFileId}
+            --iid-col ${array.phenoFileId}
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
             .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot)

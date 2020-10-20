@@ -95,23 +95,23 @@ object ProjectConfig extends loamstream.LoamFile {
     local: Option[String],
     google: Option[String]) extends Debug
 
+  final case class ConfigArrayQc(
+    config: String,
+    arrayId: String,
+    baseDir: String) extends Debug
+
   final case class ConfigArray(
     id: String,
-    vcf: Option[ConfigInputStore],
-    hailMT: Option[ConfigInputStore],
-    filteredPlink: String,
-    sampleFile: String,
-    sampleFileId: String,
-    phenoFile: String,
-    phenoFileId: String,
-    ancestryMap: String,
-    sampleQcStats: String,
-    kin0: String,
-    technology: String,
-    description: String,
-    chrs: Seq[String],
-    samplesExclude: Option[Seq[String]],
-    variantsExclude: Option[Seq[String]]) extends Debug
+    qc: ConfigArrayQc,
+    qcProjectId: String,
+    qcCloudHome: Option[String],
+    qcHailCloud: Boolean,
+    qcPhenoFile: String,
+    qcSampleFile: String,
+    qcSampleFileSrSex: String,
+    qcSampleFileMaleCode: String,
+    qcSampleFileFemaleCode: String,
+    exportCleanVcf: Boolean) extends Debug
   
   final case class ConfigCohort(
     id: String,
@@ -662,63 +662,35 @@ object ProjectConfig extends loamstream.LoamFile {
         for {
           array <- requiredObjList(config = config, field = "arrays")
         } yield {
-  
-          val vcf = optionalObj(config = array, field = "vcf") match {
-            case Some(o) => 
-              Some(ConfigInputStore(
-                local = optionalStr(config = o, field = "local"),
-                google = optionalStr(config = o, field = "google")
-              ))
-            case None => None
-          }
-          vcf match {
-            case Some(s) =>
-              (s.local, s.google) match {
-                case (None, None) => throw new CfgException("either local or google path must be defined for a vcf input file")
-                case _ => ()
-            case None => ()
-          }
 
-          val hailMT = optionalObj(config = array, field = "hailMT") match {
-            case Some(o) => 
-              Some(ConfigInputStore(
-                local = optionalStr(config = o, field = "local"),
-                google = optionalStr(config = o, field = "google")
-              ))
-            case None => None
-          }
-          hailMT match {
-            case Some(s) =>
-              (s.local, s.google) match {
-                case (None, None) => throw new CfgException("either local or google path must be defined for a hailMT input file")
-                case _ => ()
-            case None => ()
-          }
+          val arrayQcCfg = requiredObj(config = array, field = "qc")
 
-          (vcf, hailMT) match {
-             case (None, None) => throw new CfgException("either array.vcf or array.hailMT or both must be defined")
-             case _ => ()
-          }
+          val qcConfig = loadConfig(checkPath(arrayCfg.qc.config))
+
+          val qcProjectId = requiredStr(config = qcConfig, field = "projectId")
+          val qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
+          val hailCloud = requiredBool(config = qcConfig, field = "hailCloud")
+          val qcPhenoFile = requiredStr(config = qcConfig, field = "phenoFile")
+          val qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile")
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-            vcf = vcf,
-            hailMT = hailMT,
-            filteredPlink = requiredStr(config = array, field = "filteredPlink"),
-            sampleFile = requiredStr(config = array, field = "sampleFile"),
-            sampleFileId = requiredStr(config = array, field = "sampleFileId"),
-            phenoFile = requiredStr(config = array, field = "phenoFile"),
-            phenoFileId = requiredStr(config = array, field = "phenoFileId"),
-            ancestryMap = requiredStr(config = array, field = "ancestryMap"),
-            sampleQcStats = requiredStr(config = array, field = "sampleQcStats"),
-            kin0 = requiredStr(config = array, field = "kin0"),
-            technology = requiredStr(config = array, field = "technology", regex = (gwasTech ++ seqTech).mkString("|")),
-            description = requiredStr(config = array, field = "description"),
-            chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
-            samplesExclude = optionalStrList(config = array, field = "samplesExclude"),
-            variantsExclude = optionalStrList(config = array, field = "variantsExclude")
+            qc = ConfigArrayQc(
+              config = requiredStr(config = arrayQcCfg, field = "config")
+              arrayId = requiredStr(config = arrayQcCfg, field = "arrayId")
+              baseDir = requiredStr(config = arrayQcCfg, field = "baseDir")
+            ),
+            qcProjectId = requiredStr(config = qcConfig, field = "projectId"),
+            qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None },
+            qcHailCloud = requiredBool(config = qcConfig, field = "hailCloud"),
+            qcPhenoFile = requiredStr(config = qcConfig, field = "phenoFile"),
+            qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile"),
+            qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),,
+            qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),,
+            qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),,
+            exportCleanVcf = requiredBool(config = qcConfig, field = "exportCleanVcf")
           )
-      
+
         }
       
       }

@@ -39,10 +39,10 @@ object AssocTest extends loamstream.LoamFile {
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --pheno-col ${configModel.pheno}
-            --iid-col ${projectConfig.phenoFileId}
-            --sex-col ${projectConfig.sampleFileSrSex}
-            --male-code ${projectConfig.sampleFileMaleCode}
-            --female-code ${projectConfig.sampleFileFemaleCode}
+            --iid-col ${array.phenoFileId}
+            --sex-col ${array.qcSampleFileSrSex}
+            --male-code ${array.qcSampleFileMaleCode}
+            --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
             --covars "${configModel.covars}"
             --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
@@ -94,9 +94,9 @@ object AssocTest extends loamstream.LoamFile {
                   
                     hail"""${utils.python.pyHailAssoc} --
                       --hail-utils ${projectStores.hailUtils.google.get}
-                      --mt-in ${arrayStores(array).refData.mt.google.get}
+                      --mt-in ${arrayStores(array).refMt.google.get}
                       --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
-                      --iid-col ${projectConfig.phenoFileId}
+                      --iid-col ${array.phenoFileId}
                       --pheno-col ${configModel.pheno}
                       --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
                       --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
@@ -106,7 +106,7 @@ object AssocTest extends loamstream.LoamFile {
                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get}
                       --cloud
                       --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get}"""
-                        .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get)
+                        .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get)
                         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.google.get)
                         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}.google".split("/").last)
                   
@@ -124,9 +124,9 @@ object AssocTest extends loamstream.LoamFile {
                   drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
                   
                     cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
-                      --mt-in ${arrayStores(array).refData.mt.local.get}
+                      --mt-in ${arrayStores(array).refMt.local.get}
                       --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-                      --iid-col ${projectConfig.phenoFileId}
+                      --iid-col ${array.phenoFileId}
                       --pheno-col ${configModel.pheno}
                       --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
                       --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
@@ -135,7 +135,7 @@ object AssocTest extends loamstream.LoamFile {
                       --covars "${configModel.covars}"
                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
                       --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get}"""
-                        .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refData.mt.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get :+ schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
+                        .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refMt.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get :+ schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
                         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get)
                         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}".split("/").last)
                   
@@ -205,14 +205,14 @@ object AssocTest extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
   
         cmd"""${utils.bash.shAnnotateResults}
-          ${arrayStores(array).refData.sitesVcf.local.get}
+          ${arrayStores(array).refSitesVcf.local.get}
           ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results}
           ${projectConfig.resources.vep.cpus}
           ${projectStores.fasta}
           ${projectStores.vepCacheDir}
           ${projectStores.vepPluginsDir}
           ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}"""
-        .in(arrayStores(array).refData.sitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
+        .in(arrayStores(array).refSitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}".split("/").last)
   
@@ -354,7 +354,7 @@ object AssocTest extends loamstream.LoamFile {
   
               val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
                 case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-                case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+                case None => s"""--vcf ${arrayStores(array).cleanVcf.data.local.get.toString.split("@")(1)}"""
               }
   
               val groupFileIn = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
@@ -371,7 +371,7 @@ object AssocTest extends loamstream.LoamFile {
   
               schemaStores((configSchema, configCohorts)).vcf match {
                 case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanVcf.data.local.get)
               }
   
               modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
@@ -627,7 +627,7 @@ object AssocTest extends loamstream.LoamFile {
               
                     val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
                       case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-                      case None => s"""--vcf ${arrayStores(array).cleanData.get.vcf.data.local.get.toString.split("@")(1)}"""
+                      case None => s"""--vcf ${arrayStores(array).cleanVcf.data.local.get.toString.split("@")(1)}"""
                     }
   
                     val groupFileIn = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {

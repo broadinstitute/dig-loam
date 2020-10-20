@@ -44,18 +44,18 @@ object PrepareSchema extends loamstream.LoamFile {
 
     val schemaCohortSamplesAvailableIn = arrayStores(array).samplesExclude match {
       case Some(s) =>
-        (arrayStores(array).filteredPlink.data.local.get ++ arrayStores(array).samplesExclude) :+ arrayStores(array).sampleFile :+ arrayStores(array).ancestryMap :+ arrayStores(array).filterPostQc.samplesExclude.local.get
+        (arrayStores(array).filteredPlink.data.local.get ++ arrayStores(array).samplesExclude) :+ arrayStores(array).sampleFile.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
       case None =>
-        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).sampleFile :+ arrayStores(array).ancestryMap :+ arrayStores(array).filterPostQc.samplesExclude.local.get
+        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).sampleFile.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
     }
     
     drmWith(imageName = s"${utils.image.imgR}") {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rSchemaCohortSamplesAvailable}
-        --samplefile-in ${arrayStores(array).sampleFile}
+        --samplefile-in ${arrayStores(array).sampleFile.local.get}
         --fam-in ${arrayStores(array).filteredPlink.base.local.get}.fam
-        --ancestry-in ${arrayStores(array).ancestryMap}
+        --ancestry-in ${arrayStores(array).ancestryMap.local.get}
         ${stratStrings.mkString(" ")}
         --iid-col ${array.sampleFileId}
         ${samplesExcludeString}
@@ -89,13 +89,13 @@ object PrepareSchema extends loamstream.LoamFile {
           hail"""${utils.python.pyHailSchemaVariantStats} --
             --hail-utils ${projectStores.hailUtils.google.get}
             --reference-genome ${projectConfig.referenceGenome}
-            --mt-in ${arrayStores(array).refData.mt.google.get}
+            --mt-in ${arrayStores(array).refMt.google.get}
             --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
             --variants-stats-out ${schemaStores((configSchema, configCohorts)).variantsStats.base.google.get}
             --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
             --cloud
             --log ${schemaStores((configSchema, configCohorts)).variantsStatsHailLog.base.google.get}"""
-              .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+              .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
               .out(schemaStores((configSchema, configCohorts)).variantsStats.base.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHailLog.base.google.get)
               .tag(s"${schemaStores((configSchema, configCohorts)).variantsStats.base.local.get}.google".split("/").last)
         
@@ -119,17 +119,17 @@ object PrepareSchema extends loamstream.LoamFile {
             hail"""${utils.python.pyHailSchemaVariantCaseCtrlStats} --
               --hail-utils ${projectStores.hailUtils.google.get}
               --reference-genome ${projectConfig.referenceGenome}
-              --mt-in ${arrayStores(array).refData.mt.google.get}
-              --pheno-in ${projectStores.phenoFile.google.get}
-  	        --pheno-col ${pheno.id}
-              --iid-col ${projectConfig.phenoFileId}
+              --mt-in ${arrayStores(array).refMt.google.get}
+              --pheno-in ${arrayStores(array).phenoFile.google.get}
+  	          --pheno-col ${pheno.id}
+              --iid-col ${array.phenoFileId}
               --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
               --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
               --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.google.get}
               --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
               --cloud
               --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.google.get}"""
-                .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+                .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, arrayStores(array).phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
                 .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.google.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}.google".split("/").last)
           
@@ -150,12 +150,12 @@ object PrepareSchema extends loamstream.LoamFile {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
             --reference-genome ${projectConfig.referenceGenome}
-            --mt-in ${arrayStores(array).refData.mt.local.get}
+            --mt-in ${arrayStores(array).refMt.local.get}
             --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
             --variants-stats-out ${schemaStores((configSchema, configCohorts)).variantsStats.base.local.get}
             --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             --log ${schemaStores((configSchema, configCohorts)).variantsStatsHailLog.base.local.get}"""
-              .in(arrayStores(array).refData.mt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+              .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
               .out(schemaStores((configSchema, configCohorts)).variantsStats.base.local.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).variantsStatsHailLog.base.local.get)
               .tag(s"${schemaStores((configSchema, configCohorts)).variantsStats.base.local.get}".split("/").last)
         
@@ -171,16 +171,16 @@ object PrepareSchema extends loamstream.LoamFile {
   
             cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
               --reference-genome ${projectConfig.referenceGenome}
-              --mt-in ${arrayStores(array).refData.mt.local.get}
-              --pheno-in ${projectStores.phenoFile.local.get}
-  	        --pheno-col ${pheno.id}
-              --iid-col ${projectConfig.phenoFileId}
+              --mt-in ${arrayStores(array).refMt.local.get}
+              --pheno-in ${arrayStores(array).phenoFile.local.get}
+  	          --pheno-col ${pheno.id}
+              --iid-col ${array.phenoFileId}
               --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
               --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
               --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}
               --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
               --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.local.get}"""
-                .in(arrayStores(array).refData.mt.local.get, projectStores.phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
                 .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.local.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}".split("/").last)
           
@@ -209,14 +209,14 @@ object PrepareSchema extends loamstream.LoamFile {
                 hail"""${utils.python.pyHailSchemaVariantStats} --
                   --hail-utils ${projectStores.hailUtils.google.get}
                   --reference-genome ${projectConfig.referenceGenome}
-                  --mt-in ${arrayStores(array).refData.mt.google.get}
+                  --mt-in ${arrayStores(array).refMt.google.get}
                   --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
                   --cohort ${cohort.id}
                   --variants-stats-out ${schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).google.get}
                   --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts(cohort).google.get}
                   --cloud
                   --log ${schemaStores((configSchema, configCohorts)).variantsStatsHailLog.cohorts(cohort).google.get}"""
-                    .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+                    .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
                     .out(schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts(cohort).google.get, schemaStores((configSchema, configCohorts)).variantsStatsHailLog.cohorts(cohort).google.get)
                     .tag(s"${schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get}.google".split("/").last)
               
@@ -240,17 +240,17 @@ object PrepareSchema extends loamstream.LoamFile {
                   hail"""${utils.python.pyHailSchemaVariantCaseCtrlStats} --
                     --hail-utils ${projectStores.hailUtils.google.get}
                     --reference-genome ${projectConfig.referenceGenome}
-                    --mt-in ${arrayStores(array).refData.mt.google.get}
+                    --mt-in ${arrayStores(array).refMt.google.get}
                     --pheno-in ${projectStores.phenoFile.google.get}
-  	              --pheno-col ${pheno.id}
-                    --iid-col ${projectConfig.phenoFileId}
+  	                --pheno-col ${pheno.id}
+                    --iid-col ${array.phenoFileId}
                     --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
                     --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
                     --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).google.get}
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).google.get}
                     --cloud
                     --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).google.get}"""
-                      .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+                      .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, arrayStores(array).phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
                       .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).google.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}.google".split("/").last)
                 
@@ -271,13 +271,13 @@ object PrepareSchema extends loamstream.LoamFile {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
                     --reference-genome ${projectConfig.referenceGenome}
-                    --mt-in ${arrayStores(array).refData.mt.local.get}
+                    --mt-in ${arrayStores(array).refMt.local.get}
                     --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
                     --cohort ${cohort.id}
                     --variants-stats-out ${schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get}
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts(cohort).local.get}
                     --log ${schemaStores((configSchema, configCohorts)).variantsStatsHailLog.cohorts(cohort).local.get}"""
-                      .in(arrayStores(array).refData.mt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                      .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
                       .out(schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).variantsStatsHailLog.cohorts(cohort).local.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get}".split("/").last)
                 
@@ -293,16 +293,16 @@ object PrepareSchema extends loamstream.LoamFile {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
                     --reference-genome ${projectConfig.referenceGenome}
-                    --mt-in ${arrayStores(array).refData.mt.local.get}
-                    --pheno-in ${projectStores.phenoFile.local.get}
-  	              --pheno-col ${pheno.id}
-                    --iid-col ${projectConfig.phenoFileId}
+                    --mt-in ${arrayStores(array).refMt.local.get}
+                    --pheno-in ${arrayStores(array).phenoFile.local.get}
+  	                --pheno-col ${pheno.id}
+                    --iid-col ${array.phenoFileId}
                     --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
                     --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
                     --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get}
                     --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).local.get}"""
-                      .in(arrayStores(array).refData.mt.local.get, projectStores.phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                      .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
                       .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).local.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}".split("/").last)
                 
@@ -453,7 +453,7 @@ object PrepareSchema extends loamstream.LoamFile {
           }
         }
     
-        var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, arrayStores(array).refData.annotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.base.google.get, schemaStores((configSchema, configCohorts)).masks.base.google.get, arrayStores(array).filterPostQc.variantsExclude.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.base.google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.base.google.get)
+        var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, arrayStores(array).refAnnotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.base.google.get, schemaStores((configSchema, configCohorts)).masks.base.google.get, arrayStores(array).variantsExclude.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.base.google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.base.google.get)
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -475,12 +475,12 @@ object PrepareSchema extends loamstream.LoamFile {
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
             ${cohortStatsInString}
-            --annotation ${arrayStores(array).refData.annotationsHt.google.get}
+            --annotation ${arrayStores(array).refAnnotationsHt.google.get}
             --filters ${schemaStores((configSchema, configCohorts)).filters.base.google.get}
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.base.google.get}
             --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.base.google.get}
             --masks ${schemaStores((configSchema, configCohorts)).masks.base.google.get}
-            --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.google.get}
+            --variants-remove ${arrayStores(array).variantsExclude.google.get}
             --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.google.get}
             --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
             --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.google.get}"""
@@ -489,30 +489,6 @@ object PrepareSchema extends loamstream.LoamFile {
               .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}.google".split("/").last)
         
         }
-  
-        //googleWith(projectConfig.cloudResources.variantHtCluster) {
-        //
-        //  hail"""${utils.python.pyHailFilterSchemaVariants} --
-        //    --cloud
-        //    --hail-utils ${projectStores.hailUtils.google.get}
-        //    --reference-genome ${projectConfig.referenceGenome}
-        //    --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
-        //    ${cohortStatsInString}
-        //    --annotation ${arrayStores(array).refData.annotationsHt.google.get}
-        //    --filters ${schemaStores((configSchema, configCohorts)).filters.base.google.get}
-        //    --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.base.google.get}
-        //    --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.base.google.get}
-        //    --masks ${schemaStores((configSchema, configCohorts)).masks.base.google.get}
-        //    --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.google.get}
-        //    --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.google.get}
-        //    --ht-checkpoint ${schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.base.google.get}
-        //    --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
-        //    --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.google.get}"""
-        //      .in(cohortStatsIn)
-        //      .out(schemaStores((configSchema, configCohorts)).variantFilterTable.base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.google.get)
-        //      .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}.google".split("/").last)
-        //
-        //}
         
         local {
         
@@ -537,7 +513,7 @@ object PrepareSchema extends loamstream.LoamFile {
           }
         }
         
-        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).refData.annotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.base.local.get, schemaStores((configSchema, configCohorts)).masks.base.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.base.local.get)
+        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).refAnnotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.base.local.get, schemaStores((configSchema, configCohorts)).masks.base.local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.base.local.get)
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -557,12 +533,12 @@ object PrepareSchema extends loamstream.LoamFile {
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             ${cohortStatsInString}
-            --annotation ${arrayStores(array).refData.annotationsHt.local.get}
+            --annotation ${arrayStores(array).refAnnotationsHt.local.get}
             --filters ${schemaStores((configSchema, configCohorts)).filters.base.local.get}
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get}
             --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.base.local.get}
             --masks ${schemaStores((configSchema, configCohorts)).masks.base.local.get}
-            --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.local.get}
+            --variants-remove ${arrayStores(array).variantsExclude.local.get}
             --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}
             --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
             --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.local.get}"""
@@ -571,28 +547,6 @@ object PrepareSchema extends loamstream.LoamFile {
               .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}".split("/").last)
         
         }
-  
-        //drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
-        //
-        //  cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaVariants}
-        //    --reference-genome ${projectConfig.referenceGenome}
-        //    --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
-        //    ${cohortStatsInString}
-        //    --annotation ${arrayStores(array).refData.annotationsHt.local.get}
-        //    --filters ${schemaStores((configSchema, configCohorts)).filters.base.local.get}
-        //    --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get}
-        //    --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.base.local.get}
-        //    --masks ${schemaStores((configSchema, configCohorts)).masks.base.local.get}
-        //    --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.local.get}
-        //    --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}
-        //    --ht-checkpoint ${schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.base.local.get}
-        //    --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
-        //    --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.local.get}"""
-        //      .in(cohortStatsIn)
-        //      .out(schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.local.get)
-        //      .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}".split("/").last)
-        //
-        //}
     
     }
   
@@ -694,7 +648,7 @@ object PrepareSchema extends loamstream.LoamFile {
             }
           }
   
-          var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get, arrayStores(array).refData.annotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).masks.phenos(pheno).google.get, arrayStores(array).filterPostQc.variantsExclude.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).google.get)
+          var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get, arrayStores(array).refAnnotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).masks.phenos(pheno).google.get, arrayStores(array).variantsExclude.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).google.get)
           
           schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
             case n if n > 0 =>
@@ -718,7 +672,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
               --schema-filters-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
               ${cohortStatsInString}
-              --annotation ${arrayStores(array).refData.annotationsHt.google.get}
+              --annotation ${arrayStores(array).refAnnotationsHt.google.get}
               --filters ${schemaStores((configSchema, configCohorts)).filters.phenos(pheno).google.get}
               --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).google.get}
               --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).google.get}
@@ -731,31 +685,6 @@ object PrepareSchema extends loamstream.LoamFile {
                 .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}.google".split("/").last)
           
           }
-  
-          //googleWith(projectConfig.cloudResources.variantHtCluster) {
-          //
-          //  hail"""${utils.python.pyHailFilterSchemaPhenoVariants} --
-          //    --cloud
-          //    --hail-utils ${projectStores.hailUtils.google.get}
-          //    --reference-genome ${projectConfig.referenceGenome}
-          //    --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
-          //    --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
-          //    --schema-filters-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
-          //    ${cohortStatsInString}
-          //    --annotation ${arrayStores(array).refData.annotationsHt.google.get}
-          //    --filters ${schemaStores((configSchema, configCohorts)).filters.phenos(pheno).google.get}
-          //    --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).google.get}
-          //    --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).google.get}
-          //    --masks ${schemaStores((configSchema, configCohorts)).masks.phenos(pheno).google.get}
-          //    --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).google.get}
-          //    --ht-checkpoint ${schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.phenos(pheno).google.get}
-          //    --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get}
-          //    --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).google.get}"""
-          //      .in(cohortStatsIn)
-          //      .out(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).google.get)
-          //      .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}.google".split("/").last)
-          //
-          //}
           
           local {
           
@@ -780,7 +709,7 @@ object PrepareSchema extends loamstream.LoamFile {
             }
           }
           
-          var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, arrayStores(array).refData.annotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).masks.phenos(pheno).local.get, arrayStores(array).filterPostQc.variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).local.get)
+          var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, arrayStores(array).refAnnotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).masks.phenos(pheno).local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).local.get)
           
           schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
             case n if n > 0 =>
@@ -802,7 +731,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
               --schema-filters-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
               ${cohortStatsInString}
-              --annotation ${arrayStores(array).refData.annotationsHt.local.get}
+              --annotation ${arrayStores(array).refAnnotationsHt.local.get}
               --filters ${schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get}
               --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get}
               --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).local.get}
@@ -815,29 +744,6 @@ object PrepareSchema extends loamstream.LoamFile {
                 .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}".split("/").last)
           
           }
-  
-          //drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
-          //
-          //  cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaPhenoVariants}
-          //    --reference-genome ${projectConfig.referenceGenome}
-          //    --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
-          //    --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
-          //    --schema-filters-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
-          //    ${cohortStatsInString}
-          //    --annotation ${arrayStores(array).refData.annotationsHt.local.get}
-          //    --filters ${schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get}
-          //    --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get}
-          //    --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).local.get}
-          //    --masks ${schemaStores((configSchema, configCohorts)).masks.phenos(pheno).local.get}
-          //    --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
-          //    --ht-checkpoint ${schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.phenos(pheno).local.get}
-          //    --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get}
-          //    --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).local.get}"""
-          //      .in(cohortStatsIn)
-          //      .out(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).variantFilterHtCheckpoint.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).local.get)
-          //      .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}".split("/").last)
-          //
-          //}
       
       }
   
@@ -1085,12 +991,12 @@ object PrepareSchema extends loamstream.LoamFile {
               hail"""${utils.python.pyHailGenerateModelVcf} --
                 --cloud
                 --hail-utils ${projectStores.hailUtils.google.get}
-                --mt-in ${arrayStores(array).refData.mt.google.get}
+                --mt-in ${arrayStores(array).refMt.google.get}
                 --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.google.get}
                 --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
                 --vcf-out ${schemaStores((configSchema, configCohorts)).vcf.get.data.google.get}
                 --log ${schemaStores((configSchema, configCohorts)).vcfHailLog.google.get}"""
-                .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get)
+                .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get)
                 .out(schemaStores((configSchema, configCohorts)).vcf.get.data.google.get, schemaStores((configSchema, configCohorts)).vcfHailLog.google.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get}.google".split("/").last)
       
@@ -1108,12 +1014,12 @@ object PrepareSchema extends loamstream.LoamFile {
             drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
             
               cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
-                --mt-in ${arrayStores(array).refData.mt.local.get}
+                --mt-in ${arrayStores(array).refMt.local.get}
                 --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
                 --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
                 --vcf-out ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get}
                 --log ${schemaStores((configSchema, configCohorts)).vcfHailLog.local.get}"""
-                .in(arrayStores(array).refData.mt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get)
+                .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get)
                 .out(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get, schemaStores((configSchema, configCohorts)).vcfHailLog.local.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get}".split("/").last)
       
