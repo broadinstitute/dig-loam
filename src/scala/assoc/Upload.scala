@@ -14,31 +14,7 @@ object Upload extends loamstream.LoamFile {
     projectConfig.hailCloud match {
   
       case true =>
-      
-        checkURI(s"${projectStores.regionsExclude.google.get.uri}") match {
-          case 0 => ()
-          case 1 => 
-            local {
-              googleCopy(projectStores.regionsExclude.local.get, projectStores.regionsExclude.google.get)
-            }
-        }
-  
-        checkURI(s"${projectStores.kgPurcellVcf.google.get.uri}") match {
-          case 0 => ()
-          case 1 => 
-            local {
-              googleCopy(projectStores.kgPurcellVcf.local.get, projectStores.kgPurcellVcf.google.get)
-            }
-        }
-        
-        checkURI(s"${projectStores.kgSample.google.get.uri}") match {
-          case 0 => ()
-          case 1 => 
-            local {
-              googleCopy(projectStores.kgSample.local.get, projectStores.kgSample.google.get)
-            }
-        }
-        
+
         checkURI(s"${projectStores.sampleFile.google.get.uri}") match {
           case 0 => ()
           case 1 => 

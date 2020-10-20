@@ -2,66 +2,10 @@ object ProjectConfig extends loamstream.LoamFile {
 
   import Fxns._
   import loamstream.googlecloud.ClusterConfig
-  
+
   val refGenomes = Seq("GRCh37","GRCh38")
   val ancestryCodes = Seq("EUR","AFR","AMR","SAS","EAS")
-  val gwasTech = Seq("gwas")
-  val seqTech = Seq("wgs","wes")
-  val arrayFormats = Seq("plink","vcf")
-  
-  val inputTypesPlink = {
-    (for {
-      x <- gwasTech
-      y <- Seq("plink")
-    } yield {
-      (x, y)
-    }) ++
-    (for {
-      x <- seqTech
-      y <- Seq("plink")
-    } yield {
-      (x, y)
-    })
-  }
-  
-  val inputTypesGwasVcf = for {
-    x <- gwasTech
-    y <- Seq("vcf")
-  } yield {
-    (x, y)
-  }
-  
-  val inputTypesSeqPlink = for {
-    x <- seqTech
-    y <- Seq("plink")
-  } yield {
-    (x, y)
-  }
-  
-  val inputTypesSeqVcf = for {
-    x <- seqTech
-    y <- Seq("vcf")
-  } yield {
-    (x, y)
-  }
-  
-  val defaultSampleMetricsGwas = Seq(
-    "n_non_ref",
-    "n_het",
-    "n_called",
-    "call_rate",
-    "r_ti_tv",
-    "het",
-    "het_low",
-    "het_high",
-    "n_hom_var",
-    "r_het_hom_var"
-  )
-  val defaultSampleMetricsSeq = defaultSampleMetricsGwas ++ Seq(
-    "n_singleton",
-    "avg_ab",
-    "avg_ab50"
-  )
+
   val modelDesigns = Seq("full","strat")
   val modelTrans = Seq("log","invn")
   val assocTests = Seq(
@@ -138,43 +82,36 @@ object ProjectConfig extends loamstream.LoamFile {
     standardR: ConfigMachine,
     highMemR: ConfigMachine,
     flashPca: ConfigMachine,
-    liftOver: ConfigMachine,
-    genotypeHarmonizer: ConfigMachine,
     standardPython: ConfigMachine,
     vep: ConfigMachine,
-    king: ConfigMachine,
     klustakwik: ConfigMachine,
     tabix: ConfigMachine,
     lowMemEpacts: ConfigMachine,
     midMemEpacts: ConfigMachine,
     highMemEpacts: ConfigMachine,
     locuszoom: ConfigMachine) extends Debug
-  
+
+  final case class ConfigInputStore(
+    local: Option[String],
+    google: Option[String]) extends Debug
+
   final case class ConfigArray(
     id: String,
-    filename: String,
-    format: String,
+    vcf: Option[ConfigInputStore],
+    hailMT: Option[ConfigInputStore],
+    filteredPlink: String,
+    sampleFile: String,
+    sampleFileId: String,
+    phenoFile: String,
+    phenoFileId: String,
+    ancestryMap: String,
+    sampleQcStats: String,
+    kin0: String,
     technology: String,
     description: String,
-    keepIndels: Boolean,
-    minPartitions: Option[Int],
-    liftOver: Option[String] = None,
-    sampleQcMetrics: Seq[String],
-    nSampleMetricPcs: Option[Int],
-    sampleMetricCovars: Option[String],
     chrs: Seq[String],
-    gqThreshold: Option[Int],
-    ancestryOutliersKeep: Option[Seq[String]],
-    duplicatesKeep: Option[Seq[String]],
-    famsizeKeep: Option[Seq[String]],
-    sampleqcKeep: Option[Seq[String]],
-    sexcheckKeep: Option[Seq[String]],
-    qcVariantFilters: Option[Seq[String]],
-    qcVariantSampleN: Option[Int],
-    qcVariantSampleSeed: Option[Int],
-    postQcSampleFilters: Option[Seq[String]],
-    postQcVariantFilters: Option[Seq[String]],
-    exportCleanVcf: Boolean) extends Debug
+    samplesExclude: Option[Seq[String]],
+    variantsExclude: Option[Seq[String]]) extends Debug
   
   final case class ConfigCohort(
     id: String,
@@ -264,50 +201,24 @@ object ProjectConfig extends loamstream.LoamFile {
   final case class ProjectConfig(
     loamstreamVersion: String,
     pipelineVersion: String,
+    referenceGenome: String,
     hailCloud: Boolean,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
-    referenceGenome: String,
-    regionsExclude: String,
     geneIdMap: String,
-    kgPurcellVcf: String,
-    kgSample: String,
-    kgSampleId: String,
-    kgSamplePop: String,
-    kgSampleGroup: String,
-    kgVcf: String,
-    kgIds: String,
-    humanReferenceWild: String,
     fasta: String,
     vepCacheDir: String,
     vepPluginsDir: String,
     dbNSFP: String,
-    sampleFile: String,
-    sampleFileId: String,
-    sampleFileSrSex: String,
-    sampleFileMaleCode: String,
-    sampleFileFemaleCode: String,
-    sampleFileSrRace: String,
-    sampleFileAFRCodes: Option[Seq[String]],
-    sampleFileAMRCodes: Option[Seq[String]],
-    sampleFileEURCodes: Option[Seq[String]],
-    sampleFileEASCodes: Option[Seq[String]],
-    sampleFileSASCodes: Option[Seq[String]],
-    phenoFile: String,
-    phenoFileId: String,
     authors: Seq[String],
     email: String,
     organization: String,
     acknowledgementsAnalysisReport: Option[Seq[String]],
-    acknowledgementsQcReport: Option[Seq[String]],
-    nAncestryInferenceFeatures: Int,
-    ancestryInferenceFeatures: String,
     minPCs: Int,
     maxPCs: Int,
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
-    skipQc: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
@@ -472,49 +383,24 @@ object ProjectConfig extends loamstream.LoamFile {
       val loamstreamVersion = requiredStr(config = config, field = "loamstreamVersion")
       val pipelineVersion = requiredStr(config = config, field = "pipelineVersion")
       val projectId = requiredStr(config = config, field = "projectId")
+      val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
       val hailCloud = requiredBool(config = config, field = "hailCloud")
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
-      val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
-      val regionsExclude = requiredStr(config = config, field = "regionsExclude")
       val geneIdMap = requiredStr(config = config, field = "geneIdMap")
-      val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
-      val kgSample = requiredStr(config = config, field = "kgSample")
-      val kgSampleId = requiredStr(config = config, field = "kgSampleId")
-      val kgSamplePop = requiredStr(config = config, field = "kgSamplePop")
-      val kgSampleGroup = requiredStr(config = config, field = "kgSampleGroup")
-      val kgVcf = requiredStr(config = config, field = "kgVcf")
-      val kgIds = requiredStr(config = config, field = "kgIds")
-      val humanReferenceWild = requiredStr(config = config, field = "humanReferenceWild")
       val fasta = requiredStr(config = config, field = "fasta")
       val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")
       val vepPluginsDir = requiredStr(config = config, field = "vepPluginsDir")
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
-      val sampleFile = requiredStr(config = config, field = "sampleFile")
-      val sampleFileId = requiredStr(config = config, field = "sampleFileId")
-      val sampleFileSrSex = requiredStr(config = config, field = "sampleFileSrSex")
-      val sampleFileMaleCode = requiredStr(config = config, field = "sampleFileMaleCode")
-      val sampleFileFemaleCode = requiredStr(config = config, field = "sampleFileFemaleCode")
-      val sampleFileSrRace = requiredStr(config = config, field = "sampleFileSrRace")
-      val sampleFileAFRCodes = optionalStrList(config = config, field = "sampleFileAFRCodes")
-      val sampleFileAMRCodes = optionalStrList(config = config, field = "sampleFileAMRCodes")
-      val sampleFileEURCodes = optionalStrList(config = config, field = "sampleFileEURCodes")
-      val sampleFileEASCodes = optionalStrList(config = config, field = "sampleFileEASCodes")
-      val sampleFileSASCodes = optionalStrList(config = config, field = "sampleFileSASCodes")
-      val phenoFile = requiredStr(config = config, field = "phenoFile")
-      val phenoFileId = requiredStr(config = config, field = "phenoFileId")
       val authors = requiredStrList(config = config, field = "authors")
       val email = requiredStr(config = config, field = "email")
       val organization = requiredStr(config = config, field = "organization")
       val acknowledgementsAnalysisReport = optionalStrList(config = config, field = "acknowledgementsAnalysisReport")
-      val acknowledgementsQcReport = optionalStrList(config = config, field = "acknowledgementsQcReport")
       val maxSigRegions = optionalInt(config = config, field = "maxSigRegions", min = Some(0))
-      val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
       val minPCs = requiredInt(config = config, field = "minPCs", min = Some(0), max = Some(20))
       val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
-      val skipQc = requiredBool(config = config, field = "skipQc", default = Some(false))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -631,9 +517,6 @@ object ProjectConfig extends loamstream.LoamFile {
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
-  
-      // inferred global values
-      val ancestryInferenceFeatures = "1" * nAncestryInferenceFeatures + "0" * (20 - nAncestryInferenceFeatures)
   
       val numericVariantFilters = {
         for {
@@ -780,92 +663,60 @@ object ProjectConfig extends loamstream.LoamFile {
           array <- requiredObjList(config = config, field = "arrays")
         } yield {
   
-          val technology = requiredStr(config = array, field = "technology", regex = (gwasTech ++ seqTech).mkString("|"))
-  
-          val qcVariantFilters = optionalStrList(config = array, field = "qcVariantFilters") match {
-            case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if numericVariantFilters.map(e => e.id) contains n => ()
-                  case b if booleanVariantFilters.map(e => e.id) contains b => ()
-                  case c if categoricalVariantFilters.map(e => e.id) contains c => ()
-                  case d if compoundVariantFilters.map(e => e.id) contains d => ()
-                  case _ => throw new CfgException("arrays.qcVariantFilters: variant filter '" + f + "' not found")
-                }
-              }
-              Some(s)
+          val vcf = optionalObj(config = array, field = "vcf") match {
+            case Some(o) => 
+              Some(ConfigInputStore(
+                local = optionalStr(config = o, field = "local"),
+                google = optionalStr(config = o, field = "google")
+              ))
             case None => None
           }
-  
-          val postQcSampleFilters = optionalStrList(config = array, field = "postQcSampleFilters") match {
+          vcf match {
             case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if numericSampleFilters.map(e => e.id) contains n => ()
-                  case b if booleanSampleFilters.map(e => e.id) contains b => ()
-                  case c if categoricalSampleFilters.map(e => e.id) contains c => ()
-                  case d if compoundSampleFilters.map(e => e.id) contains d => ()
-                  case _ => throw new CfgException("arrays.postQcSampleFilters: sample filter '" + f + "' not found")
-                }
-              }
-              Some(s)
+              (s.local, s.google) match {
+                case (None, None) => throw new CfgException("either local or google path must be defined for a vcf input file")
+                case _ => ()
+            case None => ()
+          }
+
+          val hailMT = optionalObj(config = array, field = "hailMT") match {
+            case Some(o) => 
+              Some(ConfigInputStore(
+                local = optionalStr(config = o, field = "local"),
+                google = optionalStr(config = o, field = "google")
+              ))
             case None => None
           }
-  
-          val postQcVariantFilters = optionalStrList(config = array, field = "postQcVariantFilters") match {
+          hailMT match {
             case Some(s) =>
-              for {
-                f <- s
-              } yield {
-                f match {
-                  case n if numericVariantFilters.map(e => e.id) contains n => ()
-                  case b if booleanVariantFilters.map(e => e.id) contains b => ()
-                  case c if categoricalVariantFilters.map(e => e.id) contains c => ()
-                  case d if compoundVariantFilters.map(e => e.id) contains d => ()
-                  case _ => throw new CfgException("arrays.postQcVariantFilters: variant filter '" + f + "' not found")
-                }
-              }
-              Some(s)
-            case None => None
+              (s.local, s.google) match {
+                case (None, None) => throw new CfgException("either local or google path must be defined for a hailMT input file")
+                case _ => ()
+            case None => ()
           }
-      
+
+          (vcf, hailMT) match {
+             case (None, None) => throw new CfgException("either array.vcf or array.hailMT or both must be defined")
+             case _ => ()
+          }
+
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-            filename = requiredStr(config = array, field = "filename"),
-            format = requiredStr(config = array, field = "format", regex = arrayFormats.mkString("|")),
-            technology = technology,
+            vcf = vcf,
+            hailMT = hailMT,
+            filteredPlink = requiredStr(config = array, field = "filteredPlink"),
+            sampleFile = requiredStr(config = array, field = "sampleFile"),
+            sampleFileId = requiredStr(config = array, field = "sampleFileId"),
+            phenoFile = requiredStr(config = array, field = "phenoFile"),
+            phenoFileId = requiredStr(config = array, field = "phenoFileId"),
+            ancestryMap = requiredStr(config = array, field = "ancestryMap"),
+            sampleQcStats = requiredStr(config = array, field = "sampleQcStats"),
+            kin0 = requiredStr(config = array, field = "kin0"),
+            technology = requiredStr(config = array, field = "technology", regex = (gwasTech ++ seqTech).mkString("|")),
             description = requiredStr(config = array, field = "description"),
-            keepIndels = requiredBool(config = array, field = "keepIndels"),
-            minPartitions = optionalInt(config = array, field = "minPartitions", min = Some(1)),
-            liftOver = optionalStr(config = array, field = "liftOver"),
-            sampleQcMetrics = optionalStrList(config = array, field = "sampleQcMetrics") match { 
-              case None =>
-                technology match {
-                  case m if seqTech.contains(m) => defaultSampleMetricsSeq
-                  case n if gwasTech.contains(n) => defaultSampleMetricsGwas
-                  case o => throw new CfgException("arrays.sampleQcMetrics: technology '" + o + "' not recognized")
-                }
-              case Some(s) => s
-            },
-            nSampleMetricPcs = optionalInt(config = array, field = "nSampleMetricPcs", min = Some(0)),
-            sampleMetricCovars = optionalStrList(config = array, field = "sampleMetricCovars") match { case Some(s) => Some(s.mkString("+")); case None => None },
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
-            gqThreshold = optionalInt(config = array, field = "gqThreshold", min = Some(0)),
-            ancestryOutliersKeep = optionalStrList(config = array, field = "ancestryOutliersKeep"),
-            duplicatesKeep = optionalStrList(config = array, field = "duplicatesKeep"),
-            famsizeKeep = optionalStrList(config = array, field = "famsizeKeep"),
-            sampleqcKeep = optionalStrList(config = array, field = "sampleqcKeep"),
-            sexcheckKeep = optionalStrList(config = array, field = "sexcheckKeep"),
-            qcVariantFilters = qcVariantFilters,
-            qcVariantSampleN = optionalInt(config = array, field = "qcVariantSampleN", min = Some(1000)),
-            qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed", min = Some(0)),
-            postQcSampleFilters = postQcSampleFilters,
-            postQcVariantFilters = postQcVariantFilters,
-            exportCleanVcf = requiredBool(config = array, field = "exportCleanVcf")
+            samplesExclude = optionalStrList(config = array, field = "samplesExclude"),
+            variantsExclude = optionalStrList(config = array, field = "variantsExclude")
           )
       
         }
@@ -1375,41 +1226,41 @@ object ProjectConfig extends loamstream.LoamFile {
         hailCloud = hailCloud,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
-        referenceGenome = referenceGenome,
-        regionsExclude = regionsExclude,
+        //referenceGenome = referenceGenome,
+        //regionsExclude = regionsExclude,
         geneIdMap = geneIdMap,
-        kgPurcellVcf = kgPurcellVcf,
-        kgSample = kgSample,
-        kgSampleId = kgSampleId,
-        kgSamplePop = kgSamplePop,
-        kgSampleGroup = kgSampleGroup,
-        kgVcf = kgVcf,
-        kgIds = kgIds,
-        humanReferenceWild = humanReferenceWild,
+        //kgPurcellVcf = kgPurcellVcf,
+        //kgSample = kgSample,
+        //kgSampleId = kgSampleId,
+        //kgSamplePop = kgSamplePop,
+        //kgSampleGroup = kgSampleGroup,
+        //kgVcf = kgVcf,
+        //kgIds = kgIds,
+        //humanReferenceWild = humanReferenceWild,
         fasta = fasta,
         vepCacheDir = vepCacheDir,
         vepPluginsDir = vepPluginsDir,
         dbNSFP = dbNSFP,
-        sampleFile = sampleFile,
-        sampleFileId = sampleFileId,
-        sampleFileSrSex = sampleFileSrSex,
-        sampleFileMaleCode = sampleFileMaleCode,
-        sampleFileFemaleCode = sampleFileFemaleCode,
-        sampleFileSrRace = sampleFileSrRace,
-        sampleFileAFRCodes = sampleFileAFRCodes,
-        sampleFileAMRCodes = sampleFileAMRCodes,
-        sampleFileEURCodes = sampleFileEURCodes,
-        sampleFileEASCodes = sampleFileEASCodes,
-        sampleFileSASCodes = sampleFileSASCodes,
-        phenoFile = phenoFile,
-        phenoFileId = phenoFileId,
+        //sampleFile = sampleFile,
+        //sampleFileId = sampleFileId,
+        //sampleFileSrSex = sampleFileSrSex,
+        //sampleFileMaleCode = sampleFileMaleCode,
+        //sampleFileFemaleCode = sampleFileFemaleCode,
+        //sampleFileSrRace = sampleFileSrRace,
+        //sampleFileAFRCodes = sampleFileAFRCodes,
+        //sampleFileAMRCodes = sampleFileAMRCodes,
+        //sampleFileEURCodes = sampleFileEURCodes,
+        //sampleFileEASCodes = sampleFileEASCodes,
+        //sampleFileSASCodes = sampleFileSASCodes,
+        //phenoFile = phenoFile,
+        //phenoFileId = phenoFileId,
         authors = authors,
         email = email,
         organization = organization,
         acknowledgementsAnalysisReport = acknowledgementsAnalysisReport,
-        acknowledgementsQcReport = acknowledgementsQcReport,
-        nAncestryInferenceFeatures = nAncestryInferenceFeatures,
-        ancestryInferenceFeatures = ancestryInferenceFeatures,
+        //acknowledgementsQcReport = acknowledgementsQcReport,
+        //nAncestryInferenceFeatures = nAncestryInferenceFeatures,
+        //ancestryInferenceFeatures = ancestryInferenceFeatures,
         minPCs = minPCs,
         maxPCs = maxPCs,
         nStddevs = nStddevs,
@@ -1611,10 +1462,10 @@ object ProjectConfig extends loamstream.LoamFile {
   utils.r.debugVars()
   println("... Pipeline Utilities Configuration Loaded Successfully!")
   
-  // verify phenotype file if defined
-  projectConfig.phenoFile match {
-    case "" => ()
-    case _ => verifyPheno(phenoFile = projectConfig.phenoFile, models = projectConfig.Models)
-  }
+  //// verify phenotype file if defined
+  //projectConfig.phenoFile match {
+  //  case "" => ()
+  //  case _ => verifyPheno(phenoFile = projectConfig.phenoFile, models = projectConfig.Models)
+  //}
 
 }

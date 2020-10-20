@@ -34,23 +34,36 @@ object PrepareSchema extends loamstream.LoamFile {
         s
       }
     }
+
+    var samplesExcludeString = ""
+    arrayStores(array).samplesExclude match {
+      case Some(s) =>
+        samplesExcludeString = samplesExcludeString + "--samples-exclude " + s.map(e => e.toString.split("@")(1)).mkString(",")
+      case None => ()
+    }
+
+    val schemaCohortSamplesAvailableIn = arrayStores(array).samplesExclude match {
+      case Some(s) =>
+        (arrayStores(array).filteredPlink.data.local.get ++ arrayStores(array).samplesExclude) :+ arrayStores(array).sampleFile :+ arrayStores(array).ancestryMap :+ arrayStores(array).filterPostQc.samplesExclude.local.get
+      case None =>
+        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).sampleFile :+ arrayStores(array).ancestryMap :+ arrayStores(array).filterPostQc.samplesExclude.local.get
+    }
     
     drmWith(imageName = s"${utils.image.imgR}") {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rSchemaCohortSamplesAvailable}
-        --pheno-in ${projectStores.sampleFile.local.get}
-        --fam-in ${arrayStores(array).filteredData.plink.base.local.get}.fam
-        --ancestry-in ${projectStores.ancestryInferred.local.get}
+        --samplefile-in ${arrayStores(array).sampleFile}
+        --fam-in ${arrayStores(array).filteredPlink.base.local.get}.fam
+        --ancestry-in ${arrayStores(array).ancestryMap}
         ${stratStrings.mkString(" ")}
-        --iid-col ${projectConfig.sampleFileId}
-        --samples-exclude-qc ${arrayStores(array).filterQc.samplesExclude.local.get}
-        --samples-exclude-postqc ${arrayStores(array).filterPostQc.samplesExclude.local.get}
+        --iid-col ${array.sampleFileId}
+        ${samplesExcludeString}
         --out-id-map ${schemaStores((configSchema, configCohorts)).sampleMap}
         --out-cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
         --out ${schemaStores((configSchema, configCohorts)).samplesAvailable}
         > ${schemaStores((configSchema, configCohorts)).samplesAvailableLog}"""
-        .in(arrayStores(array).filteredData.plink.data.local.get :+ projectStores.sampleFile.local.get :+ projectStores.ancestryInferred.local.get :+ arrayStores(array).filterQc.samplesExclude.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get)
+        .in(schemaCohortSamplesAvailableIn)
         .out(schemaStores((configSchema, configCohorts)).sampleMap, schemaStores((configSchema, configCohorts)).cohortMap.local.get, schemaStores((configSchema, configCohorts)).samplesAvailable, schemaStores((configSchema, configCohorts)).samplesAvailableLog)
         .tag(s"${schemaStores((configSchema, configCohorts)).samplesAvailable}".split("/").last)
     

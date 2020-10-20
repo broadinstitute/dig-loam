@@ -16,7 +16,7 @@ object CrossCohort extends loamstream.LoamFile {
       for {
         cohort <- configMeta.cohorts
       } yield {
-        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredData.plink.base.local.get.toString + ".bim"
+        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredPlink.base.toString + ".bim"
       }
     }.distinct
   
@@ -24,7 +24,7 @@ object CrossCohort extends loamstream.LoamFile {
       for {
         cohort <- configMeta.cohorts
       } yield {
-        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredData.plink.data.local.get
+        arrayStores(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(g => g.id == cohort).head.array).head).filteredPlink.data
       }
     }.flatten.distinct
   
@@ -61,15 +61,15 @@ object CrossCohort extends loamstream.LoamFile {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rMetaCohortSamples}
-        --fam-in ${arrayStores(arrayCfg).filteredData.plink.base.local.get}.fam
-        --ancestry-in ${projectStores.ancestryInferred.local.get}
+        --fam-in ${arrayStores(arrayCfg).filteredPlink.base}.fam
+        --ancestry-in ${arrayStores(arrayCfg).ancestryMap.local.get}
         --ancestry-keep "${configCohort.ancestry.mkString(",")}"
-        --pheno-in ${projectStores.phenoFile.local.get}
-        --iid-col ${projectConfig.phenoFileId}
+        --pheno-in ${arrayStores(arrayCfg).phenoFile.local.get}
+        --iid-col ${arrayCfg.phenoFileId}
         ${stratCol}
         ${stratCodes}
         --out ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-      .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ projectStores.phenoFile.local.get :+ projectStores.ancestryInferred.local.get)
+      .in(arrayStores(arrayCfg).filteredPlink.data.local.get :+ arrayStores(arrayCfg).phenoFile.local.get :+ arrayStores(arrayCfg).ancestryMap.local.get)
       .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
       .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
   
@@ -77,8 +77,8 @@ object CrossCohort extends loamstream.LoamFile {
   
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-      cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).filteredData.plink.base.local.get} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
-      .in(arrayStores(arrayCfg).filteredData.plink.data.local.get :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
+      cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).filteredPlink.base.local.get} --allow-no-sex --extract ${metaKinshipStores(configMeta).commonVariants} --keep ${metaKinshipStores(configMeta).metaCohort(configCohort).samples} --make-bed --out ${metaKinshipStores(configMeta).metaCohort(configCohort).base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
+      .in(arrayStores(arrayCfg).filteredPlink.data.local.get :+ metaKinshipStores(configMeta).metaCohort(configCohort).samples :+ metaKinshipStores(configMeta).commonVariants)
       .out(metaKinshipStores(configMeta).metaCohort(configCohort).data)
       .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).base}".split("/").last)
   

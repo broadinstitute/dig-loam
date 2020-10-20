@@ -8,7 +8,7 @@ object Main extends loamstream.LoamFile {
   import ProjectConfig._
   import ProjectStores._
   import Tracking._
-  //import Upload._
+  import Upload._
   import AssocTest._
   
   import loamstream.conf.DataConfig
@@ -19,8 +19,8 @@ object Main extends loamstream.LoamFile {
   // write pipeline object tracking files
   trackObjects()
   
-  //// Upload input files to Google Cloud
-  //Upload()
+  // Upload input files to Google Cloud
+  Upload()
   
   // Meta-analysis cross-cohort common variants search
   for {
