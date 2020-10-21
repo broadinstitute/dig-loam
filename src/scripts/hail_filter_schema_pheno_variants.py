@@ -26,6 +26,13 @@ def main(args=None):
 	else:
 		hl.init(idempotent=True)
 
+	print("making temporary directory for storing checkpoints")
+	if args.tmpdir:
+		tmpdir = tempfile.mkdtemp(dir = args.tmpdir)
+		tmpdir_path = tmpdir + "/"
+	else:
+		tmpdir_path = "./"
+
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
 
@@ -112,8 +119,8 @@ def main(args=None):
 		tbl = tbl.key_by('Uploaded_variation')
 		ht = ht.annotate(annotation = tbl[ht.rsid])
 
-	print("write ht.checkpoint1 hail table to disk")
-	ht = ht.checkpoint("ht.checkpoint1", overwrite=True)
+	print("write ht.checkpoint1 hail table to temporary directory")
+	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint1", overwrite=True)
 
 	cohort_stats = {}
 	if args.cohort_stats_in:
@@ -149,8 +156,8 @@ def main(args=None):
 		ht = hail_utils.ht_add_filters(ht, standard_filters, 'ls_pheno_filters')
 		fields_out = fields_out + ['ls_pheno_filters']
 
-	print("write ht.checkpoint2 hail table to disk")
-	ht = ht.checkpoint("ht.checkpoint2", overwrite=True)
+	print("write ht.checkpoint2 hail table to temporary directory")
+	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint2", overwrite=True)
 
 	mask_fields = []
 	if len(masks) > 0:
@@ -161,8 +168,8 @@ def main(args=None):
 			ht = hail_utils.ht_add_filters(ht, [[x[1],x[2],x[3]] for x in masks_row], 'ls_mask_' + m)
 			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
 			fields_out = fields_out + ['ls_mask_' + m]
-			print("write ht.checkpoint." + m + " hail table to disk")
-			ht = ht.checkpoint("ht.checkpoint." + m, overwrite=True)
+			print("write ht.checkpoint." + m + " hail table to temporary directory")
+			ht = ht.checkpoint(tmpdir_path + "ht.checkpoint." + m, overwrite=True)
 
 	fields_out = fields_out + ['ls_schema_global_exclude', 'ls_pheno_global_exclude']
 	ht = ht.annotate(ls_schema_global_exclude = ht.ls_global_exclude)
@@ -189,6 +196,9 @@ def main(args=None):
 	if args.cloud:
 		hl.copy_log(args.log)
 
+	print("removing temporary directory")
+	shutil.rmtree(tmpdir)
+
 	global_elapsed_time = time.time() - global_start_time
 	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))
 
@@ -205,6 +215,7 @@ if __name__ == "__main__":
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
 	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--tmpdir', help='temporary directory path to be created and destroyed')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--full-stats-in', help='a hail table with variant stats on full sample set', required=True)

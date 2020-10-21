@@ -40,7 +40,6 @@ object SchemaStores extends loamstream.LoamFile {
     phenoVariantsStatsHailLog: Map[ConfigPheno, SchemaBaseCohortStore],
     variantFilterTable: SchemaBasePhenoStore,
     variantFilterHailTable: SchemaBasePhenoStore,
-    //variantFilterHtCheckpoint: SchemaBasePhenoStore,
     variantFilterHailLog: SchemaBasePhenoStore,
     groupFile: SchemaBasePhenoMaskStore,
     groupFileHailLog: SchemaBasePhenoStore,
@@ -404,22 +403,6 @@ object SchemaStores extends loamstream.LoamFile {
           case _ => Map[ConfigPheno, MultiStore]()
         }
       ),
-      //variantFilterHtCheckpoint = SchemaBasePhenoStore(
-      //  base = MultiStore(
-      //    local = projectConfig.hailCloud match { case false => Some(store(local_dir / s"${baseString}.variant.filters.ht.checkpoint")); case true => None },
-      //    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.filters.ht.checkpoint")); case false => None }
-      //  ),
-      //  phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
-      //    case n if n > 0 =>
-      //      projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
-      //        pheno -> MultiStore(
-      //            local = projectConfig.hailCloud match { case false => Some(store(local_dir / s"${baseString}.${pheno.id}.variant.filters.ht.checkpoint")); case true => None },
-      //            google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.filters.ht.checkpoint")); case false => None }
-      //          )
-      //        }.toMap
-      //    case _ => Map[ConfigPheno, MultiStore]()
-      //  }
-      //),
       variantFilterHailLog = SchemaBasePhenoStore(
         base = MultiStore(
           local = Some(store(local_dir / s"${baseString}.variant.filters.hail.log")),

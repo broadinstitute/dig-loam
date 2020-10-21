@@ -31,7 +31,7 @@ object ModelStores extends loamstream.LoamFile {
     results: MultiStore,
     resultsTbi: Store,
     resultsHailLog: Option[MultiStore],
-    filteredResults: Store,
+    //filteredResults: Store,
     qqPlot: Store,
     qqPlotLowMaf: Store,
     qqPlotMidMaf: Store,
@@ -194,7 +194,7 @@ object ModelStores extends loamstream.LoamFile {
               ))
             case _ => None
           },
-          filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"),
+          //filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"),
           qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
           qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
           qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),

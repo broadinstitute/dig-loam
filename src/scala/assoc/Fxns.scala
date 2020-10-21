@@ -263,8 +263,16 @@ object Fxns extends loamstream.LoamFile {
       case false => s
     }
   }
+
+  def checkURI(s: String): String = {
+    val cmd = s"gsutil -m ls ${s}"
+    cmd.! match {
+      case 0 => s
+      case 1 => throw new CfgException("checkURI: " + s + " not found")
+    }
+  }
   
-  def checkURI(s: String): Int = {
+  def ifURI(s: String): Int = {
     val cmd = s"gsutil -m ls ${s}"
     cmd.!
   }

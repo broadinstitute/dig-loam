@@ -83,6 +83,7 @@ object ProjectConfig extends loamstream.LoamFile {
     highMemR: ConfigMachine,
     flashPca: ConfigMachine,
     standardPython: ConfigMachine,
+    king: ConfigMachine,
     vep: ConfigMachine,
     klustakwik: ConfigMachine,
     tabix: ConfigMachine,
@@ -106,8 +107,10 @@ object ProjectConfig extends loamstream.LoamFile {
     qcProjectId: String,
     qcCloudHome: Option[String],
     qcHailCloud: Boolean,
-    qcPhenoFile: String,
+    phenoFile: String,
+    phenoFileId: String,
     qcSampleFile: String,
+    qcSampleFileId: String,
     qcSampleFileSrSex: String,
     qcSampleFileMaleCode: String,
     qcSampleFileFemaleCode: String,
@@ -442,7 +445,7 @@ object ProjectConfig extends loamstream.LoamFile {
           }
         }
       )
-  
+
       val resources = ConfigResources(
         matrixTableHail = {
           val thisConfig = requiredObj(config = config, field = "matrixTableHail")
@@ -472,24 +475,16 @@ object ProjectConfig extends loamstream.LoamFile {
           val thisConfig = requiredObj(config = config, field = "flashPca")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         },
-        liftOver = {
-          val thisConfig = requiredObj(config = config, field = "liftOver")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
-        genotypeHarmonizer = {
-          val thisConfig = requiredObj(config = config, field = "genotypeHarmonizer")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
         standardPython = {
           val thisConfig = requiredObj(config = config, field = "standardPython")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         },
-        vep = {
-          val thisConfig = requiredObj(config = config, field = "vep")
-          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
-        },
         king = {
           val thisConfig = requiredObj(config = config, field = "king")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        vep = {
+          val thisConfig = requiredObj(config = config, field = "vep")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         },
         klustakwik = {
@@ -665,30 +660,38 @@ object ProjectConfig extends loamstream.LoamFile {
 
           val arrayQcCfg = requiredObj(config = array, field = "qc")
 
-          val qcConfig = loadConfig(checkPath(arrayCfg.qc.config))
+          val qcConfigFile = requiredStr(config = arrayQcCfg, field = "config")
+          val qcArrayId = requiredStr(config = arrayQcCfg, field = "arrayId")
+
+          val qcConfig = loadConfig(checkPath(qcConfigFile))
 
           val qcProjectId = requiredStr(config = qcConfig, field = "projectId")
           val qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
           val hailCloud = requiredBool(config = qcConfig, field = "hailCloud")
-          val qcPhenoFile = requiredStr(config = qcConfig, field = "phenoFile")
-          val qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile")
+
+          val qcConfigArrays = requiredObjList(config = qcConfig, field = "arrays")
+          val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
+
+          val exportCleanVcf = requiredBool(config = qcConfigThisArray, field = "exportCleanVcf")
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
             qc = ConfigArrayQc(
-              config = requiredStr(config = arrayQcCfg, field = "config")
-              arrayId = requiredStr(config = arrayQcCfg, field = "arrayId")
+              config = qcConfigFile,
+              arrayId = qcArrayId,
               baseDir = requiredStr(config = arrayQcCfg, field = "baseDir")
             ),
             qcProjectId = requiredStr(config = qcConfig, field = "projectId"),
-            qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None },
+            qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome"),
             qcHailCloud = requiredBool(config = qcConfig, field = "hailCloud"),
-            qcPhenoFile = requiredStr(config = qcConfig, field = "phenoFile"),
+            phenoFile = requiredStr(config = array, field = "phenoFile"),
+            phenoFileId = requiredStr(config = array, field = "phenoFileId"),
             qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile"),
-            qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),,
-            qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),,
-            qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),,
-            exportCleanVcf = requiredBool(config = qcConfig, field = "exportCleanVcf")
+            qcSampleFileId = requiredStr(config = qcConfig, field = "sampleFileId"),
+            qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),
+            qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),
+            qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),
+            exportCleanVcf = exportCleanVcf
           )
 
         }
@@ -1198,7 +1201,7 @@ object ProjectConfig extends loamstream.LoamFile {
         hailCloud = hailCloud,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
-        //referenceGenome = referenceGenome,
+        referenceGenome = referenceGenome,
         //regionsExclude = regionsExclude,
         geneIdMap = geneIdMap,
         //kgPurcellVcf = kgPurcellVcf,
@@ -1237,7 +1240,6 @@ object ProjectConfig extends loamstream.LoamFile {
         maxPCs = maxPCs,
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
-        skipQc = skipQc,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,

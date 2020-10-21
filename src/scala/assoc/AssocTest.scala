@@ -135,7 +135,7 @@ object AssocTest extends loamstream.LoamFile {
                       --covars "${configModel.covars}"
                       --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}
                       --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get}"""
-                        .in(arrayStores(array).prunedData.plink.data :+ arrayStores(array).refMt.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get :+ schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
+                        .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
                         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).resultsHailLog.get.local.get)
                         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).results.local.get}".split("/").last)
                   
@@ -354,7 +354,7 @@ object AssocTest extends loamstream.LoamFile {
   
               val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
                 case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-                case None => s"""--vcf ${arrayStores(array).cleanVcf.data.local.get.toString.split("@")(1)}"""
+                case None => s"""--vcf ${arrayStores(array).cleanVcf.get.data.local.get.toString.split("@")(1)}"""
               }
   
               val groupFileIn = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
@@ -371,7 +371,7 @@ object AssocTest extends loamstream.LoamFile {
   
               schemaStores((configSchema, configCohorts)).vcf match {
                 case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanVcf.data.local.get)
+                case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanVcf.get.data.local.get)
               }
   
               modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
@@ -627,7 +627,7 @@ object AssocTest extends loamstream.LoamFile {
               
                     val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
                       case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-                      case None => s"""--vcf ${arrayStores(array).cleanVcf.data.local.get.toString.split("@")(1)}"""
+                      case None => s"""--vcf ${arrayStores(array).cleanVcf.get.data.local.get.toString.split("@")(1)}"""
                     }
   
                     val groupFileIn = schemaStores((configSchema, configCohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
@@ -648,7 +648,7 @@ object AssocTest extends loamstream.LoamFile {
               
                     schemaStores((configSchema, configCohorts)).vcf match {
                       case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-                      case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanData.get.vcf.data.local.get)
+                      case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanVcf.get.data.local.get)
                     }
               
                     var epactsOut = Seq[Store]()

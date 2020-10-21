@@ -91,7 +91,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${utils.binary.binPlink}
         ${utils.r.rGeneratePheno}
         ${projectConfig.resources.flashPca.cpus}
-        ${arrayStores(array).prunedPlink.base}
+        ${arrayStores(array).prunedPlink.base.local.get}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaBase}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores}
@@ -114,7 +114,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).outliers}
         ${projectConfig.resources.flashPca.mem * 0.9 * 1000}
         > ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog}"""
-        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
+        .in(arrayStores(array).prunedPlink.data.local.get :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).outliers, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}".split("/").last)
     

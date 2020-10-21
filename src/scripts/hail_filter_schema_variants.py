@@ -4,6 +4,8 @@ import pandas as pd
 import csv
 from pathlib import Path
 import time
+import tempfile
+import shutil
 
 def main(args=None):
 
@@ -26,12 +28,19 @@ def main(args=None):
 	else:
 		hl.init(idempotent=True)
 
+	print("making temporary directory for storing checkpoints")
+	if args.tmpdir:
+		tmpdir = tempfile.mkdtemp(dir = args.tmpdir)
+		tmpdir_path = tmpdir + "/"
+	else:
+		tmpdir_path = "./"
+
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
-
+	
 	print("key rows by locus, alleles and rsid")
 	ht = ht.key_by('locus','alleles','rsid')
-
+	
 	if args.variants_remove is not None:
 		print("flag variants for removal that failed previous qc steps")
 		ht = ht.annotate(ls_previous_exclude = 0)
@@ -42,10 +51,10 @@ def main(args=None):
 				print("skipping empty file " + variant_file)
 			else:
 				ht = ht.annotate(ls_previous_exclude = hl.cond(hl.is_defined(tbl[ht.key]), 1, ht.ls_previous_exclude))
-
+	
 	print("key rows by locus and alleles")
 	ht = ht.key_by('locus','alleles')
-
+	
 	cohorts = []
 	standard_filters = []
 	cohort_filters = {}
@@ -97,34 +106,34 @@ def main(args=None):
 				variant_qc_fields = variant_qc_fields + y[2].split(",")
 	cohorts = list(set(cohorts))
 	variant_qc_fields = list(set(variant_qc_fields))
-
+	
 	annotation_fields = ['Uploaded_variation', 'Gene'] + [x.replace("annotation.","") for x in variant_qc_fields if x.startswith("annotation.")]
 	for c in variant_qc_cohort_fields:
 		variant_qc_cohort_fields[c] = list(set(variant_qc_cohort_fields[c]))
 		annotation_fields = annotation_fields + [x for x in variant_qc_cohort_fields[c] if x.startswith("annotation.")]
 	annotation_fields = list(set(annotation_fields))
-
+	
 	if args.annotation:
 		print("read in vep annotations")
 		tbl = hl.read_table(args.annotation)
 		tbl = tbl.select(*annotation_fields)
 		tbl = tbl.key_by('Uploaded_variation')
 		ht = ht.annotate(annotation = tbl[ht.rsid])
-
+	
 	start_time = time.time()
-	#ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
-	ht = ht.checkpoint("ht.checkpoint1", overwrite=True)
+	print("write ht.checkpoint1 hail table to temporary directory")
+	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint1", overwrite=True)
 	elapsed_time = time.time() - start_time
-	print(time.strftime("write ht.checkpoint1 hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
-
+	print(time.strftime("write ht.checkpoint1 hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
+	
 	cohort_stats = {}
 	if args.cohort_stats_in:
 		for x in args.cohort_stats_in:
 			cohort_stats[x.split(",")[0]] = x.split(",")[1]
-
+	
 	exclude_any_fields = []
 	fields_out = ['rsid','annotation']
-
+	
 	# initialize max_cohort_maf
 	if len(cohorts) > 1:
 		start_time = time.time()
@@ -132,7 +141,7 @@ def main(args=None):
 		fields_out = fields_out + ['max_cohort_maf']
 		elapsed_time = time.time() - start_time
 		print(time.strftime("initialize max_cohort_maf to 0 - %H:%M:%S", time.gmtime(elapsed_time)))
-
+	
 	# read in each cohort table, calculate max_cohort_maf, and add cohort_filters and knockout_filters
 	knockout_fields = []
 	if len(cohorts) > 0:
@@ -164,19 +173,19 @@ def main(args=None):
 				ht = ht.annotate(max_cohort_maf = hl.cond( ht.max_cohort_maf < ht['variant_qc_' + cohort].MAF, ht['variant_qc_' + cohort].MAF, ht.max_cohort_maf))
 				elapsed_time = time.time() - start_time
 				print(time.strftime("annotate rows with updated max_cohort_maf for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
-
+	
 	# add filters for full variant stats
 	if len(standard_filters) > 0:
 		exclude_any_fields = exclude_any_fields + ['ls_filters.exclude']
 		ht = hail_utils.ht_add_filters(ht, standard_filters, 'ls_filters')
 		fields_out = fields_out + ['ls_filters']
-
+	
 	start_time = time.time()
-	#ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
-	ht = ht.checkpoint("ht.checkpoint2", overwrite=True)
+	print("write ht.checkpoint2 hail table to temporary directory")
+	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint2", overwrite=True)
 	elapsed_time = time.time() - start_time
-	print(time.strftime("write ht.checkpoint2 hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
-
+	print(time.strftime("write ht.checkpoint2 hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
+	
 	mask_fields = []
 	if len(masks) > 0:
 		mask_ids = [x[0] for x in masks]
@@ -189,11 +198,11 @@ def main(args=None):
 			elapsed_time = time.time() - start_time
 			print(time.strftime("add mask " + m + " to filters - %H:%M:%S", time.gmtime(elapsed_time)))
 			start_time = time.time()
-			#ht = ht.checkpoint(args.ht_checkpoint, overwrite=True)
-			ht = ht.checkpoint("ht.checkpoint." + m, overwrite=True)
+			print("write ht.checkpoint." + m + " hail table to temporary directory")
+			ht = ht.checkpoint(tmpdir_path + "ht.checkpoint." + m, overwrite=True)
 			elapsed_time = time.time() - start_time
-			print(time.strftime("write ht.checkpoint" + m + " hail table to disk - %H:%M:%S", time.gmtime(elapsed_time)))
-
+			print(time.strftime("write ht.checkpoint" + m + " hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
+	
 	fields_out = fields_out + ['ls_previous_exclude','ls_global_exclude']
 	ht = ht.annotate(ls_global_exclude = 0)
 	ht = ht.annotate(ls_global_exclude = hl.cond(ht.ls_previous_exclude == 1, 1, ht.ls_global_exclude))
@@ -203,22 +212,25 @@ def main(args=None):
 		ht = ht.annotate(ls_global_exclude = hl.cond(ht[ls_struct][ls_field] == 1, 1, ht.ls_global_exclude))
 		elapsed_time = time.time() - start_time
 		print(time.strftime("update global exclusion column based on " + f + " - %H:%M:%S", time.gmtime(elapsed_time)))
-
+	
 	# select fields to keep from hail table and write to file
 	ht = ht.select(*fields_out)
 	if 'annotation' in fields_out:
 		ht = ht.annotate(**{'annotation': ht.annotation.drop(*[x for x in annotation_fields if x not in ['Uploaded_variation','Gene']])})
 	ht.write(args.variant_filters_ht_out, overwrite = True)
-
+	
 	if args.variant_filters_out:
 		start_time = time.time()
 		ht.flatten().export(args.variant_filters_out, header=True)
 		elapsed_time = time.time() - start_time
 		print(time.strftime("write variant filters to file - %H:%M:%S", time.gmtime(elapsed_time)))
-
+	
 	if args.cloud:
 		hl.copy_log(args.log)
 
+	print("removing temporary directory")
+	shutil.rmtree(tmpdir)
+	
 	global_elapsed_time = time.time() - global_start_time
 	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))
 
@@ -236,6 +248,7 @@ if __name__ == "__main__":
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
 	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--tmpdir', help='temporary directory path to be created and destroyed')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--full-stats-in', help='a hail table with variant stats on full sample set', required=True)

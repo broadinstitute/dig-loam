@@ -11,6 +11,7 @@ object PrepareSchema extends loamstream.LoamFile {
   import MetaStores._
   import Fxns._
   import Collections._
+  import DirTree._
   
   final case class CfgException(s: String) extends Exception(s)
   
@@ -35,35 +36,22 @@ object PrepareSchema extends loamstream.LoamFile {
       }
     }
 
-    var samplesExcludeString = ""
-    arrayStores(array).samplesExclude match {
-      case Some(s) =>
-        samplesExcludeString = samplesExcludeString + "--samples-exclude " + s.map(e => e.toString.split("@")(1)).mkString(",")
-      case None => ()
-    }
-
-    val schemaCohortSamplesAvailableIn = arrayStores(array).samplesExclude match {
-      case Some(s) =>
-        (arrayStores(array).filteredPlink.data.local.get ++ arrayStores(array).samplesExclude) :+ arrayStores(array).sampleFile.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
-      case None =>
-        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).sampleFile.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).filterPostQc.samplesExclude.local.get
-    }
-    
     drmWith(imageName = s"${utils.image.imgR}") {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rSchemaCohortSamplesAvailable}
-        --samplefile-in ${arrayStores(array).sampleFile.local.get}
+        --pheno-in ${arrayStores(array).sampleFile.local.get}
         --fam-in ${arrayStores(array).filteredPlink.base.local.get}.fam
         --ancestry-in ${arrayStores(array).ancestryMap.local.get}
         ${stratStrings.mkString(" ")}
-        --iid-col ${array.sampleFileId}
-        ${samplesExcludeString}
+        --iid-col ${array.qcSampleFileId}
+        --samples-exclude-qc ${arrayStores(array).qcSamplesExclude.local.get}
+        --samples-exclude-postqc ${arrayStores(array).postQcSamplesExclude.local.get}
         --out-id-map ${schemaStores((configSchema, configCohorts)).sampleMap}
         --out-cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
         --out ${schemaStores((configSchema, configCohorts)).samplesAvailable}
         > ${schemaStores((configSchema, configCohorts)).samplesAvailableLog}"""
-        .in(schemaCohortSamplesAvailableIn)
+        .in(arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).sampleFile.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).qcSamplesExclude.local.get :+ arrayStores(array).postQcSamplesExclude.local.get)
         .out(schemaStores((configSchema, configCohorts)).sampleMap, schemaStores((configSchema, configCohorts)).cohortMap.local.get, schemaStores((configSchema, configCohorts)).samplesAvailable, schemaStores((configSchema, configCohorts)).samplesAvailableLog)
         .tag(s"${schemaStores((configSchema, configCohorts)).samplesAvailable}".split("/").last)
     
@@ -129,7 +117,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
               --cloud
               --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.google.get}"""
-                .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, arrayStores(array).phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+                .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, arrayStores(array).phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
                 .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.google.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}.google".split("/").last)
           
@@ -241,7 +229,7 @@ object PrepareSchema extends loamstream.LoamFile {
                     --hail-utils ${projectStores.hailUtils.google.get}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).refMt.google.get}
-                    --pheno-in ${projectStores.phenoFile.google.get}
+                    --pheno-in ${arrayStores(array).phenoFile.google.get}
   	                --pheno-col ${pheno.id}
                     --iid-col ${array.phenoFileId}
                     --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
@@ -530,6 +518,7 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaVariants}
+            --tmpdir ${dirTree.analysisSchemaMap(configSchema).local.get}
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             ${cohortStatsInString}
@@ -726,6 +715,7 @@ object PrepareSchema extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaPhenoVariants}
+              --tmpdir ${dirTree.analysisSchemaMap(configSchema).local.get}
               --reference-genome ${projectConfig.referenceGenome}
               --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
               --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}

@@ -9,10 +9,7 @@ object DirTree extends loamstream.LoamFile {
   final case class DirTree(
     base: MultiPath,
     data: MultiPath,
-    dataArray: MultiPath,
-    dataArrayMap: Map[ConfigArray, MultiPath],
     dataGlobal: MultiPath,
-    dataGlobalAncestry: MultiPath,
     dataGlobalKinship: MultiPath,
     dataGlobalKinshipMap: Map[ConfigMeta, MultiPath],
     analysis: MultiPath,
@@ -52,17 +49,11 @@ object DirTree extends loamstream.LoamFile {
       )
   
       val data = appendSubDir(base, "data")
-      val dataArray = appendSubDir(data, "array")
       val dataGlobal = appendSubDir(data, "global")
-      val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
       val dataGlobalKinship = appendSubDir(dataGlobal, "kinship")
       val analysis = appendSubDir(base, "analysis")
       val report = appendSubDir(base, "report")
       //val reportAnalysis = appendSubDir(report, "analysis")
-  
-      val dataArrayMap = cfg.Arrays.map { array =>
-        array -> appendSubDir(dataArray, array.id)
-      }.toMap
   
       val dataGlobalKinshipMap = projectConfig.Metas.map { meta =>
         meta -> appendSubDir(dataGlobalKinship, meta.id)
@@ -87,10 +78,7 @@ object DirTree extends loamstream.LoamFile {
       new DirTree(
         base = base,
         data = data,
-        dataArray = dataArray,
-        dataArrayMap = dataArrayMap,
         dataGlobal = dataGlobal,
-        dataGlobalAncestry = dataGlobalAncestry,
         dataGlobalKinship = dataGlobalKinship,
         dataGlobalKinshipMap = dataGlobalKinshipMap,
         analysis = analysis,

@@ -100,6 +100,15 @@ object Collections extends loamstream.LoamFile {
         result
     }
   }
+
+  val usedArrays: Seq[String] = {
+    for {
+      schema <- projectConfig.Schemas
+      cohort <- projectConfig.Cohorts.filter(e => schema.cohorts.contains(e.id))
+    } yield {
+      cohort.array
+    }
+  }.distinct
   
   val schemaCohorts: Seq[SchemaCohort] = {
     for {
