@@ -34,11 +34,11 @@ object ArrayStores extends loamstream.LoamFile {
         Some(MultiPathVcf(
           base = MultiPath(
             local = Some(qcBaseDir / s"data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean"),
-            google = arrayCfg.qcHailCloud match { case true => Some(qcCloudHome.get / s"data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean"); case false => None }
+            google = None
           ),
           data = MultiStore(
             local = Some(store(checkPath(s"${qcBaseDir}/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz")).asInput),
-            google = arrayCfg.qcHailCloud match { case true => Some(store(checkURI(s"${qcCloudHome.get}/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz")).asInput); case false => None }
+            google = None
           ),
           tbi = MultiStore(local = Some(store(checkPath(s"${qcBaseDir}/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz.tbi")).asInput), google = None)
         ))
