@@ -160,7 +160,6 @@ object ProjectConfig extends loamstream.LoamFile {
     projectId: String,
     referenceGenome: String,
     regionsExclude: String,
-    geneIdMap: String,
     kgPurcellVcf: String,
     kgSample: String,
     kgSampleId: String,
@@ -187,7 +186,7 @@ object ProjectConfig extends loamstream.LoamFile {
     authors: Seq[String],
     email: String,
     organization: String,
-    acknowledgementsQcReport: Option[Seq[String]],
+    acknowledgements: Option[Seq[String]],
     nAncestryInferenceFeatures: Int,
     ancestryInferenceFeatures: String,
     cloudResources: ConfigCloudResources,
@@ -289,7 +288,6 @@ object ProjectConfig extends loamstream.LoamFile {
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
       val regionsExclude = requiredStr(config = config, field = "regionsExclude")
-      val geneIdMap = requiredStr(config = config, field = "geneIdMap")
       val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
       val kgSample = requiredStr(config = config, field = "kgSample")
       val kgSampleId = requiredStr(config = config, field = "kgSampleId")
@@ -316,7 +314,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val authors = requiredStrList(config = config, field = "authors")
       val email = requiredStr(config = config, field = "email")
       val organization = requiredStr(config = config, field = "organization")
-      val acknowledgementsQcReport = optionalStrList(config = config, field = "acknowledgementsQcReport")
+      val acknowledgements = optionalStrList(config = config, field = "acknowledgements")
       val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
   
       val cloudResources = ConfigCloudResources(
@@ -707,7 +705,6 @@ object ProjectConfig extends loamstream.LoamFile {
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
         regionsExclude = regionsExclude,
-        geneIdMap = geneIdMap,
         kgPurcellVcf = kgPurcellVcf,
         kgSample = kgSample,
         kgSampleId = kgSampleId,
@@ -734,7 +731,7 @@ object ProjectConfig extends loamstream.LoamFile {
         authors = authors,
         email = email,
         organization = organization,
-        acknowledgementsQcReport = acknowledgementsQcReport,
+        acknowledgements = acknowledgements,
         nAncestryInferenceFeatures = nAncestryInferenceFeatures,
         ancestryInferenceFeatures = ancestryInferenceFeatures,
         cloudResources = cloudResources,

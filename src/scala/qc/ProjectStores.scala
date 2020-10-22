@@ -16,7 +16,6 @@ object ProjectStores extends loamstream.LoamFile {
     humanReference: Map[String, Store],
     hailUtils: MultiStore,
     regionsExclude: MultiStore,
-    geneIdMap: MultiStore,
     kgPurcellVcf: MultiStore,
     kgSample: MultiStore,
     fasta: Store,
@@ -66,10 +65,6 @@ object ProjectStores extends loamstream.LoamFile {
       regionsExclude = MultiStore(
         local = Some(store(path(checkPath(projectConfig.regionsExclude))).asInput),
         google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.regionsExclude}".split("/").last)); case false => None }
-      ),
-      geneIdMap = MultiStore(
-        local = Some(store(path(checkPath(projectConfig.geneIdMap))).asInput),
-        google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.geneIdMap}".split("/").last)); case false => None }
       ),
       kgPurcellVcf = MultiStore(
         local = Some(store(path(checkPath(projectConfig.kgPurcellVcf))).asInput),

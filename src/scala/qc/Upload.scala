@@ -47,14 +47,6 @@ object Upload extends loamstream.LoamFile {
             }
         }
   
-        checkURI(s"${projectStores.geneIdMap.google.get.uri}") match {
-          case 0 => ()
-          case 1 => 
-            local {
-              googleCopy(projectStores.geneIdMap.local.get, projectStores.geneIdMap.google.get)
-            }
-        }
-  
         projectStores.hailUtils.local match {
           case Some(r) =>
             projectStores.hailUtils.google match {

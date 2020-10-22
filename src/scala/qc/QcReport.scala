@@ -313,7 +313,7 @@ object QcReport extends loamstream.LoamFile {
     ////
     ////}
     //
-    //val acknowledgements = projectConfig.acknowledgementsQcReport match {
+    //val acknowledgements = projectConfig.acknowledgements match {
     //
     //  case Some(s) => s"--acknowledgements ${s.mkString(",")}"
     //  case None => ""
