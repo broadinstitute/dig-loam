@@ -41,9 +41,9 @@ object DirTree extends loamstream.LoamFile {
     def initDirTree(cfg: ProjectConfig): DirTree = {
   
       val base = MultiPath(
-        local = Some(path(initDir(s"${projectConfig.projectId}.loam_schema"))),
+        local = Some(path(initDir(s"${projectConfig.projectId}.loam_assoc"))),
         google = cfg.hailCloud match {
-          case true => Some(cfg.cloudHome.get / s"${projectConfig.projectId}.loam_schema")
+          case true => Some(cfg.cloudHome.get / s"${projectConfig.projectId}.loam_assoc")
           case false => None
         }
       )
