@@ -665,10 +665,6 @@ object ProjectConfig extends loamstream.LoamFile {
 
           val qcConfig = loadConfig(checkPath(qcConfigFile))
 
-          val qcProjectId = requiredStr(config = qcConfig, field = "projectId")
-          val qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
-          val hailCloud = requiredBool(config = qcConfig, field = "hailCloud")
-
           val qcConfigArrays = requiredObjList(config = qcConfig, field = "arrays")
           val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
 
