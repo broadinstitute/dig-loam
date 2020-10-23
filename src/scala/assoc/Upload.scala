@@ -36,6 +36,14 @@ object Upload extends loamstream.LoamFile {
             }
           case _ => ()
         }
+
+        projectConfig.hailCloud match {
+          case true =>
+            local {
+              googleCopy(arrayStores(array).phenoFile.local.get, arrayStores(array).phenoFile.google.get)
+            }
+          case false => ()
+        }
   
       case false => ()
   

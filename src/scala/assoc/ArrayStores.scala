@@ -15,7 +15,7 @@ object ArrayStores extends loamstream.LoamFile {
     refSitesVcf: Store,
     filteredPlink: MultiPathPlink,
     prunedPlink: Plink,
-    phenoFile: Store,
+    phenoFile: MultiStore,
     sampleFile: Store,
     ancestryMap: Store,
     kin0: Store,
@@ -114,6 +114,11 @@ object ArrayStores extends loamstream.LoamFile {
       }
     )
 
+    val phenoFile = MultiStore(
+      local = Some(store(path(checkPath(arrayCfg.phenoFile))).asInput), // use original
+      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${arrayCfg.phenoFile}".split("/").last)); case false => None }
+    )
+
     val refAnnotationsHtOrig = MultiStore(
       local = arrayCfg.qcHailCloud match {
         case true => None
@@ -151,7 +156,7 @@ object ArrayStores extends loamstream.LoamFile {
       refSitesVcf = store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/annotate/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.ref.sites_only.vcf.bgz"))).asInput,
       filteredPlink = filteredPlink,
       prunedPlink = prunedPlink,
-      phenoFile = store(path(checkPath(arrayCfg.phenoFile))).asInput,
+      phenoFile = phenoFile,
       sampleFile = store(path(checkPath(arrayCfg.qcSampleFile))).asInput,
       ancestryMap = store(path(checkPath(s"${qcBaseDir}/loam_out/data/global/ancestry/${arrayCfg.qcProjectId}.ancestry.inferred.tsv"))).asInput,
       kin0 = store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/sampleqc/kinship/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.kinship.kin0"))).asInput,
