@@ -205,14 +205,14 @@ object AssocTest extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
   
         cmd"""${utils.bash.shAnnotateResults}
-          ${arrayStores(array).refSitesVcf.local.get}
+          ${arrayStores(array).refSitesVcf}
           ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results}
           ${projectConfig.resources.vep.cpus}
           ${projectStores.fasta}
           ${projectStores.vepCacheDir}
           ${projectStores.vepPluginsDir}
           ${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}"""
-        .in(arrayStores(array).refSitesVcf.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
+        .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingle(test).top1000ResultsAnnot}".split("/").last)
   

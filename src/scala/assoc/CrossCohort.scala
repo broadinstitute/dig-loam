@@ -62,14 +62,14 @@ object CrossCohort extends loamstream.LoamFile {
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rMetaCohortSamples}
         --fam-in ${arrayStores(arrayCfg).filteredPlink.base.local.get}.fam
-        --ancestry-in ${arrayStores(arrayCfg).ancestryMap.local.get}
+        --ancestry-in ${arrayStores(arrayCfg).ancestryMap}
         --ancestry-keep "${configCohort.ancestry.mkString(",")}"
-        --pheno-in ${arrayStores(arrayCfg).phenoFile.local.get}
+        --pheno-in ${arrayStores(arrayCfg).phenoFile}
         --iid-col ${arrayCfg.phenoFileId}
         ${stratCol}
         ${stratCodes}
         --out ${metaKinshipStores(configMeta).metaCohort(configCohort).samples}"""
-      .in(arrayStores(arrayCfg).filteredPlink.data.local.get :+ arrayStores(arrayCfg).phenoFile.local.get :+ arrayStores(arrayCfg).ancestryMap.local.get)
+      .in(arrayStores(arrayCfg).filteredPlink.data.local.get :+ arrayStores(arrayCfg).phenoFile :+ arrayStores(arrayCfg).ancestryMap)
       .out(metaKinshipStores(configMeta).metaCohort(configCohort).samples)
       .tag(s"${metaKinshipStores(configMeta).metaCohort(configCohort).samples}".split("/").last)
   

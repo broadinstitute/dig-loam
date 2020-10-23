@@ -42,9 +42,9 @@ object PrepareModel extends loamstream.LoamFile {
         } yield {
           modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
         }
-        (x.toSeq ++ arrayStores(array).filteredPlink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).sampleQcStats.local.get :+ arrayStores(array).kin0
+        (x.toSeq ++ arrayStores(array).filteredPlink.data.local.get) :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
       case None =>
-        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).ancestryMap.local.get :+ arrayStores(array).sampleQcStats.local.get :+ arrayStores(array).kin0
+        arrayStores(array).filteredPlink.data.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
     }
     
     val keepRelated = famTests.intersect(configModel.tests).size match {
@@ -56,14 +56,14 @@ object PrepareModel extends loamstream.LoamFile {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rModelCohortSamplesAvailable}
-        --pheno-in ${arrayStores(array).phenoFile.local.get}
+        --pheno-in ${arrayStores(array).phenoFile}
         --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
-        --ancestry-in ${arrayStores(array).ancestryMap.local.get}
+        --ancestry-in ${arrayStores(array).ancestryMap}
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
         --pheno-col ${configModel.pheno}
         --iid-col ${array.phenoFileId}
-        --sampleqc-in ${arrayStores(array).sampleQcStats.local.get}
+        --sampleqc-in ${arrayStores(array).sampleQcStats}
         --kinship-in ${arrayStores(array).kin0}
         ${keepRelated}
         --covars "${configModel.covars}"
