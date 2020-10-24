@@ -151,6 +151,7 @@ object ModelStores extends loamstream.LoamFile {
               }
             }
           case false => ()
+        }
       case None => ()
     }
   
