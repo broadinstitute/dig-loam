@@ -132,6 +132,27 @@ object ModelStores extends loamstream.LoamFile {
   
     val modelSingleTests = model.tests.filter(e => ! groupTests.contains(e))
     val modelGroupTests = model.tests.filter(e => groupTests.contains(e))
+
+    var phenoMasksAvailable = Seq[MaskFilter]()
+    schema.masks match {
+      case Some(_) => 
+        schemaStores((schema, cohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+          case true => 
+            for {
+              sm <- schema.masks.get
+            } yield {
+              try {
+                checkPath(s"""${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(sm).local.get.toString.split("@")(1)}""")
+                phenoMasksAvailable = phenoMasksAvailable ++ Seq(sm)
+              }
+              catch {
+                case x: CfgException =>
+                  println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(sm).local.get.toString.split("@")(1)}""")
+              }
+            }
+          case false => ()
+      case None => ()
+    }
   
     var masksAvailable = Seq[MaskFilter]()
     schema.masks match {
@@ -250,7 +271,7 @@ object ModelStores extends loamstream.LoamFile {
             case true => 
               modelGroupTests.map { test =>
                 test ->
-                  masksAvailable.map { mask =>
+                  phenoMasksAvailable.map { mask =>
                     val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
                     val l = fileToList(gFile).map(e => e.split("\t")(0))
                     mask ->
