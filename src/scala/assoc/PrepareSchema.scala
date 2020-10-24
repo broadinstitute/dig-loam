@@ -108,7 +108,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --hail-utils ${projectStores.hailUtils.google.get}
               --reference-genome ${projectConfig.referenceGenome}
               --mt-in ${arrayStores(array).refMt.google.get}
-              --pheno-in ${arrayStores(array).phenoFile}
+              --pheno-in ${arrayStores(array).phenoFile.google.get}
   	          --pheno-col ${pheno.id}
               --iid-col ${array.phenoFileId}
               --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
@@ -117,7 +117,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
               --cloud
               --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.google.get}"""
-                .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, arrayStores(array).phenoFile, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+                .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, arrayStores(array).phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
                 .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.google.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}.google".split("/").last)
           
@@ -160,7 +160,7 @@ object PrepareSchema extends loamstream.LoamFile {
             cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
               --reference-genome ${projectConfig.referenceGenome}
               --mt-in ${arrayStores(array).refMt.local.get}
-              --pheno-in ${arrayStores(array).phenoFile}
+              --pheno-in ${arrayStores(array).phenoFile.local.get}
   	          --pheno-col ${pheno.id}
               --iid-col ${array.phenoFileId}
               --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
@@ -168,7 +168,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}
               --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
               --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.local.get}"""
-                .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
                 .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.local.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}".split("/").last)
           
@@ -229,7 +229,7 @@ object PrepareSchema extends loamstream.LoamFile {
                     --hail-utils ${projectStores.hailUtils.google.get}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).refMt.google.get}
-                    --pheno-in ${arrayStores(array).phenoFile}
+                    --pheno-in ${arrayStores(array).phenoFile.google.get}
   	                --pheno-col ${pheno.id}
                     --iid-col ${array.phenoFileId}
                     --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
@@ -238,7 +238,7 @@ object PrepareSchema extends loamstream.LoamFile {
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).google.get}
                     --cloud
                     --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).google.get}"""
-                      .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, arrayStores(array).phenoFile, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
+                      .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, arrayStores(array).phenoFile.google.get, schemaStores((configSchema, configCohorts)).cohortMap.google.get)
                       .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).google.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).google.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}.google".split("/").last)
                 
@@ -282,7 +282,7 @@ object PrepareSchema extends loamstream.LoamFile {
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).refMt.local.get}
-                    --pheno-in ${arrayStores(array).phenoFile}
+                    --pheno-in ${arrayStores(array).phenoFile.local.get}
   	                --pheno-col ${pheno.id}
                     --iid-col ${array.phenoFileId}
                     --diff-miss-min-expected-cell-count ${projectConfig.diffMissMinExpectedCellCount}
@@ -290,7 +290,7 @@ object PrepareSchema extends loamstream.LoamFile {
                     --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get}
                     --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).local.get}"""
-                      .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                      .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
                       .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).local.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}".split("/").last)
                 

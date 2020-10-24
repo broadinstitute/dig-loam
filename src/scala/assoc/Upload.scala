@@ -36,14 +36,6 @@ object Upload extends loamstream.LoamFile {
             }
           case _ => ()
         }
-
-        projectConfig.hailCloud match {
-          case true =>
-            local {
-              googleCopy(arrayStores(array).phenoFile.local.get, arrayStores(array).phenoFile.google.get)
-            }
-          case false => ()
-        }
   
       case false => ()
   
@@ -53,57 +45,65 @@ object Upload extends loamstream.LoamFile {
       array <- projectConfig.Arrays.filter(e => usedArrays.contains(e.id))
     } yield {
 
-        (projectConfig.hailCloud, array.qcHailCloud) match {
+      projectConfig.hailCloud match {
+        case true =>
+          local {
+            googleCopy(arrayStores(array).phenoFile.local.get, arrayStores(array).phenoFile.google.get)
+          }
+        case false => ()
+      }
 
-          case (true, false) =>
+      (projectConfig.hailCloud, array.qcHailCloud) match {
 
-            val refMtGoogleDir = s"${arrayStores(array).refMt.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
-            val refAnnotationHtGoogleDir = s"${arrayStores(array).refAnnotationsHt.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
+        case (true, false) =>
 
-            drm {
-              cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refMtOrig.local.get} ${refMtGoogleDir}"""
-                .in(arrayStores(array).refMtOrig.local.get)
-                .out(arrayStores(array).refMt.google.get)
-                .tag("refMtOrigLocal_to_refMtGoogle")
-            }
-            
-            drm {
-              cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refAnnotationsHtOrig.local.get} ${refAnnotationHtGoogleDir}"""
-                .in(arrayStores(array).refAnnotationsHtOrig.local.get)
-                .out(arrayStores(array).refAnnotationsHt.google.get)
-                .tag("refAnnotationsHtOrigLocal_to_refAnnotationsHtGoogle")
-            }
+          val refMtGoogleDir = s"${arrayStores(array).refMt.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
+          val refAnnotationHtGoogleDir = s"${arrayStores(array).refAnnotationsHt.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
 
-            // NOT WORKING googleCopy(arrayStores(array).refMtOrig.local.get, arrayStores(array).refMt.google.get, "-r")
-            // NOT WORKING googleCopy(arrayStores(array).refAnnotationsHtOrig.local.get, arrayStores(array).refAnnotationsHt.google.get, "-r")
+          drm {
+            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refMtOrig.local.get} ${refMtGoogleDir}"""
+              .in(arrayStores(array).refMtOrig.local.get)
+              .out(arrayStores(array).refMt.google.get)
+              .tag("refMtOrigLocal_to_refMtGoogle")
+          }
+          
+          drm {
+            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refAnnotationsHtOrig.local.get} ${refAnnotationHtGoogleDir}"""
+              .in(arrayStores(array).refAnnotationsHtOrig.local.get)
+              .out(arrayStores(array).refAnnotationsHt.google.get)
+              .tag("refAnnotationsHtOrigLocal_to_refAnnotationsHtGoogle")
+          }
 
-            googleCopy(arrayStores(array).variantsExclude.local.get, arrayStores(array).variantsExclude.google.get)
+          // NOT WORKING googleCopy(arrayStores(array).refMtOrig.local.get, arrayStores(array).refMt.google.get, "-r")
+          // NOT WORKING googleCopy(arrayStores(array).refAnnotationsHtOrig.local.get, arrayStores(array).refAnnotationsHt.google.get, "-r")
 
-          case (false, true) => ()
+          googleCopy(arrayStores(array).variantsExclude.local.get, arrayStores(array).variantsExclude.google.get)
 
-            val refMtLocalDir = s"${arrayStores(array).refMt.local.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
-            val refAnnotationHtLocalDir = s"${arrayStores(array).refAnnotationsHt.local.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
+        case (false, true) => ()
 
-            drm {
-              cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refMtOrig.google.get} ${refMtLocalDir}"""
-                .in(arrayStores(array).refMtOrig.google.get)
-                .out(arrayStores(array).refMt.local.get)
-                .tag("refMtOrigGoogle_to_refMtLocal")
-            }
-            
-            drm {
-              cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refAnnotationsHtOrig.google.get} ${refAnnotationHtLocalDir}"""
-                .in(arrayStores(array).refAnnotationsHtOrig.google.get)
-                .out(arrayStores(array).refAnnotationsHt.local.get)
-                .tag("refAnnotationsHtOrigGoogle_to_refAnnotationsHtLocal")
-            }
+          val refMtLocalDir = s"${arrayStores(array).refMt.local.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
+          val refAnnotationHtLocalDir = s"${arrayStores(array).refAnnotationsHt.local.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
 
-            // NOT WORKING googleCopy(arrayStores(array).refMtOrig.google.get, arrayStores(array).refMt.local.get, "-r")
-            // NOT WORKING googleCopy(arrayStores(array).refAnnotationsHtOrig.google.get, arrayStores(array).refAnnotationsHt.local.get, "-r")
+          drm {
+            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refMtOrig.google.get} ${refMtLocalDir}"""
+              .in(arrayStores(array).refMtOrig.google.get)
+              .out(arrayStores(array).refMt.local.get)
+              .tag("refMtOrigGoogle_to_refMtLocal")
+          }
+          
+          drm {
+            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refAnnotationsHtOrig.google.get} ${refAnnotationHtLocalDir}"""
+              .in(arrayStores(array).refAnnotationsHtOrig.google.get)
+              .out(arrayStores(array).refAnnotationsHt.local.get)
+              .tag("refAnnotationsHtOrigGoogle_to_refAnnotationsHtLocal")
+          }
 
-          case _ => ()
+          // NOT WORKING googleCopy(arrayStores(array).refMtOrig.google.get, arrayStores(array).refMt.local.get, "-r")
+          // NOT WORKING googleCopy(arrayStores(array).refAnnotationsHtOrig.google.get, arrayStores(array).refAnnotationsHt.local.get, "-r")
 
-        }
+        case _ => ()
+
+      }
 
     }
   
