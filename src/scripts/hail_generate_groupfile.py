@@ -4,6 +4,7 @@ import pandas as pd
 import csv
 from pathlib import Path
 import time
+import re
 
 def main(args=None):
 
@@ -47,10 +48,11 @@ def main(args=None):
 		ht = ht.annotate(values=ht.values.map(lambda x: x.groupfile_id))
 		df = ht.to_pandas()
 		df = df.dropna()
+		df = df.sort_values('annotation.Gene', ascending=True)
 		l = []
 		if df.shape[0] > 0:
-			for i, x in df.iterrows():                                    
-				l = l + [x['annotation.Gene'] + "\t" + "\t".join(x['values'])]
+			for i, x in df.iterrows():
+				l = l + [x['annotation.Gene'] + "\t" + "\t".join(map(lambda a: a[0] + ":" + a[1] + "_" + a[2] + "/" + a[3], sorted([re.split(":|_|/",y) for y in x['values']], key = lambda z: (int(z[1]), z[2], z[3]))))]
 		return l
 
 	ht = ht.flatten()
