@@ -157,6 +157,40 @@ object PrepareModel extends loamstream.LoamFile {
     
     }
 
+    val transString = configModel.trans match {
+      case Some(_) => s"--trans ${configModel.trans.get}"
+      case None => ""
+    }
+
+    configModel.assocPlatforms.contains("epacts") match {
+    
+      case true =>
+    
+        drmWith(imageName = s"${utils.image.imgR}") {
+        
+          cmd"""${utils.binary.binRscript} --vanilla --verbose
+            ${utils.r.rConvertPhenoToPed}
+            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+            --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+            --pheno-col ${configModel.pheno}
+            --iid-col ${array.phenoFileId}
+            --sex-col ${array.qcSampleFileSrSex}
+            --male-code ${array.qcSampleFileMaleCode}
+            --female-code ${array.qcSampleFileFemaleCode}
+            ${transString}
+            --covars "${configModel.covars}"
+            --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
+            --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}"""
+            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}".split("/").last)
+        
+        }
+    
+      case false => ()
+    
+    }
+
     
     //var filters = Seq[String]()
     //var cohortFilters = Seq[String]()

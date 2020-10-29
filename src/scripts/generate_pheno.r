@@ -46,8 +46,7 @@ cat("removing factor indicators from covariates\n")
 covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
 cat("read in preliminary phenotype file\n")
-idcol<-args$iid_col
-pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(idcol="character"))
+pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
 out_cols<-colnames(pheno)
 
 failed <- FALSE
@@ -90,6 +89,13 @@ pcs<-read.table(args$pcs_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClas
 pcs$FID<-NULL
 names(pcs)[1]<-args$iid_col
 out<-merge(pheno,pcs,all.y=T)
+
+cat("convert all model vars to numeric\n")
+for(cv in c(args$pheno_col,unlist(strsplit(covars_analysis,split="\\+")))) {
+	if(cv %in% names(out)) {
+		out[,cv]<-as.numeric(as.character(out[,cv]))
+	}
+}
 
 if(ncol(pcs)-1 < args$max_pcs) {
 	n_pcs <- ncol(pcs)-1
