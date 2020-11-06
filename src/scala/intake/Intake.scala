@@ -1,47 +1,25 @@
-import loamstream.loam.LoamSyntax
-import loamstream.loam.intake.IntakeSyntax
-import loamstream.loam.LoamScriptContext
-import loamstream.util.Maps
-import loamstream.loam.intake.aggregator.{ ColumnNames => AggregatorColumnNames }
-import loamstream.loam.intake.aggregator.ConfigData
-import loamstream.loam.LoamCmdSyntax
-import loamstream.loam.intake.aggregator.Metadata
-import loamstream.loam.intake.aggregator.AggregatorIntakeConfig
-import loamstream.util.Traversables
+import org.apache.commons.csv.CSVFormat
+
 import com.typesafe.config.Config
-import loamstream.conf.DataConfig
-import loamstream.loam.intake.aggregator.AggregatorCommands
-import loamstream.loam.LoamProjectContext
-import loamstream.conf.LoamConfig
-import com.typesafe.config.ConfigFactory
-import loamstream.loam.intake.aggregator.SourceColumns
-import scala.sys.error
-import java.util.zip.GZIPInputStream
-import java.io.BufferedInputStream
-import java.io.FileInputStream
-import java.io.InputStreamReader
-import java.io.BufferedReader
-import java.util.Calendar
-import java.util.Date
+
+import loamstream.loam.intake.AggregatorIntakeConfig
+import loamstream.loam.intake.RowPredicate
+import loamstream.loam.intake.SourceColumns
 
 object Intake extends loamstream.LoamFile {
-  import IntakeSyntax._
+  import loamstream.loam.intake.IntakeSyntax._
 
-  def delToChar(d: String): Char = {
-    d match {
-      case "space" => ' '
-      case "tab" => '\t'
-      case "comma" => ','
-      case _ => sys.error("file delimiter " + d + " not recognized")
-    }
+  def delToChar(d: String): Char = d match {
+    case "space" => ' '
+    case "tab" => '\t'
+    case "comma" => ','
+    case _ => sys.error(s"file delimiter ${d} not recognized")
   }
 
   object Paths {
     val workDir: Path = path("./")
 
-    def dataFile(s: String): Path = {
-      path(s"${s}")
-    }
+    def dataFile(s: String): Path = path(s)
   }
   
   def sourceStore(phenotypeConfig: PhenotypeConfig): Store = {
@@ -49,7 +27,7 @@ object Intake extends loamstream.LoamFile {
   }
   
   def sourceStores(phenotypesToFiles: Map[String, PhenotypeConfig]): Map[String, Store] = {
-    import Maps.Implicits._
+    import loamstream.util.Maps.Implicits._
     
     phenotypesToFiles.strictMapValues(sourceStore(_).asInput)
   }
@@ -58,91 +36,42 @@ object Intake extends loamstream.LoamFile {
   
   private val intakeMetadataTypesafeConfig: Config = loadConfig("INTAKE_METADATA_CONF", "").config
 
-  def rowDef(source: CsvSource, name: String, phenoCfg: PhenotypeConfig): RowDef = {
+  def makeAggregatorRowExpr(phenoCfg: PhenotypeConfig): AggregatorRowExpr = {
 
-    val gis = new GZIPInputStream(new BufferedInputStream(new FileInputStream(name)))
-    val br = new BufferedReader(new InputStreamReader(gis));
-    val header = br.readLine().split(delToChar(phenoCfg.delimiter))
-    gis.close()
-    br.close()
-
-    val CHROM = phenoCfg.CHROM.asColumnName
-    val POS = phenoCfg.POS.asColumnName
-    val REF = phenoCfg.REF.asColumnName
-    val ALT = phenoCfg.ALT.asColumnName
-    val EAF = phenoCfg.EAF match { case Some(s) => Some(s.asColumnName); case _ => None }
-    val MAF = phenoCfg.MAF match { case Some(s) => Some(s.asColumnName); case _ => None }
-    val BETA = phenoCfg.BETA match { case Some(s) => Some(s.asColumnName); case _ => None }
-    val STDERR = phenoCfg.STDERR match { case Some(s) => Some(s.asColumnName); case _ => None }
-    val ODDS_RATIO = phenoCfg.ODDS_RATIO match { case Some(s) => Some(s.asColumnName); case _ => None }
-    val ZSCORE = phenoCfg.ZSCORE match { case Some(s) => Some(s.asColumnName); case _ => None }
-    val PVALUE = phenoCfg.PVALUE.asColumnName
-    val N = phenoCfg.N match { case Some(s) => Some(s.asColumnName); case _ => None }
-
-    val varId = ColumnDef(
-      AggregatorColumnNames.marker, 
-      //"{chrom}_{pos}_{ref}_{alt}"
-      strexpr"${CHROM}_${POS}_${REF}_${ALT}",
-      //"{chrom}_{pos}_{alt}_{ref}"
-      strexpr"${CHROM}_${POS}_${ALT}_${REF}")
-
+    import phenoCfg.columnNames._
+    
     val neff = ColumnName("Neff")
     val n = ColumnName("n")
+    
+    require(
+        EAF.isDefined || MAF.isDefined, 
+        s"at least one of EAF or MAF columns is required, but got EAF = $EAF and MAF = $MAF")
 
-    var filteredSource = source.filterNot(REF === "I").filterNot(REF === "D")
+    val varId = AggregatorColumnDefs.marker(chromColumn = CHROM, posColumn = POS, refColumn = REF, altColumn = ALT)
+        
+    val oddsRatioDefOpt: Option[NamedColumnDef[Double]] = {
+      if(phenoCfg.dichotomous) {
+        require(
+            BETA.isDefined || ODDS_RATIO.isDefined,
+            s"Dichotomous traits require at least one of BETA or ODDS_RATIO columns, " +
+            s"but got BETA = $BETA and ODDS_RATIO = $ODDS_RATIO")
 
-    (EAF, MAF) match { case (None, None) => sys.error("at least one of EAF or MAF columns is required"); case _ => () }
-
-    var otherCols = Seq(ColumnDef(AggregatorColumnNames.pvalue, PVALUE))
-
-    EAF match {
-      case Some(_) => 
-        val eaf = EAF.get.asDouble
-        otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.eaf, eaf, 1.0 - eaf))
-      case None => ()
+        ODDS_RATIO.map(AggregatorColumnDefs.oddsRatio(_))
+      } else {
+        None
+      }
     }
-
-    BETA match {
-      case Some(_) => 
-        val beta = BETA.get.asDouble
-        filteredSource = filteredSource.filter(BETA.get.asDouble < 42.0)
-        otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.beta, beta, -1.0 * beta))
-      case None => ()
-    }
-
-    ZSCORE match {
-      case Some(_) => 
-        val zscore = ZSCORE.get.asDouble
-        otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.zscore, zscore, -1.0 * zscore))
-      case None => ()
-    }
-
-    MAF match { case Some(_) => otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.maf, MAF.get)); case None => () }
-    STDERR match { case Some(_) => otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.stderr, STDERR.get)); case None => () }
-    N match { case Some(_) => otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.n, N.get)); case None => () }
-
-    val otherColumns = phenoCfg.dichotomous match {
-
-      case true =>
-
-        (BETA, ODDS_RATIO) match { case (None, None) => sys.error("dichotomous traits require at least one of BETA or ODDS_RATIO columns"); case _ => () }
-
-        ODDS_RATIO match { 
-          case Some(_) =>
-            val odds_ratio = ODDS_RATIO.get.asDouble
-            filteredSource = filteredSource.filter(odds_ratio > 0.0)
-            otherCols = otherCols ++ Seq(ColumnDef(AggregatorColumnNames.odds_ratio, odds_ratio, 1.0 / odds_ratio))
-          case None => ()
-        }
-
-        otherCols
-
-      case false =>
-
-        otherCols
-    }
-      
-    UnsourcedRowDef(varId, otherColumns).from(filteredSource)
+    
+    AggregatorRowExpr(
+        markerDef = varId,
+        pvalueDef = AggregatorColumnDefs.PassThru.pvalue(PVALUE),
+        zscoreDef = ZSCORE.map(AggregatorColumnDefs.zscore(_)),
+        stderrDef = STDERR.map(AggregatorColumnDefs.PassThru.stderr(_)),
+        betaDef = BETA.map(AggregatorColumnDefs.beta(_)),
+        oddsRatioDef = oddsRatioDefOpt,
+        eafDef = EAF.map(AggregatorColumnDefs.eaf(_)),
+        mafDef = MAF.map(AggregatorColumnDefs.PassThru.maf(_)),
+        nDef = N.map(AggregatorColumnDefs.PassThru.n(_)))
   }
   
   def processPhenotype(
@@ -152,33 +81,80 @@ object Intake extends loamstream.LoamFile {
       phenoCfg: PhenotypeConfig,
       aggregatorIntakeConfig: AggregatorIntakeConfig,
       flipDetector: FlipDetector,
-      destOpt: Option[Store] = None): Store = {
+      destOpt: Option[Store] = None): (Store, SourceColumns) = {
     
     require(sourceStore.isPathStore)
 
-    val today: Date = new Date()
-    val cal: Calendar = Calendar.getInstance()
-    cal.setTime(today)
+    val today = java.time.LocalDate.now
     
-    val dest: Store = destOpt.getOrElse(store(Paths.workDir / s"""${dataset}_${phenotype}.intake.tsv"""))
+    //NB: Munge LocalDate's string rep from yyyy-mm-dd to yyyy_mm_dd
+    val todayAsString = today.toString.replaceAll("-", "_")  
     
-    val csvFormat = org.apache.commons.csv.CSVFormat.DEFAULT.withDelimiter(delToChar(phenoCfg.delimiter)).withFirstRecordAsHeader
+    val dest: Store = {
+      destOpt.getOrElse(store(Paths.workDir / s"""${dataset}_${phenotype}.intake_${todayAsString}.tsv"""))
+    }
     
-    val source = CsvSource.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
+    val csvFormat = CSVFormat.DEFAULT.withDelimiter(delToChar(phenoCfg.delimiter)).withFirstRecordAsHeader
     
-    val columns = rowDef(source, s"${sourceStore.path}", phenoCfg)
+    val source = Source.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
+    
+    val toAggregatorRows = makeAggregatorRowExpr(phenoCfg)
         
-    produceCsv(dest)
-      .from(columns)
-      .using(flipDetector)
-      .tag(s"process-phenotype-$phenotype")
-      .in(sourceStore)
+    //TODO: FIXME
+    val filterLog: Store = store(path(s"${dest.path.toString}.filtered-rows"))
+    //TODO: FIXME
+    val unknownToBioIndexFile: Store = store(path(s"${dest.path.toString}.unknown-to-bio-index"))
+    //TODO: FIXME
+    val disagreeingZBetaStdErrFile: Store = store(path(s"${dest.path.toString}.disagreeing-z-Beta-stderr"))
+    //TODO: FIXME
+    val countFile: Store = store(path(s"${dest.path.toString}.variant-count"))
+    
+    val oddsRatioFilter: Option[RowPredicate] = phenoCfg.columnNames.ODDS_RATIO.map { oddsRatio =>
+      CsvRowFilters.logToFile(filterLog, append = true) {
+        oddsRatio.asDouble > 0.0
+      }
+    }
+    
+    import phenoCfg.columnNames
+    
+    produceCsv(dest).
+        from(source).
+        using(flipDetector).
+        filter(CsvRowFilters.noDsNorIs(
+            refColumn = columnNames.REF, 
+            altColumn = columnNames.ALT, 
+            logStore = filterLog,
+            append = true)).
+        filter(CsvRowFilters.filterRefAndAlt( //TODO: Example
+            refColumn = columnNames.REF, 
+            altColumn = columnNames.ALT, 
+            disallowed = Set("foo", "BAR", "Baz"),
+            logStore = filterLog,
+            append = true)).
+        filter(oddsRatioFilter).
+        via(toAggregatorRows).
+        filter(DataRowFilters.validEaf(filterLog, append = true)).
+        filter(DataRowFilters.validMaf(filterLog, append = true)).
+        map(DataRowTransforms.upperCaseAlleles).
+        map(DataRowTransforms.clampPValues(filterLog, append = true)).
+        filter(DataRowFilters.validPValue(filterLog, append = true)).
+        withMetric(Metrics.count(countFile)).
+        withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
+        withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
+        write().
+        tag(s"process-phenotype-$phenotype").
+        in(sourceStore).
+        out(dest).
+        out(unknownToBioIndexFile).
+        out(disagreeingZBetaStdErrFile).
+        out(countFile).
+        in(sourceStore)
         
-    dest
+    (dest, toAggregatorRows.sourceColumns)
   }
 
-  val generalMetadata: Metadata.NoPhenotypeOrQuantitative = {
-    Metadata.NoPhenotypeOrQuantitative.fromConfig(intakeMetadataTypesafeConfig).get
+  val generalMetadata: AggregatorMetadata.NoPhenotypeOrQuantitative = {
+    AggregatorMetadata.NoPhenotypeOrQuantitative.fromConfig(intakeMetadataTypesafeConfig).get
   }
   
   val aggregatorIntakePipelineConfig: AggregatorIntakeConfig = {
@@ -186,31 +162,49 @@ object Intake extends loamstream.LoamFile {
   }
   
   final case class PhenotypeConfig(
-    file: String, 
-    delimiter: String,
-    dichotomous: Boolean,
-    subjects: Option[Int], 
-    cases: Option[Int], 
-    controls: Option[Int],
-    CHROM: String,
-    POS: String,
-    REF: String,
-    ALT: String,
-    EAF: Option[String],
-    MAF: Option[String],
-    BETA: Option[String],
-    STDERR: Option[String],
-    ODDS_RATIO: Option[String],
-    ZSCORE: Option[String],
-    PVALUE: String,
-    N: Option[String]) {
+      file: String, 
+      delimiter: String,
+      dichotomous: Boolean,
+      subjects: Option[Int], 
+      cases: Option[Int], 
+      controls: Option[Int],
+      CHROM: String,
+      POS: String,
+      REF: String,
+      ALT: String,
+      EAF: Option[String],
+      MAF: Option[String],
+      BETA: Option[String],
+      STDERR: Option[String],
+      ODDS_RATIO: Option[String],
+      ZSCORE: Option[String],
+      PVALUE: String,
+      N: Option[String]) {
 
-      def toQuantitative: Option[Metadata.Quantitative] = (subjects, cases, controls) match {
-        case (_, Some(cs), Some(ctrls)) => Some(Metadata.Quantitative.CasesAndControls(cases = cs, controls = ctrls))
-        case (Some(s), _, _) => Some(Metadata.Quantitative.Subjects(s))
-        case _ => None
+    def toQuantitative: Option[AggregatorMetadata.Quantitative] = (subjects, cases, controls) match {
+      case (_, Some(cs), Some(ctrls)) => {
+        Some(AggregatorMetadata.Quantitative.CasesAndControls(cases = cs, controls = ctrls))
       }
-
+      case (Some(s), _, _) => Some(AggregatorMetadata.Quantitative.Subjects(s))
+      case _ => None
+    }
+    
+    val columnNames: ColumnNames = new ColumnNames(this)
+  }
+  
+  final class ColumnNames(phenotypeConfig: PhenotypeConfig) {
+    val CHROM: ColumnName = phenotypeConfig.CHROM.asColumnName
+    val POS: ColumnName = phenotypeConfig.POS.asColumnName
+    val REF: ColumnName = phenotypeConfig.REF.asColumnName
+    val ALT: ColumnName = phenotypeConfig.ALT.asColumnName
+    val EAF: Option[ColumnName] = phenotypeConfig.EAF.map(_.asColumnName)
+    val MAF: Option[ColumnName] = phenotypeConfig.MAF.map(_.asColumnName)
+    val BETA: Option[ColumnName] = phenotypeConfig.BETA.map(_.asColumnName)
+    val STDERR: Option[ColumnName] = phenotypeConfig.STDERR.map(_.asColumnName)
+    val ODDS_RATIO: Option[ColumnName] = phenotypeConfig.ODDS_RATIO.map(_.asColumnName)
+    val ZSCORE: Option[ColumnName] = phenotypeConfig.ZSCORE.map(_.asColumnName)
+    val PVALUE: ColumnName = phenotypeConfig.PVALUE.asColumnName
+    val N: Option[ColumnName] = phenotypeConfig.N.map(_.asColumnName)
   }
   
   val phenotypesToConfigs: Map[String, PhenotypeConfig] = {
@@ -222,10 +216,9 @@ object Intake extends loamstream.LoamFile {
     intakeTypesafeConfig.as[Map[String, PhenotypeConfig]](key)
   }
   
-  import AggregatorCommands.upload
-  
-  def toMetadata(phenotypeConfigTuple: (String, PhenotypeConfig)): Metadata = {
+  def toMetadata(phenotypeConfigTuple: (String, PhenotypeConfig)): AggregatorMetadata = {
     val (phenotype, phenotypeConfig) = phenotypeConfigTuple
+    
     generalMetadata.toMetadata(phenotype, phenotypeConfig.toQuantitative)
   }
   
@@ -234,71 +227,32 @@ object Intake extends loamstream.LoamFile {
     isVarDataType = true,
     pathTo26kMap = aggregatorIntakePipelineConfig.twentySixKIdMap)
 
-  def fromColumnNames(columns: Iterable[ColumnName]): SourceColumns = {
-    import loamstream.loam.intake.aggregator.ColumnNames
-    type Setter = SourceColumns => SourceColumns
-    import ColumnNames._
-    def nameToSetter(columnName: ColumnName): Setter = columnName match {
-      case `eaf` => _.withDefaultEaf
-      case `maf` => _.withDefaultMaf
-      case `beta` => _.withDefaultBeta
-      case `odds_ratio` => _.withDefaultOddsRatio
-      case `stderr` => _.withDefaultStderr
-      case `zscore` => _.withDefaultZscore
-      case `n` => _.withDefaultN
-      case _ => identity
-    }
-    columns.foldLeft(SourceColumns.defaultMarkerAndPvalueOnly) { (acc, column) =>
-      nameToSetter(column).apply(acc)
-    }
-  }
-  
   for {
     (phenotype, sourceStore) <- sourceStores(phenotypesToConfigs)
   } {
-
     val phenotypeConfig = phenotypesToConfigs(phenotype)
     
-    val dataInAggregatorFormat = processPhenotype(generalMetadata.dataset, phenotype, sourceStore, phenotypeConfig, aggregatorIntakePipelineConfig, flipDetector)
-
-    val metadata = toMetadata(phenotype -> phenotypeConfig)
-
-    var cols = Seq[ColumnName]()
-    phenotypeConfig.EAF match { case Some(_) => cols = cols ++ Seq("eaf".asColumnName); case None => () }
-    phenotypeConfig.BETA match { case Some(_) => cols = cols ++ Seq("beta".asColumnName); case None => () }
-    phenotypeConfig.ZSCORE match { case Some(_) => cols = cols ++ Seq("zscore".asColumnName); case None => () }
-    phenotypeConfig.MAF match { case Some(_) => cols = cols ++ Seq("maf".asColumnName); case None => () }
-    phenotypeConfig.STDERR match { case Some(_) => cols = cols ++ Seq("stderr".asColumnName); case None => () }
-    phenotypeConfig.N match { case Some(_) => cols = cols ++ Seq("n".asColumnName); case None => () }
-    
-    phenotypeConfig.dichotomous match { case true => phenotypeConfig.ODDS_RATIO match { case Some(_) => cols = cols ++ Seq("odds_ratio".asColumnName); case None => () }; case false => () }
-
-    val sourceColumnMapping = fromColumnNames(cols)
-
-    val aggregatorConfigFileName: Path = {
-      Paths.workDir / s"aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf"
+    val (dataInAggregatorFormat, sourceColumnMapping) = {
+      processPhenotype(
+          generalMetadata.dataset, 
+          phenotype, 
+          sourceStore, 
+          phenotypeConfig, 
+          aggregatorIntakePipelineConfig, 
+          flipDetector)
     }
-
-    val configData = ConfigData(metadata, sourceColumnMapping, dataInAggregatorFormat.path)      
-    val aggregatorConfigFile = store(aggregatorConfigFileName)
-
-	println(s"${metadata}")
-    produceAggregatorIntakeConfigFile(aggregatorConfigFile).
-      from(configData).
-      tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}").
-      in(dataInAggregatorFormat)
     
-    //if(intakeTypesafeConfig.getBoolean("AGGREGATOR_INTAKE_DO_UPLOAD")) {
-    //
-    //  upload(
-    //    aggregatorIntakePipelineConfig, 
-    //    metadata, 
-    //    dataInAggregatorFormat,
-    //    sourceColumnMapping,
-    //    workDir = Paths.workDir, 
-    //    yes = true).tag(s"upload-to-s3-${phenotype}")
-    //
-    //}
+    if(intakeTypesafeConfig.getBoolean("AGGREGATOR_INTAKE_DO_UPLOAD")) {
+      val metadata = toMetadata(phenotype -> phenotypeConfig)
 
+      loamstream.loam.intake.AggregatorCommands.upload(
+        aggregatorIntakePipelineConfig, 
+        metadata, 
+        dataInAggregatorFormat,
+        sourceColumnMapping,
+        workDir = Paths.workDir, 
+        yes = false).tag(s"upload-to-s3-${phenotype}")
+    }
   }
 }
+
