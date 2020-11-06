@@ -52,7 +52,7 @@ object Intake extends loamstream.LoamFile {
         posColumn = POS, 
         refColumn = REF, 
         altColumn = ALT,
-        forceAlphabeticChromNames = true)
+        forceAlphabeticChromNames = true) //"23" => "X", "24" => "Y", etc
         
     val oddsRatioDefOpt: Option[NamedColumnDef[Double]] = {
       if(phenoCfg.dichotomous) {
@@ -99,20 +99,23 @@ object Intake extends loamstream.LoamFile {
       destOpt.getOrElse(store(Paths.workDir / s"""${dataset}_${phenotype}.intake_${todayAsString}.tsv"""))
     }
     
+    //TODO: FIXME path name chosen arbitrarily
+    val filterLog: Store = store(path(s"${dest.path.toString}.filtered-rows"))
+
+    //TODO: FIXME path name chosen arbitrarily
+    val unknownToBioIndexFile: Store = store(path(s"${dest.path.toString}.unknown-to-bio-index"))
+    
+    //TODO: FIXME path name chosen arbitrarily
+    val disagreeingZBetaStdErrFile: Store = store(path(s"${dest.path.toString}.disagreeing-z-Beta-stderr"))
+    
+    //TODO: FIXME path name chosen arbitrarily
+    val countFile: Store = store(path(s"${dest.path.toString}.variant-count"))
+    
     val csvFormat = CSVFormat.DEFAULT.withDelimiter(delToChar(phenoCfg.delimiter)).withFirstRecordAsHeader
     
     val source = Source.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
     
     val toAggregatorRows = makeAggregatorRowExpr(phenoCfg)
-        
-    //TODO: FIXME
-    val filterLog: Store = store(path(s"${dest.path.toString}.filtered-rows"))
-    //TODO: FIXME
-    val unknownToBioIndexFile: Store = store(path(s"${dest.path.toString}.unknown-to-bio-index"))
-    //TODO: FIXME
-    val disagreeingZBetaStdErrFile: Store = store(path(s"${dest.path.toString}.disagreeing-z-Beta-stderr"))
-    //TODO: FIXME
-    val countFile: Store = store(path(s"${dest.path.toString}.variant-count"))
     
     val oddsRatioFilter: Option[RowPredicate] = phenoCfg.columnNames.ODDS_RATIO.map { oddsRatio =>
       CsvRowFilters.logToFile(filterLog, append = true) {
@@ -125,24 +128,27 @@ object Intake extends loamstream.LoamFile {
     produceCsv(dest).
         from(source).
         using(flipDetector).
+        //Filter out rows with REF or ALT columns == ('D' or 'I')
         filter(CsvRowFilters.noDsNorIs(
             refColumn = columnNames.REF, 
             altColumn = columnNames.ALT, 
             logStore = filterLog,
             append = true)).
-        filter(CsvRowFilters.filterRefAndAlt( //TODO: Example
+        /* for example:
+        filter(CsvRowFilters.filterRefAndAlt(
             refColumn = columnNames.REF, 
             altColumn = columnNames.ALT, 
             disallowed = Set("foo", "BAR", "Baz"),
             logStore = filterLog,
             append = true)).
-        filter(oddsRatioFilter).
+        */
+        filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
         via(toAggregatorRows).
-        filter(DataRowFilters.validEaf(filterLog, append = true)).
-        filter(DataRowFilters.validMaf(filterLog, append = true)).
-        map(DataRowTransforms.upperCaseAlleles).
-        map(DataRowTransforms.clampPValues(filterLog, append = true)).
-        filter(DataRowFilters.validPValue(filterLog, append = true)).
+        filter(DataRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
+        filter(DataRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
+        map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
+        map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
+        filter(DataRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
         withMetric(Metrics.count(countFile)).
         withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
         withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
