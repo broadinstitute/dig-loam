@@ -155,15 +155,24 @@ if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 	done
 fi
 
+N=$((n+1))
 # mv tmp files to permanent
-mv ${outPrefix}.tmp.${n+1}.outpc $outpc
-mv ${outPrefix}.tmp.${n+1}.outvec $outvec
-mv ${outPrefix}.tmp.${n+1}.outload $outload
-mv ${outPrefix}.tmp.${n+1}.outval $outval
-mv ${outPrefix}.tmp.${n+1}.outpve $outpve
-mv ${outPrefix}.tmp.${n+1}.outmeansd $outmeansd
-mv ${outPrefix}.tmp.${n+1}.pheno $phenoFile
-mv ${outPrefix}.tmp.${n+1}.pcs.include $pcsIncludeFile
+echo "mv ${outPrefix}.tmp.${N}.outpc $outpc"
+mv ${outPrefix}.tmp.${N}.outpc $outpc
+echo "mv ${outPrefix}.tmp.${N}.outvec $outvec"
+mv ${outPrefix}.tmp.${N}.outvec $outvec
+echo "mv ${outPrefix}.tmp.${N}.outload $outload"
+mv ${outPrefix}.tmp.${N}.outload $outload
+echo "mv ${outPrefix}.tmp.${N}.outval $outval"
+mv ${outPrefix}.tmp.${N}.outval $outval
+echo "mv ${outPrefix}.tmp.${N}.outpve $outpve"
+mv ${outPrefix}.tmp.${N}.outpve $outpve
+echo "mv ${outPrefix}.tmp.${N}.outmeansd $outmeansd"
+mv ${outPrefix}.tmp.${N}.outmeansd $outmeansd
+echo "mv ${outPrefix}.tmp.${N}.pheno $phenoFile"
+mv ${outPrefix}.tmp.${N}.pheno $phenoFile
+echo "mv ${outPrefix}.tmp.${N}.pcs.include $pcsIncludeFile"
+mv ${outPrefix}.tmp.${N}.pcs.include $pcsIncludeFile
 
 # remove remaining temporary files
 rm ${outPrefix}.tmp*
