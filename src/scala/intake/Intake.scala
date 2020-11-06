@@ -47,7 +47,12 @@ object Intake extends loamstream.LoamFile {
         EAF.isDefined || MAF.isDefined, 
         s"at least one of EAF or MAF columns is required, but got EAF = $EAF and MAF = $MAF")
 
-    val varId = AggregatorColumnDefs.marker(chromColumn = CHROM, posColumn = POS, refColumn = REF, altColumn = ALT)
+    val varId = AggregatorColumnDefs.marker(
+        chromColumn = CHROM, 
+        posColumn = POS, 
+        refColumn = REF, 
+        altColumn = ALT,
+        forceAlphabeticChromNames = true)
         
     val oddsRatioDefOpt: Option[NamedColumnDef[Double]] = {
       if(phenoCfg.dichotomous) {
