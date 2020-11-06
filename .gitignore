@@ -3,3 +3,11 @@
 target
 project/project
 project/target
+
+#Eclipse stuff
+.cache-main
+.classpath
+.project
+.settings
+bin
+
