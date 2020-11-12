@@ -349,22 +349,31 @@ object Intake extends loamstream.LoamFile {
     
     }
 
-    if(intakeTypesafeConfig.getBoolean("AGGREGATOR_INTAKE_DO_UPLOAD")) {
-      val metadata = toMetadata(phenotype -> phenotypeConfig)
+    //if(intakeTypesafeConfig.getBoolean("AGGREGATOR_INTAKE_DO_UPLOAD")) {
+    //  val metadata = toMetadata(phenotype -> phenotypeConfig)
+    //
+    //  drm {
+    //    loamstream.loam.intake.AggregatorCommands.upload(
+    //      aggregatorIntakePipelineConfig, 
+    //      metadata, 
+    //      dataInAggregatorFormat,
+    //      sourceColumnMapping,
+    //      workDir = Paths.workDir, 
+    //      yes = false,
+    //      forceLocal = false
+    //    ).tag(s"upload-to-s3-${phenotype}")
+    //  }
+    //
+    //}
 
-      drm {
-        loamstream.loam.intake.AggregatorCommands.upload(
-          aggregatorIntakePipelineConfig, 
-          metadata, 
-          dataInAggregatorFormat,
-          sourceColumnMapping,
-          workDir = Paths.workDir, 
-          yes = false,
-          forceLocal = false
-        ).tag(s"upload-to-s3-${phenotype}")
-      }
+    val metadata = toMetadata(phenotype -> phenotypeConfig)
+    val configData = AggregatorConfigData(metadata, sourceColumnMapping, dataInAggregatorFormat.path)   
+    val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
+    produceAggregatorIntakeConfigFile(aggregatorConfigFile).
+      from(configData, forceLocal = true).
+      in(dataInAggregatorFormat).
+      tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
 
-    }
   }
 }
 

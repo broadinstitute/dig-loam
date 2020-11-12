@@ -132,6 +132,6 @@ p=`head -1 $topResults | tr '\t' '\n' | grep -n "pvalue" | awk -F':' '{print $1}
 
 h1=`head -1 ${results}.3.tmp | cut -f2-`
 h2=`head -1 ${results}.2.tmp | cut -f2-`
-(echo -e "${h1}\t${h2}"; (join -a 1 -t $'\t' <(sed '1d' $topResults | sort -k1,1) <( sed '1d' ${results}.2.tmp | sort -k1,1) | sort -g -k${p},${p})) > $results
+(echo -e "${h1}\t${h2}"; (join -a 1 -e- -o auto -t $'\t' <(sed '1d' $topResults | sort -k1,1) <( sed '1d' ${results}.2.tmp | sort -k1,1) | sort -g -k${p},${p})) > $results
 
 rm ${results}.*.tmp*
