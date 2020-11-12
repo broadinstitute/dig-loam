@@ -18,12 +18,13 @@ def main(args=None):
 
 	df.dropna(subset=[args.p], inplace=True)
 
-	if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
-		print "removing {0:d} variants with mac < 20".format(df[df[args.mac] < 20].shape[0])
-		df = df[df[args.mac] >= 20]
-	else:
-		print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
-		df = df[df[args.mac] >= 3]
+	if args.mac:
+		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
+			print "removing {0:d} variants with mac < 20".format(df[df[args.mac] < 20].shape[0])
+			df = df[df[args.mac] >= 20]
+		else:
+			print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
+			df = df[df[args.mac] >= 3]
 
 	df.reset_index(drop=True, inplace=True)
 
@@ -38,10 +39,10 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--exclude', help='a variant exclusion file')
 	parser.add_argument('--n', type=int, default=1000, help='number of top variants to report')
+	parser.add_argument('--mac', help='a minor allele count column name in --results')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)
 	requiredArgs.add_argument('--p', help='a p-value column name in --results', required=True)
-	requiredArgs.add_argument('--mac', help='a minor allele count column name in --results', required=True)
 	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
 	args = parser.parse_args()
 	main(args)
