@@ -18,9 +18,6 @@ def mhtplot(df, chr, pos, p, file, bicolor = False):
 	
 	print "minimum p-value: {0:.3g}".format(np.min(df[p]))
 	
-	print "calculating genomic inflation rate"
-	lmda = np.median(scipy.chi2.ppf([1-x for x in df[p].tolist()], df=1))/scipy.chi2.ppf(0.5,1)
-	
 	df[logp] = -1 * np.log10(df[p]) + 0.0
 	print "maximum -1*log10(p-value): {0:.3g}".format(np.max(df[logp]))
 	
@@ -131,14 +128,14 @@ def mhtplot(df, chr, pos, p, file, bicolor = False):
 def main(args=None):
 
 	print "reading results from file"
-	df=pd.read_table(args.results, low_memory=False)
+	df=pd.read_table(args.results, usecols=['marker',args.p], dtype={'marker': np.dtype(str), args.p: np.dtype(float)})
 
-	df['chr'] = df['marker'].apply(lambda x: int(x.split("_")[0]))
+	df['chr'] = df['marker'].apply(lambda x: x.split("_")[0])
 	df['pos'] = df['marker'].apply(lambda x: int(x.split("_")[1]))
 
 	df.dropna(subset=[args.p], inplace=True)
 
-	df.loc[df[args.p] == 0, args.p] = 1e-300
+	df.loc[df[args.p] < 1e-300, args.p] = 1e-300
 	df.reset_index(drop=True, inplace=True)
 
 	print "generating manhattan plot for " + str(df.shape[0]) + " variants"

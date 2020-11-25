@@ -107,23 +107,11 @@ fi
 
 rm ${results}.1.tmp.header
 
-echo -e "ID\tGENE\tCONSEQUENCE\tIMPACT\tCHANGE" > ${results}.2.tmp
+echo -e "ID\tGENE" > ${results}.2.tmp
 while read line; do
 	ID=`echo $line | awk '{print $1}'`
 	GENE=`echo $line | awk '{print $18}'`
-	CONSEQUENCE=`echo $line | awk '{print $7}'`
-	IMPACT=`echo $line | awk '{print $14}'`
-	AA=`echo $line | awk '{print $11}'`
-	PPOS=`echo $line | awk '{print $10}'`
-	if [[ "${AA}" != "-" && "${PPOS}" != "-" ]]; then
-		A1=`echo $line | awk '{print $11}' | awk -F'/' '{print $1}'`
-		A2=`echo $line | awk '{print $11}' | awk -F'/' '{print $2}'`
-		A1TRANS=`translateAcid $A1`
-		A2TRANS=`translateAcid $A2`
-		echo -e "${ID}\t${GENE}\t${CONSEQUENCE}\t${IMPACT}\tp.${A1TRANS}${PPOS}${A2TRANS}" >> ${results}.2.tmp
-	else
-		echo -e "${ID}\t${GENE}\t${CONSEQUENCE}\t${IMPACT}\t-" >> ${results}.2.tmp
-	fi
+	echo -e "${ID}\t${GENE}" >> ${results}.2.tmp
 done < <(sed '1d' ${results}.1.tmp)
 
 (head -1 $topResults | awk 'BEGIN{OFS="\t"}{print "#Uploaded variation\t"$0}'; sed '1d' $topResults | awk 'BEGIN{OFS="\t"}{print $1"\t"$0}') > ${results}.3.tmp

@@ -4,6 +4,7 @@ import scala.sys.error
 import com.typesafe.config.Config
 
 import loamstream.loam.intake.AggregatorIntakeConfig
+import loamstream.loam.intake.AggregatorConfigData
 import loamstream.loam.intake.RowPredicate
 import loamstream.loam.intake.SourceColumns
 
@@ -36,18 +37,28 @@ object Intake extends loamstream.LoamFile {
   val intakeUtilsConfig = loadConfig("INTAKE_UTILS_CONF", "")
 
   private val intakeTypesafeConfig: Config = loadConfig("INTAKE_CONF", "").config
+
+  val makeQqPlot: Boolean = intakeTypesafeConfig.getBoolean("QQPLOT")
+  val makeMhtPlot: Boolean = intakeTypesafeConfig.getBoolean("MHTPLOT")
+  val makeTopResults: Boolean = intakeTypesafeConfig.getBoolean("TOPRESULTS")
+  val splitByChr: Boolean = intakeTypesafeConfig.getBoolean("SPLITBYCHR")
+  val mungeFile: Boolean = intakeTypesafeConfig.getBoolean("MUNGEFILE")
   
   private val intakeMetadataTypesafeConfig: Config = loadConfig("INTAKE_METADATA_CONF", "").config
 
   val imgPython2: String = intakeUtilsConfig.getStr("imgPython2")
   val imgR: String = intakeUtilsConfig.getStr("imgR")
   val imgEnsemblVep: String = intakeUtilsConfig.getStr("imgEnsemblVep")
+  val imgTexLive: String = intakeUtilsConfig.getStr("imgTexLive")
   val pyQqPlot: String = intakeUtilsConfig.getStr("pyQqPlot")
   val pyMhtPlot: String = intakeUtilsConfig.getStr("pyMhtPlot")
   val pyTopResults: String = intakeUtilsConfig.getStr("pyTopResults")
+  val pySummary: String = intakeUtilsConfig.getStr("pySummary")
+  val shSplitByChr: String = intakeUtilsConfig.getStr("shSplitByChr")
   val shAnnotateResults: String = intakeUtilsConfig.getStr("shAnnotateResults")
   val pyMakeSiteVcf: String = intakeUtilsConfig.getStr("pyMakeSiteVcf")
   val rTop20: String = intakeUtilsConfig.getStr("rTop20")
+  val texSummary: String = intakeUtilsConfig.getStr("texSummary")
   val fasta: Store = store(path(intakeUtilsConfig.getStr("fasta"))).asInput
   val vepCacheDir: Store = store(path(intakeUtilsConfig.getStr("vepCacheDir"))).asInput
   val vepPluginsDir: Store = store(path(intakeUtilsConfig.getStr("vepPluginsDir"))).asInput
@@ -59,10 +70,6 @@ object Intake extends loamstream.LoamFile {
     val neff = ColumnName("Neff")
     val n = ColumnName("n")
     
-    require(
-        EAF.isDefined || MAF.isDefined, 
-        s"at least one of EAF or MAF columns is required, but got EAF = $EAF and MAF = $MAF")
-
     val varId = AggregatorColumnDefs.marker(
         chromColumn = CHROM, 
         posColumn = POS, 
@@ -138,47 +145,55 @@ object Intake extends loamstream.LoamFile {
         oddsRatio.asDouble > 0.0
       }
     }
+
+    //?val betaFilter: Option[RowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
+    //?  CsvRowFilters.logToFile(filterLog, append = true) {
+    //?    beta.asDouble < 42
+    //?  }
+    //?}
     
     import phenoCfg.columnNames
 
-    drm {
+    if(mungeFile) {
 
-      produceCsv(dest).
-        from(source).
-        using(flipDetector).
-        //Filter out rows with REF or ALT columns == ('D' or 'I')
-        filter(CsvRowFilters.noDsNorIs(
-            refColumn = columnNames.REF, 
-            altColumn = columnNames.ALT, 
-            logStore = filterLog,
-            append = true)).
-        /* for example:
-        filter(CsvRowFilters.filterRefAndAlt(
-            refColumn = columnNames.REF, 
-            altColumn = columnNames.ALT, 
-            disallowed = Set("foo", "BAR", "Baz"),
-            logStore = filterLog,
-            append = true)).
-        */
-        filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
-        via(toAggregatorRows).
-        filter(DataRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
-        filter(DataRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
-        map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
-        map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
-        filter(DataRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
-        withMetric(Metrics.count(countFile)).
-        withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
-        write(forceLocal = true).
-        in(sourceStore).
-        out(dest, filterLog, disagreeingZBetaStdErrFile, countFile).
-        tag(s"process-phenotype-$phenotype")
-
-        //add this back if time not a concern
-        //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
-        //out(unknownToBioIndexFile).
-
-        //replace with this if want to keep it running locally
+      drm {
+        produceCsv(dest).
+          from(source).
+          using(flipDetector).
+          //Filter out rows with REF or ALT columns == ('D' or 'I')
+          filter(CsvRowFilters.noDsNorIs(
+              refColumn = columnNames.REF, 
+              altColumn = columnNames.ALT, 
+              logStore = filterLog,
+              append = true)).
+          /* for example:
+          filter(CsvRowFilters.filterRefAndAlt(
+              refColumn = columnNames.REF, 
+              altColumn = columnNames.ALT, 
+              disallowed = Set("foo", "BAR", "Baz"),
+              logStore = filterLog,
+              append = true)).
+          */
+          filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
+          via(toAggregatorRows).
+          filter(DataRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
+          filter(DataRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
+          map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
+          map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
+          filter(DataRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
+          withMetric(Metrics.count(countFile)).
+          withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
+          write(forceLocal = true).
+          in(sourceStore).
+          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile).
+          tag(s"process-phenotype-$phenotype")
+      
+          //add this back if time not a concern
+          //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
+          //out(unknownToBioIndexFile).
+      
+          //replace with this if want to keep it running locally
+      }
 
     }
         
@@ -278,75 +293,59 @@ object Intake extends loamstream.LoamFile {
     val qqPlotCommon: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.common.png""")
     val mhtPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.mhtplot.png""")
     val topResults: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.topresults.tsv""")
+	val resultsMht: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.1e-4.tsv""")
     val topResultsAnnot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.topresults.annot.tsv""")
     val topLociAnnot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.toploci.annot.tsv""")
     val siteVcf: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.sites.vcf.gz""")
-    
-    drmWith(imageName = s"${imgPython2}") {
-      
-        cmd"""/usr/local/bin/python ${pyQqPlot}
+    val texReport: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.report.tex""")
+    val pdfReport: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.report.pdf""")
+
+    if(makeTopResults) {
+
+      drmWith(imageName = s"${imgPython2}") {
+        cmd"""/usr/local/bin/python ${pyTopResults}
           --results ${dataInAggregatorFormat}
+          --n 1000
           --p pvalue
-          --eaf eaf
-          --out ${qqPlot}
-          --out-common ${qqPlotCommon}"""
+          --out ${topResults}
+          --out-mht ${resultsMht}"""
           .in(dataInAggregatorFormat)
-          .out(qqPlot, qqPlotCommon)
-          .tag(s"process-phenotype-${phenotype}-qqplot")
+          .out(topResults, resultsMht)
+          .tag(s"process-phenotype-${phenotype}-topresults")
         
-        cmd"""/usr/local/bin/python ${pyMhtPlot}
-          --results ${dataInAggregatorFormat}
+        cmd"""/usr/local/bin/python ${pyMakeSiteVcf}
+          --results ${topResults}
+          --out ${siteVcf}"""
+          .in(topResults)
+          .out(siteVcf)
+          .tag(s"process-phenotype-${phenotype}-sitevcf")
+      }
+
+      drmWith(imageName = s"${imgEnsemblVep}") {
+        cmd"""${shAnnotateResults}
+          ${siteVcf}
+          ${topResults}
+          1
+          ${fasta}
+          ${vepCacheDir}
+          ${vepPluginsDir}
+          ${topResultsAnnot}"""
+          .in(siteVcf, topResults, fasta, vepCacheDir, vepPluginsDir)
+          .out(topResultsAnnot)
+          .tag(s"process-phenotype-${phenotype}-topresultsannot")
+      }
+
+      drmWith(imageName = s"${imgR}") {
+        cmd"""/usr/local/bin/Rscript --vanilla --verbose
+          ${rTop20}
+          --results ${topResultsAnnot}
           --p pvalue
-          --out ${mhtPlot}"""
-          .in(dataInAggregatorFormat)
-          .out(mhtPlot)
-          .tag(s"process-phenotype-${phenotype}-mhtplot")
-    
-      cmd"""/usr/local/bin/python ${pyTopResults}
-        --results ${dataInAggregatorFormat}
-        --n 1000
-        --p pvalue
-        --out ${topResults}"""
-        .in(dataInAggregatorFormat)
-        .out(topResults)
-        .tag(s"process-phenotype-${phenotype}-topresults")
+          --out ${topLociAnnot}"""
+          .in(topResultsAnnot)
+          .out(topLociAnnot)
+          .tag(s"process-phenotype-${phenotype}-toplociannot")
+      }
 
-      cmd"""/usr/local/bin/python ${pyMakeSiteVcf}
-        --results ${topResults}
-        --out ${siteVcf}"""
-        .in(topResults)
-        .out(siteVcf)
-        .tag(s"process-phenotype-${phenotype}-sitevcf")
-
-    }
-  
-    drmWith(imageName = s"${imgEnsemblVep}") {
-    
-      cmd"""${shAnnotateResults}
-        ${siteVcf}
-        ${topResults}
-        1
-        ${fasta}
-        ${vepCacheDir}
-        ${vepPluginsDir}
-        ${topResultsAnnot}"""
-      .in(siteVcf, topResults, fasta, vepCacheDir, vepPluginsDir)
-      .out(topResultsAnnot)
-      .tag(s"process-phenotype-${phenotype}-topresultsannot")
-    
-    }
-
-    drmWith(imageName = s"${imgR}") {
-    
-      cmd"""/usr/local/bin/Rscript --vanilla --verbose
-        ${rTop20}
-        --results ${topResultsAnnot}
-        --p pvalue
-        --out ${topLociAnnot}"""
-        .in(topResultsAnnot)
-        .out(topLociAnnot)
-        .tag(s"process-phenotype-${phenotype}-toplociannot")
-    
     }
 
     //if(intakeTypesafeConfig.getBoolean("AGGREGATOR_INTAKE_DO_UPLOAD")) {
@@ -367,12 +366,121 @@ object Intake extends loamstream.LoamFile {
     //}
 
     val metadata = toMetadata(phenotype -> phenotypeConfig)
-    val configData = AggregatorConfigData(metadata, sourceColumnMapping, dataInAggregatorFormat.path)   
+    val configData = AggregatorConfigData(metadata, sourceColumnMapping, dataInAggregatorFormat.path)
     val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
-    produceAggregatorIntakeConfigFile(aggregatorConfigFile).
-      from(configData, forceLocal = true).
-      in(dataInAggregatorFormat).
-      tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
+
+    produceAggregatorIntakeConfigFile(aggregatorConfigFile)
+      .from(configData, forceLocal = true)
+      .in(dataInAggregatorFormat)
+      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
+
+
+    if(splitByChr) {
+
+      val aggregatorConfigSplitFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.split.conf""")
+
+      drm {
+        cmd"""${shSplitByChr}
+          ${dataInAggregatorFormat}
+          ${aggregatorConfigFile}
+          ${aggregatorConfigSplitFile}"""
+          .in(dataInAggregatorFormat, aggregatorConfigFile)
+          .out(aggregatorConfigSplitFile)
+          .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}.split")
+      }
+
+    }
+
+    if(makeQqPlot) {
+
+      val eafString = phenotypeConfig.EAF match {
+        case Some(s) => "--eaf eaf"
+        case None => ""
+      }
+
+      val commonString = phenotypeConfig.EAF match {
+        case Some(s) => s"--out-common ${qqPlotCommon.toString.split("@")(1)}"
+        case None => ""
+      }
+
+      var qqplotOut = Seq(qqPlot)
+      phenotypeConfig.EAF match {
+        case Some(s) => qqplotOut :+ qqPlotCommon
+        case None => ()
+      }
+
+      drmWith(imageName = s"${imgPython2}") {
+        cmd"""/usr/local/bin/python ${pyQqPlot}
+          --results ${dataInAggregatorFormat}
+          --p pvalue
+          ${eafString}
+          --out ${qqPlot}
+          ${commonString}"""
+          .in(dataInAggregatorFormat)
+          .out(qqplotOut)
+          .tag(s"process-phenotype-${phenotype}-qqplot")
+      }
+
+    }
+
+    if(makeMhtPlot) {
+
+      drmWith(imageName = s"${imgPython2}") {
+        cmd"""/usr/local/bin/python ${pyMhtPlot}
+          --results ${resultsMht}
+          --p pvalue
+          --out ${mhtPlot}"""
+          .in(resultsMht)
+          .out(mhtPlot)
+          .tag(s"process-phenotype-${phenotype}-mhtplot")
+      }
+
+    }
+
+    val qqString = makeQqPlot match {
+      case true => 
+        phenotypeConfig.EAF match {
+          case Some(s) =>
+            s"--qq ${qqPlot.toString.split("@")(1)} --qq-common ${qqPlotCommon.toString.split("@")(1)}"
+          case None =>
+            s"--qq ${qqPlot.toString.split("@")(1)}"
+        }
+      case false => ""
+    }
+
+    var summaryIn = Seq(aggregatorConfigFile, mhtPlot, topLociAnnot)
+
+    makeQqPlot match {
+      case true => 
+        phenotypeConfig.EAF match {
+          case Some(s) => summaryIn = summaryIn ++ Seq(qqPlot, qqPlotCommon)
+          case None => ()
+        }
+      case false => ()
+    }
+
+	drmWith(imageName = s"${imgPython2}") {
+      
+      cmd"""/usr/local/bin/python ${pySummary}
+        --cfg ${aggregatorConfigFile}
+        ${qqString}
+        --mht ${mhtPlot}
+        --top-results ${topLociAnnot}
+        --out ${texReport}"""
+        .in(summaryIn)
+        .out(texReport)
+        .tag(s"process-phenotype-${phenotype}-texreport")
+    }
+
+    drmWith(imageName = s"${imgTexLive}") {
+      
+      cmd"""bash -c "/usr/local/bin/pdflatex ${texReport}; sleep 5; /usr/local/bin/pdflatex ${texReport}""""
+        .in(texReport)
+        .out(pdfReport)
+        .tag(s"process-phenotype-${phenotype}-pdfreport")
+    
+    }
+
 
   }
 }
