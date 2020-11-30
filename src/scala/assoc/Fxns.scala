@@ -265,7 +265,9 @@ object Fxns extends loamstream.LoamFile {
   }
 
   def checkURI(s: String): String = {
-    val cmd = s"gsutil -m ls ${s}"
+    val gsutilBinaryOpt: Option[Path] = projectContext.config.googleConfig.map(_.gsutilBinary)
+    require(gsutilBinaryOpt.isDefined, "Couldn't find gsutil binary path; set loamstream.googlecloud.gsutilBinary in loamstream.conf")
+    val cmd = s"${gsutilBinaryOpt.get} -m ls ${s}"
     cmd.! match {
       case 0 => s
       case 1 => throw new CfgException("checkURI: " + s + " not found")

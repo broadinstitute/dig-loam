@@ -151,6 +151,12 @@ object Intake extends loamstream.LoamFile {
     //?    beta.asDouble < 42
     //?  }
     //?}
+    val betaFilter: Option[RowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
+      CsvRowFilters.logToFile(filterLog, append = true) {
+        def isValid(b: Double): Boolean = b < 10.0 && b > -10.0
+        beta.asDouble.map(isValid)
+      }
+    }     
     
     import phenoCfg.columnNames
 
@@ -175,6 +181,7 @@ object Intake extends loamstream.LoamFile {
               append = true)).
           */
           filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
+          filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
           via(toAggregatorRows).
           filter(DataRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
           filter(DataRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
