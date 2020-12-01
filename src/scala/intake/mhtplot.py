@@ -10,7 +10,13 @@ import scipy.stats as scipy
 
 sns.set(context='notebook', style='darkgrid', palette='deep', font='sans-serif', font_scale=1, color_codes=False, rc=None)
 
-def mhtplot(df, chr, pos, p, file, bicolor = False):
+def file_len(fname):
+    with open(fname) as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
+
+def mhtplot(df, chr, pos, p, nVars, file, bicolor = False):
 
 	logp = 'log' + p
 	gpos = 'g' + pos
@@ -92,10 +98,10 @@ def mhtplot(df, chr, pos, p, file, bicolor = False):
 			df.loc[df[chr] == chrs[i],'chr_hex'] = chr_hex[i]
 		x_labels = [a.replace('MT','\nMT') if a == 'MT' else a for a in chrs]
 
-	if df.shape[0] >= 1000000:
+	if nVars >= 1000000:
 		sig = 5.4e-8
 	else:
-		sig = 0.05 / df.shape[0]
+		sig = 0.05 / nVars
 	print "significance level set to p-value = {0:.3g} (-1*log10(p-value) = {1:.3g})".format(sig, -1 * np.log10(sig))
 	print "{0:d} genome wide significant variants".format(len(df[p][df[p] <= sig]))
 
@@ -127,25 +133,27 @@ def mhtplot(df, chr, pos, p, file, bicolor = False):
 
 def main(args=None):
 
-	print "reading results from file"
+	print "reading plottable results from file"
 	df=pd.read_table(args.results, usecols=['marker',args.p], dtype={'marker': np.dtype(str), args.p: np.dtype(float)})
 
 	df['chr'] = df['marker'].apply(lambda x: x.split("_")[0])
 	df['pos'] = df['marker'].apply(lambda x: int(x.split("_")[1]))
 
-	df.dropna(subset=[args.p], inplace=True)
-
 	df.loc[df[args.p] < 1e-300, args.p] = 1e-300
 	df.reset_index(drop=True, inplace=True)
 
+	var_count = file_len(args.full_results)
+	print "total variant count in full results: {0:d}".format(var_count)
+
 	print "generating manhattan plot for " + str(df.shape[0]) + " variants"
-	mhtplot(df, chr = 'chr', pos = 'pos', p = args.p, file = args.out, bicolor = args.bicolor)
+	mhtplot(df, chr = 'chr', pos = 'pos', p = args.p, nVars = var_count, file = args.out, bicolor = args.bicolor)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--bicolor', action='store_true', help='flag indicates that plot should be bicolor')
 	requiredArgs = parser.add_argument_group('required arguments')
-	requiredArgs.add_argument('--results', help='a results file name', required=True)
+	requiredArgs.add_argument('--full-results', help='a full results file name', required=True)
+	requiredArgs.add_argument('--results', help='a plottable results file name', required=True)
 	requiredArgs.add_argument('--p', help='a p-value column name in --results', required=True)
 	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
 	args = parser.parse_args()

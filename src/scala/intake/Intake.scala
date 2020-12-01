@@ -435,9 +435,10 @@ object Intake extends loamstream.LoamFile {
       drmWith(imageName = s"${imgPython2}") {
         cmd"""/usr/local/bin/python ${pyMhtPlot}
           --results ${resultsMht}
+          --full-results ${dataInAggregatorFormat}
           --p pvalue
           --out ${mhtPlot}"""
-          .in(resultsMht)
+          .in(dataInAggregatorFormat, resultsMht)
           .out(mhtPlot)
           .tag(s"process-phenotype-${phenotype}-mhtplot")
       }
