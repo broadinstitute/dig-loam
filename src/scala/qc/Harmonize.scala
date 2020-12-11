@@ -56,7 +56,7 @@ object Harmonize extends loamstream.LoamFile {
   
       }
   
-      val harmMem = projectConfig.resources.genotypeHarmonizer.mem * 0.9 * 1000
+      val harmMem = projectConfig.resources.genotypeHarmonizer.mem * 0.75 * 1000
   
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.genotypeHarmonizer.cpus, mem = projectConfig.resources.genotypeHarmonizer.mem, maxRunTime = projectConfig.resources.genotypeHarmonizer.maxRunTime) {
       
