@@ -40,13 +40,14 @@ def main(args=None):
 
 	bim = pd.read_table(args.bim, header=None, sep=None, engine='python')
 	bim.columns = ["chr","rsid","cm","pos","a1","a2"]
-	bim['id'] = bim['rsid'].astype(str) + ":" + bim['pos'].astype(str) + ":" + bim['a1'].astype(str) + ":" + bim['a2'].astype(str)
 	bim['kg'] = 0
+	print "loaded bim file with " + str(bim.shape[0]) + " variants"
+
 
 	if args.kg_ids:
 		with open(args.kg_ids) as f:
 			x=f.read().splitlines()
-		bim.loc[bim['id'].isin(x),'kg'] = 1
+		bim.loc[bim['rsid'].isin(x),'kg'] = 1
 
 	bim['ref'] = bim['a1']
 	bim['alt'] = bim['a2']
@@ -56,8 +57,10 @@ def main(args=None):
 		ref_seq = ref_file.read()
 
 	snps = []
+	n = bim[bim['kg'] == 0].shape[0]
+	print "iterating over " + str(n) + " non 1kg rows for comparison with ref_seq"
+
 	for idx, row in bim[bim['kg'] == 0].iterrows():
-		print idx
 		if row[3] <= len(ref_seq):
 			ref = ref_seq[row[3]-1]
 			bim.loc[idx,'ref'] = ref
@@ -67,30 +70,32 @@ def main(args=None):
 			bima2comp = complement(bima2)
 			if bima1 + bima2 not in ["AT","TA","GC","CG"]:
 				if bima1 == "0" or bima2 == "0":
-					print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
+					print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
 					bim.loc[idx,'status'] = "remove_mono"
 				else:
 					if bima1 == ref:
-						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : match"
+						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : match"
 						bim.loc[idx,'alt'] = bima2
 						bim.loc[idx,'status'] = "match"
 					elif bima2 == ref:
-						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : reverse"
+						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : reverse"
 						bim.loc[idx,'alt'] = bima1
 						bim.loc[idx,'status'] = "reverse"
 					elif bima1comp == ref:
-						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : flip"
+						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : flip"
 						bim.loc[idx,'alt'] = bima2comp
 						bim.loc[idx,'status'] = "flip"
 					elif bima2comp == ref:
-						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : flip_reverse"
+						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : flip_reverse"
 						bim.loc[idx,'alt'] = bima1comp
 						bim.loc[idx,'status'] = "flip_reverse"
 					else:
-						print str(idx) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
+						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
 						bim.loc[idx,'status'] = "remove_nomatch"
 		else:
 			bim.loc[idx,'status'] = "remove_nomatch"
+
+	print "writing results to files"
 
 	bim['rsid'][bim['status'].isin(["remove_mono","remove_nomatch"])].to_csv(args.out_remove, header=False, index=False)
 	bim['rsid'][bim['status'] == "remove_mono"].to_csv(args.out_mono, header=False, index=False)
