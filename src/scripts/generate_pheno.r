@@ -19,8 +19,17 @@ args<-parser$parse_args()
 
 print(args)
 
+# standardization
+STDZ <- function (x) {
+	n <- length(x)
+	x <- x - mean(x)
+	sd <- sqrt( sum(x^2) / n)
+	x / sd
+}
+
+# rank-based inverse normalization
 INVN <- function(x){
-	return(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x))))
+	return(STDZ(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x)))))
 }
 
 pcs_include <- function(d, y, cv, n) {
