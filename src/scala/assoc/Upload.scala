@@ -12,6 +12,9 @@ object Upload extends loamstream.LoamFile {
   import Collections._
   
   def Upload(): Unit = {
+
+    val gsutilBinaryOpt: Option[Path] = projectContext.config.googleConfig.map(_.gsutilBinary)
+    require(gsutilBinaryOpt.isDefined, "Couldn't find gsutil binary path; set loamstream.googlecloud.gsutilBinary in loamstream.conf")
   
     projectConfig.hailCloud match {
   
@@ -61,14 +64,14 @@ object Upload extends loamstream.LoamFile {
           val refAnnotationHtGoogleDir = s"${arrayStores(array).refAnnotationsHt.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
 
           drm {
-            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refMtOrig.local.get} ${refMtGoogleDir}"""
+            cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).refMtOrig.local.get} ${refMtGoogleDir}"""
               .in(arrayStores(array).refMtOrig.local.get)
               .out(arrayStores(array).refMt.google.get)
               .tag("refMtOrigLocal_to_refMtGoogle")
           }
           
           drm {
-            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refAnnotationsHtOrig.local.get} ${refAnnotationHtGoogleDir}"""
+            cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).refAnnotationsHtOrig.local.get} ${refAnnotationHtGoogleDir}"""
               .in(arrayStores(array).refAnnotationsHtOrig.local.get)
               .out(arrayStores(array).refAnnotationsHt.google.get)
               .tag("refAnnotationsHtOrigLocal_to_refAnnotationsHtGoogle")
@@ -85,14 +88,14 @@ object Upload extends loamstream.LoamFile {
           val refAnnotationHtLocalDir = s"${arrayStores(array).refAnnotationsHt.local.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
 
           drm {
-            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refMtOrig.google.get} ${refMtLocalDir}"""
+            cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).refMtOrig.google.get} ${refMtLocalDir}"""
               .in(arrayStores(array).refMtOrig.google.get)
               .out(arrayStores(array).refMt.local.get)
               .tag("refMtOrigGoogle_to_refMtLocal")
           }
           
           drm {
-            cmd"""/humgen/diabetes/users/dig/loamstream/google-cloud-sdk/bin/gsutil -m cp -r ${arrayStores(array).refAnnotationsHtOrig.google.get} ${refAnnotationHtLocalDir}"""
+            cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).refAnnotationsHtOrig.google.get} ${refAnnotationHtLocalDir}"""
               .in(arrayStores(array).refAnnotationsHtOrig.google.get)
               .out(arrayStores(array).refAnnotationsHt.local.get)
               .tag("refAnnotationsHtOrigGoogle_to_refAnnotationsHtLocal")
