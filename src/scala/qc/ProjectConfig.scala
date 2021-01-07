@@ -757,7 +757,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
   
       val image = Image(
-        imgHail = path(s"${imagesDir}/hail.simg"),
+        imgHail = path(s"${imagesDir}/hail-0.2.52.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
