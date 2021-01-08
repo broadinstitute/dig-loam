@@ -55,12 +55,18 @@ cat(pheno_out, "\n", file=args$model_vars, append=FALSE)
 
 if(! is.null(args$trans)) {
 	if(args$trans != 'invn') {
-		cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+		if(length(covars) > 0) {
+			cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+		}
 	} else {
-		cat(paste(pcs, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+		if(length(pcs) > 0) {
+			cat(paste(pcs, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+		}
 	}
 } else {
-	cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+	if(length(covars) > 0) {
+		cat(paste(covars, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
+	}
 }
 
 merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, pheno_out)
