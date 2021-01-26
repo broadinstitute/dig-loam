@@ -178,8 +178,8 @@ def main(args=None):
 	for f in exclude_any_fields:
 		print("update global exclusion column based on " + f)
 		ls_struct, ls_field = f.split(".")
-		ht = ht.annotate(ls_pheno_global_exclude = hl.cond(ht[ls_struct][ls_field] == 1, 1, ht.ls_pheno_global_exclude))
-	ht = ht.annotate(ls_global_exclude = hl.cond((ht.ls_schema_global_exclude == 1) | (ht.ls_pheno_global_exclude == 1), 1, ht.ls_global_exclude))
+		ht = ht.annotate(ls_pheno_global_exclude = hl.if_else(ht[ls_struct][ls_field] == 1, 1, ht.ls_pheno_global_exclude))
+	ht = ht.annotate(ls_global_exclude = hl.if_else((ht.ls_schema_global_exclude == 1) | (ht.ls_pheno_global_exclude == 1), 1, ht.ls_global_exclude))
 
 	# select fields to keep from hail table and write to file
 	ht = ht.select(*fields_out)

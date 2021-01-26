@@ -33,7 +33,7 @@ object SampleQc extends loamstream.LoamFile {
             --log ${arrayStores(array).sampleQcData.hailLog.google.get}"""
             .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.ancestryInferred.google.get)
             .out(arrayStores(array).sampleQcData.stats.google.get, arrayStores(array).sampleQcData.hailLog.google.get)
-            .tag(s"${arrayStores(array).sampleQcData.stats}.google".split("/").last)
+            .tag(s"${arrayStores(array).sampleQcData.stats.local.get}.google".split("/").last)
         
         }
         

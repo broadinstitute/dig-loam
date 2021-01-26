@@ -19,22 +19,22 @@ def main(args=None):
 	print("add variant filter out table for QC")
 	mt = mt.annotate_rows(
 		ls_filters = hl.struct(
-			vcf_filter = hl.cond((hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)), 0, 1),
-			in_autosome = hl.cond(mt.locus.in_autosome(), 0, 1),
-			AN = hl.cond(mt.variant_qc_raw.AN > 1, 0, 1),
-			is_monomorphic = hl.cond((mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), 0, 1),
-			is_snp = hl.cond(hl.is_snp(mt.alleles[0], mt.alleles[1]), 0, 1),
-			is_mnp = hl.cond(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
-			is_indel = hl.cond(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
-			is_complex = hl.cond(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), 0, 1),
-			in_hild_region = hl.cond(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1)
+			vcf_filter = hl.if_else((hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)), 0, 1),
+			in_autosome = hl.if_else(mt.locus.in_autosome(), 0, 1),
+			AN = hl.if_else(mt.variant_qc_raw.AN > 1, 0, 1),
+			is_monomorphic = hl.if_else((mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), 0, 1),
+			is_snp = hl.if_else(hl.is_snp(mt.alleles[0], mt.alleles[1]), 0, 1),
+			is_mnp = hl.if_else(~ hl.is_mnp(mt.alleles[0], mt.alleles[1]), 0, 1),
+			is_indel = hl.if_else(~ hl.is_indel(mt.alleles[0], mt.alleles[1]), 0, 1),
+			is_complex = hl.if_else(~ hl.is_complex(mt.alleles[0], mt.alleles[1]), 0, 1),
+			in_hild_region = hl.if_else(~ hl.is_defined(tbl_hild[mt.row_key]), 0, 1)
 		)
 	)
 
 	print("add qc_exclude annotation for default qc filters")
 	mt = mt.annotate_rows(
 		ls_filters = mt.ls_filters.annotate(
-			exclude = hl.cond(
+			exclude = hl.if_else(
 				((mt.ls_filters.vcf_filter == 1) |
 				(mt.ls_filters.in_autosome == 1) |
 				(mt.ls_filters.AN == 1) |
@@ -65,7 +65,7 @@ def main(args=None):
 					print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 					mt = mt.annotate_rows(
 						ls_filters = mt.ls_filters.annotate(
-							**{f[0]: hl.cond(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
+							**{f[0]: hl.if_else(eval(hl.eval(f[2])), 0, 1, missing_false = True)}
 						)
 					)
 				else:
@@ -78,7 +78,7 @@ def main(args=None):
 				print("update exclusion column based on " + f[0])
 				mt = mt.annotate_rows(
 					ls_filters = mt.ls_filters.annotate(
-						exclude = hl.cond(
+						exclude = hl.if_else(
 							mt.ls_filters[f[0]] == 1,
 							1,
 							mt.ls_filters.exclude
@@ -96,9 +96,9 @@ def main(args=None):
 			rows_filtered = rows_filtered.sample(p = prop, seed = args.sample_seed)
 			mt = mt.annotate_rows(
 				ls_filters = mt.ls_filters.annotate(
-					downsample = hl.cond(
+					downsample = hl.if_else(
 						mt.ls_filters.exclude == 0,
-						hl.cond(
+						hl.if_else(
 							hl.is_defined(rows_filtered[mt.row_key]),
 							0,
 							1
@@ -111,7 +111,7 @@ def main(args=None):
 			print("skipping downsampling because the post-filter variant count " + str(n) + " <= " + str(args.sample_n))
 			mt = mt.annotate_rows(
 				ls_filters = mt.ls_filters.annotate(
-					downsample = hl.cond(
+					downsample = hl.if_else(
 						mt.ls_filters.exclude == 0,
 						0,
 						-1
@@ -121,7 +121,7 @@ def main(args=None):
 	else:
 		mt = mt.annotate_rows(
 			ls_filters = mt.ls_filters.annotate(
-				downsample = hl.cond(
+				downsample = hl.if_else(
 					mt.ls_filters.exclude == 0,
 					0,
 					-1

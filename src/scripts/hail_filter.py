@@ -132,14 +132,14 @@ def main(args=None):
 	print("initialize variant filter table")
 	tbl = tbl.annotate(
 		ls_filters = hl.struct(
-			filters = hl.cond(hl.is_missing(tbl.filters), 0, hl.cond(hl.len(tbl.filters) == 0, 0, 1)),
-			AN = hl.cond(tbl.variant_qc.AN > 1, 0, 1),
-			is_monomorphic = hl.cond((tbl.variant_qc.AF > 0) & (tbl.variant_qc.AF < 1), 0, 1)
+			filters = hl.if_else(hl.is_missing(tbl.filters), 0, hl.if_else(hl.len(tbl.filters) == 0, 0, 1)),
+			AN = hl.if_else(tbl.variant_qc.AN > 1, 0, 1),
+			is_monomorphic = hl.if_else((tbl.variant_qc.AF > 0) & (tbl.variant_qc.AF < 1), 0, 1)
 		)
 	)
 
 	print("add exclude field and update for base filters")
-	tbl = tbl.annotate(ls_filters = hl.struct(exclude = hl.cond((tbl.ls_filters.filters == 1) | (tbl.ls_filters.AN == 1) | (tbl.ls_filters.is_monomorphic == 1), 1, 0)))
+	tbl = tbl.annotate(ls_filters = hl.struct(exclude = hl.if_else((tbl.ls_filters.filters == 1) | (tbl.ls_filters.AN == 1) | (tbl.ls_filters.is_monomorphic == 1), 1, 0)))
 
 	if args.variant_filters:
 		with hl.hadoop_open(args.variant_filters, 'r') as f:

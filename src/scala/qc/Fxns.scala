@@ -265,8 +265,6 @@ object Fxns extends loamstream.LoamFile {
   }
   
   def checkURI(s: String): Int = {
-    val gsutilBinaryOpt: Option[Path] = projectContext.config.googleConfig.map(_.gsutilBinary)
-    require(gsutilBinaryOpt.isDefined, "Couldn't find gsutil binary path; set loamstream.googlecloud.gsutilBinary in loamstream.conf")
     val cmd = s"${gsutilBinaryOpt.get} -m ls ${s}"
     cmd.!
   }

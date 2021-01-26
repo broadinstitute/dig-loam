@@ -42,7 +42,7 @@ def main(args=None):
 		else:
 			tbl1 = tbl.key_by('SNP_A')
 			tbl2 = tbl.key_by('SNP_B')
-			mt = mt.annotate_rows(in_hild = hl.cond((hl.is_defined(tbl1[mt.rsid])) | (hl.is_defined(tbl2[mt.rsid])), True, False))
+			mt = mt.annotate_rows(in_hild = hl.if_else((hl.is_defined(tbl1[mt.rsid])) | (hl.is_defined(tbl2[mt.rsid])), True, False))
 			mt = mt.filter_rows(mt.in_hild, keep=True)
 
 	print("annotate samples with phenotype file")
@@ -292,7 +292,7 @@ def main(args=None):
 		return 1
 
 	mt_results = mt_results.key_by()
-	mt_results = mt_results.annotate(chr_idx = hl.cond(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.cond(mt_results.locus.contig == "X", 23, hl.cond(mt_results.locus.contig == "Y", 24, hl.cond(mt_results.locus.contig == "MT", 25, 26)))))
+	mt_results = mt_results.annotate(chr_idx = hl.if_else(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.if_else(mt_results.locus.contig == "X", 23, hl.if_else(mt_results.locus.contig == "Y", 24, hl.if_else(mt_results.locus.contig == "MT", 25, 26)))))
 	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
 	mt_results = mt_results.order_by(hl.int(mt_results.chr_idx), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
 	mt_results = mt_results.drop(mt_results.chr_idx)

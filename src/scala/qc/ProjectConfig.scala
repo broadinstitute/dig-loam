@@ -757,7 +757,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
   
       val image = Image(
-        imgHail = path(s"${imagesDir}/hail-0.2.52.simg"),
+        imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
@@ -855,5 +855,8 @@ object ProjectConfig extends loamstream.LoamFile {
   utils.bash.debugVars()
   utils.r.debugVars()
   println("... Pipeline Utilities Configuration Loaded Successfully!")
+
+  val gsutilBinaryOpt: Option[Path] = projectContext.config.googleConfig.map(_.gsutilBinary)
+  require(gsutilBinaryOpt.isDefined, "Couldn't find gsutil binary path; set loamstream.googlecloud.gsutilBinary in loamstream.conf")
 
 }

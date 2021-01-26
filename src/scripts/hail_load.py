@@ -60,10 +60,7 @@ def main(args=None):
 	mt = mt_bi.union_rows(mt_multi)
 
 	print("write checkpoint matrix table to disk")
-	mt.write(args.mt_checkpoint, overwrite=True)
-
-	print("read checkpoint matrix table")
-	mt = hl.read_matrix_table(args.mt_checkpoint)
+	mt = mt.checkpoint(args.mt_checkpoint, overwrite=True)
 
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
@@ -99,7 +96,7 @@ def main(args=None):
 	if 'AB' not in gt_codes:
 		print("add AB")
 		if 'AD' in gt_codes:
-			mt = mt.annotate_entries(AB = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(AB = hl.if_else(hl.is_defined(mt.AD), hl.if_else(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
 		else:
 			mt = mt.annotate_entries(AB = hl.null(hl.tfloat64))
 		gt_codes = gt_codes + ['AB']
@@ -107,7 +104,7 @@ def main(args=None):
 	if 'AB50' not in gt_codes:
 		print("add AB50")
 		if 'AD' in gt_codes:
-			mt = mt.annotate_entries(AB50 = hl.cond(hl.is_defined(mt.AD), hl.cond(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(AB50 = hl.if_else(hl.is_defined(mt.AD), hl.if_else(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
 		else:
 			mt = mt.annotate_entries(AB50 = hl.null(hl.tfloat64))
 		gt_codes = gt_codes + ['AB50']
@@ -120,22 +117,22 @@ def main(args=None):
 	if args.gq_threshold is not None:
 		if 'GTT' not in gt_codes:
 			print("add GTT")
-			mt = mt.annotate_entries(GTT = hl.cond(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.cond(mt.GQ >= args.gq_threshold, mt.GT, hl.null(hl.tcall)), hl.null(hl.tcall)))
+			mt = mt.annotate_entries(GTT = hl.if_else(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.if_else(mt.GQ >= args.gq_threshold, mt.GT, hl.null(hl.tcall)), hl.null(hl.tcall)))
 		if 'NALTT' not in gt_codes:
 			print("add NALTT")
-			mt = mt.annotate_entries(NALTT = hl.cond(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.cond(mt.GQ >= args.gq_threshold, mt.GT.n_alt_alleles(), hl.null(hl.tint32)), hl.null(hl.tint32)))
+			mt = mt.annotate_entries(NALTT = hl.if_else(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.if_else(mt.GQ >= args.gq_threshold, mt.GT.n_alt_alleles(), hl.null(hl.tint32)), hl.null(hl.tint32)))
 
 	if 'DS' not in gt_codes:
 		print("add DS")
 		if 'PL' in gt_codes:
 			print("adding DS from PL")
-			mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.null(hl.tfloat64)))
 		elif 'GP' in gt_codes:
 			print("adding DS from GP")
-			mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.null(hl.tfloat64)))
 		else:
 			print("unable to calculate DS due to missing PL and GP fields, using GT")
-			mt = mt.annotate_entries(DS = hl.cond(hl.is_defined(mt.GT), mt.GT.n_alt_alleles(), hl.null(hl.tint32)))
+			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GT), mt.GT.n_alt_alleles(), hl.null(hl.tint32)))
 
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
 	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')

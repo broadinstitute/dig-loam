@@ -21,8 +21,8 @@ def adjust_sex_chromosomes(mt: hl.MatrixTable, is_female: hl.tstr) -> hl.MatrixT
 def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, pheno_struct: hl.tstr, pheno_sex: hl.tstr, male_code: hl.tstr, female_code: hl.tstr) -> hl.MatrixTable:
 
 	mt = mt.annotate_cols(
-		pheno_female = hl.cond(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'female') | (mt[pheno_struct][pheno_sex] == 'Female') | (mt[pheno_struct][pheno_sex] == 'f') | (mt[pheno_struct][pheno_sex] == 'F') | (mt[pheno_struct][pheno_sex] == female_code), False),
-		pheno_male = hl.cond(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'male') | (mt[pheno_struct][pheno_sex] == 'Male') | (mt[pheno_struct][pheno_sex] == 'm') | (mt[pheno_struct][pheno_sex] == 'M') | (mt[pheno_struct][pheno_sex] == male_code), False)
+		pheno_female = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'female') | (mt[pheno_struct][pheno_sex] == 'Female') | (mt[pheno_struct][pheno_sex] == 'f') | (mt[pheno_struct][pheno_sex] == 'F') | (mt[pheno_struct][pheno_sex] == female_code), False),
+		pheno_male = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'male') | (mt[pheno_struct][pheno_sex] == 'Male') | (mt[pheno_struct][pheno_sex] == 'm') | (mt[pheno_struct][pheno_sex] == 'M') | (mt[pheno_struct][pheno_sex] == male_code), False)
 	)
 
 	if hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in ref_genome.x_contigs], keep=True).count()[0] > 0:
@@ -51,9 +51,9 @@ def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, ph
 
 	mt = mt.annotate_cols(impute_sex = tbl[mt.s])
 
-	mt = mt.annotate_cols(sexcheck = hl.cond(~ hl.is_missing(mt[pheno_struct][pheno_sex]) & ~ hl.is_missing(mt.impute_sex.is_female), hl.cond((mt.pheno_female & mt.impute_sex.is_female) | (mt.pheno_male & ~ mt.impute_sex.is_female), "OK", "PROBLEM"), "OK"))
+	mt = mt.annotate_cols(sexcheck = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]) & ~ hl.is_missing(mt.impute_sex.is_female), hl.if_else((mt.pheno_female & mt.impute_sex.is_female) | (mt.pheno_male & ~ mt.impute_sex.is_female), "OK", "PROBLEM"), "OK"))
 
-	return mt.annotate_cols(is_female = hl.cond(mt.pheno_female & hl.is_missing(mt.impute_sex.is_female), True, hl.cond(mt.pheno_male & hl.is_missing(mt.impute_sex.is_female), False, mt.impute_sex.is_female)))
+	return mt.annotate_cols(is_female = hl.if_else(mt.pheno_female & hl.is_missing(mt.impute_sex.is_female), True, hl.if_else(mt.pheno_male & hl.is_missing(mt.impute_sex.is_female), False, mt.impute_sex.is_female)))
 
 def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr) -> hl.MatrixTable:
 
@@ -103,7 +103,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_het / mt[variant_qc].n_female_called)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
 				.default(mt[variant_qc].n_het / mt[variant_qc].n_called)),
-			avg_ab = hl.cond(
+			avg_ab = hl.if_else(
 				'AD' in gt_codes,
 				(hl.case()
 					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.mean(mt.AB)))
@@ -111,7 +111,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 					.default(hl.agg.mean(mt.AB))),
 				hl.null(hl.tfloat64)
 			),
-			avg_het_ab = hl.cond(
+			avg_het_ab = hl.if_else(
 				'AD' in gt_codes,
 				(hl.case()
 					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
@@ -119,7 +119,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 					.default(hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)))),
 				hl.null(hl.tfloat64)
 			),
-			avg_alt_gq = hl.cond(
+			avg_alt_gq = hl.if_else(
 				'GQ' in gt_codes,
 				hl.agg.filter(mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
 				hl.null(hl.tfloat64)
@@ -129,12 +129,12 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
-			MAC = hl.cond(
+			MAC = hl.if_else(
 				mt[variant_qc].AF <= 0.5,
 				mt[variant_qc].AC,
 				2*mt[variant_qc].n_called - mt[variant_qc].AC
 			),
-			MAF = hl.cond(
+			MAF = hl.if_else(
 				mt[variant_qc].AF <= 0.5,
 				mt[variant_qc].AF,
 				1 - mt[variant_qc].AF
@@ -258,7 +258,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_ctrl_female_het / mt[variant_qc].n_ctrl_female_called)
 #				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
 #				.default((mt[variant_qc].n_ctrl_male_het + mt[variant_qc].n_ctrl_female_het) / (mt[variant_qc].n_ctrl_male_called + mt[variant_qc].n_ctrl_female_called))),
-#			avg_ab_case = hl.cond(
+#			avg_ab_case = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.mean(mt.AB)))
@@ -266,7 +266,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #					.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.mean(mt.AB)))),
 #				hl.null(hl.tfloat64)
 #			),
-#			avg_ab_ctrl = hl.cond(
+#			avg_ab_ctrl = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.mean(mt.AB)))
@@ -274,7 +274,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #					.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.mean(mt.AB)))),
 #				hl.null(hl.tfloat64)
 #			),
-#			avg_het_ab_case = hl.cond(
+#			avg_het_ab_case = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
@@ -282,7 +282,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #					.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
 #				hl.null(hl.tfloat64)
 #			),
-#			avg_het_ab_ctrl = hl.cond(
+#			avg_het_ab_ctrl = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
@@ -290,12 +290,12 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #					.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
 #				hl.null(hl.tfloat64)
 #			),
-#			avg_alt_gq_case = hl.cond(
+#			avg_alt_gq_case = hl.if_else(
 #				'GQ' in gt_codes,
 #				hl.agg.filter((mt.pheno[is_case] == 1) & mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
 #				hl.null(hl.tfloat64)
 #			),
-#			avg_alt_gq_ctrl = hl.cond(
+#			avg_alt_gq_ctrl = hl.if_else(
 #				'GQ' in gt_codes,
 #				hl.agg.filter((mt.pheno[is_case] == 0) & mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
 #				hl.null(hl.tfloat64)
@@ -305,22 +305,22 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #
 #	mt = mt.annotate_rows(
 #		**{variant_qc: mt[variant_qc].annotate(
-#			MAC_case = hl.cond(
+#			MAC_case = hl.if_else(
 #				mt[variant_qc].AF_case <= 0.5,
 #				mt[variant_qc].AC_case,
 #				2*mt[variant_qc].n_case_called - mt[variant_qc].AC_case
 #			),
-#			MAC_ctrl = hl.cond(
+#			MAC_ctrl = hl.if_else(
 #				mt[variant_qc].AF_ctrl <= 0.5,
 #				mt[variant_qc].AC_ctrl,
 #				2*mt[variant_qc].n_ctrl_called - mt[variant_qc].AC_ctrl
 #			),
-#			MAF_case = hl.cond(
+#			MAF_case = hl.if_else(
 #				mt[variant_qc].AF_case <= 0.5,
 #				mt[variant_qc].AF_case,
 #				1 - mt[variant_qc].AF_case
 #			),
-#			MAF_ctrl = hl.cond(
+#			MAF_ctrl = hl.if_else(
 #				mt[variant_qc].AF_ctrl <= 0.5,
 #				mt[variant_qc].AF_ctrl,
 #				1 - mt[variant_qc].AF_ctrl
@@ -339,10 +339,10 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #
 #	mt = mt.annotate_rows(
 #		**{variant_qc: mt[variant_qc].annotate(
-#			diff_miss = hl.cond(
+#			diff_miss = hl.if_else(
 #				((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0)), 
 #				hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'NA'),
-#				hl.cond(
+#				hl.if_else(
 #					((mt[variant_qc].diff_miss_expected_c1 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c2 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c3 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c4 < diff_miss_min_expected_cell_count)),
 #					hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(test = 'fisher_exact'),
 #					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'chi_squared')
@@ -391,10 +391,10 @@ def add_diff_miss(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr, i
 	
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
-			diff_miss = hl.cond(
+			diff_miss = hl.if_else(
 				((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0)), 
 				hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'NA'),
-				hl.cond(
+				hl.if_else(
 					((mt[variant_qc].diff_miss_expected_c1 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c2 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c3 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c4 < diff_miss_min_expected_cell_count)),
 					hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(test = 'fisher_exact'),
 					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'chi_squared')
@@ -507,7 +507,7 @@ def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 			print("filter samples based on configuration filter " + f[0] + " for field/s " + f[1])
 			mt = mt.annotate_cols(
 				**{struct_name: mt[struct_name].annotate(
-					**{f[0]: hl.cond(eval(f[2]), 0, 1, missing_false = missing_false)}
+					**{f[0]: hl.if_else(eval(f[2]), 0, 1, missing_false = missing_false)}
 				)}
 			)
 		else:
@@ -527,7 +527,7 @@ def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 		print("update exclusion column based on " + f[0])
 		mt = mt.annotate_cols(
 			**{struct_name: mt[struct_name].annotate(
-				exclude = hl.cond(
+				exclude = hl.if_else(
 					mt[struct_name][f[0]] == 1,
 					1,
 					mt[struct_name].exclude
@@ -561,7 +561,7 @@ def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 			print("filter variants based on configuration filter " + f[0] + " for field/s " + f[1])
 			mt = mt.annotate_rows(
 				**{struct_name: mt[struct_name].annotate(
-					**{f[0]: hl.cond(eval(f[2]), 0, 1, missing_false = missing_false)}
+					**{f[0]: hl.if_else(eval(f[2]), 0, 1, missing_false = missing_false)}
 				)}
 			)
 		else:
@@ -581,7 +581,7 @@ def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 		print("update exclusion column based on " + f[0])
 		mt = mt.annotate_rows(
 			**{struct_name: mt[struct_name].annotate(
-				exclude = hl.cond(
+				exclude = hl.if_else(
 					mt[struct_name][f[0]] == 1,
 					1,
 					mt[struct_name].exclude
@@ -622,7 +622,7 @@ def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr, missi
 			print("filter table based on configuration filter " + f[0] + " for field/s " + f[1])
 			ht = ht.annotate(
 				**{struct_name: ht[struct_name].annotate(
-					**{f[0]: hl.cond(eval(f[2], local_scope), 0, 1, missing_false = missing_false)}
+					**{f[0]: hl.if_else(eval(f[2], local_scope), 0, 1, missing_false = missing_false)}
 				)}
 			)
 		else:
@@ -642,7 +642,7 @@ def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr, missi
 		print("update exclusion column based on " + f[0])
 		ht = ht.annotate(
 			**{struct_name: ht[struct_name].annotate(
-				exclude = hl.cond(
+				exclude = hl.if_else(
 					ht[struct_name][f[0]] == 1,
 					1,
 					ht[struct_name].exclude

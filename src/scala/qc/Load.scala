@@ -74,7 +74,7 @@ object Load extends loamstream.LoamFile {
             --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.google.get}
             --mt-out ${arrayStores(array).refData.mt.google.get}"""
             .in(inputFiles)
-            .out(arrayStores(array).refData.mt.google.get, arrayStores(array).refData.mtCheckpoint.google.get, arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).refData.sitesVcf.google.get)
+            .out(arrayStores(array).refData.mt.google.get, arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).refData.sitesVcf.google.get)
             .tag(tagString)
         
         }
@@ -86,6 +86,10 @@ object Load extends loamstream.LoamFile {
           googleCopy(arrayStores(array).refData.sitesVcf.google.get, arrayStores(array).refData.sitesVcf.local.get)
           googleCopy(arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.sexcheck.local.get)
           googleCopy(arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).sexcheckData.problems.local.get)
+
+          cmd"""${gsutilBinaryOpt.get} -m rm -r ${arrayStores(array).refData.mtCheckpoint.google.get}"""
+            .in(arrayStores(array).refData.sitesVcf.google.get)
+            .tag(s"${arrayStores(array).refData.sitesVcf.local.get}.mtCheckpoint.remove".split("/").last)
   
         }
   

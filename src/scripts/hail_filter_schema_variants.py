@@ -50,7 +50,7 @@ def main(args=None):
 			except:
 				print("skipping empty file " + variant_file)
 			else:
-				ht = ht.annotate(ls_previous_exclude = hl.cond(hl.is_defined(tbl[ht.key]), 1, ht.ls_previous_exclude))
+				ht = ht.annotate(ls_previous_exclude = hl.if_else(hl.is_defined(tbl[ht.key]), 1, ht.ls_previous_exclude))
 	
 	print("key rows by locus and alleles")
 	ht = ht.key_by('locus','alleles')
@@ -170,7 +170,7 @@ def main(args=None):
 			print(time.strftime("annotate rows with cohort level variant qc in " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 			if len(cohorts) > 1:
 				start_time = time.time()
-				ht = ht.annotate(max_cohort_maf = hl.cond( ht.max_cohort_maf < ht['variant_qc_' + cohort].MAF, ht['variant_qc_' + cohort].MAF, ht.max_cohort_maf))
+				ht = ht.annotate(max_cohort_maf = hl.if_else( ht.max_cohort_maf < ht['variant_qc_' + cohort].MAF, ht['variant_qc_' + cohort].MAF, ht.max_cohort_maf))
 				elapsed_time = time.time() - start_time
 				print(time.strftime("annotate rows with updated max_cohort_maf for cohort " + cohort + " - %H:%M:%S", time.gmtime(elapsed_time)))
 	
@@ -205,11 +205,11 @@ def main(args=None):
 	
 	fields_out = fields_out + ['ls_previous_exclude','ls_global_exclude']
 	ht = ht.annotate(ls_global_exclude = 0)
-	ht = ht.annotate(ls_global_exclude = hl.cond(ht.ls_previous_exclude == 1, 1, ht.ls_global_exclude))
+	ht = ht.annotate(ls_global_exclude = hl.if_else(ht.ls_previous_exclude == 1, 1, ht.ls_global_exclude))
 	for f in exclude_any_fields:
 		start_time = time.time()
 		ls_struct, ls_field = f.split(".")
-		ht = ht.annotate(ls_global_exclude = hl.cond(ht[ls_struct][ls_field] == 1, 1, ht.ls_global_exclude))
+		ht = ht.annotate(ls_global_exclude = hl.if_else(ht[ls_struct][ls_field] == 1, 1, ht.ls_global_exclude))
 		elapsed_time = time.time() - start_time
 		print(time.strftime("update global exclusion column based on " + f + " - %H:%M:%S", time.gmtime(elapsed_time)))
 	
