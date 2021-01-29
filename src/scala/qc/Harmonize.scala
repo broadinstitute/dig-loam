@@ -211,10 +211,15 @@ object Harmonize extends loamstream.LoamFile {
   
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
     
-      cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base.local.get} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
+      //cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --make-bed --out ${arrayStores(arrayCfg).refData.plink.get.base.local.get} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
+      //  .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
+      //  .out(arrayStores(arrayCfg).refData.plink.get.data.local.get)
+      //  .tag(s"${arrayStores(arrayCfg).refData.plink.get.base.local.get}".split("/").last)
+
+      cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).harmonizedData.get.plink.base} --allow-no-sex --real-ref-alleles --a2-allele ${arrayStores(arrayCfg).harmonizedData.get.forceA2} --output-chr MT --recode vcf-iid bgz --out ${arrayStores(arrayCfg).refData.vcf.base.local.get} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1; if [ $$? -eq 0 ]; then mv ${arrayStores(arrayCfg).refData.vcf.base.local.get}.vcf.gz ${arrayStores(arrayCfg).refData.vcf.base.local.get}.vcf.bgz; fi"""
         .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
-        .out(arrayStores(arrayCfg).refData.plink.get.data.local.get)
-        .tag(s"${arrayStores(arrayCfg).refData.plink.get.base.local.get}".split("/").last)
+        .out(arrayStores(arrayCfg).refData.vcf.data.local.get)
+        .tag(s"${arrayStores(arrayCfg).refData.vcf.base.local.get}".split("/").last)
   
       //cmd"""${utils.bash.shPlinkToVcfNoHalfCalls} ${utils.binary.binPlink} ${arrayStores(arrayCfg).harmonizedData.get.plink.base} ${arrayStores(arrayCfg).harmonizedData.get.forceA2} ${arrayStores(arrayCfg).refData.vcf.get.base.local.get} ${projectConfig.resources.standardPlink.mem * 0.75 * 1000} ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
       //  .in(arrayStores(arrayCfg).harmonizedData.get.plink.data :+ arrayStores(arrayCfg).harmonizedData.get.forceA2)
@@ -223,14 +228,14 @@ object Harmonize extends loamstream.LoamFile {
   
     }
   
-    //drmWith(imageName = s"${utils.image.imgTools}") {
-    //  
-    //  cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(arrayCfg).refData.vcf.get.data.local.get}"""
-    //    .in(arrayStores(arrayCfg).refData.vcf.get.data.local.get)
-    //    .out(arrayStores(arrayCfg).refData.vcf.get.tbi.local.get)
-    //    .tag(s"${arrayStores(arrayCfg).refData.vcf.get.tbi.local.get}".split("/").last)
-    //
-    //}
+    drmWith(imageName = s"${utils.image.imgTools}") {
+      
+      cmd"""${utils.binary.binTabix} -f -p vcf ${arrayStores(arrayCfg).refData.vcf.data.local.get}"""
+        .in(arrayStores(arrayCfg).refData.vcf.data.local.get)
+        .out(arrayStores(arrayCfg).refData.vcf.tbi.local.get)
+        .tag(s"${arrayStores(arrayCfg).refData.vcf.tbi.local.get}".split("/").last)
+    
+    }
   
     val nonKgRemoveString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgRemove.toString.split("@")(1)}"""}.mkString(",")
     val nonKgMonoString = ListMap(arrayStores(arrayCfg).annotatedChrData.get.toSeq.sortBy(_._1):_*).map(e => e._2).map{ e => s"""${e.nonKgMono.toString.split("@")(1)}"""}.mkString(",")

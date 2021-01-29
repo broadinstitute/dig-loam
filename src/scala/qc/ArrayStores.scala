@@ -78,8 +78,9 @@ object ArrayStores extends loamstream.LoamFile {
     forceA2: Store)
   
   final case class RefData(
-    plink: Option[MultiPathPlink],
-    vcf: Option[MultiPathVcf],
+    //plink: Option[MultiPathPlink],
+    //vcf: Option[MultiPathVcf],
+    vcf: MultiPathVcf,
     mtCheckpoint: MultiStore,
     mt: MultiStore,
     hailLog: MultiStore,
@@ -413,16 +414,11 @@ object ArrayStores extends loamstream.LoamFile {
       case false => None
   
     }
-  
+
     val refVcf = (arrayCfg.technology, arrayCfg.format) match {
-      case (m,n) if inputTypesSeqVcf.contains((m,n)) => rawData.vcf
-      case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) => None
-      case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
-    }
-  
-    val refPlink = (arrayCfg.technology, arrayCfg.format) match {
-      case (m,n) if gwasTech.contains(m) =>
-        Some(MultiPathPlink(
+      case (m,n) if inputTypesSeqVcf.contains((m,n)) => rawData.vcf.get
+      case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
+        MultiPathVcf(
           base = MultiPath(
             local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString),
             google = projectConfig.hailCloud match {
@@ -430,37 +426,65 @@ object ArrayStores extends loamstream.LoamFile {
               case false => None
             }
           ),
-          data = MultiSeqStore(
-            local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString)),
+          data = MultiStore(
+            local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.bgz")),
             google = projectConfig.hailCloud match {
-              case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString))
-              case false => None
-            }
-          )
-        ))
-      case (o,p) if inputTypesSeqPlink.contains((o,p)) => 
-        Some(MultiPathPlink(
-          base = MultiPath(
-            local = Some(rawData.plink.get.base),
-            google = projectConfig.hailCloud match {
-              case true => Some(dirTree.dataGlobal.google.get / baseName)
+              case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.bgz"))
               case false => None
             }
           ),
-          data = MultiSeqStore(
-            local = Some(rawData.plink.get.data),
+          tbi = MultiStore(
+            local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.vcf.bgz.tbi")),
             google = projectConfig.hailCloud match {
-              case true => Some(bedBimFam(dirTree.dataGlobal.google.get / baseName))
+              case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.vcf.bgz"))
               case false => None
             }
           )
-        ))
-      case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
+        )
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
   
+    //val refPlink = (arrayCfg.technology, arrayCfg.format) match {
+    //  case (m,n) if gwasTech.contains(m) =>
+    //    Some(MultiPathPlink(
+    //      base = MultiPath(
+    //        local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString),
+    //        google = projectConfig.hailCloud match {
+    //          case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString)
+    //          case false => None
+    //        }
+    //      ),
+    //      data = MultiSeqStore(
+    //        local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString)),
+    //        google = projectConfig.hailCloud match {
+    //          case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString))
+    //          case false => None
+    //        }
+    //      )
+    //    ))
+    //  case (o,p) if inputTypesSeqPlink.contains((o,p)) => 
+    //    Some(MultiPathPlink(
+    //      base = MultiPath(
+    //        local = Some(rawData.plink.get.base),
+    //        google = projectConfig.hailCloud match {
+    //          case true => Some(dirTree.dataGlobal.google.get / baseName)
+    //          case false => None
+    //        }
+    //      ),
+    //      data = MultiSeqStore(
+    //        local = Some(rawData.plink.get.data),
+    //        google = projectConfig.hailCloud match {
+    //          case true => Some(bedBimFam(dirTree.dataGlobal.google.get / baseName))
+    //          case false => None
+    //        }
+    //      )
+    //    ))
+    //  case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
+    //  case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
+    //}
+  
     val refData = RefData(
-      plink = refPlink,
+      //plink = refPlink,
       vcf = refVcf,
       mtCheckpoint = MultiStore(
         local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
