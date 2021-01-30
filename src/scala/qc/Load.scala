@@ -52,9 +52,13 @@ object Load extends loamstream.LoamFile {
         //  case _ => throw new CfgException("Load: invalid technology and format combination: " + array.technology + ", " + array.format + " for array " + array.id)
         //}
 
-        local {
-          googleCopy(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.data.google.get)
-          googleCopy(arrayStores(array).refData.vcf.tbi.local.get, arrayStores(array).refData.vcf.tbi.google.get)
+        for {
+          vcf <- arrayStores(array).refData.vcf
+        } yield {
+          local {
+            googleCopy(vcf.data.local.get, vcf.data.google.get)
+            googleCopy(vcf.tbi.local.get, vcf.tbi.google.get)
+          }
         }
   
         googleWith(projectConfig.cloudResources.mtCluster) {
@@ -89,7 +93,7 @@ object Load extends loamstream.LoamFile {
             --cloud
             --hail-utils ${projectStores.hailUtils.google.get}
             --log ${arrayStores(array).refData.hailLog.google.get}
-            --vcf-in ${arrayStores(array).refData.vcf.data.google.get}
+            --vcf-in "${arrayStores(array).refData.vcfGlob.google.get}"
             --sample-in ${projectStores.sampleFile.google.get}
             --id-col ${projectConfig.sampleFileId}
             --variant-metrics-out ${arrayStores(array).refData.variantMetrics.google.get}
@@ -101,9 +105,9 @@ object Load extends loamstream.LoamFile {
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.google.get}
             --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.google.get}
             --mt-out ${arrayStores(array).refData.mt.google.get}"""
-            .in(projectStores.hailUtils.google.get, arrayStores(array).refData.vcf.data.google.get, arrayStores(array).refData.vcf.tbi.google.get, projectStores.sampleFile.google.get)
+            .in((arrayStores(array).refData.vcf.map(e => e.data.google.get).toSeq ++ arrayStores(array).refData.vcf.map(e => e.tbi.google.get).toSeq) :+ projectStores.hailUtils.google.get :+ projectStores.sampleFile.google.get)
             .out(arrayStores(array).refData.mt.google.get, arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).refData.sitesVcf.google.get)
-            .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
+            .tag(s"${arrayStores(array).refData.mt.google.get}.pyHailLoad".split("/").last)
         
         }
   
@@ -169,7 +173,7 @@ object Load extends loamstream.LoamFile {
             ${minPartitions}
             ${gqThreshold}
             --log ${arrayStores(array).refData.hailLog.local.get}
-            --vcf-in ${arrayStores(array).refData.vcf.data.local.get}
+            --vcf-in "${arrayStores(array).refData.vcfGlob.local.get}"
             --sample-in ${projectStores.sampleFile.local.get}
             --id-col ${projectConfig.sampleFileId}
             --variant-metrics-out ${arrayStores(array).refData.variantMetrics.local.get}
@@ -181,9 +185,9 @@ object Load extends loamstream.LoamFile {
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.local.get}
             --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.local.get}
             --mt-out ${arrayStores(array).refData.mt.local.get}"""
-            .in(arrayStores(array).refData.vcf.data.local.get, arrayStores(array).refData.vcf.tbi.local.get, projectStores.sampleFile.local.get)
+            .in((arrayStores(array).refData.vcf.map(e => e.data.local.get).toSeq ++ arrayStores(array).refData.vcf.map(e => e.tbi.local.get).toSeq) :+ projectStores.sampleFile.local.get)
             .out(arrayStores(array).refData.mt.local.get, arrayStores(array).refData.mtCheckpoint.local.get, arrayStores(array).refData.hailLog.local.get, arrayStores(array).refData.variantMetrics.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).refData.sitesVcf.local.get)
-            .tag(s"${arrayStores(array).refData.vcf.base.local.get}.pyHailLoad".split("/").last)
+            .tag(s"${arrayStores(array).refData.mt.local.get}.pyHailLoad".split("/").last)
   
         }
   
