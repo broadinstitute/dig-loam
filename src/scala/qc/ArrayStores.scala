@@ -396,7 +396,7 @@ object ArrayStores extends loamstream.LoamFile {
             tbi = MultiStore(
               local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.vcf.bgz.tbi")),
               google = projectConfig.hailCloud match {
-                case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${harmonizedBaseString}.vcf.bgz"))
+                case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${harmonizedBaseString}.vcf.bgz.tbi"))
                 case false => None
               }
             )
