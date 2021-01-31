@@ -47,6 +47,7 @@ object ArrayStores extends loamstream.LoamFile {
     mergedKgPlink: Plink,
     mergedKgHuRefPlink: Plink,
     otherHuRefPlink: Option[Plink],
+    refPlink: Plink,
     mergedKgNonKgBase: Path,
     otherNonKgBase: Option[Path],
     nonKgRemove: Store,
@@ -360,36 +361,46 @@ object ArrayStores extends loamstream.LoamFile {
           val mergedKgNonKgBaseString = s"${chrSnpsBaseString}.nonkg"
           val otherHuRefBaseString = s"${chrOtherBaseString}.huref"
           val otherNonKgBaseString = s"${chrOtherBaseString}.nonkg"
+          val refBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}.ref"
           val harmonizedBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.chr${chr}.harmonized"
 
-          val harmonizedVcf = (arrayCfg.technology, arrayCfg.format) match {
-            case (m,n) if inputTypesSeqVcf.contains((m,n)) => rawData.vcf.get
-            case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
-              MultiPathVcf(
-                base = MultiPath(
-                  local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / harmonizedBaseString),
-                  google = projectConfig.hailCloud match {
-                    case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / harmonizedBaseString)
-                    case false => None
-                  }
-                ),
-                data = MultiStore(
-                  local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.vcf.bgz")),
-                  google = projectConfig.hailCloud match {
-                    case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${harmonizedBaseString}.vcf.bgz"))
-                    case false => None
-                  }
-                ),
-                tbi = MultiStore(
-                  local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.vcf.bgz.tbi")),
-                  google = projectConfig.hailCloud match {
-                    case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${harmonizedBaseString}.vcf.bgz"))
-                    case false => None
-                  }
-                )
+          val mergedKgHuRefPlink = Plink(
+            base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgHuRefBaseString,
+            data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgHuRefBaseString)
+          )
+
+          val refPlink = arrayCfg.keepIndels match {
+            case true =>
+              Plink(
+                base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString,
+                data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString)
               )
-            case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
+            case false => mergedKgHuRefPlink
           }
+
+          val harmonizedVcf = MultiPathVcf(
+            base = MultiPath(
+              local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / harmonizedBaseString),
+              google = projectConfig.hailCloud match {
+                case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / harmonizedBaseString)
+                case false => None
+              }
+            ),
+            data = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.vcf.bgz")),
+              google = projectConfig.hailCloud match {
+                case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${harmonizedBaseString}.vcf.bgz"))
+                case false => None
+              }
+            ),
+            tbi = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.vcf.bgz.tbi")),
+              google = projectConfig.hailCloud match {
+                case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${harmonizedBaseString}.vcf.bgz"))
+                case false => None
+              }
+            )
+          )
           
           chr -> AnnotatedChrData(
             snpsPlink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrSnpsBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / chrSnpsBaseString)),
@@ -402,8 +413,9 @@ object ArrayStores extends loamstream.LoamFile {
               case false => None
             },
             mergedKgPlink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgBaseString)),
-            mergedKgHuRefPlink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgHuRefBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgHuRefBaseString)),
+            mergedKgHuRefPlink = mergedKgHuRefPlink,
             otherHuRefPlink = arrayCfg.keepIndels match { case true => Some(Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / otherHuRefBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / otherHuRefBaseString))); case false => None },
+            refPlink = refPlink,
             mergedKgNonKgBase = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / mergedKgNonKgBaseString,
             otherNonKgBase = arrayCfg.keepIndels match { case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / otherNonKgBaseString); case false => None },
             nonKgRemove = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgNonKgBaseString}.remove"),
