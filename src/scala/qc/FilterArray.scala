@@ -87,7 +87,7 @@ object FilterArray extends loamstream.LoamFile {
         
         }
   
-        google {
+        googleWith(projectConfig.cloudResources.mtCluster) {
   
           hail"""${utils.python.pyHailFilter} --
             --cloud
