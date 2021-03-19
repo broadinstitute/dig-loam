@@ -4,9 +4,8 @@ import scala.sys.error
 import com.typesafe.config.Config
 
 import loamstream.loam.intake.AggregatorIntakeConfig
-import loamstream.loam.intake.AggregatorConfigData
-import loamstream.loam.intake.RowPredicate
-import loamstream.loam.intake.SourceColumns
+import loamstream.loam.intake.DataRowPredicate
+import loamstream.loam.intake.ColumnDef
 
 object Intake extends loamstream.LoamFile {
   import loamstream.loam.intake.IntakeSyntax._
@@ -63,7 +62,7 @@ object Intake extends loamstream.LoamFile {
   val vepCacheDir: Store = store(path(intakeUtilsConfig.getStr("vepCacheDir"))).asInput
   val vepPluginsDir: Store = store(path(intakeUtilsConfig.getStr("vepPluginsDir"))).asInput
 
-  def makeAggregatorRowExpr(phenoCfg: PhenotypeConfig): AggregatorRowExpr = {
+  def makeAggregatorRowExpr(phenoCfg: PhenotypeConfig, metadata: AggregatorMetadata): VariantRowExpr[_] = {
 
     import phenoCfg.columnNames._
     
@@ -77,7 +76,7 @@ object Intake extends loamstream.LoamFile {
         altColumn = ALT,
         forceAlphabeticChromNames = true) //"23" => "X", "24" => "Y", etc
         
-    val oddsRatioDefOpt: Option[NamedColumnDef[Double]] = {
+    val oddsRatioDefOpt: Option[ColumnDef[Double]] = {
       if(phenoCfg.dichotomous) {
         require(
             BETA.isDefined || ODDS_RATIO.isDefined,
@@ -90,7 +89,8 @@ object Intake extends loamstream.LoamFile {
       }
     }
     
-    AggregatorRowExpr(
+    VariantRowExpr(
+        metadata = metadata,
         markerDef = varId,
         pvalueDef = AggregatorColumnDefs.PassThru.pvalue(PVALUE),
         zscoreDef = ZSCORE.map(AggregatorColumnDefs.zscore(_)),
@@ -103,13 +103,14 @@ object Intake extends loamstream.LoamFile {
   }
   
   def processPhenotype(
+      metadata: AggregatorMetadata,
       dataset: String,
       phenotype: String, 
       sourceStore: Store,
       phenoCfg: PhenotypeConfig,
       aggregatorIntakeConfig: AggregatorIntakeConfig,
       flipDetector: FlipDetector,
-      destOpt: Option[Store] = None): (Store, SourceColumns) = {
+      destOpt: Option[Store] = None): Store = {
     
     require(sourceStore.isPathStore)
 
@@ -134,14 +135,16 @@ object Intake extends loamstream.LoamFile {
     //TODO: FIXME path name chosen arbitrarily
     val countFile: Store = store(path(s"${dest.path.toString}.variant-count"))
     
+    val summaryStatsFile: Store = store(path(s"${dest.path.toString}.summaryStats"))
+    
     val csvFormat = CSVFormat.DEFAULT.withDelimiter(delToChar(phenoCfg.delimiter)).withFirstRecordAsHeader
     
     val source = Source.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
     
-    val toAggregatorRows = makeAggregatorRowExpr(phenoCfg)
+    val toAggregatorRows = makeAggregatorRowExpr(phenoCfg, metadata)
     
-    val oddsRatioFilter: Option[RowPredicate] = phenoCfg.columnNames.ODDS_RATIO.map { oddsRatio =>
-      CsvRowFilters.logToFile(filterLog, append = true) {
+    val oddsRatioFilter: Option[DataRowPredicate] = phenoCfg.columnNames.ODDS_RATIO.map { oddsRatio =>
+      DataRowFilters.logToFile(filterLog, append = true) {
         oddsRatio.asDouble > 0.0
       }
     }
@@ -151,8 +154,8 @@ object Intake extends loamstream.LoamFile {
     //?    beta.asDouble < 42
     //?  }
     //?}
-    val betaFilter: Option[RowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
-      CsvRowFilters.logToFile(filterLog, append = true) {
+    val betaFilter: Option[DataRowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
+      DataRowFilters.logToFile(filterLog, append = true) {
         def isValid(b: Double): Boolean = b < 10.0 && b > -10.0
         beta.asDouble.map(isValid)
       }
@@ -163,36 +166,32 @@ object Intake extends loamstream.LoamFile {
     if(mungeFile) {
 
       drm {
-        produceCsv(dest).
+        uploadTo(
+            bucketName = "dig-integration-tests",
+            uploadType = toAggregatorRows.uploadType,
+            metadata = metadata).
           from(source).
           using(flipDetector).
           //Filter out rows with REF or ALT columns == ('D' or 'I')
-          filter(CsvRowFilters.noDsNorIs(
+          filter(DataRowFilters.noDsNorIs(
               refColumn = columnNames.REF, 
               altColumn = columnNames.ALT, 
               logStore = filterLog,
               append = true)).
-          /* for example:
-          filter(CsvRowFilters.filterRefAndAlt(
-              refColumn = columnNames.REF, 
-              altColumn = columnNames.ALT, 
-              disallowed = Set("foo", "BAR", "Baz"),
-              logStore = filterLog,
-              append = true)).
-          */
           filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
           filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
           via(toAggregatorRows).
-          filter(DataRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
-          filter(DataRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
+          filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
+          filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
           map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
           map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
-          filter(DataRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
+          filter(AggregatorVariantRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
           withMetric(Metrics.count(countFile)).
           withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
+          withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
           write(forceLocal = true).
           in(sourceStore).
-          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile).
+          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
           tag(s"process-phenotype-$phenotype")
       
           //add this back if time not a concern
@@ -204,7 +203,7 @@ object Intake extends loamstream.LoamFile {
 
     }
         
-    (dest, toAggregatorRows.sourceColumns)
+    dest
   }
   
   final case class PhenotypeConfig(
@@ -286,8 +285,18 @@ object Intake extends loamstream.LoamFile {
   } {
     val phenotypeConfig = phenotypesToConfigs(phenotype)
     
-    val (dataInAggregatorFormat, sourceColumnMapping) = {
+    val metadata = toMetadata(phenotype -> phenotypeConfig)
+    
+    val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
+    
+    produceAggregatorIntakeConfigFile(aggregatorConfigFile)
+      .from(metadata, forceLocal = true)
+      .in(dataInAggregatorFormat)
+      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
+    
+    val dataInAggregatorFormat = {
       processPhenotype(
+        metadata,
         generalMetadata.dataset, 
         phenotype, 
         sourceStore, 
@@ -300,7 +309,7 @@ object Intake extends loamstream.LoamFile {
     val qqPlotCommon: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.common.png""")
     val mhtPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.mhtplot.png""")
     val topResults: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.topresults.tsv""")
-	val resultsMht: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.1e-4.tsv""")
+    val resultsMht: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.1e-4.tsv""")
     val topResultsAnnot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.topresults.annot.tsv""")
     val topLociAnnot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.toploci.annot.tsv""")
     val siteVcf: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.sites.vcf.gz""")
@@ -372,32 +381,6 @@ object Intake extends loamstream.LoamFile {
     //
     //}
 
-    val metadata = toMetadata(phenotype -> phenotypeConfig)
-    val configData = AggregatorConfigData(metadata, sourceColumnMapping, dataInAggregatorFormat.path)
-    val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
-
-    produceAggregatorIntakeConfigFile(aggregatorConfigFile)
-      .from(configData, forceLocal = true)
-      .in(dataInAggregatorFormat)
-      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
-
-
-    if(splitByChr) {
-
-      val aggregatorConfigSplitFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.split.conf""")
-
-      drm {
-        cmd"""${shSplitByChr}
-          ${dataInAggregatorFormat}
-          ${aggregatorConfigFile}
-          ${aggregatorConfigSplitFile}"""
-          .in(dataInAggregatorFormat, aggregatorConfigFile)
-          .out(aggregatorConfigSplitFile)
-          .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}.split")
-      }
-
-    }
-
     if(makeQqPlot) {
 
       val eafString = phenotypeConfig.EAF match {
@@ -456,15 +439,8 @@ object Intake extends loamstream.LoamFile {
       case false => ""
     }
 
-    var summaryIn = Seq(aggregatorConfigFile, mhtPlot, topLociAnnot)
-
-    makeQqPlot match {
-      case true => 
-        phenotypeConfig.EAF match {
-          case Some(s) => summaryIn = summaryIn ++ Seq(qqPlot, qqPlotCommon)
-          case None => ()
-        }
-      case false => ()
+    val summaryIn = Seq(mhtPlot, topLociAnnot) ++ {
+      if(makeQqPlot && phenotypeConfig.EAF.isDefined) Seq(qqPlot, qqPlotCommon) else Nil
     }
 
 	drmWith(imageName = s"${imgPython2}") {
