@@ -62,7 +62,7 @@ object Intake extends loamstream.LoamFile {
   val vepCacheDir: Store = store(path(intakeUtilsConfig.getStr("vepCacheDir"))).asInput
   val vepPluginsDir: Store = store(path(intakeUtilsConfig.getStr("vepPluginsDir"))).asInput
 
-  def makeAggregatorRowExpr(phenoCfg: PhenotypeConfig, metadata: AggregatorMetadata): VariantRowExpr[_] = {
+  def makePValueVariantRowExpr(phenoCfg: PhenotypeConfig, metadata: AggregatorMetadata): VariantRowExpr.PValueVariantRowExpr = {
 
     import phenoCfg.columnNames._
     
@@ -89,7 +89,7 @@ object Intake extends loamstream.LoamFile {
       }
     }
     
-    VariantRowExpr(
+    VariantRowExpr.PValueVariantRowExpr(
         metadata = metadata,
         markerDef = varId,
         pvalueDef = AggregatorColumnDefs.PassThru.pvalue(PVALUE),
@@ -141,7 +141,7 @@ object Intake extends loamstream.LoamFile {
     
     val source = Source.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
     
-    val toAggregatorRows = makeAggregatorRowExpr(phenoCfg, metadata)
+    val toAggregatorRows = makePValueVariantRowExpr(phenoCfg, metadata)
     
     val oddsRatioFilter: Option[DataRowPredicate] = phenoCfg.columnNames.ODDS_RATIO.map { oddsRatio =>
       DataRowFilters.logToFile(filterLog, append = true) {
@@ -170,35 +170,35 @@ object Intake extends loamstream.LoamFile {
             bucketName = "dig-integration-tests",
             uploadType = toAggregatorRows.uploadType,
             metadata = metadata).
-          from(source).
-          using(flipDetector).
-          //Filter out rows with REF or ALT columns == ('D' or 'I')
-          filter(DataRowFilters.noDsNorIs(
-              refColumn = columnNames.REF, 
-              altColumn = columnNames.ALT, 
-              logStore = filterLog,
-              append = true)).
-          filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
-          filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
-          via(toAggregatorRows).
-          filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
-          filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
-          map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
-          map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
-          filter(AggregatorVariantRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
-          withMetric(Metrics.count(countFile)).
-          withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
-          withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
-          write(forceLocal = true).
-          in(sourceStore).
-          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
-          tag(s"process-phenotype-$phenotype")
-      
-          //add this back if time not a concern
-          //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
-          //out(unknownToBioIndexFile).
-      
-          //replace with this if want to keep it running locally
+        from(source).
+        using(flipDetector).
+        //Filter out rows with REF or ALT columns == ('D' or 'I')
+        filter(DataRowFilters.noDsNorIs(
+            refColumn = columnNames.REF, 
+            altColumn = columnNames.ALT, 
+            logStore = filterLog,
+            append = true)).
+        filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
+        filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
+        via(toAggregatorRows).
+        filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
+        filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
+        map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
+        map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
+        filter(AggregatorVariantRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
+        withMetric(Metrics.count(countFile)).
+        withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
+        withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
+        write(forceLocal = true).
+        in(sourceStore).
+        out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
+        tag(s"process-phenotype-$phenotype")
+    
+        //add this back if time not a concern
+        //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
+        //out(unknownToBioIndexFile).
+    
+        //replace with this if want to keep it running locally
       }
 
     }
@@ -289,11 +289,6 @@ object Intake extends loamstream.LoamFile {
     
     val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
     
-    produceAggregatorIntakeConfigFile(aggregatorConfigFile)
-      .from(metadata, forceLocal = true)
-      .in(dataInAggregatorFormat)
-      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
-    
     val dataInAggregatorFormat = {
       processPhenotype(
         metadata,
@@ -304,7 +299,12 @@ object Intake extends loamstream.LoamFile {
         aggregatorIntakePipelineConfig, 
         flipDetector)
     }
-
+    
+    produceAggregatorIntakeConfigFile(aggregatorConfigFile)
+      .from(metadata, forceLocal = true)
+      .in(dataInAggregatorFormat)
+      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
+    
     val qqPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.png""")
     val qqPlotCommon: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.common.png""")
     val mhtPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.mhtplot.png""")
