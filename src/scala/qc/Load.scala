@@ -1,10 +1,19 @@
 object Load extends loamstream.LoamFile {
 
   /**
-    * Load Step
-    *  Description: Generate the Hail matrix table from VCF file
-    *  Requires: Hail v0.2
+    * Load into hail matrix table
+    *  Description:
+    *    Generate the Hail matrix table from harmonized VCF files
+    *      Add missing genotype fields
+    *      Split multi-allelic variants
+    *      Run sexcheck
+    *      Convert to unphased if needed
+    *      Convert males to diploid on non-PAR X/Y and set females to missing on Y
+    *      Calculate raw variant QC metrics
+    *    Generate site VCF
+    *  Requires: Hail, Tabix
     */
+
   import ProjectConfig._
   import ArrayStores._
   import ProjectStores._

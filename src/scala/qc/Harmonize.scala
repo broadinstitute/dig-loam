@@ -1,13 +1,19 @@
 object Harmonize extends loamstream.LoamFile {
 
   /**
-    * Harmonize Step
-    *  Description: Align data strand to 1KG reference. Also, update reference allele and variant ID to match 1KG
-    *  Requires: Plink1.9 and, at least, Genotype Harmonizer v1.4.18
-    *  Notes:
-    *     Could also add --variants and --mafAlign as pipeline options, but for now these are static
-    *     To save time, this will be run in parallel by chromosome number
+    * Harmonize array data for integration with prior projects
+    *  Description:
+    *    Extract only snps for harmonization with reference
+    *    Split snps and indels into individual chromosomes
+    *      Run GenotypeHarmonizer to align snps with reference data
+    *      Align any non-reference snps and indels manually with human reference assembly fasta file
+    *      Remove any variants that failed to align and force reference allele order
+    *      Merge indels and snps together
+    *      Force reference allele to A2 so Hail can read as reference downstream
+    *      Recode Plink to VCF and index with Tabix
+    *  Requires: Plink, GenotypeHarmonizer, Python, Bash, Tabix
     */
+
   import ProjectConfig._
   import ArrayStores._
   import ProjectStores._

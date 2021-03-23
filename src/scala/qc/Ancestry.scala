@@ -1,12 +1,34 @@
 object Ancestry extends loamstream.LoamFile {
 
   /**
-    * Ancestry PCA Step
-    *  Description: Calculate PCs combined with 1KG Phase 3 Purcell 5k data
-    *  Requires: Hail, R
+    * Ancestry PCA
+    *  Description:
+    *    Merge with reference data on 5k Purcell AIMs
+    *    Calculate PCs on merged file set
+    *    Plot PCs and label by array data and reference ancestry groups
+    *  Requires: Hail, FlashPCA2, R
     *  Notes:
     *     To perform ancestry inference and clustering with 1KG data, we must combine on common variants with reference data (clustering does not work when only using PCA loadings and projecting)
     */
+
+  /**
+    * Ancestry Clustering
+    *  Description:
+    *    Cluster with 1KG samples using Gaussian Mixture Modeling and infer ancestry
+    *    Plot clusters and inferred ancestry
+    *  Requires: Hail, Klustakwik, R
+    *  Notes:
+    *     *.ancestry.inferred.tsv contains the final inferred ancestry for each sample, including OUTLIERS
+    *     This file is array specific
+    */
+
+  /**
+    * Merge Inferred Ancestry
+    *  Description:
+    *    Merge inferred ancestry from all arrays
+    *  Requires: R
+    */
+
   import ProjectConfig._
   import ArrayStores._
   import ProjectStores._
@@ -99,15 +121,6 @@ object Ancestry extends loamstream.LoamFile {
     }
   
   }
-    
-  /**
-    * Ancestry Cluster Step
-    *  Description: Cluster with 1KG samples using Gaussian Mixture Modeling and infer ancestry
-    *  Requires: Hail, R
-    *  Notes:
-    *     *.ancestry.inferred.tsv contains the final inferred ancestry for each sample, including OUTLIERS
-    *     This file is array specific
-    */
   
   def AncestryCluster(array: ConfigArray): Unit = {
   
@@ -194,14 +207,7 @@ object Ancestry extends loamstream.LoamFile {
     }
   
   }
-  
-  /**
-    * Merge Inferred Ancestry
-    *  Description: Merge inferred ancestry from all arrays
-    *  Requires: R
-    *  Notes:
-    */
-  
+
   def MergeInferredAncestry(): Unit = {
   
     val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred).map(_.path).mkString(",")

@@ -1,9 +1,10 @@
 object Annotate extends loamstream.LoamFile {
 
   /**
-    * Annotation Step
-    *  Description: Annotate sites vcf with VEP
-    *  Requires: Perl, VEP perl script
+    * Annotation
+    *  Description:
+    *    Annotate site vcf with VEP and load into Hail table
+    *  Requires: VEP, Hail
     *  Notes:
     */
   import ProjectConfig._

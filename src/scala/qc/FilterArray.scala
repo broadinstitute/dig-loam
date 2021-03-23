@@ -1,9 +1,12 @@
 object FilterArray extends loamstream.LoamFile {
 
   /**
-   * Filter Array Step
-   * filter samples and variants to generate array-level exclusions for analysis
-   */
+    * Filter Array
+    * Description:
+    *   Filter samples and variants to generate array-level exclusions for analysis
+    *  Requires: Hail
+    */
+
   import ProjectConfig._
   import ArrayStores._
   import ProjectStores._

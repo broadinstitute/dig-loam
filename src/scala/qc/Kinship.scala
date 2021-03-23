@@ -2,12 +2,15 @@ object Kinship extends loamstream.LoamFile {
 
   /**
     * Kinship Step
-    *  Description: Calculate kinship to identify duplicates and any samples exhibiting abnormal (excessive) sharing
+    *  Description:
+    *    Calculate kinship to identify duplicates and any samples exhibiting abnormal (excessive) sharing
+    *    Calculate fam sizes to identify extreme relatedness
     *  Requires: King, R
     *  Notes:
     *     King is preferred to Plink or Hail based IBD calcs due to robust algorithm handling of population stratification. This step should be followed by a visual inspection for duplicates or excessive sharing
     * King only writes the '.kin0' file if families are found, so a bash script is used to write an empty file in that case
     */
+
   import ProjectConfig._
   import ArrayStores._
   
