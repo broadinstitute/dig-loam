@@ -5,6 +5,7 @@ import com.typesafe.config.Config
 
 import loamstream.loam.intake.AggregatorIntakeConfig
 import loamstream.loam.intake.DataRowPredicate
+import loamstream.loam.intake.VariantCountRowTransform
 import loamstream.loam.intake.ColumnDef
 
 object Intake extends loamstream.LoamFile {
@@ -62,19 +63,23 @@ object Intake extends loamstream.LoamFile {
   val vepCacheDir: Store = store(path(intakeUtilsConfig.getStr("vepCacheDir"))).asInput
   val vepPluginsDir: Store = store(path(intakeUtilsConfig.getStr("vepPluginsDir"))).asInput
 
-  def makePValueVariantRowExpr(phenoCfg: PhenotypeConfig, metadata: AggregatorMetadata): VariantRowExpr.PValueVariantRowExpr = {
+  def varIdDef(columnNames: ColumnNames.Marker) = AggregatorColumnDefs.marker(
+    chromColumn = columnNames.CHROM, 
+    posColumn = columnNames.POS, 
+    refColumn = columnNames.REF, 
+    altColumn = columnNames.ALT,
+    forceAlphabeticChromNames = true) //"23" => "X", "24" => "Y", etc
+  
+  def makePValueVariantRowExpr(
+      phenoCfg: PhenotypeConfig.VariantData, 
+      metadata: AggregatorMetadata): VariantRowExpr.PValueVariantRowExpr = {
 
     import phenoCfg.columnNames._
     
     val neff = ColumnName("Neff")
     val n = ColumnName("n")
     
-    val varId = AggregatorColumnDefs.marker(
-        chromColumn = CHROM, 
-        posColumn = POS, 
-        refColumn = REF, 
-        altColumn = ALT,
-        forceAlphabeticChromNames = true) //"23" => "X", "24" => "Y", etc
+    val varId = varIdDef(phenoCfg.columnNames)
         
     val oddsRatioDefOpt: Option[ColumnDef[Double]] = {
       if(phenoCfg.dichotomous) {
@@ -102,6 +107,29 @@ object Intake extends loamstream.LoamFile {
         nDef = N.map(AggregatorColumnDefs.PassThru.n(_)))
   }
   
+  def makeVariantCountRowExpr(
+      phenoCfg: PhenotypeConfig.VariantCountData, 
+      metadata: AggregatorMetadata): VariantRowExpr.VariantCountRowExpr = {
+
+    import phenoCfg.columnNames._
+    
+    val varId = varIdDef(phenoCfg.columnNames)
+    
+    def toLongDef(columnName: ColumnName) = AnonColumnDef(columnName.asLong)
+    
+    VariantRowExpr.VariantCountRowExpr(
+        metadata = metadata,
+        markerDef = varId,
+        alleleCountDef = alleleCount.map(toLongDef),
+        alleleCountCasesDef = alleleCountCases.map(toLongDef),
+        alleleCountControlsDef = alleleCountControls.map(toLongDef),
+        heterozygousCasesDef = heterozygousCases.map(toLongDef),
+        heterozygousControlsDef = heterozygousControls.map(toLongDef), 
+        homozygousCasesDef = homozygousCases.map(toLongDef),
+        homozygousControlsDef = homozygousControls.map(toLongDef),
+        failFast = true)
+  }
+  
   def processPhenotype(
       metadata: AggregatorMetadata,
       dataset: String,
@@ -110,7 +138,10 @@ object Intake extends loamstream.LoamFile {
       phenoCfg: PhenotypeConfig,
       aggregatorIntakeConfig: AggregatorIntakeConfig,
       flipDetector: FlipDetector,
-      destOpt: Option[Store] = None): Store = {
+      destOpt: Option[Store] = None,
+      //TODO: Default to real location
+      dryRun: Boolean = false,
+      bucketName: String = "dig-integration-tests"): Store = {
     
     require(sourceStore.isPathStore)
 
@@ -141,70 +172,126 @@ object Intake extends loamstream.LoamFile {
     
     val source = Source.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
     
-    val toAggregatorRows = makePValueVariantRowExpr(phenoCfg, metadata)
+    def common(bucketName: String, uploadType: UploadType, columnNames: ColumnNames.Marker) = {
+      import columnNames._
+
+      val noDsOrIsFilter: DataRowPredicate = {
+        DataRowFilters.noDsNorIs(
+          refColumn = columnNames.REF, 
+          altColumn = columnNames.ALT, 
+          logStore = filterLog,
+          append = true)
+      }
+      
+      uploadTo(
+          bucketName = bucketName,
+          uploadType = uploadType,
+          metadata = metadata).
+      from(source).
+      using(flipDetector).
+      //Filter out rows with REF or ALT columns == ('D' or 'I')
+      filter(noDsOrIsFilter)
+    }
     
-    val oddsRatioFilter: Option[DataRowPredicate] = phenoCfg.columnNames.ODDS_RATIO.map { oddsRatio =>
-      DataRowFilters.logToFile(filterLog, append = true) {
-        oddsRatio.asDouble > 0.0
+    def forVariantData(bucketName: String)(phenotypeVariantConfig: PhenotypeConfig.VariantData): Unit = {
+      import phenotypeVariantConfig.columnNames._
+      
+      def toVariantRows = makePValueVariantRowExpr(phenotypeVariantConfig, metadata)
+      
+      val oddsRatioFilter: Option[DataRowPredicate] = ODDS_RATIO.map { oddsRatio =>
+        DataRowFilters.logToFile(filterLog, append = true) {
+          oddsRatio.asDouble > 0.0
+        }
+      }
+  
+      //?val betaFilter: Option[RowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
+      //?  CsvRowFilters.logToFile(filterLog, append = true) {
+      //?    beta.asDouble < 42
+      //?  }
+      //?}
+      val betaFilter: Option[DataRowPredicate] = BETA.map { beta =>
+        DataRowFilters.logToFile(filterLog, append = true) {
+          def isValid(b: Double): Boolean = b < 10.0 && b > -10.0
+          beta.asDouble.map(isValid)
+        }
+      }  
+      
+      if(mungeFile) {
+        drm {
+          common(
+              bucketName = bucketName,
+              uploadType = UploadType.Variants,
+              phenotypeVariantConfig.columnNames).
+          filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
+          filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
+          via(toVariantRows).
+          filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
+          filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
+          map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
+          map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
+          filter(AggregatorVariantRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
+          withMetric(Metrics.count(countFile)).
+          withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
+          withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
+          write(
+              forceLocal = true, 
+              dryRun = dryRun, 
+              dryRunOutputDir = Some(path(s"dry-run-process-phenotype-$phenotype"))).
+          in(sourceStore).
+          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
+          tag(s"process-phenotype-$phenotype")
+      
+          //add this back if time not a concern
+          //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
+          //out(unknownToBioIndexFile).
+      
+          //replace with this if want to keep it running locally
+        }
       }
     }
-
-    //?val betaFilter: Option[RowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
-    //?  CsvRowFilters.logToFile(filterLog, append = true) {
-    //?    beta.asDouble < 42
-    //?  }
-    //?}
-    val betaFilter: Option[DataRowPredicate] = phenoCfg.columnNames.BETA.map { beta =>
-      DataRowFilters.logToFile(filterLog, append = true) {
-        def isValid(b: Double): Boolean = b < 10.0 && b > -10.0
-        beta.asDouble.map(isValid)
+    
+    def forVariantCountData(bucketName: String)(phenotypeVariantCountConfig: PhenotypeConfig.VariantCountData): Unit = {
+      import phenotypeVariantCountConfig.columnNames._
+      
+      def toVariantCountRows = makeVariantCountRowExpr(phenotypeVariantCountConfig, metadata)
+      
+      val upperCaseAlleles: VariantCountRowTransform = { row =>
+        //TODO: Move this up to RowTransforms somehow; it shouldn't need to be repeated here.
+        row.copy(marker = row.marker.toUpperCase)
       }
-    }     
-    
-    import phenoCfg.columnNames
-
-    if(mungeFile) {
-
-      drm {
-        uploadTo(
-            bucketName = "dig-integration-tests",
-            uploadType = toAggregatorRows.uploadType,
-            metadata = metadata).
-        from(source).
-        using(flipDetector).
-        //Filter out rows with REF or ALT columns == ('D' or 'I')
-        filter(DataRowFilters.noDsNorIs(
-            refColumn = columnNames.REF, 
-            altColumn = columnNames.ALT, 
-            logStore = filterLog,
-            append = true)).
-        filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
-        filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
-        via(toAggregatorRows).
-        filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
-        filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
-        map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
-        map(DataRowTransforms.clampPValues(filterLog, append = true)). //0.0 => min pos value 
-        filter(AggregatorVariantRowFilters.validPValue(filterLog, append = true)). //(pvalue > 0.0) && (pvalue < 1.0)
-        withMetric(Metrics.count(countFile)).
-        withMetric(Metrics.fractionWithDisagreeingBetaStderrZscore(disagreeingZBetaStdErrFile, flipDetector)).
-        withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
-        write(forceLocal = true).
-        in(sourceStore).
-        out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
-        tag(s"process-phenotype-$phenotype")
-    
-        //add this back if time not a concern
-        //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
-        //out(unknownToBioIndexFile).
-    
-        //replace with this if want to keep it running locally
+      
+      if(mungeFile) {
+        drm {
+          common(
+              bucketName = bucketName,
+              uploadType = UploadType.VariantCounts,
+              phenotypeVariantCountConfig.columnNames).
+          via(toVariantCountRows).
+          map(upperCaseAlleles). // "aTgC" => "ATGC"
+          withMetric(Metrics.count(countFile)).
+          withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
+          write(
+              forceLocal = true, 
+              dryRun = dryRun, 
+              dryRunOutputDir = Some(path(s"dry-run-process-phenotype-counts-$phenotype"))).
+          in(sourceStore).
+          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
+          tag(s"process-phenotype-counts-$phenotype")
+      
+          //add this back if time not a concern
+          //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
+          //out(unknownToBioIndexFile).
+        }
+  
       }
-
     }
-        
-    dest
-  }
+    
+    phenoCfg.forVariantData.foreach(forVariantData(bucketName))
+    
+    phenoCfg.forVariantCountData.foreach(forVariantCountData(bucketName))
+
+    dest //TODO
+  }//processPhenotype
   
   final case class PhenotypeConfig(
       file: String, 
@@ -223,33 +310,170 @@ object Intake extends loamstream.LoamFile {
       STDERR: Option[String],
       ODDS_RATIO: Option[String],
       ZSCORE: Option[String],
-      PVALUE: String,
-      N: Option[String]) {
+      PVALUE: Option[String],
+      N: Option[String],
+      heterozygousCases: Option[String], //HETA
+      heterozygousControls: Option[String], //HETU
+      homozygousCases: Option[String], //HOMA
+      homozygousControls: Option[String], //HOMU
+      alleleCount: Option[String], //AC
+      alleleCountCases: Option[String], //ACA_PH
+      alleleCountControls: Option[String], //ACU_PH
+  ) extends PhenotypeConfig.Common {
 
-    def toQuantitative: Option[AggregatorMetadata.Quantitative] = (subjects, cases, controls) match {
-      case (_, Some(cs), Some(ctrls)) => {
-        Some(AggregatorMetadata.Quantitative.CasesAndControls(cases = cs, controls = ctrls))
+    private def allDefined[A](o: Option[A], os: Option[_]*): Boolean = (o +: os).forall(_.isDefined)
+    
+    private def anyDefined[A](o: Option[A], os: Option[_]*): Boolean = (o +: os).exists(_.isDefined)
+    
+    def isForVariantData: Boolean = forVariantData.isDefined
+    
+    val forVariantData: Option[PhenotypeConfig.VariantData] = {
+      for {
+        pvalue <- PVALUE
+      } yield {
+        PhenotypeConfig.VariantData(
+          file = file, 
+          delimiter = delimiter,
+          dichotomous = dichotomous,
+          subjects = subjects, 
+          cases = cases, 
+          controls = controls,
+          CHROM = CHROM,
+          POS = POS,
+          REF = REF,
+          ALT = ALT,
+          EAF = EAF,
+          MAF = MAF,
+          BETA = BETA,
+          STDERR = STDERR,
+          ODDS_RATIO = ODDS_RATIO,
+          ZSCORE = ZSCORE,
+          PVALUE = pvalue,
+          N = N)
       }
-      case (Some(s), _, _) => Some(AggregatorMetadata.Quantitative.Subjects(s))
-      case _ => None
     }
     
-    val columnNames: ColumnNames = new ColumnNames(this)
+    def isForVariantCountData: Boolean = forVariantCountData.isDefined
+    
+    val forVariantCountData: Option[PhenotypeConfig.VariantCountData] = {
+      Option(
+        PhenotypeConfig.VariantCountData(
+          file = file, 
+          delimiter = delimiter,
+          dichotomous = dichotomous,
+          subjects = subjects, 
+          cases = cases, 
+          controls = controls,
+          CHROM = CHROM,
+          POS = POS,
+          REF = REF,
+          ALT = ALT,
+          heterozygousCases = heterozygousCases,
+          heterozygousControls = heterozygousControls,
+          homozygousCases = homozygousCases,
+          homozygousControls = homozygousControls,
+          alleleCount = alleleCount, 
+          alleleCountCases = alleleCountCases,
+          alleleCountControls = alleleCountControls))
+    }
   }
   
-  final class ColumnNames(phenotypeConfig: PhenotypeConfig) {
-    val CHROM: ColumnName = phenotypeConfig.CHROM.asColumnName
-    val POS: ColumnName = phenotypeConfig.POS.asColumnName
-    val REF: ColumnName = phenotypeConfig.REF.asColumnName
-    val ALT: ColumnName = phenotypeConfig.ALT.asColumnName
-    val EAF: Option[ColumnName] = phenotypeConfig.EAF.map(_.asColumnName)
-    val MAF: Option[ColumnName] = phenotypeConfig.MAF.map(_.asColumnName)
-    val BETA: Option[ColumnName] = phenotypeConfig.BETA.map(_.asColumnName)
-    val STDERR: Option[ColumnName] = phenotypeConfig.STDERR.map(_.asColumnName)
-    val ODDS_RATIO: Option[ColumnName] = phenotypeConfig.ODDS_RATIO.map(_.asColumnName)
-    val ZSCORE: Option[ColumnName] = phenotypeConfig.ZSCORE.map(_.asColumnName)
-    val PVALUE: ColumnName = phenotypeConfig.PVALUE.asColumnName
-    val N: Option[ColumnName] = phenotypeConfig.N.map(_.asColumnName)
+  object PhenotypeConfig {
+    trait Common {
+      def file: String
+      def delimiter: String
+      def dichotomous: Boolean
+      def subjects: Option[Int] 
+      def cases: Option[Int]
+      def controls: Option[Int]
+      def CHROM: String
+      def POS: String
+      def REF: String
+      def ALT: String
+      
+      final def toQuantitative: Option[AggregatorMetadata.Quantitative] = (subjects, cases, controls) match {
+        case (_, Some(cs), Some(ctrls)) => {
+          Some(AggregatorMetadata.Quantitative.CasesAndControls(cases = cs, controls = ctrls))
+        }
+        case (Some(s), _, _) => Some(AggregatorMetadata.Quantitative.Subjects(s))
+        case _ => None
+      }
+    }
+    
+    final case class VariantData(
+      file: String, 
+      delimiter: String,
+      dichotomous: Boolean,
+      subjects: Option[Int], 
+      cases: Option[Int], 
+      controls: Option[Int],
+      CHROM: String,
+      POS: String,
+      REF: String,
+      ALT: String,
+      EAF: Option[String],
+      MAF: Option[String],
+      BETA: Option[String],
+      STDERR: Option[String],
+      ODDS_RATIO: Option[String],
+      ZSCORE: Option[String],
+      PVALUE: String,
+      N: Option[String]) extends Common {
+      
+      val columnNames: ColumnNames.VariantData = new ColumnNames.VariantData(this)
+    }
+      
+    final case class VariantCountData(
+      file: String, 
+      delimiter: String,
+      dichotomous: Boolean,
+      subjects: Option[Int], 
+      cases: Option[Int], 
+      controls: Option[Int],
+      CHROM: String,
+      POS: String,
+      REF: String,
+      ALT: String,
+      heterozygousCases: Option[String], //HETA
+      heterozygousControls: Option[String], //HETU
+      homozygousCases: Option[String], //HOMA
+      homozygousControls: Option[String], //HOMU
+      alleleCount: Option[String], //AC
+      alleleCountCases: Option[String], //ACA_PH
+      alleleCountControls: Option[String] /*ACU_PH*/ ) extends Common {
+      
+      val columnNames: ColumnNames.VariantCountData = new ColumnNames.VariantCountData(this)
+    }
+  }
+  
+  object ColumnNames {
+    abstract class Marker(phenotypeConfig: PhenotypeConfig.Common) {
+      val CHROM: ColumnName = phenotypeConfig.CHROM.asColumnName
+      val POS: ColumnName = phenotypeConfig.POS.asColumnName
+      val REF: ColumnName = phenotypeConfig.REF.asColumnName
+      val ALT: ColumnName = phenotypeConfig.ALT.asColumnName
+    }
+    
+    final class VariantData(phenotypeConfig: PhenotypeConfig.VariantData) extends Marker(phenotypeConfig) {
+      val EAF: Option[ColumnName] = phenotypeConfig.EAF.map(_.asColumnName)
+      val MAF: Option[ColumnName] = phenotypeConfig.MAF.map(_.asColumnName)
+      val BETA: Option[ColumnName] = phenotypeConfig.BETA.map(_.asColumnName)
+      val STDERR: Option[ColumnName] = phenotypeConfig.STDERR.map(_.asColumnName)
+      val ODDS_RATIO: Option[ColumnName] = phenotypeConfig.ODDS_RATIO.map(_.asColumnName)
+      val ZSCORE: Option[ColumnName] = phenotypeConfig.ZSCORE.map(_.asColumnName)
+      val PVALUE: ColumnName = phenotypeConfig.PVALUE.asColumnName
+      val N: Option[ColumnName] = phenotypeConfig.N.map(_.asColumnName)
+    }
+    
+    final class VariantCountData(phenotypeConfig: PhenotypeConfig.VariantCountData) extends Marker(phenotypeConfig) {
+      val heterozygousCases: Option[ColumnName] = phenotypeConfig.heterozygousCases.map(_.asColumnName)
+      val heterozygousControls: Option[ColumnName] = phenotypeConfig.heterozygousControls.map(_.asColumnName)
+      val homozygousCases: Option[ColumnName] = phenotypeConfig.homozygousCases.map(_.asColumnName)
+      val homozygousControls: Option[ColumnName] = phenotypeConfig.homozygousControls.map(_.asColumnName)
+      val alleleCount: Option[ColumnName] = phenotypeConfig.alleleCount.map(_.asColumnName)
+      val alleleCountCases: Option[ColumnName] = phenotypeConfig.alleleCountCases.map(_.asColumnName)
+      val alleleCountControls: Option[ColumnName] = phenotypeConfig.alleleCountControls.map(_.asColumnName)
+    }
   }
   
   val phenotypesToConfigs: Map[String, PhenotypeConfig] = {
@@ -393,10 +617,11 @@ object Intake extends loamstream.LoamFile {
         case None => ""
       }
 
-      var qqplotOut = Seq(qqPlot)
-      phenotypeConfig.EAF match {
-        case Some(s) => qqplotOut :+ qqPlotCommon
-        case None => ()
+      val qqplotOut = qqPlot +: {
+        phenotypeConfig.EAF match {
+          case Some(s) => Seq(qqPlotCommon)
+          case None => Nil
+        }
       }
 
       drmWith(imageName = s"${imgPython2}") {
