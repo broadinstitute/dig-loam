@@ -43,6 +43,7 @@ object Intake extends loamstream.LoamFile {
   val makeTopResults: Boolean = intakeTypesafeConfig.getBoolean("TOPRESULTS")
   val splitByChr: Boolean = intakeTypesafeConfig.getBoolean("SPLITBYCHR")
   val mungeFile: Boolean = intakeTypesafeConfig.getBoolean("MUNGEFILE")
+  val cfgDryRun: Boolean = intakeTypesafeConfig.getBoolean("DRYRUN")
   
   private val intakeMetadataTypesafeConfig: Config = loadConfig("INTAKE_METADATA_CONF", "").config
 
@@ -170,7 +171,7 @@ object Intake extends loamstream.LoamFile {
     
     val csvFormat = CSVFormat.DEFAULT.withDelimiter(delToChar(phenoCfg.delimiter)).withFirstRecordAsHeader
     
-    val source = Source.fromCommandLine(s"zcat ${sourceStore.path}", csvFormat)
+    val source = Source.fromGzippedFile(sourceStore.path, csvFormat)
     
     def common(bucketName: String, uploadType: UploadType, columnNames: ColumnNames.Marker) = {
       import columnNames._
@@ -238,7 +239,7 @@ object Intake extends loamstream.LoamFile {
               dryRun = dryRun, 
               dryRunOutputDir = Some(path(s"dry-run-process-phenotype-$phenotype"))).
           in(sourceStore).
-          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
+          out(filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
           tag(s"process-phenotype-$phenotype")
       
           //add this back if time not a concern
@@ -275,7 +276,7 @@ object Intake extends loamstream.LoamFile {
               dryRun = dryRun, 
               dryRunOutputDir = Some(path(s"dry-run-process-phenotype-counts-$phenotype"))).
           in(sourceStore).
-          out(dest, filterLog, disagreeingZBetaStdErrFile, countFile, summaryStatsFile).
+          out(filterLog, countFile, summaryStatsFile).
           tag(s"process-phenotype-counts-$phenotype")
       
           //add this back if time not a concern
@@ -512,7 +513,7 @@ object Intake extends loamstream.LoamFile {
     val metadata = toMetadata(phenotype -> phenotypeConfig)
     
     val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
-    
+
     val dataInAggregatorFormat = {
       processPhenotype(
         metadata,
@@ -521,7 +522,8 @@ object Intake extends loamstream.LoamFile {
         sourceStore, 
         phenotypeConfig, 
         aggregatorIntakePipelineConfig, 
-        flipDetector)
+        flipDetector,
+        dryRun = cfgDryRun)
     }
     
     produceAggregatorIntakeConfigFile(aggregatorConfigFile)
