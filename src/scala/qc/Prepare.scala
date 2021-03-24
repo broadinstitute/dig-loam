@@ -1,10 +1,19 @@
 object Prepare extends loamstream.LoamFile {
 
   /**
-    * Prepare Step
-    *  Description: Prepare plink files: remove lowest quality duplicate variants, etc. and liftOver if necessary
-    *  Requires: Plink1.9, liftOver
+    * Prepare array data for QC analysis
+    *  Description:
+    *    Convert if needed to Plink format
+    *    List unplaced, unique and indels
+    *    Calculate missingness. If sample missingness > 0.5, flag for removal
+    *    Calculate allele frequency. If variant is monomorphic, flag for removal
+    *    Convert all variant IDs to universal identifier by adding row index to end of variant ID
+    *    Find all possible duplicate variants and remove lowest quality duplicates
+    *    List all multiallelic variantsfor downstream use
+    *    LiftOver variants if needed to GRCh37
+    *  Requires: Plink, R, bash, liftOver?
     */
+
   import ProjectConfig._
   import ArrayStores._
   
@@ -17,7 +26,7 @@ object Prepare extends loamstream.LoamFile {
       case (m,n) if inputTypesGwasVcf.contains((m,n)) =>
   
         drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
-        
+
           cmd"""${utils.binary.binPlink} --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data.local.get} --allow-no-sex --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
             .in(arrayStores(arrayCfg).rawData.vcf.get.data.local.get)
             .out(arrayStores(arrayCfg).rawData.plink.get.data)

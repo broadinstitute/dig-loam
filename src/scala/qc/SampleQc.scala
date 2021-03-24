@@ -2,9 +2,16 @@ object SampleQc extends loamstream.LoamFile {
 
   /**
    * Sample QC Stats Calculation Step
-   *  Description: Calculate sexcheck and sample by variant statistics for all samples
-   *  Requires: Hail, R
+   *  Description:
+   *    Calculate sample by variant statistics
+   *    Calculate PC-adjusted residuals of sample by variant statistics (PCARMs)
+   *    Calculate PCs of PCARMs
+   *    Individual PCARM clustering
+   *    Combined PCARM clustering
+   *    Flag samples for removal according to set config filters
+   *  Requires: Hail, Klustakwik, R, Python
    */
+
   import ProjectConfig._
   import ArrayStores._
   import ProjectStores._

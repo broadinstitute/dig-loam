@@ -1,9 +1,10 @@
 object Pca extends loamstream.LoamFile {
 
   /**
-   * PCA Step
-   *  Description: Calculate PCs for all non-outlier samples combined (to be used for adjustment during sample outlier removal)
-   *  Requires: R
+   * PCA
+   *  Description:
+   *    Calculate PCs for all non-outlier samples combined (to be used for adjustment during sample outlier removal)
+   *  Requires: FlashPCA2
    */
   import ProjectConfig._
   import ArrayStores._

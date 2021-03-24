@@ -1,10 +1,15 @@
 object ExportQcData extends loamstream.LoamFile {
 
   /**
-    * Export Qc Data Step
-    *  Description: Generate filtered and filtered/pruned filesets for QC
-    *  Requires: Hail
+    * Export Qc Data
+    *  Description:
+    *    Write config set variant filters to file
+    *    Filter variants in matrix table, sampling randomly down to a set variant count if necessary
+    *    Generate filtered Plink files
+    *    Prune variants for QC
+    *  Requires: Hail, Plink
     */
+
   import ProjectConfig._
   import ArrayStores._
   import ProjectStores._

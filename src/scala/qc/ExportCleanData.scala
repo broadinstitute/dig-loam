@@ -1,9 +1,10 @@
 object ExportCleanData extends loamstream.LoamFile {
 
   /**
-    * Export Clean Data Step
-    *  Description: Generate clean vcf file
-    *  Requires: Hail
+    * Export Clean Data
+    *  Description:
+    *    Generate clean vcf file
+    *  Requires: Hail, Python
     */
   import ProjectConfig._
   import ArrayStores._
