@@ -3,3 +3,7 @@
 target
 project/project
 project/target
+/bin/
+.classpath
+.project
+.settings/
