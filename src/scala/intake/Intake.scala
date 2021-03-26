@@ -523,12 +523,12 @@ object Intake extends loamstream.LoamFile {
         phenotypeConfig, 
         aggregatorIntakePipelineConfig, 
         flipDetector,
-        dryRun = cfgDryRun)
+        dryRun = cfgDryRun,
+        bucketName = "dig-analysis-data")
     }
     
     produceAggregatorIntakeConfigFile(aggregatorConfigFile)
       .from(metadata, forceLocal = true)
-      .in(dataInAggregatorFormat)
       .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
     
     val qqPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.png""")
