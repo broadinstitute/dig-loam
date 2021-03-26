@@ -131,10 +131,18 @@ object Intake extends loamstream.LoamFile {
         failFast = true)
   }
   
+  def makeAggregatorMetadataFile(metadata: AggregatorMetadata): Store = {
+    val aggregatorMetadataFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
+    
+    produceAggregatorIntakeConfigFile(aggregatorMetadataFile)
+      .from(metadata, forceLocal = true)
+      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
+      
+    aggregatorMetadataFile
+  }
+  
   def processPhenotype(
       metadata: AggregatorMetadata,
-      dataset: String,
-      phenotype: String, 
       sourceStore: Store,
       phenoCfg: PhenotypeConfig,
       aggregatorIntakeConfig: AggregatorIntakeConfig,
@@ -142,14 +150,11 @@ object Intake extends loamstream.LoamFile {
       destOpt: Option[Store] = None,
       //TODO: Default to real location
       dryRun: Boolean = false,
-      bucketName: String = "dig-integration-tests"): Store = {
+      bucketName: String = "dig-integration-tests"): (Store, Option[Store], Option[Store]) = {
     
     require(sourceStore.isPathStore)
 
-    val today = java.time.LocalDate.now
-    
-    //NB: Munge LocalDate's string rep from yyyy-mm-dd to yyyy_mm_dd
-    //val todayAsString = today.toString.replaceAll("-", "_")  
+    import metadata.{ dataset, phenotype }
     
     val dest: Store = {
       destOpt.getOrElse(store(Paths.workDir / s"""${dataset}_${phenotype}.intake.tsv"""))
@@ -194,10 +199,8 @@ object Intake extends loamstream.LoamFile {
       filter(noDsOrIsFilter)
     }
     
-    def forVariantData(bucketName: String)(phenotypeVariantConfig: PhenotypeConfig.VariantData): Unit = {
+    def forVariantData(bucketName: String)(phenotypeVariantConfig: PhenotypeConfig.VariantData): Option[Store] = {
       import phenotypeVariantConfig.columnNames._
-      
-      def toVariantRows = makePValueVariantRowExpr(phenotypeVariantConfig, metadata)
       
       val oddsRatioFilter: Option[DataRowPredicate] = ODDS_RATIO.map { oddsRatio =>
         DataRowFilters.logToFile(filterLog, append = true) {
@@ -219,6 +222,8 @@ object Intake extends loamstream.LoamFile {
       
       if(mungeFile) {
         drm {
+          val toVariantRows = makePValueVariantRowExpr(phenotypeVariantConfig, metadata)
+      
           common(
               bucketName = bucketName,
               uploadType = UploadType.Variants,
@@ -247,14 +252,16 @@ object Intake extends loamstream.LoamFile {
           //out(unknownToBioIndexFile).
       
           //replace with this if want to keep it running locally
+          
+          Option(makeAggregatorMetadataFile(toVariantRows.metadataWithUploadType))
         }
-      }
+      } else { None }
     }
     
-    def forVariantCountData(bucketName: String)(phenotypeVariantCountConfig: PhenotypeConfig.VariantCountData): Unit = {
-      import phenotypeVariantCountConfig.columnNames._
+    def forVariantCountData(
+        bucketName: String)(phenotypeVariantCountConfig: PhenotypeConfig.VariantCountData): Option[Store] = {
       
-      def toVariantCountRows = makeVariantCountRowExpr(phenotypeVariantCountConfig, metadata)
+      import phenotypeVariantCountConfig.columnNames._
       
       val upperCaseAlleles: VariantCountRowTransform = { row =>
         //TODO: Move this up to RowTransforms somehow; it shouldn't need to be repeated here.
@@ -263,6 +270,8 @@ object Intake extends loamstream.LoamFile {
       
       if(mungeFile) {
         drm {
+          val toVariantCountRows = makeVariantCountRowExpr(phenotypeVariantCountConfig, metadata)
+          
           common(
               bucketName = bucketName,
               uploadType = UploadType.VariantCounts,
@@ -282,16 +291,17 @@ object Intake extends loamstream.LoamFile {
           //add this back if time not a concern
           //withMetric(Metrics.fractionUnknownToBioIndex(unknownToBioIndexFile)).
           //out(unknownToBioIndexFile).
+          
+          Option(makeAggregatorMetadataFile(toVariantCountRows.metadataWithUploadType))
         }
-  
-      }
+      } else { None }
     }
     
-    phenoCfg.forVariantData.foreach(forVariantData(bucketName))
+    val variantDataMetadataFileOpt = phenoCfg.forVariantData.flatMap(forVariantData(bucketName))
     
-    phenoCfg.forVariantCountData.foreach(forVariantCountData(bucketName))
+    val variantCountDataMetadataFileOpt = phenoCfg.forVariantCountData.flatMap(forVariantCountData(bucketName))
 
-    dest //TODO
+    (dest, variantDataMetadataFileOpt, variantCountDataMetadataFileOpt) //TODO
   }//processPhenotype
   
   final case class PhenotypeConfig(
@@ -504,21 +514,17 @@ object Intake extends loamstream.LoamFile {
     referenceDir = aggregatorIntakePipelineConfig.genomeReferenceDir,
     isVarDataType = true,
     pathTo26kMap = aggregatorIntakePipelineConfig.twentySixKIdMap)
-
+  
   for {
     (phenotype, sourceStore) <- sourceStores(phenotypesToConfigs)
   } {
     val phenotypeConfig = phenotypesToConfigs(phenotype)
     
     val metadata = toMetadata(phenotype -> phenotypeConfig)
-    
-    val aggregatorConfigFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
 
-    val dataInAggregatorFormat = {
+    val (dataInAggregatorFormat, variantDataMetadataFileOpt, variantCountDataMetadataFileOpt) = {
       processPhenotype(
         metadata,
-        generalMetadata.dataset, 
-        phenotype, 
         sourceStore, 
         phenotypeConfig, 
         aggregatorIntakePipelineConfig, 
@@ -526,10 +532,6 @@ object Intake extends loamstream.LoamFile {
         dryRun = cfgDryRun,
         bucketName = "dig-analysis-data")
     }
-    
-    produceAggregatorIntakeConfigFile(aggregatorConfigFile)
-      .from(metadata, forceLocal = true)
-      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
     
     val qqPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.png""")
     val qqPlotCommon: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.common.png""")
@@ -543,7 +545,8 @@ object Intake extends loamstream.LoamFile {
     val pdfReport: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.report.pdf""")
 
     if(makeTopResults) {
-
+      //NOTE: Anything that relies on dataInAggregatorFormat won't work currently, as that file is no longer produced.
+      
       drmWith(imageName = s"${imgPython2}") {
         cmd"""/usr/local/bin/python ${pyTopResults}
           --results ${dataInAggregatorFormat}
@@ -587,7 +590,6 @@ object Intake extends loamstream.LoamFile {
           .out(topLociAnnot)
           .tag(s"process-phenotype-${phenotype}-toplociannot")
       }
-
     }
 
     //if(intakeTypesafeConfig.getBoolean("AGGREGATOR_INTAKE_DO_UPLOAD")) {
@@ -670,29 +672,33 @@ object Intake extends loamstream.LoamFile {
       if(makeQqPlot && phenotypeConfig.EAF.isDefined) Seq(qqPlot, qqPlotCommon) else Nil
     }
 
-	drmWith(imageName = s"${imgPython2}") {
+    def makeReports(aggregatorMetadataFile: Store): Unit = {
       
-      cmd"""/usr/local/bin/python ${pySummary}
-        --cfg ${aggregatorConfigFile}
-        ${qqString}
-        --mht ${mhtPlot}
-        --top-results ${topLociAnnot}
-        --out ${texReport}"""
-        .in(summaryIn)
-        .out(texReport)
-        .tag(s"process-phenotype-${phenotype}-texreport")
+      drmWith(imageName = s"${imgPython2}") {
+        
+        cmd"""/usr/local/bin/python ${pySummary}
+          --cfg ${aggregatorMetadataFile}
+          ${qqString}
+          --mht ${mhtPlot}
+          --top-results ${topLociAnnot}
+          --out ${texReport}"""
+          .in(summaryIn)
+          .out(texReport)
+          .tag(s"process-phenotype-${phenotype}-texreport")
+      }
+  
+      drmWith(imageName = s"${imgTexLive}") {
+        
+        cmd"""bash -c "/usr/local/bin/pdflatex ${texReport}; sleep 5; /usr/local/bin/pdflatex ${texReport}""""
+          .in(texReport)
+          .out(pdfReport)
+          .tag(s"process-phenotype-${phenotype}-pdfreport")
+      
+      }
     }
 
-    drmWith(imageName = s"${imgTexLive}") {
-      
-      cmd"""bash -c "/usr/local/bin/pdflatex ${texReport}; sleep 5; /usr/local/bin/pdflatex ${texReport}""""
-        .in(texReport)
-        .out(pdfReport)
-        .tag(s"process-phenotype-${phenotype}-pdfreport")
-    
-    }
-
-
+    variantDataMetadataFileOpt.foreach(makeReports)
+    variantCountDataMetadataFileOpt.foreach(makeReports)
   }
 }
 
