@@ -40,6 +40,7 @@ object Intake extends loamstream.LoamFile {
 
   val makeQqPlot: Boolean = intakeTypesafeConfig.getBoolean("QQPLOT")
   val makeMhtPlot: Boolean = intakeTypesafeConfig.getBoolean("MHTPLOT")
+  val makeReport: Boolean = intakeTypesafeConfig.getBoolean("REPORT")
   val makeTopResults: Boolean = intakeTypesafeConfig.getBoolean("TOPRESULTS")
   val splitByChr: Boolean = intakeTypesafeConfig.getBoolean("SPLITBYCHR")
   val mungeFile: Boolean = intakeTypesafeConfig.getBoolean("MUNGEFILE")
@@ -657,48 +658,52 @@ object Intake extends loamstream.LoamFile {
 
     }
 
-    val qqString = makeQqPlot match {
-      case true => 
-        phenotypeConfig.EAF match {
-          case Some(s) =>
-            s"--qq ${qqPlot.toString.split("@")(1)} --qq-common ${qqPlotCommon.toString.split("@")(1)}"
-          case None =>
-            s"--qq ${qqPlot.toString.split("@")(1)}"
+    if(makeReport) {
+
+      val qqString = makeQqPlot match {
+        case true => 
+          phenotypeConfig.EAF match {
+            case Some(s) =>
+              s"--qq ${qqPlot.toString.split("@")(1)} --qq-common ${qqPlotCommon.toString.split("@")(1)}"
+            case None =>
+              s"--qq ${qqPlot.toString.split("@")(1)}"
+          }
+        case false => ""
+      }
+      
+      val summaryIn = Seq(mhtPlot, topLociAnnot) ++ {
+        if(makeQqPlot && phenotypeConfig.EAF.isDefined) Seq(qqPlot, qqPlotCommon) else Nil
+      }
+      
+      def makeReports(aggregatorMetadataFile: Store): Unit = {
+        
+        drmWith(imageName = s"${imgPython2}") {
+          
+          cmd"""/usr/local/bin/python ${pySummary}
+            --cfg ${aggregatorMetadataFile}
+            ${qqString}
+            --mht ${mhtPlot}
+            --top-results ${topLociAnnot}
+            --out ${texReport}"""
+            .in(summaryIn)
+            .out(texReport)
+            .tag(s"process-phenotype-${phenotype}-texreport")
         }
-      case false => ""
-    }
-
-    val summaryIn = Seq(mhtPlot, topLociAnnot) ++ {
-      if(makeQqPlot && phenotypeConfig.EAF.isDefined) Seq(qqPlot, qqPlotCommon) else Nil
-    }
-
-    def makeReports(aggregatorMetadataFile: Store): Unit = {
       
-      drmWith(imageName = s"${imgPython2}") {
+        drmWith(imageName = s"${imgTexLive}") {
+          
+          cmd"""bash -c "/usr/local/bin/pdflatex ${texReport}; sleep 5; /usr/local/bin/pdflatex ${texReport}""""
+            .in(texReport)
+            .out(pdfReport)
+            .tag(s"process-phenotype-${phenotype}-pdfreport")
         
-        cmd"""/usr/local/bin/python ${pySummary}
-          --cfg ${aggregatorMetadataFile}
-          ${qqString}
-          --mht ${mhtPlot}
-          --top-results ${topLociAnnot}
-          --out ${texReport}"""
-          .in(summaryIn)
-          .out(texReport)
-          .tag(s"process-phenotype-${phenotype}-texreport")
+        }
       }
-  
-      drmWith(imageName = s"${imgTexLive}") {
-        
-        cmd"""bash -c "/usr/local/bin/pdflatex ${texReport}; sleep 5; /usr/local/bin/pdflatex ${texReport}""""
-          .in(texReport)
-          .out(pdfReport)
-          .tag(s"process-phenotype-${phenotype}-pdfreport")
       
-      }
-    }
+      variantDataMetadataFileOpt.foreach(makeReports)
+      variantCountDataMetadataFileOpt.foreach(makeReports)
 
-    variantDataMetadataFileOpt.foreach(makeReports)
-    variantCountDataMetadataFileOpt.foreach(makeReports)
+    }
   }
 }
 
