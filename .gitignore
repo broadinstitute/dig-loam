@@ -7,3 +7,4 @@ project/target
 .classpath
 .project
 .settings/
+src/scripts/__pycache__/
