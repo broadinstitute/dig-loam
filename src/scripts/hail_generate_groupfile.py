@@ -64,7 +64,7 @@ def main(args=None):
 			groups = aggregate_genes(ht = htn)
 			print("write null group file with " + str(len(groups)) + " genes")
 			with hl.hadoop_open(args.groupfile_out, 'w') as f:
-				f.write("\n".join(groups))
+				f.writelines("%s\n" % group for group in groups)
 			for m, f in masked_groupfiles.items():
 				htm = ht.filter(ht['ls_mask_' + m + ".exclude"] == 0, keep = True)
 				if htm.count() > 0:
@@ -72,7 +72,7 @@ def main(args=None):
 					groups = aggregate_genes(ht = htm)
 					print("write group file for mask " + m + " with " + str(len(groups)) + " genes")
 					with hl.hadoop_open(f, 'w') as f:
-						f.write("\n".join(groups))
+						f.writelines("%s\n" % group for group in groups)
 				else:
 					print("no variants remaining with mask " + m + " applied ... writing empty mask group file")
 					Path(f).touch()
