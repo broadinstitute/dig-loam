@@ -186,6 +186,35 @@ object Harmonize extends loamstream.LoamFile {
           .tag(s"${chrData.harmonizedVcf.tbi.local.get}".split("/").last)
       
       }
+
+      drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
+
+        cmd"""${utils.binary.binPlink} 
+          --fam ${chrData.refPlink.base}.fam
+          --allow-no-sex
+          --make-just-fam
+          --out ${chrData.harmonizedFam.toString.split("@")(1).replace(".fam","")}
+          --memory 14400.0
+          --seed 1"""
+          .in(chrData.refPlink.data :+ chrData.forceA2)
+          .out(chrData.harmonizedFam)
+          .tag(s"${chrData.harmonizedFam}".split("/").last)
+
+        cmd"""${utils.binary.binPlink} 
+          --bim ${chrData.refPlink.base}.bim
+          --allow-no-sex
+          --real-ref-alleles
+          --a2-allele ${chrData.forceA2}
+          --output-chr MT
+          --make-just-bim
+          --out ${chrData.harmonizedBim.toString.split("@")(1).replace(".bim","")}
+          --memory 14400.0
+          --seed 1"""
+          .in(chrData.refPlink.data :+ chrData.forceA2)
+          .out(chrData.harmonizedBim)
+          .tag(s"${chrData.harmonizedBim}".split("/").last)
+
+      }
     
     }
   

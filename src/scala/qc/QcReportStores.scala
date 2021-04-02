@@ -27,7 +27,8 @@ object QcReportStores extends loamstream.LoamFile {
     variantsUpsetPlotPdf: Option[Store],
     metricDistUnadjPdf: Store,
     metricDistAdjPdf: Store,
-    samplesRemainingUpsetPlotPdf: Store)
+    samplesRemainingUpsetPlotPdf: Store,
+    variantsRemainingUpsetPlotPdf: Store)
   
   final case class QcReport(
     tablesData: TablesData,
@@ -60,7 +61,8 @@ object QcReportStores extends loamstream.LoamFile {
       variantsUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants.upsetplot.pdf")) } else { None },
       metricDistUnadjPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.metric_dist_unadj.pdf"),
       metricDistAdjPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.metric_dist_adj.pdf"),
-      samplesRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.samples_remaining.upsetplot.pdf")),
+      samplesRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.samples_remaining.upsetplot.pdf"),
+      variantsRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants_remaining.upsetplot.pdf")),
   
     tex = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.tex"),
     pdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.pdf")
