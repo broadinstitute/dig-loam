@@ -121,7 +121,7 @@ def main(args=None):
 			text=[
 				r"\begin{figure}[H]",
 				r"	\centering",
-				r"	\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio,page=1]{" + x.split(",")[1] + r"}",
+				r"	\includegraphics[width=\paperwidth,height=0.9\textheight,keepaspectratio]{" + x.split(",")[1] + r"}",
 				r"	\caption{Adjusted sample metric distributions for " + array.replace("_","\_") + r"}",
 				r"	\label{fig:adjSampleMetricDist""" + array.replace("_","") + r"}",
 				r"\end{figure}"]

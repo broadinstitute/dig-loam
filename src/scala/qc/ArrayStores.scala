@@ -139,7 +139,9 @@ object ArrayStores extends loamstream.LoamFile {
     eigenVals: Store,
     pve: Store,
     meansd: Store,
-    plots: Store)
+    plots: Store,
+    plotsPc1Pc2Png: Store,
+    plotsPc2Pc3Png: Store)
   
   final case class AncestryClusterData(
     base: Path,
@@ -148,6 +150,8 @@ object ArrayStores extends loamstream.LoamFile {
     clu: Store,
     klg: Store,
     plots: Store,
+    plotsPc1Pc2Png: Store,
+    plotsPc2Pc3Png: Store,
     centerPlots: Store,
     no1kgPlots: Store,
     xtab: Store,
@@ -642,7 +646,9 @@ object ArrayStores extends loamstream.LoamFile {
       eigenVals = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.eigenvals.txt"),
       pve = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.pve.txt"),
       meansd = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.meansd.tsv"),
-      plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"))
+      plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pc2pc3.png"))
     
     val ancestryClusterData = AncestryClusterData(
       base = dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ancestryClusterBaseString,
@@ -651,6 +657,8 @@ object ArrayStores extends loamstream.LoamFile {
       clu = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.clu.1"),
       klg = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.klg.1"),
       plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pc2pc3.png"),
       centerPlots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.centers.pdf"),
       no1kgPlots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
       xtab = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.xtab"),

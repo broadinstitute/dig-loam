@@ -32,7 +32,7 @@ def main(args=None):
 		elif len(text2_dict) > 2:
 			text2 = ", ".join([str(text2_dict[x]) + " " + x.replace("_","\_") for x in text2_dict.keys()[0:(len(text2_dict.keys())-1)]]) + " and " + str(text2_dict[text2_dict.keys()[len(text2_dict.keys())-1]]) + " " + text2_dict.keys()[len(text2_dict.keys())-1].replace("_","\_") + " variants"
 
-		text=r"Initially, {0} was merged with reference data. In this case, the reference used was the entire set of 2,504 1000 Genomes Phase 3 Version 5 \cite{{1KG}} samples and our method restricted this merging to a set of 5,166 known ancestry informative SNPs. The merged data consisted of {1}. After merging, principal components (PCs) were computed using the PC-AiR \cite{{pcair}} method in the GENESIS R package. This particular algorithm allows for the calculation of PCs that reflect ancestry in the presence of known or cryptic relatedness. The 1000 Genomes samples were forced into the 'unrelated' set and the PC-AiR algorithm was used to find the 'unrelated' samples from the array data. Then PCs were calculated on them and projected onto the remaining samples.".format(text1, text2)
+		text=r"Initially, {0} was merged with reference data. In this case, the reference used was the entire set of 2,504 1000 Genomes Phase 3 Version 5 \cite{{1KG}} samples and our method restricted this merging to a set of 5,166 known ancestry informative SNPs. The merged data consisted of {1}. After merging, principal components (PCs) were computed using FlashPCA2 \cite{{flashpca2}}".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if len(args.pca_plots) > 1:
@@ -51,25 +51,26 @@ def main(args=None):
 						text1 = text1 + r", and \ref{fig:ancestryPcaPlots" + array.replace("_","") + r"} display"
 		else:
 			array = args.pca_plots[0].split(",")[0]
-			text1 = r"Figure \ref{fig:ancestryPcaPlots" + array + r"} displays"
+			text1 = r"Figure \ref{fig:ancestryPcaPlots" + array.replace("_","") + r"} displays"
 		text=r"{0} plots of the top three principal components along with the 1000 Genomes major population groups.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		for x in args.pca_plots:
 			array = x.split(",")[0]
-			plot = x.split(",")[1]
+			plot1 = x.split(",")[1]
+			plot2 = x.split(",")[2]
 			text = [
 				r"\begin{figure}[H]",
 				r"   \centering",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth,page=1]{" + plot + r"}",
+				r"      \includegraphics[width=\linewidth]{" + plot1 + r"}",
 				r"      \caption{PC1 vs. PC2}",
 				r"      \label{fig:ancestryPca1vs2Plot" + array.replace("_","") + r"}",
 				r"   \end{subfigure}%",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth,page=2]{" + plot + r"}",
+				r"      \includegraphics[width=\linewidth]{" + plot2 + r"}",
 				r"      \caption{PC2 vs. PC3}",
 				r"      \label{fig:ancestryPca2vs3Plot" + array.replace("_","") + r"}",
 				r"   \end{subfigure}",
@@ -118,19 +119,20 @@ def main(args=None):
 
 		for x in args.cluster_plots:
 			array = x.split(",")[0]
-			plot = x.split(",")[1]
+			plot1 = x.split(",")[1]
+			plot2 = x.split(",")[2]
 			text = [
 				r"\begin{figure}[H]",
 				r"   \centering",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth,page=1]{" + plot + r"}",
+				r"      \includegraphics[width=\linewidth]{" + plot1 + r"}",
 				r"      \caption{PC1 vs. PC2}",
 				r"      \label{fig:ancestryClusterPc1vs2Plot" + array.replace("_","") + r"}",
 				r"   \end{subfigure}%",
 				r"   \begin{subfigure}{.5\textwidth}",
 				r"      \centering",
-				r"      \includegraphics[width=\linewidth,page=2]{" + plot + r"}",
+				r"      \includegraphics[width=\linewidth]{" + plot2 + r"}",
 				r"      \caption{PC2 vs. PC3}",
 				r"      \label{fig:ancestryClusterPc2vs3Plot" + array.replace("_","") + r"}",
 				r"   \end{subfigure}",
@@ -233,8 +235,8 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--kg-merged-bim', nargs='+', help='a list of array labels and bim files from merging array and 1kg data, each separated by comma', required=True)
 	requiredArgs.add_argument('--features', help='an integer indicating how many PCs were used for ancestry inference', required=True)
-	requiredArgs.add_argument('--pca-plots', nargs='+', help='a list of array labels and PCA plot pdfs, each separated by comma', required=True)
-	requiredArgs.add_argument('--cluster-plots', nargs='+', help='a list of array labels and PCA cluster plot pdfs, each separated by comma', required=True)
+	requiredArgs.add_argument('--pca-plots', nargs='+', help='a list of array labels and PCA plot pngs, each separated by comma', required=True)
+	requiredArgs.add_argument('--cluster-plots', nargs='+', help='a list of array labels and PCA cluster plot pngs, each separated by comma', required=True)
 	requiredArgs.add_argument('--cluster-table', help='an ancestry cluster table', required=True)
 	requiredArgs.add_argument('--restore', nargs='+', help='a space separated list of array labels and sample restore files, each separated by comma', required=True)
 	requiredArgs.add_argument('--final-table', help='a final ancestry table', required=True)
