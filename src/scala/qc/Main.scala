@@ -26,52 +26,52 @@ object Main extends loamstream.LoamFile {
   // write pipeline object tracking files
   trackObjects()
   
-  //// Upload input files to Google Cloud
-  //Upload()
-  //
-  // Array specific QC steps up to ancestry inferrence
+  // Upload input files to Google Cloud
+  Upload()
+  
+   Array specific QC steps up to ancestry inferrence
   for {
     array <- projectConfig.Arrays if array.technology == "gwas"
   } yield {
       
-    //Prepare(array)
+    Prepare(array)
     Harmonize(array)
   
   }
   
-  //for {
-  //  array <- projectConfig.Arrays
-  //} yield {
-  //
-  //  Load(array)
-  //  ExportQcData(array)
-  //  Annotate(array)
-  //  Kinship(array)
-  //  AncestryPca(array)
-  //  AncestryCluster(array)
-  //
-  //}
-  //
-  //// Reconcile inferred ancestry
-  //MergeInferredAncestry()
-  //
-  //// Array specific QC steps post ancestry inference
-  //for {
-  //  array <- projectConfig.Arrays
-  //} yield { 
-  //
-  //  Pca(array)
-  //  SampleQc(array)
-  //  FilterArray(array)
-  //
-  //  array.exportCleanVcf match {
-  //
-  //    case true => ExportCleanData(array)
-  //    case false => ()
-  //
-  //  }
-  //
-  //}
+  for {
+    array <- projectConfig.Arrays
+  } yield {
+  
+    Load(array)
+    ExportQcData(array)
+    Annotate(array)
+    Kinship(array)
+    AncestryPca(array)
+    AncestryCluster(array)
+  
+  }
+  
+  // Reconcile inferred ancestry
+  MergeInferredAncestry()
+  
+  // Array specific QC steps post ancestry inference
+  for {
+    array <- projectConfig.Arrays
+  } yield { 
+  
+    Pca(array)
+    SampleQc(array)
+    FilterArray(array)
+  
+    array.exportCleanVcf match {
+  
+      case true => ExportCleanData(array)
+      case false => ()
+  
+    }
+  
+  }
   
   // QC Report
   QcReport()
