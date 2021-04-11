@@ -47,7 +47,7 @@ def main(args=None):
 			if aType == "vcf":
 				print "loading vcf file " + aFile
 				try:
-					handle=pysam.TabixFile(filename=aFile,parser=pysam.asVCF())
+					handle=pysam.Tabixfile(filename=aFile)
 				except:
 					sys.exit("failed to load vcf file " + aFile)
 				else:

@@ -212,7 +212,8 @@ object ProjectConfig extends loamstream.LoamFile {
     imgTools: Path,
     imgTexLive: Path,
     imgEnsemblVep: Path,
-    imgFlashPca: Path) extends Debug
+    imgFlashPca: Path,
+    imgImagemagick: Path) extends Debug
   
   final case class Binary(
     binLiftOver: Path,
@@ -226,7 +227,8 @@ object ProjectConfig extends loamstream.LoamFile {
     binLocuszoom: Path,
     binPdflatex: Path,
     binRscript: Path,
-    binFlashPca: Path) extends Debug
+    binFlashPca: Path,
+    binConvert: Path) extends Debug
   
   final case class Python(
     pyAlignNon1kgVariants: Path,
@@ -242,7 +244,15 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMergeVariantLists: Path,
     pyBimToUid: Path,
     pyHailUtils: Path,
-    pyHailExportCleanArrayData: Path) extends Debug
+    pyHailExportCleanArrayData: Path,
+    pyGenerateReportHeader: Path,
+    pyGenerateQcReportIntro: Path,
+    pyGenerateQcReportData: Path,
+    pyGenerateQcReportAncestry: Path,
+    pyGenerateQcReportIbdSexcheck: Path,
+    pyGenerateQcReportSampleqc: Path,
+    pyGenerateQcReportVariantqc: Path,
+    pyGenerateQcReportBibliography: Path) extends Debug
   
   final case class Bash(
     shFindPossibleDuplicateVariants: Path,
@@ -264,7 +274,11 @@ object ProjectConfig extends loamstream.LoamFile {
     rIstatsAdjGmmPlotMetrics: Path,
     rCalcIstatsAdj: Path,
     rIstatsAdjPca: Path,
-    rRawVariantsSummaryTable: Path) extends Debug
+    rRawVariantsSummaryTable: Path,
+    rAncestryClusterTable: Path,
+    rMakeOutlierTable: Path,
+    rUpsetplotBimFam: Path,
+    rMakeMetricDistPlot: Path) extends Debug
   
   final case class Utils(
     imagesDir: Path,
@@ -764,7 +778,8 @@ object ProjectConfig extends loamstream.LoamFile {
         imgTools = path(s"${imagesDir}/tools.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
-        imgFlashPca = path(s"${imagesDir}/flashpca.simg")
+        imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
+        imgImagemagick = path(s"${imagesDir}/imagemagick.simg")
       )
   
       val binary = Binary(
@@ -779,7 +794,8 @@ object ProjectConfig extends loamstream.LoamFile {
         binLocuszoom = path("/usr/local/bin/locuszoom"),
         binPdflatex = path("/usr/local/bin/pdflatex"),
         binRscript = path("/usr/local/bin/Rscript"),
-        binFlashPca = path("/usr/local/bin/flashpca")
+        binFlashPca = path("/usr/local/bin/flashpca"),
+        binConvert = path("/usr/bin/convert")
       )
   
       val python = Python(
@@ -796,7 +812,15 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
         pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
         pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
-        pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py")
+        pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
+        pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
+        pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
+        pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
+        pyGenerateQcReportAncestry = path(s"${scriptsDir}/generate_qc_report_ancestry.py"),
+        pyGenerateQcReportIbdSexcheck = path(s"${scriptsDir}/generate_qc_report_ibd_sexcheck.py"),
+        pyGenerateQcReportSampleqc = path(s"${scriptsDir}/generate_qc_report_sampleqc.py"),
+        pyGenerateQcReportVariantqc = path(s"${scriptsDir}/generate_qc_report_variantqc.py"),
+        pyGenerateQcReportBibliography = path(s"${scriptsDir}/generate_qc_report_bibliography.py")
       )
   
       val bash = Bash(
@@ -820,7 +844,11 @@ object ProjectConfig extends loamstream.LoamFile {
         rIstatsAdjGmmPlotMetrics = path(s"${scriptsDir}/istats_adj_gmm_plot_metrics.r"),
         rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
         rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
-        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r")
+        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
+        rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
+        rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
+        rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
+        rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r")
       )
   
       new Utils(

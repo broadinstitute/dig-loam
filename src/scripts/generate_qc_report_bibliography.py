@@ -29,7 +29,7 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\bibitem{genotypeHarmonizer} Deelan P, Bonder MJ, Joeri van der Velde K, Westra HJ, Winder E, Hendriksen D, Franke L, Swertz MA. Genotype harmonizer: automatic strand alignment and format conversion for genotype data integration. BMC Research Notes; 2014. 7:901. doi:10.1186/1756-0500-7-901. \url{https://github.com/molgenis/systemsgenetics/wiki/Genotype-Harmonizer}."); f.write("\n")
 
-		f.write("\n"); f.write(r"\bibitem{pcair} Conomos MP. GENetic EStimation and Inference in Structured samples (GENESIS): Statistical methods for analyzing genetic data from samples with population structure and/or relatedness, \url{https://www.rdocumentation.org/packages/GENESIS/versions/2.2.2}."); f.write("\n")
+		f.write("\n"); f.write(r"\bibitem{flashpca2} Abraham G, Qiu Y, Inouye M. FlashPCA1: principal component analysis of Biobank-scale genotype datasets. Bioinformatics, Volume 33, Issue 17, 01 September 2017, Pages 2776-2778, \url{https://doi.org/10.1093/bioinformatics/btx299}. \url{https://github.com/gabraham/flashpca}"); f.write("\n")
 
 		f.write("\n"); f.write(r"\bibitem{1KG} 1000 Genomes Phase 3 v5, \url{https://mathgen.stats.ox.ac.uk/impute/1000GP_Phase3.html}."); f.write("\n")
 

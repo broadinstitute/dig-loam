@@ -65,7 +65,9 @@ object ArrayStores extends loamstream.LoamFile {
     mergedKgVarIdUpdate: Store,
     mergedKgVarSnpLog: Store,
     forceA2: Store,
-    harmonizedVcf: MultiPathVcf)
+    harmonizedVcf: MultiPathVcf,
+    harmonizedBim: Store,
+    harmonizedFam: Store)
   
   //final case class HarmonizedData(
   //  plink: Plink,
@@ -84,6 +86,8 @@ object ArrayStores extends loamstream.LoamFile {
     //plink: Option[MultiPathPlink],
     //vcf: Option[MultiPathVcf],
     vcf: Seq[MultiPathVcf],
+    bim: Seq[Store],
+    fam: Seq[Store],
     vcfGlob: MultiPath,
     mtCheckpoint: MultiStore,
     mt: MultiStore,
@@ -135,7 +139,9 @@ object ArrayStores extends loamstream.LoamFile {
     eigenVals: Store,
     pve: Store,
     meansd: Store,
-    plots: Store)
+    plots: Store,
+    plotsPc1Pc2Png: Store,
+    plotsPc2Pc3Png: Store)
   
   final case class AncestryClusterData(
     base: Path,
@@ -144,6 +150,8 @@ object ArrayStores extends loamstream.LoamFile {
     clu: Store,
     klg: Store,
     plots: Store,
+    plotsPc1Pc2Png: Store,
+    plotsPc2Pc3Png: Store,
     centerPlots: Store,
     no1kgPlots: Store,
     xtab: Store,
@@ -174,7 +182,8 @@ object ArrayStores extends loamstream.LoamFile {
     pcaScores: Store,
     outliers: Store,
     incompleteObs: Store,
-    metricPlots: Store)
+    metricPlots: Store,
+    metricPlotsPng: Store)
   
   final case class SampleQcPcaClusterData(
     base: Path,
@@ -433,7 +442,9 @@ object ArrayStores extends loamstream.LoamFile {
             mergedKgVarIdUpdate = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgBaseString}_idUpdates.txt"),
             mergedKgVarSnpLog = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${mergedKgBaseString}_snpLog.log"),
             forceA2 = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.force_a2.txt"),
-            harmonizedVcf = harmonizedVcf)
+            harmonizedVcf = harmonizedVcf,
+            harmonizedBim = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.bim"),
+            harmonizedFam = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.fam"))
   
         }.toMap)
   
@@ -466,6 +477,20 @@ object ArrayStores extends loamstream.LoamFile {
       case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(rawData.vcf.get)
       case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
         annotatedChrData.get.values.map(e => e.harmonizedVcf).toSeq
+      case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
+    }
+
+    val bim = (arrayCfg.technology, arrayCfg.format) match {
+      case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${projectConfig.projectId}.${arrayCfg.id}.harmonized.bim"))
+      case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
+        annotatedChrData.get.values.map(e => e.harmonizedBim).toSeq
+      case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
+    }
+
+    val fam = (arrayCfg.technology, arrayCfg.format) match {
+      case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${projectConfig.projectId}.${arrayCfg.id}.harmonized.fam"))
+      case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
+        annotatedChrData.get.values.map(e => e.harmonizedFam).toSeq
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
 
@@ -525,6 +550,8 @@ object ArrayStores extends loamstream.LoamFile {
     val refData = RefData(
       //plink = refPlink,
       vcf = refVcf,
+      bim = bim,
+      fam = fam,
       vcfGlob = vcfGlob,
       mtCheckpoint = MultiStore(
         local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
@@ -619,7 +646,9 @@ object ArrayStores extends loamstream.LoamFile {
       eigenVals = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.eigenvals.txt"),
       pve = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.pve.txt"),
       meansd = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.meansd.tsv"),
-      plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"))
+      plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pc2pc3.png"))
     
     val ancestryClusterData = AncestryClusterData(
       base = dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ancestryClusterBaseString,
@@ -628,6 +657,8 @@ object ArrayStores extends loamstream.LoamFile {
       clu = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.clu.1"),
       klg = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.klg.1"),
       plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pc2pc3.png"),
       centerPlots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.centers.pdf"),
       no1kgPlots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
       xtab = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.xtab"),
@@ -670,7 +701,8 @@ object ArrayStores extends loamstream.LoamFile {
       pcaScores = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.pca.scores.tsv"),
       outliers = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.outliers.tsv"),
       incompleteObs = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.incomplete_obs.tsv"),
-      metricPlots = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.metricplots.pdf"))
+      metricPlots = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.metricplots.pdf"),
+      metricPlotsPng = store(dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.metricplots.png"))
   
     val sampleQcPcaClusterData = SampleQcPcaClusterData(
       base = dirTree.dataArrayMap(arrayCfg).metrics.local.get / s"${sampleQcBaseString}.pca.cluster",

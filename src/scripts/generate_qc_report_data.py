@@ -32,11 +32,11 @@ def main(args=None):
 			text2 = text2 + ", ".join([str(nImiss[x]) + " " + x.replace("_","\_") for x in nImiss.keys()[0:(len(nImiss.keys())-1)]]) + " and " + str(nImiss[nImiss.keys()[len(nImiss.keys())-1]]) + " " + nImiss.keys()[len(nImiss.keys())-1].replace("_","\_")
 		text2 = text2 + " samples " if len(nImiss) != 1 or nImiss[nImiss.keys()[0]] != 1 else text2 + " sample"
 
-		text=r"Initially, {0} was checked for sample genotype missingness. Any samples with extreme genotype missingness ($> 0.5$) were removed prior to our standard quality control procedures. {1} removed from this data set.".format(text1, text2)
+		text=r"Initially, {0} was assessed for sample genotype missingness. Prior to our standard quality control procedures, we remove any samples exhibiting extreme genotype missingness (ie. $> 0.5$). The intention of this threshold is to remove any samples that appear to suffer from obvious poor genotyping, which will likely add noise to our analyses. {1} removed from downstream analyses at this stage.".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if args.samples_upset_diagram is not None:
-			text=r"The following diagram (Figure \ref{{fig:samplesUpsetDiagram}}) describes the remaining sample distribution over the {0:d} genotype arrays, along with their intersection sizes.".format(args.narrays)
+			text=r"The following diagram (Figure \ref{{fig:samplesUpsetDiagram}}) describes the remaining sample distribution over the {0:d} genotype arrays that were included in our full quality control analysis.".format(args.narrays)
 			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 			
 			text=[
@@ -50,12 +50,12 @@ def main(args=None):
 
 		else:
 			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
-			text=r"This data consisted of a single genotype array ({0:s}) which contained {1:,d} remaining samples.".format(args.fam.split(",")[0], fam.shape[0])
+			text=r"This data consisted of a single genotype array ({0:s}), from which {1:,d} remaining samples were included in our full quality control analysis.".format(args.fam.split(",")[0], fam.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Variants}"); f.write("\n")
 
-		text=r"Table \ref{table:variantsSummaryTable} gives an overview of the different variant classes and how they distributed across allele frequencies for each dataset. Note that the totals reflect the sum of the chromosomes only. A legend has been provided below the table for further inspection of the class definitions."
+		text=r"Table \ref{table:variantsSummaryTable} gives an overview of the different variant classes and how they distributed across allele frequencies in the raw data. Note that the totals reflect the sum of the chromosomes only. A legend has been provided below the table for further inspection of the class definitions."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -70,9 +70,11 @@ def main(args=None):
 				r"		\item \textbf{Y} = Y chromosome variants",
 				r"		\item \textbf{X(PAR)} = X chromosome pseudoautosomal (PAR) region variants",
 				r"		\item \textbf{Mito} = Mitochondrial variants",
-				r"		\item \textbf{InDel} = Insertion/Deletion variants (I/D or D/I alleles)",
+				r"		\item \textbf{InvalInDel} = Invalid Insertion/Deletion variants (I/D or D/I alleles)",
+				r"		\item \textbf{ValInDel} = Valid Insertion/Deletion variants",
 				r"		\item \textbf{Multi} = Multiallelic variants (2 or more alternate alleles)",
 				r"		\item \textbf{Dup} = Duplicated variants with respect to position and alleles",
+				r"		\item \textbf{NoGeno} = No Genotypes available",
 				r"	\end{TableNotes}",
 				r"	\pgfplotstabletypeset[",
 				r"		begin table=\begin{longtable},",
@@ -80,7 +82,7 @@ def main(args=None):
 				r"		font=\footnotesize\sffamily,",
 				r"		string replace={NA}{},",
 				r"		col sep=tab,",
-				r"		columns={Array,Freq,Unpl,Auto,X,Y,X(PAR),Mito,InDel,Multi,Dup,Total},",
+				r"		columns={Array,Freq,Unpl,Auto,X,Y,X(PAR),Mito,InvalInDel,ValInDel,Multi,Dup,NoGeno,Total},",
 				r"		column type={>{\fontseries{bx}\selectfont}c},",
 				r"		columns/Array/.style={column name=, string type},",
 				r"		columns/Freq/.style={column name=Freq, string type, column type={>{\fontseries{bx}\selectfont}r}},",
@@ -90,9 +92,11 @@ def main(args=None):
 				r"		columns/Y/.style={column name=Y, string type},",
 				r"		columns/X(PAR)/.style={column name=X(PAR), string type},",
 				r"		columns/Mito/.style={column name=Mito, string type},",
-				r"		columns/InDel/.style={column name=InDel, string type},",
+				r"		columns/InvalInDel/.style={column name=InvalInDel, string type},",
+				r"		columns/ValInDel/.style={column name=ValInDel, string type},",
 				r"		columns/Multi/.style={column name=Multi, string type},",
 				r"		columns/Dup/.style={column name=Dup, string type},",
+				r"		columns/NoGeno/.style={column name=Dup, string type},",
 				r"		columns/Total/.style={column name=Total, string type, column type={>{\fontseries{bx}\selectfont}l}},",
 				r"		postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
 				r"		every head row/.append style={",
@@ -135,7 +139,7 @@ def main(args=None):
 				r"\end{ThreePartTable}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		text = r"To facilitate downstream operations on genotype data, such as merging and meta-analysis, each dataset gets harmonized with modern reference data. The harmonization process is performed in two steps. First, using Genotype Harmonizer \cite{genotypeHarmonizer}, the variants are strand-aligned with the 1000 Genomes Phase 3 Version 5 \cite{1KG} variants. While some variants (A/C or G/T variants) may be removed due to strand ambiguity, if enough information exists, Genotype Harmonizer uses linkage disequilibrium (LD) patterns with nearby variants to accurately determine strand. This step will remove variants that it is unable to reconcile and maintains variants that are unique to the input data. The second step manually reconciles non-1000 Genomes variants with the human reference assembly GRCh37 \cite{humref}. This step will flag variants for removal that do not match an allele to the reference and variants that have only a single allele in the data file (0 for the other). Note that some monomorphic variants may be maintained in this process if there are two alleles in the data file and one of them matches a reference allele."
+		text = r"To facilitate downstream operations on genotype data, such as merging and meta-analysis, each dataset is harmonized with modern reference data. For sequence data, the alignment is usually performed prior, so harmonization is skipped. For genotyping arrays, the harmonization process is performed in two steps. First, using Genotype Harmonizer \cite{genotypeHarmonizer}, the variants are strand-aligned with the 1000 Genomes Phase 3 Version 5 \cite{1KG} variants. While some variants (A/C or G/T variants) may be removed due to strand ambiguity, if enough information exists, Genotype Harmonizer uses linkage disequilibrium (LD) patterns with nearby variants to accurately determine strand. This step will remove variants that it is unable to reconcile and maintains variants that are unique to the input data. The second step manually reconciles non-1000 Genomes variants with the human reference assembly GRCh37 \cite{humref}. This step will flag variants for removal that do not match an allele to the reference and variants that have only a single allele in the data file (0 for the other). Note that some monomorphic variants may be maintained in this process if there are two alleles in the data file and one of them matches a reference allele."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=r"After harmonization, the data is loaded into a Hail \cite{hail} matrix table for downstream use."
@@ -155,8 +159,11 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			bim=pd.read_table(args.bim.split(",")[1], low_memory=False, header=None)
-			text = text + r"The resulting dataset consisted of {0:,d} total variants.".format(bim.shape[0])
+			bim_count = 0
+			for bim in args.bim:
+				bim=pd.read_table(bim.split(",")[1], low_memory=False, header=None)
+				bim_count = bim_count + bim.shape[0]
+			text = text + r"The resulting harmonized dataset consisted of {0:,d} variants for inclusion in downstream analyses.".format(bim_count)
 			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"
@@ -171,6 +178,6 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--imiss', nargs='+', help='a list of array labels and samples removed due to high missingness, each separated by comma', required=True)
 	requiredArgs.add_argument('--variants-summary-table', help='a variant summary table', required=True)
 	requiredArgs.add_argument('--variants-upset-diagram', help='an upset diagram for harmonized variants')
-	requiredArgs.add_argument('--bim', help='a bim file')
+	requiredArgs.add_argument('--bim', nargs='+', help='a list of array labels and bim files, each separated by comma')
 	args = parser.parse_args()
 	main(args)
