@@ -29,7 +29,7 @@ object Main extends loamstream.LoamFile {
   // Upload input files to Google Cloud
   Upload()
   
-   Array specific QC steps up to ancestry inferrence
+  // Array specific QC steps up to ancestry inferrence
   for {
     array <- projectConfig.Arrays if array.technology == "gwas"
   } yield {
