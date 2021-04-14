@@ -13,8 +13,6 @@ object PrepareSchema extends loamstream.LoamFile {
   import Collections._
   import DirTree._
   
-  final case class CfgException(s: String) extends Exception(s)
-  
   def PrepareSchema(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]): Unit = {
   
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head

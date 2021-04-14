@@ -300,13 +300,13 @@ object ProjectConfig extends loamstream.LoamFile {
     pyTopResults: Path,
     pyTopGroupResults: Path,
     pyExtractTopRegions: Path,
-    pyPhenoDistPlot: Path
+    pyPhenoDistPlot: Path,
+    pyHailMetaAnalysis: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
     //pyHailFilterResults: Path,
     //pyHailMerge: Path,
-    //pyHailMetaAnalysis: Path,
     //pyGenerateReportHeader: Path,
     //pyGenerateQcReportIntro: Path,
     //pyGenerateQcReportData: Path,
@@ -1299,13 +1299,13 @@ object ProjectConfig extends loamstream.LoamFile {
         pyTopResults = path(s"${scriptsDir}/top_results.py"),
         pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
-        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
+        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
+        pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
         //pyHailFilterResults = path(s"${scriptsDir}/hail_filter_results.py"),
         //pyHailMerge = path(s"${scriptsDir}/hail_merge.py"),
-        //pyHailMetaAnalysis = path(s"${scriptsDir}/hail_meta_analysis.py"),
         //pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
         //pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
         //pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),

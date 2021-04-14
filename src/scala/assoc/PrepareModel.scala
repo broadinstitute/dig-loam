@@ -12,8 +12,6 @@ object PrepareModel extends loamstream.LoamFile {
   import ModelStores._
   import Fxns._
   
-  final case class CfgException(s: String) extends Exception(s)
-  
   def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
   
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head

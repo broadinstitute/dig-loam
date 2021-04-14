@@ -101,6 +101,23 @@ object Collections extends loamstream.LoamFile {
     }
   }
 
+  final case class ModelMeta(
+      model: ConfigModel,
+      meta: ConfigMeta) {
+    def canEqual(a: Any) = a.isInstanceOf[ModelMeta]
+    override def equals(that: Any): Boolean = that match {
+      case that: ModelMeta => that.canEqual(this) && this.hashCode == that.hashCode
+      case _ => false
+    }
+    override def hashCode: Int = {
+        val prime = 31
+        var result = 1
+        result = prime * result + model.id.hashCode
+        result = prime * result + meta.id.hashCode
+        result
+    }
+  }
+
   val usedArrays: Seq[String] = {
     for {
       schema <- projectConfig.Schemas
@@ -236,10 +253,22 @@ object Collections extends loamstream.LoamFile {
       cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
     } yield {
       ModelMetaCollection(
+		model = model,
         schema = schema,
-        model = model,
         meta = meta,
         cohorts = Seq(cohort)
+      )
+    }
+  }.distinct
+
+  val modelMetas: Seq[ModelMeta] = {
+    for {
+      model <- projectConfig.Models.filter(e => e.metas.isDefined)
+      meta <- projectConfig.Metas.filter(e => model.metas.get.contains(e.id))
+    } yield {
+      ModelMeta(
+		model = model,
+        meta = meta
       )
     }
   }.distinct

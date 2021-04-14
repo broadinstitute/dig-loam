@@ -10,6 +10,8 @@ object Main extends loamstream.LoamFile {
   import Tracking._
   import Upload._
   import AssocTest._
+  import Fxns._
+  import Meta._
   
   import loamstream.conf.DataConfig
   import loamstream.googlecloud.HailSupport._
@@ -77,14 +79,15 @@ object Main extends loamstream.LoamFile {
   
   }
   
-  //// Prepare meta cohort model
-  //for {
-  //  x <- modelMetaCohorts
-  //} yield {
-  //
-  //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
-  //
-  //}
+  // Prepare meta cohort model
+  for {
+    x <- modelMetaCollections
+  } yield {
+  
+    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
+  
+  }
+
   //// Cohort variant association for known loci
   //for {
   //  x <- modelCohortKnowns
@@ -93,16 +96,16 @@ object Main extends loamstream.LoamFile {
   //  VariantAssoc(configModel = x.model, configCohorts = x.cohorts, configMeta = None, configKnown = Some(x.known))
   //
   //}
-  //
+  
   // Meta-analysis specific cohort variant association
-  //for {
-  //  x <- modelMetaCohorts
-  //} yield { 
-  //
-  //  VariantAssoc(configCohorts = x.cohorts, configModel = x.model, configMeta = Some(x.meta), configKnown = None)
-  //
-  //}
-  //
+  for {
+    x <- modelMetaCollections
+  } yield { 
+
+    AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
+  
+  }
+  
   //// Meta-analysis specific cohort variant association for known loci
   //for {
   //  x <- modelMetaCohortKnowns
@@ -129,16 +132,16 @@ object Main extends loamstream.LoamFile {
   //  KnownLociAssoc(configModel = x.model, configCohorts = x.cohorts, configKnown = x.known, configMeta = Some(x.meta))
   //
   //}
-  //
-  //// Meta-analysis
-  //for {
-  //  x <- modelMetas
-  //} yield {
-  //
-  //  MetaAnalysis(configModel = x.model, configMeta = x.meta)
-  //
-  //}
-  //
+
+  // Meta-analysis
+  for {
+    x <- modelMetas
+  } yield {
+  
+    MetaAnalysis(configModel = x.model, configMeta = x.meta)
+  
+  }
+  
   //// Meta-analysis for known loci
   //for {
   //  x <- modelMetaKnowns
