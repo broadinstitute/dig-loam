@@ -7,6 +7,7 @@ import loamstream.loam.intake.AggregatorIntakeConfig
 import loamstream.loam.intake.DataRowPredicate
 import loamstream.loam.intake.VariantCountRowTransform
 import loamstream.loam.intake.ColumnDef
+import loamstream.loam.intake.LiteralColumnExpr
 
 object Intake extends loamstream.LoamFile {
   import loamstream.loam.intake.IntakeSyntax._
@@ -96,6 +97,12 @@ object Intake extends loamstream.LoamFile {
       }
     }
     
+    object ColumnDefs {
+      import scala.reflect.runtime.universe._
+      
+      def just[A : TypeTag](a: A): AnonColumnDef[A] = AnonColumnDef(LiteralColumnExpr(a))
+    }
+    
     VariantRowExpr.PValueVariantRowExpr(
         metadata = metadata,
         markerDef = varId,
@@ -106,7 +113,10 @@ object Intake extends loamstream.LoamFile {
         oddsRatioDef = oddsRatioDefOpt,
         eafDef = EAF.map(AggregatorColumnDefs.eaf(_)),
         mafDef = MAF.map(AggregatorColumnDefs.PassThru.maf(_)),
-        nDef = N.map(AggregatorColumnDefs.PassThru.n(_)))
+        nDef = N.map(AggregatorColumnDefs.PassThru.n(_)),
+        casesDef = phenoCfg.cases.map(ColumnDefs.just(_)),
+        controlsDef = phenoCfg.controls.map(ColumnDefs.just(_)),
+        subjectsDef = phenoCfg.subjects.map(ColumnDefs.just(_)))
   }
   
   def makeVariantCountRowExpr(
