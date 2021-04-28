@@ -135,9 +135,11 @@ object Intake extends loamstream.LoamFile {
   def makeAggregatorMetadataFile(metadata: AggregatorMetadata): Store = {
     val aggregatorMetadataFile = store(Paths.workDir / s"""aggregator-intake-${metadata.dataset}-${metadata.phenotype}.conf""")
     
+    def randomTopic = s"unknown-${java.util.UUID.randomUUID}"
+    
     produceAggregatorIntakeConfigFile(aggregatorMetadataFile)
       .from(metadata, forceLocal = true)
-      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}")
+      .tag(s"make-aggregator-conf-${metadata.dataset}-${metadata.phenotype}-${metadata.topic.getOrElse(randomTopic)}")
       
     aggregatorMetadataFile
   }
@@ -368,25 +370,41 @@ object Intake extends loamstream.LoamFile {
     def isForVariantCountData: Boolean = forVariantCountData.isDefined
     
     val forVariantCountData: Option[PhenotypeConfig.VariantCountData] = {
-      Option(
-        PhenotypeConfig.VariantCountData(
-          file = file, 
-          delimiter = delimiter,
-          dichotomous = dichotomous,
-          subjects = subjects, 
-          cases = cases, 
-          controls = controls,
-          CHROM = CHROM,
-          POS = POS,
-          REF = REF,
-          ALT = ALT,
-          heterozygousCases = heterozygousCases,
-          heterozygousControls = heterozygousControls,
-          homozygousCases = homozygousCases,
-          homozygousControls = homozygousControls,
-          alleleCount = alleleCount, 
-          alleleCountCases = alleleCountCases,
-          alleleCountControls = alleleCountControls))
+      val variantCountFields = {
+        Seq(heterozygousCases,
+            heterozygousControls,
+            homozygousCases,
+            homozygousControls,
+            alleleCount,
+            alleleCountCases,
+            alleleCountControls)
+      }
+      
+      val shouldUploadVariantCountData = variantCountFields.exists(_.isDefined)
+      
+      if(shouldUploadVariantCountData) {
+        Option(
+          PhenotypeConfig.VariantCountData(
+            file = file, 
+            delimiter = delimiter,
+            dichotomous = dichotomous,
+            subjects = subjects, 
+            cases = cases, 
+            controls = controls,
+            CHROM = CHROM,
+            POS = POS,
+            REF = REF,
+            ALT = ALT,
+            heterozygousCases = heterozygousCases,
+            heterozygousControls = heterozygousControls,
+            homozygousCases = homozygousCases,
+            homozygousControls = homozygousControls,
+            alleleCount = alleleCount, 
+            alleleCountCases = alleleCountCases,
+            alleleCountControls = alleleCountControls))
+      } else {
+        None
+      }
     }
   }
   
