@@ -242,7 +242,7 @@ object Intake extends loamstream.LoamFile {
               uploadType = UploadType.Variants,
               phenotypeVariantConfig.columnNames).
           filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
-          filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
+          //filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
           via(toVariantRows).
           filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
           filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
