@@ -9,35 +9,51 @@ object ProjectConfig extends loamstream.LoamFile {
   val modelDesigns = Seq("full","strat")
   val modelTrans = Seq("log","invn")
   val assocTests = Seq(
-    "hail.q.lm",
-    "hail.b.wald",
-    "hail.b.firth",
-    "hail.b.lrt",
-    "hail.b.score",
-    "epacts.b.burden",
-    "epacts.b.burdenFirth",
-    "epacts.b.collapse",
-    "epacts.b.madsen",
-    "epacts.b.wcnt",
-    "epacts.q.burden",
-    "epacts.q.reverse",
-    "epacts.q.wilcox",
-    "epacts.b.skat",
-    "epacts.b.VT",
-    "epacts.b.emmaxCMC",
-    "epacts.b.emmaxVT",
-    "epacts.q.mmskat",
-    "epacts.q.skat",
-    "epacts.q.VT",
-    "epacts.q.emmaxCMC",
-    "epacts.q.emmaxVT",
-    "regenie.b.firth"
+    "single.hail.q.lm",
+    "single.hail.b.wald",
+    "single.hail.b.firth",
+    "single.hail.b.lrt",
+    "single.hail.b.score",
+    "group.epacts.b.burden",
+    "group.epacts.b.burdenFirth",
+    "group.epacts.b.collapse",
+    "group.epacts.b.madsen",
+    "group.epacts.b.wcnt",
+    "group.epacts.q.burden",
+    "group.epacts.q.reverse",
+    "group.epacts.q.wilcox",
+    "group.epacts.b.skat",
+    "group.epacts.b.VT",
+    "group.epacts.b.emmaxCMC",
+    "group.epacts.b.emmaxVT",
+    "group.epacts.q.mmskat",
+    "group.epacts.q.skat",
+    "group.epacts.q.VT",
+    "group.epacts.q.emmaxCMC",
+    "group.epacts.q.emmaxVT",
+    "single.regenie.b.firth",
+    "single.regenie.q.lm"
+    "group.regenie.b.burdenFirth",
+    "group.regenie.b.burden",
+    "group.regenie.q.burden"
+    //NOT YET IMPLEMENTED "single.epacts.b.wald",
+    //NOT YET IMPLEMENTED "single.epacts.b.score",
+    //NOT YET IMPLEMENTED "single.epacts.b.firth",
+    //NOT YET IMPLEMENTED "single.epacts.b.spa2",
+    //NOT YET IMPLEMENTED "single.epacts.b.lrt",
+    //NOT YET IMPLEMENTED "single.epacts.b.glrt",
+    //NOT YET IMPLEMENTED "single.epacts.q.lm",
+    //NOT YET IMPLEMENTED "single.epacts.q.linear",
+    //NOT YET IMPLEMENTED "single.epacts.q.reverse",
+    //NOT YET IMPLEMENTED "single.epacts.q.wilcox",
+    //NOT YET IMPLEMENTED "single.epacts.q.emmax",
   )
-  
-  val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
-  val groupTests = assocTests.filter(e => Seq("epacts","regenie").contains(e.split("\\.")(0)))
-  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "hail")
-  val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
+
+  // note: regenie uses ridge regression to avoid need for GRM so all tests may include relateds
+  val famTests = assocTests.filter(e => Seq("group.epacts.b.emmaxCMC","group.epacts.b.emmaxVT","group.epacts.q.mmskat","group.epacts.q.emmaxCMC","group.epacts.q.emmaxVT","single.regenie.b.firth","single.regenie.q.lm","group.regenie.b.burdenFirth","group.regenie.b.burden","group.regenie.q.burden").contains(e))
+  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
+  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
+  val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
   
   final case class ConfigMachine(
     cpus: Int,
