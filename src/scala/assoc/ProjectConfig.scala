@@ -30,11 +30,12 @@ object ProjectConfig extends loamstream.LoamFile {
     "epacts.q.skat",
     "epacts.q.VT",
     "epacts.q.emmaxCMC",
-    "epacts.q.emmaxVT"
+    "epacts.q.emmaxVT",
+    "regenie.b.firth"
   )
   
   val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
-  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
+  val groupTests = assocTests.filter(e => Seq("epacts","regenie").contains(e.split("\\.")(0)))
   val singleTests = assocTests.filter(e => e.split("\\.")(0) == "hail")
   val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
   
@@ -300,7 +301,8 @@ object ProjectConfig extends loamstream.LoamFile {
     pyTopResults: Path,
     pyTopGroupResults: Path,
     pyExtractTopRegions: Path,
-    pyPhenoDistPlot: Path
+    pyPhenoDistPlot: Path,
+    pyHailGenerateRegenieGroupfiles: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -1299,7 +1301,8 @@ object ProjectConfig extends loamstream.LoamFile {
         pyTopResults = path(s"${scriptsDir}/top_results.py"),
         pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
-        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
+        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
+        pyHailGenerateRegenieGroupfiles = path(s"${scriptsDir}/hail_generate_regenie_groupfiles.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),

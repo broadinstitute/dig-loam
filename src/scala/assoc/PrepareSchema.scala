@@ -775,6 +775,18 @@ object PrepareSchema extends loamstream.LoamFile {
               }
             case _ => ()
         }
+
+        val regenieMasksString = schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
+          case n if n > 0 =>
+            val x = "--masks"
+            val y = for {
+              (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
+            } yield {
+              s"""${k.id}"""
+            }
+            x + " " + y.mkString(",")
+          case _ => ""
+        }
   
         googleWith(projectConfig.cloudResources.mtCluster) {
         
@@ -788,6 +800,19 @@ object PrepareSchema extends loamstream.LoamFile {
             .in(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get)
             .out(generateGroupfileOut)
             .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}.google".split("/").last)
+
+          hail"""${utils.python.pyHailGenerateRegenieGroupfiles} --
+            --cloud
+            --hail-utils ${projectStores.hailUtils.google.get}
+            ${regenieMasksString}
+            --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
+            --setlist-out ${schemaStores((configSchema, configCohorts)).regenieSetlist.base.google.get}
+            --annotations-out ${schemaStores((configSchema, configCohorts)).regenieAnnotations.base.google.get}
+            --masks-out ${schemaStores((configSchema, configCohorts)).regenieMasks.base.google.get}
+            --log ${schemaStores((configSchema, configCohorts)).regenieHailLog.base.google.get}"""
+            .in(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get)
+            .out(schemaStores((configSchema, configCohorts)).regenieSetlist.base.google.get, schemaStores((configSchema, configCohorts)).regenieAnnotations.base.google.get, schemaStores((configSchema, configCohorts)).regenieMasks.base.google.get, schemaStores((configSchema, configCohorts)).regenieHailLog.base.google.get)
+            .tag(s"${schemaStores((configSchema, configCohorts)).regenieSetlist.base.google.get}.google".split("/").last)
     
         }
     
@@ -795,6 +820,10 @@ object PrepareSchema extends loamstream.LoamFile {
         
           googleCopy(schemaStores((configSchema, configCohorts)).groupFile.base.base.google.get, schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
           googleCopy(schemaStores((configSchema, configCohorts)).groupFileHailLog.base.google.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.base.local.get)
+          googleCopy(schemaStores((configSchema, configCohorts)).regenieSetlist.base.google.get, schemaStores((configSchema, configCohorts)).regenieSetlist.base.local.get)
+          googleCopy(schemaStores((configSchema, configCohorts)).regenieAnnotations.base.google.get, schemaStores((configSchema, configCohorts)).regenieAnnotations.base.local.get)
+          googleCopy(schemaStores((configSchema, configCohorts)).regenieMasks.base.google.get, schemaStores((configSchema, configCohorts)).regenieMasks.base.local.get)
+          googleCopy(schemaStores((configSchema, configCohorts)).regenieHailLog.base.google.get, schemaStores((configSchema, configCohorts)).regenieHailLog.base.local.get)
         
         }
         
@@ -837,6 +866,18 @@ object PrepareSchema extends loamstream.LoamFile {
             }
           case _ => ()
         }
+
+        val regenieMasksString = schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
+          case n if n > 0 =>
+            val x = "--masks"
+            val y = for {
+              (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
+            } yield {
+              s"""${k.id}"""
+            }
+            x + " " + y.mkString(",")
+          case _ => ""
+        }
   
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
@@ -848,6 +889,17 @@ object PrepareSchema extends loamstream.LoamFile {
             .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get)
             .out(generateGroupfileOut)
             .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}".split("/").last)
+
+          cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateRegenieGroupfiles}
+            ${regenieMasksString}
+            --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
+            --setlist-out ${schemaStores((configSchema, configCohorts)).regenieSetlist.base.local.get}
+            --annotations-out ${schemaStores((configSchema, configCohorts)).regenieAnnotations.base.local.get}
+            --masks-out ${schemaStores((configSchema, configCohorts)).regenieMasks.base.local.get}
+            --log ${schemaStores((configSchema, configCohorts)).regenieHailLog.base.local.get}"""
+            .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get)
+            .out(schemaStores((configSchema, configCohorts)).regenieSetlist.base.local.get, schemaStores((configSchema, configCohorts)).regenieAnnotations.base.local.get, schemaStores((configSchema, configCohorts)).regenieMasks.base.local.get, schemaStores((configSchema, configCohorts)).regenieHailLog.base.local.get)
+            .tag(s"${schemaStores((configSchema, configCohorts)).regenieSetlist.base.local.get}".split("/").last)
         
         }
     
@@ -888,6 +940,18 @@ object PrepareSchema extends loamstream.LoamFile {
                 }
               case _ => ()
           }
+
+          val regenieMasksString = schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
+            case n if n > 0 =>
+              val x = "--masks"
+              val y = for {
+                (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
+              } yield {
+                s"""${k.id}"""
+              }
+              x + " " + y.mkString(",")
+            case _ => ""
+          }
       
           googleWith(projectConfig.cloudResources.mtCluster) {
           
@@ -901,6 +965,19 @@ object PrepareSchema extends loamstream.LoamFile {
               .in(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get)
               .out(generateGroupfileOut)
               .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get}.google".split("/").last)
+
+            hail"""${utils.python.pyHailGenerateRegenieGroupfiles} --
+              --cloud
+              --hail-utils ${projectStores.hailUtils.google.get}
+              ${regenieMasksString}
+              --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get}
+              --setlist-out ${schemaStores((configSchema, configCohorts)).regenieSetlist.phenos(pheno).google.get}
+              --annotations-out ${schemaStores((configSchema, configCohorts)).regenieAnnotations.phenos(pheno).google.get}
+              --masks-out ${schemaStores((configSchema, configCohorts)).regenieMasks.phenos(pheno).google.get}
+              --log ${schemaStores((configSchema, configCohorts)).regenieHailLog.phenos(pheno).google.get}"""
+              .in(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get)
+              .out(schemaStores((configSchema, configCohorts)).regenieSetlist.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).regenieAnnotations.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).regenieMasks.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).regenieHailLog.phenos(pheno).google.get)
+              .tag(s"${schemaStores((configSchema, configCohorts)).regenieSetlist.phenos(pheno).google.get}.google".split("/").last)
       
           }
       
@@ -950,6 +1027,18 @@ object PrepareSchema extends loamstream.LoamFile {
               }
             case _ => ()
           }
+
+          val regenieMasksString = schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
+            case n if n > 0 =>
+              val x = "--masks"
+              val y = for {
+                (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
+              } yield {
+                s"""${k.id}"""
+              }
+              x + " " + y.mkString(",")
+            case _ => ""
+          }
       
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
           
@@ -961,6 +1050,18 @@ object PrepareSchema extends loamstream.LoamFile {
               .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get)
               .out(generateGroupfileOut)
               .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get}".split("/").last)
+
+            cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateRegenieGroupfiles}
+              ${regenieMasksString}
+              --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get}
+              --setlist-out ${schemaStores((configSchema, configCohorts)).regenieSetlist.phenos(pheno).local.get}
+              --annotations-out ${schemaStores((configSchema, configCohorts)).regenieAnnotations.phenos(pheno).local.get}
+              --masks-out ${schemaStores((configSchema, configCohorts)).regenieMasks.phenos(pheno).local.get}
+              --log ${schemaStores((configSchema, configCohorts)).regenieHailLog.phenos(pheno).local.get}"""
+              .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get)
+              .out(schemaStores((configSchema, configCohorts)).regenieSetlist.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).regenieAnnotations.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).regenieMasks.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).regenieHailLog.phenos(pheno).local.get)
+              .tag(s"${schemaStores((configSchema, configCohorts)).regenieSetlist.phenos(pheno).local.get}".split("/").last)
+        
           
           }
       
