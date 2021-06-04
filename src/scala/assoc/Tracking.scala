@@ -36,26 +36,26 @@ object Tracking extends loamstream.LoamFile {
         case None => "none"
       }
       for {
-        test <- modelStores(ms).assocSingle.keys
+        test <- modelStores(ms).assocSingleHail.keys
       } yield {
-        writeObject(obj = modelStores(ms).assocSingle(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocSingle.${test}")
+        writeObject(obj = modelStores(ms).assocSingleHail(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocSingleHail.${test}")
       }
       
       for {
-        test <- modelStores(ms).assocGroup.keys
+        test <- modelStores(ms).assocGroupEpacts.keys
       } yield {
-        writeObject(obj = modelStores(ms).assocGroup(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroup.${test}")
-        writeObject(obj = modelStores(ms).assocGroup(test).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroup.${test}.groups.keys")
+        writeObject(obj = modelStores(ms).assocGroupEpacts(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroupEpacts.${test}")
+        writeObject(obj = modelStores(ms).assocGroupEpacts(test).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroupEpacts.${test}.groups.keys")
       }
       
       for {
-        test <- modelStores(ms).assocMaskGroup.keys
+        test <- modelStores(ms).assocMaskGroupEpacts.keys
       } yield {
         for {
-          mask <- modelStores(ms).assocMaskGroup(test).keys
+          mask <- modelStores(ms).assocMaskGroupEpacts(test).keys
         } yield {
-          writeObject(obj = modelStores(ms).assocMaskGroup(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${test}.${mask.id}")
-          writeObject(obj = modelStores(ms).assocMaskGroup(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${test}.${mask.id}.groups.keys")
+          writeObject(obj = modelStores(ms).assocMaskGroupEpacts(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroupEpacts.${test}.${mask.id}")
+          writeObject(obj = modelStores(ms).assocMaskGroupEpacts(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroupEpacts.${test}.${mask.id}.groups.keys")
         }
       }
   

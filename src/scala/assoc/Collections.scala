@@ -195,6 +195,17 @@ object Collections extends loamstream.LoamFile {
       )
     }
   }
+
+  val binaryFilterPhenos: Seq[ConfigPheno] = {
+    for {
+      schema <- projectConfig.Schemas
+    } yield {
+      schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+        case n if n > 0 => projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id))
+        case _ => Seq[ConfigPheno]()
+      }
+    }
+  }.flatten.distinct
   
   val modelCollections: Seq[ModelCollection] = {
     for {

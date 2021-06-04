@@ -169,7 +169,7 @@ object PrepareModel extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgR}") {
         
           cmd"""${utils.binary.binRscript} --vanilla --verbose
-            ${utils.r.rConvertPhenoToPed}
+            ${utils.r.rConvertPhenoToEpactsPed}
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --pheno-col ${configModel.pheno}
@@ -184,6 +184,35 @@ object PrepareModel extends loamstream.LoamFile {
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
             .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}".split("/").last)
+        
+        }
+    
+      case false => ()
+    
+    }
+
+    configModel.assocPlatforms.contains("regenie") match {
+    
+      case true =>
+    
+        drmWith(imageName = s"${utils.image.imgR}") {
+        
+          cmd"""${utils.binary.binRscript} --vanilla --verbose
+            ${utils.r.rConvertPhenoToRegeniePhenoCovars}
+            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+            --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+            --pheno-col ${configModel.pheno}
+            --iid-col ${array.phenoFileId}
+            --sex-col ${array.qcSampleFileSrSex}
+            --male-code ${array.qcSampleFileMaleCode}
+            --female-code ${array.qcSampleFileFemaleCode}
+            ${transString}
+            --covars "${configModel.covars}"
+            --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoRegenie.get}
+            --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).covarsRegenie.get}"""
+            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoRegenie.get, modelStores((configModel, configSchema, configCohorts, configMeta)).covarsRegenie.get)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoRegenie.get}".split("/").last)
         
         }
     

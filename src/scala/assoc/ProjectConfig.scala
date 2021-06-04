@@ -32,7 +32,7 @@ object ProjectConfig extends loamstream.LoamFile {
     "group.epacts.q.emmaxCMC",
     "group.epacts.q.emmaxVT",
     "single.regenie.b.firth",
-    "single.regenie.q.lm"
+    "single.regenie.q.lm",
     "group.regenie.b.burdenFirth",
     "group.regenie.b.burden",
     "group.regenie.q.burden"
@@ -107,7 +107,8 @@ object ProjectConfig extends loamstream.LoamFile {
     lowMemEpacts: ConfigMachine,
     midMemEpacts: ConfigMachine,
     highMemEpacts: ConfigMachine,
-    locuszoom: ConfigMachine) extends Debug
+    locuszoom: ConfigMachine,
+    generateRegenieGroupfiles: ConfigMachine) extends Debug
 
   final case class ConfigInputStore(
     local: Option[String],
@@ -268,6 +269,7 @@ object ProjectConfig extends loamstream.LoamFile {
     imgHail: Path,
     imgLocuszoom: Path,
     imgPython2: Path,
+    imgPython3: Path,
     imgR: Path,
     imgTools: Path,
     imgTexLive: Path,
@@ -318,7 +320,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyTopGroupResults: Path,
     pyExtractTopRegions: Path,
     pyPhenoDistPlot: Path,
-    pyHailGenerateRegenieGroupfiles: Path
+    pyGenerateRegenieGroupfiles: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -375,7 +377,8 @@ object ProjectConfig extends loamstream.LoamFile {
     rMetaCohortSamples: Path,
     rExcludeCrossArray: Path,
     rGeneratePheno: Path,
-    rConvertPhenoToPed: Path,
+    rConvertPhenoToEpactsPed: Path,
+    rConvertPhenoToRegeniePhenoCovars: Path,
     rTop20: Path,
     rRawVariantsSummaryTable: Path
     //rAncestryClusterTable: Path,
@@ -527,6 +530,10 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         locuszoom = {
           val thisConfig = requiredObj(config = config, field = "locuszoom")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        generateRegenieGroupfiles = {
+          val thisConfig = requiredObj(config = config, field = "generateRegenieGroupfiles")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -1147,7 +1154,7 @@ object ProjectConfig extends loamstream.LoamFile {
             pheno = pheno,
             trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
             tests = tests,
-            assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
+            assocPlatforms = tests.map(e => e.split("\\.")(1)).distinct,
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = requiredStrList(config = model, field = "covars").mkString("+"),
             cohorts = cohorts,
@@ -1266,6 +1273,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2v2.simg"),
+        imgPython3 = path(s"${imagesDir}/python_v3.7.9.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
@@ -1318,7 +1326,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
         pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
-        pyHailGenerateRegenieGroupfiles = path(s"${scriptsDir}/hail_generate_regenie_groupfiles.py")
+        pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
@@ -1375,7 +1383,8 @@ object ProjectConfig extends loamstream.LoamFile {
         rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
         rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
         rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
-        rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r"),
+        rConvertPhenoToEpactsPed = path(s"${scriptsDir}/convert_pheno_to_epacts_ped.r"),
+        rConvertPhenoToRegeniePhenoCovars = path(s"${scriptsDir}/convert_pheno_to_regenie_pheno_covars.r"),
         rTop20 = path(s"${scriptsDir}/top20.r"),
         rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r")
         //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),

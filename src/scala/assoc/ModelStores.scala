@@ -30,7 +30,6 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelAssocSingle(
     results: MultiStore,
     resultsTbi: Store,
-    resultsHailLog: Option[MultiStore],
     //filteredResults: Store,
     qqPlot: Store,
     qqPlotLowMaf: Store,
@@ -81,11 +80,14 @@ object ModelStores extends loamstream.LoamFile {
     pcaLog: Store,
     pheno: MultiStore,
     pedEpacts: Option[Store],
+    phenoRegenie: Option[Store],
+    covarsRegenie: Option[Store],
     modelVarsEpacts: Option[Store],
     pcsInclude: MultiStore,
-    assocSingle: Map[String, ModelAssocSingle],
-    assocGroup: Map[String, ModelAssocGroupBase],
-    assocMaskGroup: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
+    assocSingleHail: Map[String, ModelAssocSingle],
+    assocSingleHailLog: Map[String, MultiStore],
+    assocGroupEpacts: Map[String, ModelAssocGroupBase],
+    assocMaskGroupEpacts: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
   )
   
   val modelStores = (
@@ -130,45 +132,53 @@ object ModelStores extends loamstream.LoamFile {
       case None => 0
     }
   
-    val modelSingleTests = model.tests.filter(e => ! groupTests.contains(e))
-    val modelGroupTests = model.tests.filter(e => groupTests.contains(e))
+    val modelSingleHailTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "hail")
+    val modelGroupEpactsTests = model.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts")
 
     var phenoMasksAvailable = Seq[MaskFilter]()
     schema.masks match {
-      case Some(_) => 
-        schemaStores((schema, cohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
-          case true => 
-            for {
-              sm <- schema.masks.get
-            } yield {
-              try {
-                checkPath(s"""${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(sm).local.get.toString.split("@")(1)}""")
-                phenoMasksAvailable = phenoMasksAvailable ++ Seq(sm)
-              }
-              catch {
-                case x: CfgException =>
-                  println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(sm).local.get.toString.split("@")(1)}""")
-              }
+      case Some(_) =>
+        schemaStores((schema, cohorts)).epacts match {
+          case Some(_) =>
+            schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
+              case true => 
+                for {
+                  sm <- schema.masks.get
+                } yield {
+                  try {
+                    checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(sm).local.get.toString.split("@")(1)}""")
+                    phenoMasksAvailable = phenoMasksAvailable ++ Seq(sm)
+                  }
+                  catch {
+                    case x: CfgException =>
+                      println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(sm).local.get.toString.split("@")(1)}""")
+                  }
+                }
+              case false => ()
             }
-          case false => ()
+          case None => ()
         }
       case None => ()
     }
   
     var masksAvailable = Seq[MaskFilter]()
     schema.masks match {
-      case Some(_) => 
-        for {
-          sm <- schema.masks.get
-        } yield {
-          try {
-            checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
-            masksAvailable = masksAvailable ++ Seq(sm)
-          }
-          catch {
-            case x: CfgException =>
-              println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
-          }
+      case Some(_) =>
+        schemaStores((schema, cohorts)).epacts match {
+          case Some(_) =>
+            for {
+              sm <- schema.masks.get
+            } yield {
+              try {
+                checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
+                masksAvailable = masksAvailable ++ Seq(sm)
+              }
+              catch {
+                case x: CfgException =>
+                  println(s"""skipping split assoc test by group due to missing group file: ${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(sm).local.get.toString.split("@")(1)}""")
+              }
+            }
+          case None => ()
         }
       case None => ()
     }
@@ -197,27 +207,22 @@ object ModelStores extends loamstream.LoamFile {
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None }
       ),
       pedEpacts = model.assocPlatforms.contains("epacts") match { case true => Some(store(local_dir / s"${baseString}.epacts.ped")); case false => None },
+      phenoRegenie = model.assocPlatforms.contains("regenie") match { case true => Some(store(local_dir / s"${baseString}.regenie.pheno.tsv")); case false => None },
+      covarsRegenie = model.assocPlatforms.contains("regenie") match { case true => Some(store(local_dir / s"${baseString}.regenie.covars.tsv")); case false => None },
       modelVarsEpacts = model.assocPlatforms.contains("epacts") match { case true => Some(store(local_dir / s"${baseString}.epacts.model.vars")); case false => None },
       pcsInclude = MultiStore(
         local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None }
       ),
-      assocSingle = model.runAssoc match {
+      assocSingleHail = model.runAssoc match {
         case true =>
-          modelSingleTests.map { test =>
+          modelSingleHailTests.map { test =>
             test -> ModelAssocSingle(
               results = MultiStore(
                 local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
                 google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
               ),
               resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
-              resultsHailLog = test.split("\\.")(0) match {
-                case "hail" => Some(MultiStore(
-                    local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
-                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
-                  ))
-                case _ => None
-              },
               //filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"),
               qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
               qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
@@ -234,17 +239,27 @@ object ModelStores extends loamstream.LoamFile {
           }.toMap
         case false => Map[String, ModelAssocSingle]()
       },
-      assocGroup = model.runAssoc match {
+      assocSingleHailLog = model.runAssoc match {
+        case true =>
+          modelSingleHailTests.map { test =>
+            test -> MultiStore(
+                local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
+                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
+              )
+          }.toMap
+        case _ => Map[String, MultiStore]()
+      },
+      assocGroupEpacts = model.runAssoc match {
         case true =>
           nmasks match {
             case 0 =>
-              val gFile = schemaStores((schema, cohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
-                case true => checkPath(s"""${schemaStores((schema, cohorts)).groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}""")
-                case false => checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.base.local.get.toString.split("@")(1)}""")
+              val gFile = schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
+                case true => checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}""")
+                case false => checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.base.local.get.toString.split("@")(1)}""")
               }
               try {
                 val l = fileToList(gFile).map(e => e.split("\t")(0))
-                modelGroupTests.map { test =>
+                modelGroupEpactsTests.map { test =>
                   test -> ModelAssocGroupBase(
                     results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
                     top20Results = store(local_dir  / s"${baseString}.${test}.results.top20.tsv"),
@@ -269,17 +284,17 @@ object ModelStores extends loamstream.LoamFile {
           }
         case false => Map[String, ModelAssocGroupBase]()
       },
-      assocMaskGroup = model.runAssoc match {
+      assocMaskGroupEpacts = model.runAssoc match {
         case true =>
           masksAvailable.size match {
             case 0 => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
             case _ =>
-              schemaStores((schema, cohorts)).groupFile.phenos.keys.toList.contains(pheno) match {
+              schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
                 case true => 
-                  modelGroupTests.map { test =>
+                  modelGroupEpactsTests.map { test =>
                     test ->
                       phenoMasksAvailable.map { mask =>
-                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
+                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
                         val l = fileToList(gFile).map(e => e.split("\t")(0))
                         mask ->
                           ModelAssocGroupBase(
@@ -298,10 +313,10 @@ object ModelStores extends loamstream.LoamFile {
                       }.toMap
                   }.toMap
                 case false =>
-                  modelGroupTests.map { test =>
+                  modelGroupEpactsTests.map { test =>
                     test ->
                       masksAvailable.map { mask =>
-                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
+                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
                         val l = fileToList(gFile).map(e => e.split("\t")(0))
                         mask ->
                           ModelAssocGroupBase(
