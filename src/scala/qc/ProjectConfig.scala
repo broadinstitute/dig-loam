@@ -104,6 +104,7 @@ object ProjectConfig extends loamstream.LoamFile {
     tableHail: ConfigMachine,
     standardPlink: ConfigMachine,
     highMemPlink: ConfigMachine,
+    standardPlinkMultiCpu: ConfigMachine,
     standardR: ConfigMachine,
     highMemR: ConfigMachine,
     flashPca: ConfigMachine,
@@ -113,7 +114,8 @@ object ProjectConfig extends loamstream.LoamFile {
     vep: ConfigMachine,
     king: ConfigMachine,
     klustakwik: ConfigMachine,
-    tabix: ConfigMachine) extends Debug
+    tabix: ConfigMachine,
+    bgenix: ConfigMachine) extends Debug
   
   final case class ConfigArray(
     id: String,
@@ -139,7 +141,7 @@ object ProjectConfig extends loamstream.LoamFile {
     qcVariantSampleSeed: Option[Int],
     postQcSampleFilters: Option[Seq[String]],
     postQcVariantFilters: Option[Seq[String]],
-    exportCleanVcf: Boolean) extends Debug
+    exportCleanBgen: Boolean) extends Debug
 
   //final case class ConfigSection(
   //  id: String,
@@ -210,6 +212,8 @@ object ProjectConfig extends loamstream.LoamFile {
     imgPython2: Path,
     imgR: Path,
     imgTools: Path,
+    imgPlink2: Path,
+    imgBgen: Path,
     imgTexLive: Path,
     imgEnsemblVep: Path,
     imgFlashPca: Path,
@@ -220,6 +224,8 @@ object ProjectConfig extends loamstream.LoamFile {
     binGenotypeHarmonizer: Path,
     binKing: Path,
     binPlink: Path,
+    binPlink2: Path,
+    binBgenix: Path,
     binTabix: Path,
     binGhostscript: Path,
     binKlustakwik: Path,
@@ -244,7 +250,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMergeVariantLists: Path,
     pyBimToUid: Path,
     pyHailUtils: Path,
-    pyHailExportCleanArrayData: Path,
+    pyHailExportCleanVcf: Path,
     pyGenerateReportHeader: Path,
     pyGenerateQcReportIntro: Path,
     pyGenerateQcReportData: Path,
@@ -389,6 +395,10 @@ object ProjectConfig extends loamstream.LoamFile {
           val thisConfig = requiredObj(config = config, field = "highMemPlink")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         },
+        standardPlinkMultiCpu = {
+          val thisConfig = requiredObj(config = config, field = "standardPlinkMultiCpu")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
         standardR = {
           val thisConfig = requiredObj(config = config, field = "standardR")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
@@ -427,6 +437,10 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         tabix = {
           val thisConfig = requiredObj(config = config, field = "tabix")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        bgenix = {
+          val thisConfig = requiredObj(config = config, field = "bgenix")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -664,7 +678,7 @@ object ProjectConfig extends loamstream.LoamFile {
             qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed", min = Some(0)),
             postQcSampleFilters = postQcSampleFilters,
             postQcVariantFilters = postQcVariantFilters,
-            exportCleanVcf = requiredBool(config = array, field = "exportCleanVcf")
+            exportCleanBgen = requiredBool(config = array, field = "exportCleanBgen")
           )
       
         }
@@ -776,6 +790,8 @@ object ProjectConfig extends loamstream.LoamFile {
         imgPython2 = path(s"${imagesDir}/python2.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
+        imgPlink2 = path(s"${imagesDir}/plink2_v2.3a.simg"),
+        imgBgen = path(s"${imagesDir}/bgen_v1.1.4.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
@@ -787,6 +803,8 @@ object ProjectConfig extends loamstream.LoamFile {
         binGenotypeHarmonizer = path("/usr/local/bin/GenotypeHarmonizer.jar"),
         binKing = path("/usr/local/bin/king"),
         binPlink = path("/usr/local/bin/plink"),
+        binPlink2 = path("/usr/local/bin/plink2"),
+        binBgenix = path("/usr/local/bin/bgenix"),
         binTabix = path("/usr/local/bin/tabix"),
         binGhostscript = path("/usr/local/bin/gs"),
         binKlustakwik = path("/usr/local/bin/KlustaKwik"),
@@ -812,7 +830,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
         pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
         pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
-        pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
+        pyHailExportCleanVcf = path(s"${scriptsDir}/hail_export_clean_vcf.py"),
         pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
         pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
         pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
