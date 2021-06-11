@@ -8,25 +8,6 @@ object ModelStores extends loamstream.LoamFile {
   import Collections._
   import SchemaStores._
   
-  //final case class ModelBaseCohortStore(
-  //  base: MultiStore,
-  //  cohorts: Map[ConfigCohort, MultiStore])
-  //
-  //final case class ModelBaseMaskStore(
-  //  base: MultiStore,
-  //  masks: Map[MaskFilter, MultiStore])
-  
-  //final case class ModelGroupResult(
-  //  results: Store,
-  //  groupFile: Store)
-  
-  //final case class ModelResult(
-  //  results: Option[MultiStore],
-  //  resultsHailLog: Option[MultiStore],
-  //  filteredResults: Option[Store],
-  //  groups: Map[String, ModelGroup]
-  //)
-  
   final case class ModelAssocSingle(
     results: MultiStore,
     resultsTbi: Store,
@@ -52,15 +33,24 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelAssocGroupBase(
     results: Store,
     top20Results: Store,
-    //groupFile: Store,
     qqPlot: Store,
     mhtPlot: Store,
     groups: Map[String, ModelAssocGroup]
   )
   
-  //final case class ModelTest(
-  //  base: Map[String, ModelResult],
-  //  masks: Map[String, Map[MaskFilter, ModelResult]])
+  final case class ModelEpacts(
+    pedEpacts: Store,
+    modelVars: Store,
+    //assocGroup: Map[String, ModelAssocGroupBase],
+    assocGroup: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
+  )
+
+  final case class ModelRegenie(
+    pheno: Store,
+    covars: Store,
+    assocSingle: Option[Map[String, ModelAssocSingle]],
+    assocGroup: Option[Map[String, ModelAssocGroupBase]]
+  )
   
   final case class Model(
     sampleMap: Store,
@@ -79,15 +69,19 @@ object ModelStores extends loamstream.LoamFile {
     outliers: Store, 
     pcaLog: Store,
     pheno: MultiStore,
-    pedEpacts: Option[Store],
-    phenoRegenie: Option[Store],
-    covarsRegenie: Option[Store],
-    modelVarsEpacts: Option[Store],
+    hail: Option[ModelAssocSingle],
+    epacts: Option[ModelEpacts],
+    regenie: Option[ModelRegenie],
+
+    //pedEpacts: Option[Store],
+    //phenoRegenie: Option[Store],
+    //covarsRegenie: Option[Store],
+    //modelVarsEpacts: Option[Store],
     pcsInclude: MultiStore,
     assocSingleHail: Map[String, ModelAssocSingle],
     assocSingleHailLog: Map[String, MultiStore],
-    assocGroupEpacts: Map[String, ModelAssocGroupBase],
-    assocMaskGroupEpacts: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
+    //assocGroupEpacts: Map[String, ModelAssocGroupBase],
+    //assocMaskGroupEpacts: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
   )
   
   val modelStores = (
