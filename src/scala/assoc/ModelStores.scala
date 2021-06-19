@@ -7,11 +7,8 @@ object ModelStores extends loamstream.LoamFile {
   import DirTree._
   import Collections._
   import SchemaStores._
-  
-  final case class ModelAssocSingle(
-    results: MultiStore,
-    resultsTbi: Store,
-    //filteredResults: Store,
+
+  final case class ModelSingleSummary(
     qqPlot: Store,
     qqPlotLowMaf: Store,
     qqPlotMidMaf: Store,
@@ -24,32 +21,54 @@ object ModelStores extends loamstream.LoamFile {
     regPlotsBase: Path,
     regPlotsPdf: Store
   )
+
+  final case class ModelGroupSummary(
+    top20Results: Store,
+    qqPlot: Store,
+    mhtPlot: Store
+  )
   
-  final case class ModelAssocGroup(
+  final case class ModelHailAssocSingle(
+    results: MultiStore,
+    resultsTbi: Store,
+    hailLog: MultiStore,
+    summary: ModelSingleSummary
+  )
+
+  final case class ModelRegenieAssocSingle(
+    
+  )
+  
+  final case class ModelEpactsAssocGroup(
     results: Store,
-    groupFile: Store
+    groupFile: Store,
+  )
+
+  final case class ModelRegenieAssocGroup(
+    results: Store
   )
   
   final case class ModelAssocGroupBase(
     results: Store,
-    top20Results: Store,
-    qqPlot: Store,
-    mhtPlot: Store,
-    groups: Map[String, ModelAssocGroup]
+    summary: ModelGroupSummary,
+    groups: Map[String, ModelEpactsAssocGroup]
+  )
+
+  final case class ModelHail(
+    assocSingle: Option[Map[String, ModelHailAssocSingle]]
   )
   
   final case class ModelEpacts(
-    pedEpacts: Store,
+    ped: Store,
     modelVars: Store,
-    //assocGroup: Map[String, ModelAssocGroupBase],
     assocGroup: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
   )
 
   final case class ModelRegenie(
     pheno: Store,
     covars: Store,
-    assocSingle: Option[Map[String, ModelAssocSingle]],
-    assocGroup: Option[Map[String, ModelAssocGroupBase]]
+    assocSingle: Map[String, ModelRegenieAssocSingle],
+    assocGroup: Map[String, ModelRegenieAssocGroup]
   )
   
   final case class Model(
@@ -69,17 +88,17 @@ object ModelStores extends loamstream.LoamFile {
     outliers: Store, 
     pcaLog: Store,
     pheno: MultiStore,
-    hail: Option[ModelAssocSingle],
+    pcsInclude: MultiStore,
+    hail: Option[ModelHail],
     epacts: Option[ModelEpacts],
-    regenie: Option[ModelRegenie],
+    regenie: Option[ModelRegenie]
 
     //pedEpacts: Option[Store],
     //phenoRegenie: Option[Store],
     //covarsRegenie: Option[Store],
     //modelVarsEpacts: Option[Store],
-    pcsInclude: MultiStore,
-    assocSingleHail: Map[String, ModelAssocSingle],
-    assocSingleHailLog: Map[String, MultiStore],
+    //assocSingleHail: Map[String, ModelAssocSingle],
+    //assocSingleHailLog: Map[String, MultiStore],
     //assocGroupEpacts: Map[String, ModelAssocGroupBase],
     //assocMaskGroupEpacts: Map[String, Map[MaskFilter, ModelAssocGroupBase]]
   )
@@ -127,7 +146,9 @@ object ModelStores extends loamstream.LoamFile {
     }
   
     val modelSingleHailTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "hail")
+    val modelSingleRegenieTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "regenie")
     val modelGroupEpactsTests = model.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts")
+    val modelGroupRegenieTests = model.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "regenie")
 
     var phenoMasksAvailable = Seq[MaskFilter]()
     schema.masks match {
@@ -200,137 +221,160 @@ object ModelStores extends loamstream.LoamFile {
         local = Some(store(local_dir / s"${baseString}.pheno.tsv")),
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None }
       ),
-      pedEpacts = model.assocPlatforms.contains("epacts") match { case true => Some(store(local_dir / s"${baseString}.epacts.ped")); case false => None },
-      phenoRegenie = model.assocPlatforms.contains("regenie") match { case true => Some(store(local_dir / s"${baseString}.regenie.pheno.tsv")); case false => None },
-      covarsRegenie = model.assocPlatforms.contains("regenie") match { case true => Some(store(local_dir / s"${baseString}.regenie.covars.tsv")); case false => None },
-      modelVarsEpacts = model.assocPlatforms.contains("epacts") match { case true => Some(store(local_dir / s"${baseString}.epacts.model.vars")); case false => None },
       pcsInclude = MultiStore(
         local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None }
       ),
-      assocSingleHail = model.runAssoc match {
+      hail = model.assocPlatforms.contains("hail") match {
         case true =>
-          modelSingleHailTests.map { test =>
-            test -> ModelAssocSingle(
-              results = MultiStore(
-                local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
-                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
-              ),
-              resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
-              //filteredResults = store(local_dir / s"${baseString}.${test}.results.filtered.tsv.bgz"),
-              qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
-              qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
-              qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
-              qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
-              mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
-              top1000Results = store(local_dir / s"${baseString}.${test}.results.top1000.tsv"),
-              top1000ResultsAnnot = store(local_dir / s"${baseString}.${test}.results.top1000.annot.tsv"),
-              top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
-              sigRegions = store(local_dir / s"${baseString}.${test}.results.sig.regions.tsv"),
-              regPlotsBase = local_dir / s"${baseString}.${test}.results.sig.regplots",
-              regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
-            )
-          }.toMap
-        case false => Map[String, ModelAssocSingle]()
-      },
-      assocSingleHailLog = model.runAssoc match {
-        case true =>
-          modelSingleHailTests.map { test =>
-            test -> MultiStore(
-                local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
-                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
-              )
-          }.toMap
-        case _ => Map[String, MultiStore]()
-      },
-      assocGroupEpacts = model.runAssoc match {
-        case true =>
-          nmasks match {
-            case 0 =>
-              val gFile = schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
-                case true => checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}""")
-                case false => checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.base.local.get.toString.split("@")(1)}""")
-              }
-              try {
-                val l = fileToList(gFile).map(e => e.split("\t")(0))
-                modelGroupEpactsTests.map { test =>
-                  test -> ModelAssocGroupBase(
-                    results = store(local_dir  / s"${baseString}.${test}.results.tsv.bgz"),
-                    top20Results = store(local_dir  / s"${baseString}.${test}.results.top20.tsv"),
-                    //groupFile = store(local_dir  / s"${baseString}.${test}.groupfile.tsv"),
-                    qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
-                    mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
-                    groups = l.map { group =>
-                      group -> ModelAssocGroup(
-                        results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.results.tsv.bgz"),
-                        groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${group}.groupfile.tsv")
+          Some(ModelHail(
+            assocSingle = model.runAssoc match {
+              case true =>
+                modelSingleHailTests.map { test =>
+                  test -> 
+                    ModelHailAssocSingle(
+                      results: MultiStore(
+                        local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
+                        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
+                      ),
+                      resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
+                      hailLog = MultiStore(
+                        local = Some(store(local_dir / s"${baseString}.${test}.results.hail.log")),
+                        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.hail.log")); case false => None }
+                      ),
+                      summary = ModelSingleSummary(
+                        qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
+                        qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
+                        qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
+                        qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
+                        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
+                        top1000Results = store(local_dir / s"${baseString}.${test}.results.top1000.tsv"),
+                        top1000ResultsAnnot = store(local_dir / s"${baseString}.${test}.results.top1000.annot.tsv"),
+                        top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
+                        sigRegions = store(local_dir / s"${baseString}.${test}.results.sig.regions.tsv"),
+                        regPlotsBase = local_dir / s"${baseString}.${test}.results.sig.regplots",
+                        regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
                       )
-                    }.toMap
-                  )
+                    )
                 }.toMap
-              }
-              catch {
-                case x: CfgException =>
-                  println(s"""skipping split assoc test by group due to missing group file: ${gFile}""")
-                  Map[String, ModelAssocGroupBase]()
-              }
-            case _ => Map[String, ModelAssocGroupBase]()
-          }
-        case false => Map[String, ModelAssocGroupBase]()
+              case false => Map[String, ModelHailAssocSingle]()
+            }
+          ))
+        case false => None
       },
-      assocMaskGroupEpacts = model.runAssoc match {
+      epacts = model.assocPlatforms.contains("epacts") match {
         case true =>
-          masksAvailable.size match {
-            case 0 => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
-            case _ =>
-              schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
-                case true => 
-                  modelGroupEpactsTests.map { test =>
-                    test ->
-                      phenoMasksAvailable.map { mask =>
-                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
-                        val l = fileToList(gFile).map(e => e.split("\t")(0))
-                        mask ->
-                          ModelAssocGroupBase(
-                            results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
-                            top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
-                            //groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
-                            qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
-                            mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
-                            groups = l.map { group =>
-                              group -> ModelAssocGroup(
-                                results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
-                                groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
-                              )
+          Some(ModelEpacts(
+            ped = store(local_dir / s"${baseString}.epacts.ped"),
+            modelVars = store(local_dir / s"${baseString}.epacts.model.vars"),
+            assocGroup = model.runAssoc match {
+              case true =>
+                masksAvailable.size match {
+                  case 0 => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
+                  case _ =>
+                    schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
+                      case true => 
+                        modelGroupEpactsTests.map { test =>
+                          test ->
+                            phenoMasksAvailable.map { mask =>
+                              val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
+                              val l = fileToList(gFile).map(e => e.split("\t")(0))
+                              mask ->
+                                ModelAssocGroupBase(
+                                  results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
+                                  summary = ModelGroupSummary(
+                                    top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
+                                    qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
+                                    mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png")
+                                  ),
+                                  groups = l.map { group =>
+                                    group -> ModelEpactsAssocGroup(
+                                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
+                                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
+                                    )
+                                  }.toMap
+                                )
                             }.toMap
-                          )
-                      }.toMap
-                  }.toMap
-                case false =>
-                  modelGroupEpactsTests.map { test =>
-                    test ->
-                      masksAvailable.map { mask =>
-                        val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
-                        val l = fileToList(gFile).map(e => e.split("\t")(0))
-                        mask ->
-                          ModelAssocGroupBase(
-                            results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
-                            top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
-                            //groupFile = store(local_dir / s"${baseString}.${test}.${mask.id}.groupfile.tsv"),
-                            qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
-                            mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
-                            groups = l.map { group =>
-                              group -> ModelAssocGroup(
-                                results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
-                                groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
-                              )
+                        }.toMap
+                      case false =>
+                        modelGroupEpactsTests.map { test =>
+                          test ->
+                            masksAvailable.map { mask =>
+                              val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
+                              val l = fileToList(gFile).map(e => e.split("\t")(0))
+                              mask ->
+                                ModelAssocGroupBase(
+                                  results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.tsv.bgz"),
+                                  summary = ModelGroupSummary(
+                                    top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
+                                    qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
+                                    mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png")
+                                  ),
+                                  groups = l.map { group =>
+                                    group -> ModelEpactsAssocGroup(
+                                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.results.tsv.bgz"),
+                                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test}.${mask.id}.${group}.groupfile.tsv")
+                                    )
+                                  }.toMap
+                                )
                             }.toMap
-                          )
-                      }.toMap
-                  }.toMap
-              }
-          }
-        case false => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
+                        }.toMap
+                    }
+                }
+              case false => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
+            }
+          ))
+        case false => None
+      },
+      regenie = model.assocPlatforms.contains("regenie") match {
+        case true => 
+          Some(ModelRegenie(
+            pheno = store(local_dir / s"${baseString}.regenie.pheno.tsv"),
+            covars = store(local_dir / s"${baseString}.regenie.covars.tsv"),
+            assocSingle = model.runAssoc match {
+              case true =>
+                modelSingleRegenieTests.map { test =>
+                  test -> 
+                    ModelRegenieAssocSingle(
+
+
+                      // need to figure out what outputs need to be tracked for single and group assoc
+                      //
+                      //results: MultiStore(
+                      //  local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
+                      //  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
+                      //),
+                      //resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
+                      //summary = ModelSingleSummary(
+                      //  qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
+                      //  qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
+                      //  qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
+                      //  qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
+                      //  mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
+                      //  top1000Results = store(local_dir / s"${baseString}.${test}.results.top1000.tsv"),
+                      //  top1000ResultsAnnot = store(local_dir / s"${baseString}.${test}.results.top1000.annot.tsv"),
+                      //  top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
+                      //  sigRegions = store(local_dir / s"${baseString}.${test}.results.sig.regions.tsv"),
+                      //  regPlotsBase = local_dir / s"${baseString}.${test}.results.sig.regplots",
+                      //  regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
+                      //)
+
+
+
+                    )
+                }.toMap
+              case false => Map[String, ModelAssocSingle]()
+            },
+
+
+
+            assocGroup = 
+
+
+
+
+          )
+        case false => None
       }
     )
   }.toMap
