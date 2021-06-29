@@ -132,7 +132,7 @@ object ProjectConfig extends loamstream.LoamFile {
     qcSampleFileSrSex: String,
     qcSampleFileMaleCode: String,
     qcSampleFileFemaleCode: String,
-    exportCleanVcf: Boolean) extends Debug
+    exportCleanBgen: Boolean) extends Debug
   
   final case class ConfigCohort(
     id: String,
@@ -693,7 +693,7 @@ object ProjectConfig extends loamstream.LoamFile {
           val qcConfigArrays = requiredObjList(config = qcConfig, field = "arrays")
           val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
 
-          val exportCleanVcf = requiredBool(config = qcConfigThisArray, field = "exportCleanVcf")
+          val exportCleanBgen = requiredBool(config = qcConfigThisArray, field = "exportCleanBgen")
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
@@ -712,7 +712,7 @@ object ProjectConfig extends loamstream.LoamFile {
             qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),
             qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),
             qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),
-            exportCleanVcf = exportCleanVcf
+            exportCleanBgen = exportCleanBgen
           )
 
         }

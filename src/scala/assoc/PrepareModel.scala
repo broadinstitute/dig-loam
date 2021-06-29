@@ -179,11 +179,11 @@ object PrepareModel extends loamstream.LoamFile {
             --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
             --covars "${configModel.covars}"
-            --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get}
-            --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}"""
+            --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
+            --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsEpacts.get)
-            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pedEpacts.get}".split("/").last)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}".split("/").last)
         
         }
     
@@ -208,11 +208,11 @@ object PrepareModel extends loamstream.LoamFile {
             --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
             --covars "${configModel.covars}"
-            --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoRegenie.get}
-            --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).covarsRegenie.get}"""
+            --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
+            --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoRegenie.get, modelStores((configModel, configSchema, configCohorts, configMeta)).covarsRegenie.get)
-            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoRegenie.get}".split("/").last)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}".split("/").last)
         
         }
     

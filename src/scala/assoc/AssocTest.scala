@@ -13,7 +13,6 @@ object AssocTest extends loamstream.LoamFile {
   import DirTree._
   import AssocSingleHail._
   import AssocGroupEpacts._
-  import AssocMaskGroupEpacts._
   
   def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
@@ -33,6 +32,16 @@ object AssocTest extends loamstream.LoamFile {
               googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get)
             
             }
+
+            for {
+            
+              test <- modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle.keys
+            
+            } yield {
+            
+              AssocSingleHail(test, configModel, configSchema, configCohorts, None)
+            
+            }
         
           case false => ()
         
@@ -41,58 +50,48 @@ object AssocTest extends loamstream.LoamFile {
       case _ => ()
 
     }
-  
-    for {
-    
-      test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocSingleHail.keys
-    
-    } yield {
-
-      AssocSingleHail(test, configModel, configSchema, configCohorts, None)
-  
-    }
 
     configModel.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts").size match {
 
       case n if n > 0 =>
       
-        val groupCountMap = scala.collection.mutable.Map[String, Int]()
-        
-        val gFile = schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
-          case true => s"""${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}"""
-          case false => s"""${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.base.local.get.toString.split("@")(1)}"""
-        }
-        try {
-          val gFileList = fileToList(checkPath(gFile))
-          println(s"""calculating group variant counts for group file: ${gFile}""")
-          for {
-            group <- gFileList
-          } yield {
-            val geneName = group.split("\t")(0)
-            val N = group.split("\t").tail.size
-            groupCountMap(geneName) = N
-          }
-        }
-        catch {
-          case x: CfgException =>
-            println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
-        }
-
-        for {
-        
-          test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocGroupEpacts.keys
-        
-        } yield {
-        
-          AssocGroupEpacts(test, groupCountMap, configModel, configSchema, configCohorts, None)
-        
-        }
+        //val groupCountMap = scala.collection.mutable.Map[String, Int]()
+        //
+        //val gFile = schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
+        //  case true => s"""${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).base.local.get.toString.split("@")(1)}"""
+        //  case false => s"""${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.base.local.get.toString.split("@")(1)}"""
+        //}
+        //try {
+        //  val gFileList = fileToList(checkPath(gFile))
+        //  println(s"""calculating group variant counts for group file: ${gFile}""")
+        //  for {
+        //    group <- gFileList
+        //  } yield {
+        //    val geneName = group.split("\t")(0)
+        //    val N = group.split("\t").tail.size
+        //    groupCountMap(geneName) = N
+        //  }
+        //}
+        //catch {
+        //  case x: CfgException =>
+        //    println(s"""skipping group variant count calculation due to missing group file: ${gFile}""")
+        //}
+        //
+        //for {
+        //
+        //  test <- modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup.keys
+        //
+        //} yield {
+        //
+        //  AssocGroupEpacts(test, groupCountMap, configModel, configSchema, configCohorts, None)
+        //
+        //}
 
         configSchema.masks.size match {
 
-          case n if n > 0 =>
+          case m if m > 0 =>
 
-            val maskGroupCountMap = scala.collection.mutable.Map[String, Int]()
+            val groupCountMap = scala.collection.mutable.Map[String, Int]()
             
             schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
               case true => 
@@ -108,13 +107,13 @@ object AssocTest extends loamstream.LoamFile {
                     } yield {
                       val geneName = group.split("\t")(0)
                       val N = group.split("\t").tail.size
-  	            	maskGroupCountMap.keys.toList.contains(geneName) match {
+  	            	groupCountMap.keys.toList.contains(geneName) match {
                         case true =>
-                          maskGroupCountMap(geneName) < N match {
-                            case true => maskGroupCountMap(geneName) = N
+                          groupCountMap(geneName) < N match {
+                            case true => groupCountMap(geneName) = N
                             case false => ()
                           }
-                        case false => maskGroupCountMap(geneName) = N
+                        case false => groupCountMap(geneName) = N
                       }
                     }
                   }
@@ -136,13 +135,13 @@ object AssocTest extends loamstream.LoamFile {
                     } yield {
                       val geneName = group.split("\t")(0)
                       val N = group.split("\t").tail.size
-  	            	maskGroupCountMap.keys.toList.contains(geneName) match {
+  	            	groupCountMap.keys.toList.contains(geneName) match {
                         case true =>
-                          maskGroupCountMap(geneName) < N match {
-                            case true => maskGroupCountMap(geneName) = N
+                          groupCountMap(geneName) < N match {
+                            case true => groupCountMap(geneName) = N
                             case false => ()
                           }
-                        case false => maskGroupCountMap(geneName) = N
+                        case false => groupCountMap(geneName) = N
                       }
                     }
                   }
@@ -155,11 +154,11 @@ object AssocTest extends loamstream.LoamFile {
             
             for {
             
-              test <- modelStores((configModel, configSchema, configCohorts, configMeta)).assocMaskGroupEpacts.keys
+              test <- modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup.keys
             
             } yield {
             
-              AssocMaskGroupEpacts(test, maskGroupCountMap, configModel, configSchema, configCohorts, None)
+              AssocGroupEpacts(test, groupCountMap, configModel, configSchema, configCohorts, None)
             
             }
 

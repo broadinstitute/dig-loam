@@ -59,7 +59,8 @@ object SchemaStores extends loamstream.LoamFile {
     //regenieMasks: SchemaBasePhenoStore,
     //regenieHailLog: SchemaBasePhenoStore,
     vcf: Option[MultiPathVcf],
-    vcfHailLog: MultiStore
+    vcfHailLog: MultiStore,
+    bgen: Option[MultiPathBgen]
   )
   
   val schemaStores = {
@@ -521,8 +522,8 @@ object SchemaStores extends loamstream.LoamFile {
       },
       vcf = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
         case n if n > 0 =>
-          (schema.knockoutFilters, array.exportCleanVcf) match {
-            case (Some(_), _) | (_, false) =>
+          schema.knockoutFilters match {
+            case Some(_) =>
               Some(MultiPathVcf(
                 base = MultiPath(
                   local = Some(local_dir / baseString),
@@ -541,21 +542,44 @@ object SchemaStores extends loamstream.LoamFile {
       vcfHailLog = MultiStore(
         local = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
           case n if n > 0 =>
-            (schema.knockoutFilters, array.exportCleanVcf, projectConfig.hailCloud) match {
-              case (Some(_), _, false) | (_, false, false) => Some(store(local_dir / s"${baseString}.vcf.hail.log"))
+            (schema.knockoutFilters, projectConfig.hailCloud) match {
+              case (Some(_), false) => Some(store(local_dir / s"${baseString}.vcf.hail.log"))
               case _ => None
             }
           case _ => None
         },
         google = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
           case n if n > 0 =>
-            (schema.knockoutFilters, array.exportCleanVcf, projectConfig.hailCloud) match {
-              case (Some(_), _, true) | (_, false, true) => Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
+            (schema.knockoutFilters, projectConfig.hailCloud) match {
+              case (Some(_), true) => Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
               case _ => None
             }
           case _ => None
         }
-      )
+      ),
+      bgen = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+        case n if n > 0 =>
+          (schema.knockoutFilters, array.exportCleanBgen) match {
+            case (Some(_), _) | (_, false) =>
+              Some(MultiPathBgen(
+                base = MultiPath(
+                  local = Some(local_dir / baseString),
+                  google = projectConfig.hailCloud match { case true => Some(cloud_dir.get / baseString); case false => None }
+                ),
+                data = MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.bgen")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.bgen")); case false => None }
+                ),
+                sample = MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.sample")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.sample")); case false => None }
+                ),
+                bgi = MultiStore(local = Some(store(local_dir / s"${baseString}.bgen.bgi")), google = None)
+              ))
+            case _ => None
+          }
+        case _ => None
+      }
     )
   }.toMap
   

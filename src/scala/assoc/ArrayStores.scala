@@ -9,7 +9,8 @@ object ArrayStores extends loamstream.LoamFile {
   import Collections._
   
   final case class Array(
-    cleanVcf: Option[MultiPathVcf],
+    cleanVcf: MultiPathVcf,
+    cleanBgen: Option[MultiPathBgen],
     refMtOrig: MultiStore,
     refMt: MultiStore,
     refSitesVcf: Store,
@@ -32,18 +33,37 @@ object ArrayStores extends loamstream.LoamFile {
     val qcBaseDir = path(checkPath(arrayCfg.qc.baseDir))
     val qcCloudHome = arrayCfg.qcHailCloud match { case true => Some(uri(checkURI(arrayCfg.qcCloudHome.get))); case false => None }
 
-    val cleanVcf = arrayCfg.exportCleanVcf match {
+    val cleanVcf = MultiPathVcf(
+      base = MultiPath(
+        local = Some(qcBaseDir / s"loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean"),
+        google = None
+      ),
+      data = MultiStore(
+        local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz"))).asInput),
+        google = None
+      ),
+      tbi = MultiStore(local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz.tbi"))).asInput), google = None)
+    )
+
+    val cleanBgen = arrayCfg.exportCleanBgen match {
       case true =>
-        Some(MultiPathVcf(
+        Some(MultiPathBgen(
           base = MultiPath(
             local = Some(qcBaseDir / s"loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean"),
             google = None
           ),
           data = MultiStore(
-            local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz"))).asInput),
+            local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.bgen"))).asInput),
             google = None
           ),
-          tbi = MultiStore(local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.vcf.bgz.tbi"))).asInput), google = None)
+          sample = MultiStore(
+            local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.sample"))).asInput),
+            google = None
+          ),
+          bgi = MultiStore(
+            local = Some(store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/clean/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.clean.bgen.bgi"))).asInput),
+            google = None
+          )
         ))
       case _ => None
     }
@@ -151,6 +171,7 @@ object ArrayStores extends loamstream.LoamFile {
 
     arrayCfg -> Array(
       cleanVcf = cleanVcf,
+      cleanBgen = cleanBgen,
       refMtOrig = refMtOrig,
       refMt = refMt,
       refSitesVcf = store(path(checkPath(s"${qcBaseDir}/loam_out/data/array/${arrayCfg.qc.arrayId}/annotate/${arrayCfg.qcProjectId}.${arrayCfg.qc.arrayId}.ref.sites_only.vcf.bgz"))).asInput,

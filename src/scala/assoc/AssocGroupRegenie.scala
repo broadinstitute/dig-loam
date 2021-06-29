@@ -1,4 +1,4 @@
-object AssocMaskGroupRegenie extends loamstream.LoamFile {
+object AssocGroupRegenie extends loamstream.LoamFile {
 
   /**
    * Run Masked Group Assoc Analysis via Regenie
@@ -12,7 +12,7 @@ object AssocMaskGroupRegenie extends loamstream.LoamFile {
   import ProjectStores._
   import DirTree._
   
-  def AssocMaskGroupRegenie(test: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def AssocGroupRegenie(test: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
   
     //val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
     //
