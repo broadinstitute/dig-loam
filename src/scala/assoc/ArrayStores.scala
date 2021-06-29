@@ -167,7 +167,7 @@ object ArrayStores extends loamstream.LoamFile {
           }
         case false => None
       }
-    )
+    )   
 
     arrayCfg -> Array(
       cleanVcf = cleanVcf,

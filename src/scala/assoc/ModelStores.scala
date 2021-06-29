@@ -35,6 +35,13 @@ object ModelStores extends loamstream.LoamFile {
     summary: ModelSingleSummary
   )
 
+  final case class ModelRegenieStep1(
+    base: Path,
+    log: Store,
+    loco: Store,
+    predList: Store
+  )
+
   //final case class ModelRegenieAssocSingle(
   //  
   //)
@@ -44,9 +51,9 @@ object ModelStores extends loamstream.LoamFile {
     groupFile: Store
   )
 
-  final case class ModelRegenieAssocGroup(
-    results: Store
-  )
+  //final case class ModelRegenieAssocGroup(
+  //  results: Store
+  //)
   
   final case class ModelAssocGroupBase(
     results: Store,
@@ -66,7 +73,8 @@ object ModelStores extends loamstream.LoamFile {
 
   final case class ModelRegenie(
     pheno: Store,
-    covars: Store
+    covars: Store,
+    step1: ModelRegenieStep1
     //assocSingle: Map[String, ModelRegenieAssocSingle],
     //assocGroup: Map[String, ModelRegenieAssocGroup]
   )
@@ -330,7 +338,13 @@ object ModelStores extends loamstream.LoamFile {
         case true => 
           Some(ModelRegenie(
             pheno = store(local_dir / s"${baseString}.regenie.pheno.tsv"),
-            covars = store(local_dir / s"${baseString}.regenie.covars.tsv")
+            covars = store(local_dir / s"${baseString}.regenie.covars.tsv"),
+            step1 = ModelRegenieStep1(
+              base = local_dir / s"${baseString}.regenie.step1",
+              log = store(local_dir / s"${baseString}.regenie.step1.log"),
+              loco = store(local_dir / s"${baseString}.regenie.step1_1.loco"),
+              predList = store(local_dir / s"${baseString}.regenie.step1_pred.list")
+            )
             //assocSingle = model.runAssoc match {
             //  case true =>
             //    modelSingleRegenieTests.map { test =>

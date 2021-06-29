@@ -48,22 +48,12 @@ while :; do
 			fi
 			;;
 		--bt)
-			if [ "$2" ]; then
-				echo "ERROR: --bt does not allow arguments."
-				exit 1
-			else
-				bt=true
-				shift
-			fi
+			bt=true
+			#shift
 			;;
-        --lowmem)
-			if [ "$2" ]; then
-				echo "ERROR: --lowmem does not allow arguments."
-				exit 1
-			else
-				lowmem=true
-				shift
-			fi
+		--lowmem)
+			lowmem=true
+			#shift
 			;;
 		--out)
 			if [ "$2" ]; then
@@ -114,12 +104,13 @@ fi
 
 if [ $lowmem ]
 then
-	lowmemString="--lowmem --lowmem-prefix UKBB_EX_W2.ALL.T2D.regenie.tmp_rg"
+	lowmemString="--lowmem --lowmem-prefix ${out}.tmp_rg"
 else
 	lowmemString=""
 fi
 
 $regenie \
+--step 1 \
 --bed $bed \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
@@ -129,4 +120,11 @@ $lowmemString \
 --out $out \
 > $log
 
-exit 0
+if [ ! -f "${out}_1.loco" ]
+then
+	EXITCODE=1
+else
+	EXITCODE=0
+fi
+
+exit $EXITCODE

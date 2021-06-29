@@ -1,4 +1,4 @@
-object AssocGroupRegenie extends loamstream.LoamFile {
+object AssocRegenie extends loamstream.LoamFile {
 
   /**
    * Run Masked Group Assoc Analysis via Regenie
@@ -12,8 +12,38 @@ object AssocGroupRegenie extends loamstream.LoamFile {
   import ProjectStores._
   import DirTree._
   
-  def AssocGroupRegenie(test: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
-  
+  def AssocRegenieStep1(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+
+    val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+
+    val btString = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head.binary match {
+      case true => "--bt"
+      case false => ""
+    }
+
+    val lowmemString = projectConfig.regenieLowmem match {
+      case true => "--lowmem"
+      case false => ""
+    }
+
+    drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep1.cpus, mem = projectConfig.resources.regenieStep1.mem, maxRunTime = projectConfig.resources.regenieStep1.maxRunTime) {
+
+      cmd"""${utils.bash.shRegenieStep1}
+        --regenie ${utils.binary.binRegenie}
+        --bed ${arrayStores(array).prunedPlink.base}
+        --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
+        --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
+        --block-size ${projectConfig.regenieBlockSize.get}
+        ${btString}
+        ${lowmemString}
+        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
+        --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log}"""
+        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.loco, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}".split("/").last)
+
+    }
+
     //val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
     //
     //val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head

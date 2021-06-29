@@ -108,7 +108,8 @@ object ProjectConfig extends loamstream.LoamFile {
     midMemEpacts: ConfigMachine,
     highMemEpacts: ConfigMachine,
     locuszoom: ConfigMachine,
-    generateRegenieGroupfiles: ConfigMachine) extends Debug
+    generateRegenieGroupfiles: ConfigMachine,
+    regenieStep1: ConfigMachine) extends Debug
 
   final case class ConfigInputStore(
     local: Option[String],
@@ -240,6 +241,8 @@ object ProjectConfig extends loamstream.LoamFile {
     maxPCs: Int,
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
+    regenieBlockSize: Option[Int],
+    regenieLowmem: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
@@ -275,7 +278,8 @@ object ProjectConfig extends loamstream.LoamFile {
     imgTexLive: Path,
     imgEnsemblVep: Path,
     imgFlashPca: Path,
-    imgUmichStatgen: Path) extends Debug
+    imgUmichStatgen: Path,
+    imgRegenie: Path) extends Debug
   
   final case class Binary(
     binLiftOver: Path,
@@ -290,7 +294,8 @@ object ProjectConfig extends loamstream.LoamFile {
     binPdflatex: Path,
     binRscript: Path,
     binFlashPca: Path,
-    binEpacts: Path) extends Debug
+    binEpacts: Path,
+    binRegenie: Path) extends Debug
   
   final case class Python(
     pyAlignNon1kgVariants: Path,
@@ -358,7 +363,8 @@ object ProjectConfig extends loamstream.LoamFile {
     shFlashPca: Path,
     shEpacts: Path,
     shMergeResults: Path,
-    shRegPlot: Path
+    shRegPlot: Path,
+    shRegenieStep1: Path
     //shTopResultsAddGenes: Path
     ) extends Debug
   
@@ -425,6 +431,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
+      val regenieBlockSize = optionalInt(config = config, field = "regenieBlockSize", min = Some(100))
+      val regenieLowmem = requiredBool(config = config, field = "regenieLowmem", default = Some(true))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -534,6 +542,10 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         generateRegenieGroupfiles = {
           val thisConfig = requiredObj(config = config, field = "generateRegenieGroupfiles")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        regenieStep1 = {
+          val thisConfig = requiredObj(config = config, field = "regenieStep1")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -1236,6 +1248,8 @@ object ProjectConfig extends loamstream.LoamFile {
         maxPCs = maxPCs,
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
+        regenieBlockSize = regenieBlockSize,
+        regenieLowmem = regenieLowmem,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
@@ -1279,7 +1293,8 @@ object ProjectConfig extends loamstream.LoamFile {
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
-        imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg")
+        imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg"),
+        imgRegenie = path(s"${imagesDir}/regenie-v2.0.2.simg")
       )
   
       val binary = Binary(
@@ -1295,7 +1310,8 @@ object ProjectConfig extends loamstream.LoamFile {
         binPdflatex = path("/usr/local/bin/pdflatex"),
         binRscript = path("/usr/local/bin/Rscript"),
         binFlashPca = path("/usr/local/bin/flashpca"),
-        binEpacts = path("/usr/local/bin/epacts")
+        binEpacts = path("/usr/local/bin/epacts"),
+        binRegenie = path("/usr/local/bin/regenie")
       )
   
       val python = Python(
@@ -1364,7 +1380,8 @@ object ProjectConfig extends loamstream.LoamFile {
         shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
         shEpacts = path(s"${scriptsDir}/epacts.sh"),
         shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
-        shRegPlot = path(s"${scriptsDir}/regplot.sh")
+        shRegPlot = path(s"${scriptsDir}/regplot.sh"),
+        shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh")
         //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
       )
   

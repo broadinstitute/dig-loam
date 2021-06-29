@@ -13,6 +13,7 @@ object AssocTest extends loamstream.LoamFile {
   import DirTree._
   import AssocSingleHail._
   import AssocGroupEpacts._
+  import AssocRegenie._
   
   def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
@@ -168,6 +169,16 @@ object AssocTest extends loamstream.LoamFile {
       
       case _ => ()
 
+    }
+
+    configModel.tests.filter(e => e.split("\\.")(1) == "regenie").size match {
+
+      case n if n > 0 =>
+        
+        AssocRegenieStep1(configModel, configSchema, configCohorts, None)
+
+      case _ => ()
+        
     }
   
   }
