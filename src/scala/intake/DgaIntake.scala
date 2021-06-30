@@ -1,18 +1,14 @@
 import scala.concurrent.Future
 import scala.util.Success
 
-import org.broadinstitute.dig.aws.AWS
-import org.broadinstitute.dig.aws.config.AWSConfig
-import org.broadinstitute.dig.aws.config.S3Config
-import org.broadinstitute.dig.aws.config.emr.EmrConfig
-import org.broadinstitute.dig.aws.config.emr.SubnetId
 
 import loamstream.loam.LoamScriptContext
 import loamstream.loam.NativeTool
-import loamstream.util.AwsClient
+import loamstream.util.S3Client
 import loamstream.util.HttpClient.Auth
 import loamstream.loam.intake.dga.AnnotationType
 import loamstream.util.Loggable
+import loamstream.loam.intake.dga.AnnotationsSupport
 
 
 /**
@@ -32,9 +28,7 @@ object DgaIntake extends loamstream.LoamFile with Loggable {
     def auth: Auth = Auth(username = dgaUsername, password = dgaPassword)
     
     //Fail fast if any of these are unknown
-    def annotationTypesToIngest: Set[AnnotationType] = annotationTypes.map(AnnotationType.unsafeFromString).toSet
-
-    def apiUri: 
+    def annotationTypesToIngest: Set[AnnotationType] = annotationTypes.map(AnnotationType.tryFromString(_).get).toSet
   }
   
   private val params: Params = {
@@ -54,22 +48,9 @@ object DgaIntake extends loamstream.LoamFile with Loggable {
   
   info(s"Will ingest the following annotation types: ${annotationTypesToIngest}")
     
-  val awsClient = {
-    val bucketName: String = params.s3Bucket
-
-    val awsConfig: AWSConfig = {
-      //dummy values, except for the bucket name
-      AWSConfig(
-          S3Config(bucketName), 
-          EmrConfig("some-ssh-key-name", SubnetId("subnet-foo"))) 
-    }
+  val s3Client: S3Client = new S3Client.Default(params.s3Bucket)
     
-    val aws: AWS = new AWS(awsConfig)    
-    
-    new AwsClient.Default(aws)
-  }
-    
-  val annotations = Dga.Annotations.downloadAnnotations(url = URI.create(params.url))
+  val annotations = Dga.Annotations.downloadAnnotations(url = new URI(params.url))
         
   val ignoredAnnotationsStore = store("./out/ignored-annotations")
   val failedToParseAnnotationsStore = store("./out/bad-annotations")
@@ -96,10 +77,9 @@ object DgaIntake extends loamstream.LoamFile with Loggable {
         Future {
           Dga.Annotations.uploadAnnotatedDataset(
             Some(auth), 
-            awsClient, 
+            s3Client, 
             badBedRowsStore, 
-            append = true, 
-            yes = true)(annotation)
+            append = true)(annotation)
         }
       }
       
