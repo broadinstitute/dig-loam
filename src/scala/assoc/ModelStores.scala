@@ -215,7 +215,7 @@ object ModelStores extends loamstream.LoamFile {
       phenoPrelim = store(local_dir / s"${baseString}.pheno.prelim.tsv"),
       samplesAvailable = store(local_dir / s"${baseString}.samples.available.txt"),
       samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
-      phenoDistPlot = store(local_dir / s"${baseString}.pheno.distplot.pdf"),
+      phenoDistPlot = store(local_dir / s"${baseString}.pheno.distplot.png"),
       pcaBase = local_dir / s"${baseString}.pca",
       pcaScores = store(local_dir / s"${baseString}.pca.scores.tsv"),
       pcaEigenVecs = store(local_dir / s"${baseString}.pca.eigenvecs.tsv"),
