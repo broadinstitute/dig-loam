@@ -77,7 +77,7 @@ object PrepareRegenie extends loamstream.LoamFile {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
           ${masksString}
-          --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
+          --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
           --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get}
           --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations.phenos(pheno).local.get}
           --masks-out ${schemaStores((configSchema, configCohorts)).regenie.get.masks.phenos(pheno).local.get}"""
