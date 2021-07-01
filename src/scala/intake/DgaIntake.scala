@@ -45,6 +45,8 @@ object DgaIntake extends loamstream.LoamFile with Loggable {
   val annotationTypesToIngest: Set[AnnotationType] = params.annotationTypesToIngest
   
   require(annotationTypesToIngest.nonEmpty, s"Expected at least one annotation type")
+
+  info(s"S3 BUCKET: '${params.s3Bucket}'")
   
   info(s"Will ingest the following annotation types: ${annotationTypesToIngest}")
     
@@ -62,8 +64,9 @@ object DgaIntake extends loamstream.LoamFile with Loggable {
     collect { case Success(a) => a }.
     filter(Dga.Annotations.Predicates.isUploadable(ignoredAnnotationsStore, append = true)).
     filter(
-        Dga.Annotations.Predicates.hasAnnotationType(annotationTypesToIngest, ignoredAnnotationsStore, append = true)).
-    filter(Dga.Annotations.Predicates.hasAnyBeds(logTo = missingBedStore, append = true, auth = Some(auth)))
+        Dga.Annotations.Predicates.hasAnnotationType(annotationTypesToIngest, ignoredAnnotationsStore, append = true))
+    //Skip this last filter until getting file sizes of remote .beds works again.
+    //filter(Dga.Annotations.Predicates.hasAnyBeds(logTo = missingBedStore, append = true, auth = Some(auth))).
   
   val parallelism: Int = System.getProperty("DGA_INTAKE_PARALLELISM", "1").toInt
   
