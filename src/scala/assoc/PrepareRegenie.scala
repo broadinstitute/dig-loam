@@ -73,7 +73,7 @@ object PrepareRegenie extends loamstream.LoamFile {
         case _ => ""
       }
       
-      drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+      drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
           ${masksString}
