@@ -3,6 +3,8 @@
 target
 project/project
 project/target
+project/metals.sbt
+project/.bloop
 /bin/
 .classpath
 .project
@@ -11,3 +13,5 @@ project/target
 *.pyc
 .vscode
 .metals
+.bloop
+
