@@ -8,6 +8,14 @@ object ModelStores extends loamstream.LoamFile {
   import Collections._
   import SchemaStores._
 
+  final case class ModelResidualPlots(
+    base: Path,
+    resVsFit: Store,
+    resVsLev: Store,
+    sqrtresVsFit: Store,
+    qq: Store
+  )
+
   final case class ModelSingleSummary(
     qqPlot: Store,
     qqPlotLowMaf: Store,
@@ -97,6 +105,7 @@ object ModelStores extends loamstream.LoamFile {
     pcaLog: Store,
     pheno: MultiStore,
     pcsInclude: MultiStore,
+    residualPlots: ModelResidualPlots,
     hail: Option[ModelHail],
     epacts: Option[ModelEpacts],
     regenie: Option[ModelRegenie]
@@ -232,6 +241,13 @@ object ModelStores extends loamstream.LoamFile {
       pcsInclude = MultiStore(
         local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pcs.include.txt")); case false => None }
+      ),
+      residualPlots = ModelResidualPlots(
+        base = local_dir / s"${baseString}.residuals",
+        resVsFit = store(local_dir / s"${baseString}.residuals.res_vs_fit.png"),
+        resVsLev = store(local_dir / s"${baseString}.residuals.res_vs_lev.png"),
+        sqrtresVsFit = store(local_dir / s"${baseString}.residuals.sqrtres_vs_fit.png"),
+        qq = store(local_dir / s"${baseString}.residuals.qq.png")
       ),
       hail = model.assocPlatforms.contains("hail") match {
         case true =>

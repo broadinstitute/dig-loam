@@ -386,7 +386,8 @@ object ProjectConfig extends loamstream.LoamFile {
     rConvertPhenoToEpactsPed: Path,
     rConvertPhenoToRegeniePhenoCovars: Path,
     rTop20: Path,
-    rRawVariantsSummaryTable: Path
+    rRawVariantsSummaryTable: Path,
+    rNullModelResidualPlot: Path
     //rAncestryClusterTable: Path,
     //rPcair: Path,
     //rUpsetplotBimFam: Path,
@@ -1403,7 +1404,8 @@ object ProjectConfig extends loamstream.LoamFile {
         rConvertPhenoToEpactsPed = path(s"${scriptsDir}/convert_pheno_to_epacts_ped.r"),
         rConvertPhenoToRegeniePhenoCovars = path(s"${scriptsDir}/convert_pheno_to_regenie_pheno_covars.r"),
         rTop20 = path(s"${scriptsDir}/top20.r"),
-        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r")
+        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
+        rNullModelResidualPlot = path(s"${scriptsDir}/null_model_residual_plot.r")
         //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         //rPcair = path(s"${scriptsDir}/pcair.r"),
         //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),

@@ -82,6 +82,11 @@ object PrepareModel extends loamstream.LoamFile {
       case Some(s) => configModel.trans.get
       case None => "N/A"
     }
+
+    val modelType = pheno.binary match {
+      case true => "binary"
+      case false => "quantitative"
+    }
     
     drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.flashPca.cpus, mem = projectConfig.resources.flashPca.mem, maxRunTime = projectConfig.resources.flashPca.maxRunTime) {
     
@@ -105,6 +110,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${configModel.pheno}
         ${array.phenoFileId}
         "${trans}"
+        ${modelType}
         "${configModel.covars}"
         ${projectConfig.minPCs}
         ${projectConfig.maxPCs}
@@ -217,6 +223,27 @@ object PrepareModel extends loamstream.LoamFile {
         }
     
       case false => ()
+    
+    }
+
+    val binary = pheno.binary match {
+      case true => "--binary"
+      case false => ""
+    }
+    
+    drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.standardR.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
+    
+      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        ${utils.r.rNullModelResidualPlot}
+        --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+        --pheno-col ${configModel.pheno}
+        ${binary}
+        --covars "${configModel.covars}"
+        --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.base}"""
+        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.sqrtresVsFit)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.base}".split("/").last)
     
     }
 

@@ -19,14 +19,15 @@ preliminaryPheno=${16}
 phenotype=${17}
 iidCol=${18}
 trans=${19}
-covars=${20}
-minPcs=${21}
-maxPcs=${22}
-nStddevs=${23}
-phenoFile=${24}
-pcsIncludeFile=${25}
-outlierFile=${26}
-mem=${27}
+modelType=${20}
+covars=${21}
+minPcs=${22}
+maxPcs=${23}
+nStddevs=${24}
+phenoFile=${25}
+pcsIncludeFile=${26}
+outlierFile=${27}
+mem=${28}
 
 echo "binFlashpca: $binFlashpca"
 echo "binRscript: $binRscript"
@@ -47,6 +48,7 @@ echo "preliminaryPheno: $preliminaryPheno"
 echo "phenotype: $phenotype"
 echo "iidCol: $iidCol"
 echo "trans: $trans"
+echo "modelType: $modelType"
 echo "covars: $covars"
 echo "minPcs: $minPcs"
 echo "maxPcs: $maxPcs"
@@ -75,6 +77,13 @@ $binFlashpca \
 --outpve ${outPrefix}.tmp.1.outpve \
 --outmeansd ${outPrefix}.tmp.1.outmeansd
 
+if [ "$modelType" == "binary" ]
+then
+	modelTypeFlag="--binary"
+else
+	modelTypeFlag=""
+fi
+
 ## use r script to check for outliers and generate phenotype file
 $binRscript --vanilla --verbose $rScript \
 --pheno-in $preliminaryPheno \
@@ -82,6 +91,7 @@ $binRscript --vanilla --verbose $rScript \
 --pcs-in ${outPrefix}.tmp.1.outpc \
 --iid-col $iidCol \
 --trans "$trans" \
+$modelTypeFlag \
 --covars "$covars" \
 --min-pcs $minPcs \
 --max-pcs $maxPcs \
@@ -133,6 +143,7 @@ if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 		--pcs-in ${outPrefix}.tmp.${i}.outpc \
 		--iid-col $iidCol \
 		--trans "$trans" \
+        $modelTypeFlag \
 		--covars "$covars" \
 		--min-pcs $minPcs \
 		--max-pcs $maxPcs \
