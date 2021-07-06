@@ -50,18 +50,24 @@ object ModelStores extends loamstream.LoamFile {
     predList: Store
   )
 
-  //final case class ModelRegenieAssocSingle(
-  //  
-  //)
+  final case class ModelRegenieAssocSingle(
+    base: Path,
+    log: Store,
+    results: Store,
+    resultsTbi: Store,
+    summary: ModelSingleSummary
+  )
   
   final case class ModelEpactsAssocGroup(
     results: Store,
     groupFile: Store
   )
 
-  //final case class ModelRegenieAssocGroup(
-  //  results: Store
-  //)
+  final case class ModelRegenieAssocGroup(
+    base: Path,
+    log: Store,
+    results: Store
+  )
   
   final case class ModelAssocGroupBase(
     results: Store,
@@ -82,9 +88,9 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelRegenie(
     pheno: Store,
     covars: Store,
-    step1: ModelRegenieStep1
-    //assocSingle: Map[String, ModelRegenieAssocSingle],
-    //assocGroup: Map[String, ModelRegenieAssocGroup]
+    step1: ModelRegenieStep1,
+    assocSingle: Map[String, ModelRegenieAssocSingle],
+    assocGroup: Map[String, ModelRegenieAssocGroup]
   )
   
   final case class Model(
@@ -360,49 +366,45 @@ object ModelStores extends loamstream.LoamFile {
               log = store(local_dir / s"${baseString}.regenie.step1.log"),
               loco = store(local_dir / s"${baseString}.regenie.step1_1.loco"),
               predList = store(local_dir / s"${baseString}.regenie.step1_pred.list")
-            )
-            //assocSingle = model.runAssoc match {
-            //  case true =>
-            //    modelSingleRegenieTests.map { test =>
-            //      test -> 
-            //        ModelRegenieAssocSingle(
-            //
-            //
-            //          // need to figure out what outputs need to be tracked for single and group assoc
-            //          //
-            //          //results: MultiStore(
-            //          //  local = Some(store(local_dir / s"${baseString}.${test}.results.tsv.bgz")),
-            //          //  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test}.results.tsv.bgz")); case false => None }
-            //          //),
-            //          //resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
-            //          //summary = ModelSingleSummary(
-            //          //  qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
-            //          //  qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
-            //          //  qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
-            //          //  qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
-            //          //  mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
-            //          //  top1000Results = store(local_dir / s"${baseString}.${test}.results.top1000.tsv"),
-            //          //  top1000ResultsAnnot = store(local_dir / s"${baseString}.${test}.results.top1000.annot.tsv"),
-            //          //  top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
-            //          //  sigRegions = store(local_dir / s"${baseString}.${test}.results.sig.regions.tsv"),
-            //          //  regPlotsBase = local_dir / s"${baseString}.${test}.results.sig.regplots",
-            //          //  regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
-            //          //)
-            //
-            //
-            //
-            //        )
-            //    }.toMap
-            //  case false => Map[String, ModelAssocSingle]()
-            //},
-            //
-            //
-            //
-            //assocGroup = 
-            //
-            //
-            //
-            //
+            ),
+            assocSingle = model.runAssoc match {
+              case true =>
+                modelSingleRegenieTests.map { test =>
+                  test -> 
+                    ModelRegenieAssocSingle(
+                      base = local_dir / s"${baseString}.${test}",
+                      log = store(local_dir / s"${baseString}.${test}.log"),
+                      results = store(local_dir / s"${baseString}.${test}.results.tsv.bgz"),
+                      resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
+                      summary = ModelSingleSummary(
+                        qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
+                        qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
+                        qqPlotMidMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.midmaf.png"),
+                        qqPlotHighMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.highmaf.png"),
+                        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
+                        top1000Results = store(local_dir / s"${baseString}.${test}.results.top1000.tsv"),
+                        top1000ResultsAnnot = store(local_dir / s"${baseString}.${test}.results.top1000.annot.tsv"),
+                        top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test}.results.top20.annot.aligned_risk.tsv"),
+                        sigRegions = store(local_dir / s"${baseString}.${test}.results.sig.regions.tsv"),
+                        regPlotsBase = local_dir / s"${baseString}.${test}.results.sig.regplots",
+                        regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
+                      )
+                    )
+                }.toMap
+              case false => Map[String, ModelRegenieAssocSingle]()
+            },
+            assocGroup = model.runAssoc match {
+              case true =>
+                modelGroupRegenieTests.map { test =>
+                  test -> 
+                    ModelRegenieAssocGroup(
+                      base = local_dir / s"${baseString}.${test}",
+                      log = store(local_dir / s"${baseString}.${test}.log"),
+                      results = store(local_dir / s"${baseString}.${test}.results.tsv.bgz")
+                    )
+                }.toMap
+              case false => Map[String, ModelRegenieAssocGroup]()
+            }
           ))
         case false => None
       }

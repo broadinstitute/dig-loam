@@ -2,7 +2,9 @@ FROM docker.pkg.github.com/rgcgithub/regenie/regenie:v2.0.2.gz
 
 # install locales
 RUN apt-get update && \
-	apt-get -y install locales && \
+	apt-get -y install locales tabix && \
+    ln -s /usr/bin/tabix /usr/local/bin/tabix && \
+	ln -s /usr/bin/bgzip /usr/local/bin/bgzip && \
 	apt-get clean && \
 	rm -rf /var/lib/apt/lists/*
 

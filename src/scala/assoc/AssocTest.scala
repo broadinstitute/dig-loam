@@ -180,6 +180,42 @@ object AssocTest extends loamstream.LoamFile {
       case _ => ()
         
     }
+
+    configModel.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "regenie").size match {
+
+      case n if n > 0 =>
+
+        for {
+           
+          test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle.keys
+        
+        } yield {
+
+          AssocRegenieStep2Single(test, configModel, configSchema, configCohorts, None)
+
+        }
+
+      case _ => ()
+        
+    }
+
+    configModel.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "regenie").size match {
+
+      case n if n > 0 =>
+
+        for {
+           
+          test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup.keys
+        
+        } yield {
+
+          AssocRegenieStep2Group(test, configModel, configSchema, configCohorts, None)
+
+        }
+
+      case _ => ()
+        
+    }
   
   }
 

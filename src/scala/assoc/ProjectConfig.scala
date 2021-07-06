@@ -109,7 +109,9 @@ object ProjectConfig extends loamstream.LoamFile {
     highMemEpacts: ConfigMachine,
     locuszoom: ConfigMachine,
     generateRegenieGroupfiles: ConfigMachine,
-    regenieStep1: ConfigMachine) extends Debug
+    regenieStep1: ConfigMachine,
+    regenieStep2Single: ConfigMachine,
+    regenieStep2Group: ConfigMachine) extends Debug
 
   final case class ConfigInputStore(
     local: Option[String],
@@ -295,7 +297,8 @@ object ProjectConfig extends loamstream.LoamFile {
     binRscript: Path,
     binFlashPca: Path,
     binEpacts: Path,
-    binRegenie: Path) extends Debug
+    binRegenie: Path,
+    binBgzip: Path) extends Debug
   
   final case class Python(
     pyAlignNon1kgVariants: Path,
@@ -364,7 +367,9 @@ object ProjectConfig extends loamstream.LoamFile {
     shEpacts: Path,
     shMergeResults: Path,
     shRegPlot: Path,
-    shRegenieStep1: Path
+    shRegenieStep1: Path,
+    shRegenieStep2Single: Path,
+    shRegenieStep2Group: Path
     //shTopResultsAddGenes: Path
     ) extends Debug
   
@@ -547,6 +552,14 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         regenieStep1 = {
           val thisConfig = requiredObj(config = config, field = "regenieStep1")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        regenieStep2Single = {
+          val thisConfig = requiredObj(config = config, field = "regenieStep2Single")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        regenieStep2Group = {
+          val thisConfig = requiredObj(config = config, field = "regenieStep2Group")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -1312,7 +1325,8 @@ object ProjectConfig extends loamstream.LoamFile {
         binRscript = path("/usr/local/bin/Rscript"),
         binFlashPca = path("/usr/local/bin/flashpca"),
         binEpacts = path("/usr/local/bin/epacts"),
-        binRegenie = path("/usr/local/bin/regenie")
+        binRegenie = path("/usr/local/bin/regenie"),
+        binBgzip = path("/usr/local/bin/bgzip")
       )
   
       val python = Python(
@@ -1382,7 +1396,9 @@ object ProjectConfig extends loamstream.LoamFile {
         shEpacts = path(s"${scriptsDir}/epacts.sh"),
         shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
         shRegPlot = path(s"${scriptsDir}/regplot.sh"),
-        shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh")
+        shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh"),
+        shRegenieStep2Single = path(s"${scriptsDir}/regenie.step2.single.sh"),
+        shRegenieStep2Group = path(s"${scriptsDir}/regenie.step2.group.sh")
         //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
       )
   
