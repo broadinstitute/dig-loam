@@ -153,7 +153,7 @@ def main(args=None):
 	def logistic_regression(mt, test):
 		print("running logistic_regression (" + test + "): " + pheno_analyzed + " ~ 1 + " + "+".join(covars))
 		tbl = hl.logistic_regression_rows(
-			test = test.replace("hail.b.",""),
+			test = test.replace("single.hail.b.",""),
 			y = mt.pheno[pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
@@ -174,7 +174,7 @@ def main(args=None):
 			]
 		)
 
-		if test == 'hail.b.wald':
+		if test == 'single.hail.b.wald':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -201,7 +201,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'hail.b.firth':
+		elif test == 'single.hail.b.firth':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -227,7 +227,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'hail.b.lrt':
+		elif test == 'single.hail.b.lrt':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -253,7 +253,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'hail.b.score':
+		elif test == 'single.hail.b.score':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -277,12 +277,12 @@ def main(args=None):
 			)
 		return tbl
 
-	if args.test == 'hail.q.lm':
+	if args.test == 'single.hail.q.lm':
 		mt_nony_results = linear_regression(mt_nony)
 		mt_y_results = linear_regression(mt_y)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	elif args.test in ['hail.b.wald','hail.b.firth','hail.b.lrt','hail.b.score']:
+	elif args.test in ['single.hail.b.wald','single.hail.b.firth','single.hail.b.lrt','single.hail.b.score']:
 		mt_nony_results = logistic_regression(mt_nony, args.test)
 		mt_y_results = logistic_regression(mt_y, args.test)
 		mt_results = mt_nony_results.union(mt_y_results)
@@ -320,7 +320,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--variant-stats-in', help='a file containing variant stats to include in output', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
 	requiredArgs.add_argument('--pheno-col', help='a column name for the phenotype', required=True)
-	requiredArgs.add_argument('--test', choices=['hail.b.wald','hail.b.lrt','hail.b.firth','hail.b.score','hail.q.lm'], help='a regression test code', required=True)
+	requiredArgs.add_argument('--test', choices=['single.hail.b.wald','single.hail.b.lrt','single.hail.b.firth','single.hail.b.score','single.hail.q.lm'], help='a regression test code', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)

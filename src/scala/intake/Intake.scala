@@ -163,7 +163,7 @@ object Intake extends loamstream.LoamFile {
       destOpt: Option[Store] = None,
       //TODO: Default to real location
       dryRun: Boolean = false,
-      bucketName: String = "dig-integration-tests"): (Store, Option[Store], Option[Store]) = {
+      bucketName: String): (Store, Option[Store], Option[Store]) = {
     
     require(sourceStore.isPathStore)
 
@@ -559,7 +559,7 @@ object Intake extends loamstream.LoamFile {
         aggregatorIntakePipelineConfig, 
         flipDetector,
         dryRun = cfgDryRun,
-        bucketName = "dig-analysis-data")
+        bucketName = metadata.bucketName)
     }
     
     val qqPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.png""")

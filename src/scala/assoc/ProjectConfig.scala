@@ -9,34 +9,51 @@ object ProjectConfig extends loamstream.LoamFile {
   val modelDesigns = Seq("full","strat")
   val modelTrans = Seq("log","invn")
   val assocTests = Seq(
-    "hail.q.lm",
-    "hail.b.wald",
-    "hail.b.firth",
-    "hail.b.lrt",
-    "hail.b.score",
-    "epacts.b.burden",
-    "epacts.b.burdenFirth",
-    "epacts.b.collapse",
-    "epacts.b.madsen",
-    "epacts.b.wcnt",
-    "epacts.q.burden",
-    "epacts.q.reverse",
-    "epacts.q.wilcox",
-    "epacts.b.skat",
-    "epacts.b.VT",
-    "epacts.b.emmaxCMC",
-    "epacts.b.emmaxVT",
-    "epacts.q.mmskat",
-    "epacts.q.skat",
-    "epacts.q.VT",
-    "epacts.q.emmaxCMC",
-    "epacts.q.emmaxVT"
+    "single.hail.q.lm",
+    "single.hail.b.wald",
+    "single.hail.b.firth",
+    "single.hail.b.lrt",
+    "single.hail.b.score",
+    "group.epacts.b.burden",
+    "group.epacts.b.burdenFirth",
+    "group.epacts.b.collapse",
+    "group.epacts.b.madsen",
+    "group.epacts.b.wcnt",
+    "group.epacts.q.burden",
+    "group.epacts.q.reverse",
+    "group.epacts.q.wilcox",
+    "group.epacts.b.skat",
+    "group.epacts.b.VT",
+    "group.epacts.b.emmaxCMC",
+    "group.epacts.b.emmaxVT",
+    "group.epacts.q.mmskat",
+    "group.epacts.q.skat",
+    "group.epacts.q.VT",
+    "group.epacts.q.emmaxCMC",
+    "group.epacts.q.emmaxVT",
+    "single.regenie.b.firth",
+    "single.regenie.q.lm",
+    "group.regenie.b.burdenFirth",
+    "group.regenie.b.burden",
+    "group.regenie.q.burden"
+    //NOT YET IMPLEMENTED "single.epacts.b.wald",
+    //NOT YET IMPLEMENTED "single.epacts.b.score",
+    //NOT YET IMPLEMENTED "single.epacts.b.firth",
+    //NOT YET IMPLEMENTED "single.epacts.b.spa2",
+    //NOT YET IMPLEMENTED "single.epacts.b.lrt",
+    //NOT YET IMPLEMENTED "single.epacts.b.glrt",
+    //NOT YET IMPLEMENTED "single.epacts.q.lm",
+    //NOT YET IMPLEMENTED "single.epacts.q.linear",
+    //NOT YET IMPLEMENTED "single.epacts.q.reverse",
+    //NOT YET IMPLEMENTED "single.epacts.q.wilcox",
+    //NOT YET IMPLEMENTED "single.epacts.q.emmax",
   )
-  
-  val famTests = assocTests.filter(e => e.split("\\.")(2).startsWith("emmax"))
-  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "epacts")
-  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "hail")
-  val nonHailTests = assocTests.filter(e => e.split("\\.")(0) != "hail")
+
+  // note: regenie uses ridge regression to avoid need for GRM so all tests may include relateds
+  val famTests = assocTests.filter(e => Seq("group.epacts.b.emmaxCMC","group.epacts.b.emmaxVT","group.epacts.q.mmskat","group.epacts.q.emmaxCMC","group.epacts.q.emmaxVT","single.regenie.b.firth","single.regenie.q.lm","group.regenie.b.burdenFirth","group.regenie.b.burden","group.regenie.q.burden").contains(e))
+  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
+  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
+  val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
   
   final case class ConfigMachine(
     cpus: Int,
@@ -90,7 +107,11 @@ object ProjectConfig extends loamstream.LoamFile {
     lowMemEpacts: ConfigMachine,
     midMemEpacts: ConfigMachine,
     highMemEpacts: ConfigMachine,
-    locuszoom: ConfigMachine) extends Debug
+    locuszoom: ConfigMachine,
+    generateRegenieGroupfiles: ConfigMachine,
+    regenieStep1: ConfigMachine,
+    regenieStep2Single: ConfigMachine,
+    regenieStep2Group: ConfigMachine) extends Debug
 
   final case class ConfigInputStore(
     local: Option[String],
@@ -114,7 +135,7 @@ object ProjectConfig extends loamstream.LoamFile {
     qcSampleFileSrSex: String,
     qcSampleFileMaleCode: String,
     qcSampleFileFemaleCode: String,
-    exportCleanVcf: Boolean) extends Debug
+    exportCleanBgen: Boolean) extends Debug
   
   final case class ConfigCohort(
     id: String,
@@ -222,6 +243,8 @@ object ProjectConfig extends loamstream.LoamFile {
     maxPCs: Int,
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
+    regenieBlockSize: Option[Int],
+    regenieLowmem: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
@@ -251,12 +274,14 @@ object ProjectConfig extends loamstream.LoamFile {
     imgHail: Path,
     imgLocuszoom: Path,
     imgPython2: Path,
+    imgPython3: Path,
     imgR: Path,
     imgTools: Path,
     imgTexLive: Path,
     imgEnsemblVep: Path,
     imgFlashPca: Path,
-    imgUmichStatgen: Path) extends Debug
+    imgUmichStatgen: Path,
+    imgRegenie: Path) extends Debug
   
   final case class Binary(
     binLiftOver: Path,
@@ -271,7 +296,9 @@ object ProjectConfig extends loamstream.LoamFile {
     binPdflatex: Path,
     binRscript: Path,
     binFlashPca: Path,
-    binEpacts: Path) extends Debug
+    binEpacts: Path,
+    binRegenie: Path,
+    binBgzip: Path) extends Debug
   
   final case class Python(
     pyAlignNon1kgVariants: Path,
@@ -300,7 +327,8 @@ object ProjectConfig extends loamstream.LoamFile {
     pyTopResults: Path,
     pyTopGroupResults: Path,
     pyExtractTopRegions: Path,
-    pyPhenoDistPlot: Path
+    pyPhenoDistPlot: Path,
+    pyGenerateRegenieGroupfiles: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -338,7 +366,10 @@ object ProjectConfig extends loamstream.LoamFile {
     shFlashPca: Path,
     shEpacts: Path,
     shMergeResults: Path,
-    shRegPlot: Path
+    shRegPlot: Path,
+    shRegenieStep1: Path,
+    shRegenieStep2Single: Path,
+    shRegenieStep2Group: Path
     //shTopResultsAddGenes: Path
     ) extends Debug
   
@@ -357,9 +388,11 @@ object ProjectConfig extends loamstream.LoamFile {
     rMetaCohortSamples: Path,
     rExcludeCrossArray: Path,
     rGeneratePheno: Path,
-    rConvertPhenoToPed: Path,
+    rConvertPhenoToEpactsPed: Path,
+    rConvertPhenoToRegeniePhenoCovars: Path,
     rTop20: Path,
-    rRawVariantsSummaryTable: Path
+    rRawVariantsSummaryTable: Path,
+    rNullModelResidualPlot: Path
     //rAncestryClusterTable: Path,
     //rPcair: Path,
     //rUpsetplotBimFam: Path,
@@ -404,6 +437,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
+      val regenieBlockSize = optionalInt(config = config, field = "regenieBlockSize", min = Some(100))
+      val regenieLowmem = requiredBool(config = config, field = "regenieLowmem", default = Some(true))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -509,6 +544,22 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         locuszoom = {
           val thisConfig = requiredObj(config = config, field = "locuszoom")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        generateRegenieGroupfiles = {
+          val thisConfig = requiredObj(config = config, field = "generateRegenieGroupfiles")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        regenieStep1 = {
+          val thisConfig = requiredObj(config = config, field = "regenieStep1")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        regenieStep2Single = {
+          val thisConfig = requiredObj(config = config, field = "regenieStep2Single")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        regenieStep2Group = {
+          val thisConfig = requiredObj(config = config, field = "regenieStep2Group")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -668,7 +719,7 @@ object ProjectConfig extends loamstream.LoamFile {
           val qcConfigArrays = requiredObjList(config = qcConfig, field = "arrays")
           val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
 
-          val exportCleanVcf = requiredBool(config = qcConfigThisArray, field = "exportCleanVcf")
+          val exportCleanBgen = requiredBool(config = qcConfigThisArray, field = "exportCleanBgen")
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
@@ -687,7 +738,7 @@ object ProjectConfig extends loamstream.LoamFile {
             qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),
             qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),
             qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),
-            exportCleanVcf = exportCleanVcf
+            exportCleanBgen = exportCleanBgen
           )
 
         }
@@ -1129,7 +1180,7 @@ object ProjectConfig extends loamstream.LoamFile {
             pheno = pheno,
             trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
             tests = tests,
-            assocPlatforms = tests.map(e => e.split("\\.")(0)).distinct,
+            assocPlatforms = tests.map(e => e.split("\\.")(1)).distinct,
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = requiredStrList(config = model, field = "covars").mkString("+"),
             cohorts = cohorts,
@@ -1211,6 +1262,8 @@ object ProjectConfig extends loamstream.LoamFile {
         maxPCs = maxPCs,
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
+        regenieBlockSize = regenieBlockSize,
+        regenieLowmem = regenieLowmem,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
@@ -1248,12 +1301,14 @@ object ProjectConfig extends loamstream.LoamFile {
         imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2v2.simg"),
+        imgPython3 = path(s"${imagesDir}/python_v3.7.9.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
-        imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg")
+        imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg"),
+        imgRegenie = path(s"${imagesDir}/regenie-v2.0.2.simg")
       )
   
       val binary = Binary(
@@ -1269,7 +1324,9 @@ object ProjectConfig extends loamstream.LoamFile {
         binPdflatex = path("/usr/local/bin/pdflatex"),
         binRscript = path("/usr/local/bin/Rscript"),
         binFlashPca = path("/usr/local/bin/flashpca"),
-        binEpacts = path("/usr/local/bin/epacts")
+        binEpacts = path("/usr/local/bin/epacts"),
+        binRegenie = path("/usr/local/bin/regenie"),
+        binBgzip = path("/usr/local/bin/bgzip")
       )
   
       val python = Python(
@@ -1299,7 +1356,8 @@ object ProjectConfig extends loamstream.LoamFile {
         pyTopResults = path(s"${scriptsDir}/top_results.py"),
         pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
-        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py")
+        pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
+        pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
@@ -1337,7 +1395,10 @@ object ProjectConfig extends loamstream.LoamFile {
         shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
         shEpacts = path(s"${scriptsDir}/epacts.sh"),
         shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
-        shRegPlot = path(s"${scriptsDir}/regplot.sh")
+        shRegPlot = path(s"${scriptsDir}/regplot.sh"),
+        shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh"),
+        shRegenieStep2Single = path(s"${scriptsDir}/regenie.step2.single.sh"),
+        shRegenieStep2Group = path(s"${scriptsDir}/regenie.step2.group.sh")
         //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
       )
   
@@ -1356,9 +1417,11 @@ object ProjectConfig extends loamstream.LoamFile {
         rMetaCohortSamples = path(s"${scriptsDir}/meta_cohort_samples.r"),
         rExcludeCrossArray = path(s"${scriptsDir}/exclude_cross_array.r"),
         rGeneratePheno = path(s"${scriptsDir}/generate_pheno.r"),
-        rConvertPhenoToPed = path(s"${scriptsDir}/convert_pheno_to_ped.r"),
+        rConvertPhenoToEpactsPed = path(s"${scriptsDir}/convert_pheno_to_epacts_ped.r"),
+        rConvertPhenoToRegeniePhenoCovars = path(s"${scriptsDir}/convert_pheno_to_regenie_pheno_covars.r"),
         rTop20 = path(s"${scriptsDir}/top20.r"),
-        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r")
+        rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
+        rNullModelResidualPlot = path(s"${scriptsDir}/null_model_residual_plot.r")
         //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         //rPcair = path(s"${scriptsDir}/pcair.r"),
         //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),

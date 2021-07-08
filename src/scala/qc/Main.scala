@@ -3,7 +3,7 @@ object Main extends loamstream.LoamFile {
   import Ancestry._
   import Annotate._
   import ArrayStores._
-  import ExportCleanData._
+  import ExportCleanVcf._
   import ExportQcData._
   import FilterArray._
   import Harmonize._
@@ -63,14 +63,19 @@ object Main extends loamstream.LoamFile {
     Pca(array)
     SampleQc(array)
     FilterArray(array)
+    ExportCleanVcf(array)
+
+    array.exportCleanBgen match {
   
-    array.exportCleanVcf match {
-  
-      case true => ExportCleanData(array)
+      case true =>
+
+        import ExportCleanBgen._
+        ExportCleanBgen(array)
+
       case false => ()
   
     }
-  
+
   }
   
   // QC Report
