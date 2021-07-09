@@ -77,6 +77,15 @@ while :; do
 		--bt)
 			bt=true
 			;;
+        --chr)
+			if [ "$2" ]; then
+				chr=$2
+				shift
+			else
+				echo "ERROR: --chr requires a non-empty argument."
+				exit 1
+			fi
+			;;
         --pred)
 			if [ "$2" ]; then
 				pred=$2
@@ -144,6 +153,7 @@ echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
 echo "blockSize: $blockSize"
 echo "bt: $bt"
+echo "chr: $chr"
 echo "pred: $pred"
 echo "annoFile: $annoFile"
 echo "setList: $setList"
@@ -165,6 +175,7 @@ $regenie \
 --phenoFile $phenoFile \
 --bsize $blockSize \
 $btString \
+--chr $chr
 --pred $pred \
 --out $out
 

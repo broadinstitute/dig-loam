@@ -27,6 +27,8 @@ object DirTree extends loamstream.LoamFile {
     analysisModelGroupsMap: scala.collection.mutable.Map[String, MultiPath],
     analysisModelRegions: MultiPath,
     analysisModelRegionsMap: scala.collection.mutable.Map[String, MultiPath],
+    analysisModelChrs: MultiPath,
+    analysisModelChrsMap: scala.collection.mutable.Map[String, MultiPath],
     analysisModelMap: Map[ConfigModel, MultiPath],
     report: MultiPath,
     //reportAnalysis: MultiPath,
@@ -84,6 +86,8 @@ object DirTree extends loamstream.LoamFile {
       val analysisModelGroups = appendSubDir(analysisModel, "groups")
       val analysisModelRegions = appendSubDir(analysisModel, "regions")
       val analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath]()
+      val analysisModelChrs = appendSubDir(analysisModel, "chromosomes")
+      val analysisModelChrsMap = scala.collection.mutable.Map[String, MultiPath]()
       val analysisModelMap = projectConfig.Models.map { model =>
         model -> appendSubDir(analysisModel, model.id)
       }.toMap
@@ -108,6 +112,8 @@ object DirTree extends loamstream.LoamFile {
         analysisModelGroupsMap = scala.collection.mutable.Map[String, MultiPath](),
         analysisModelRegions = analysisModelRegions,
         analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath](),
+        analysisModelChrs = analysisModelChrs,
+        analysisModelChrsMap = scala.collection.mutable.Map[String, MultiPath](),
         analysisModelMap = analysisModelMap,
         report = report
         //reportAnalysis = reportAnalysis,

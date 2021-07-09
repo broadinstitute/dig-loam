@@ -50,11 +50,17 @@ object ModelStores extends loamstream.LoamFile {
     predList: Store
   )
 
-  final case class ModelRegenieAssocSingle(
+  final case class ModelRegenieAssocSingleChr(
     base: Path,
     log: Store,
+    results: Store
+  )
+
+  final case class ModelRegenieAssocSingle(
+    base: Path,
     results: Store,
     resultsTbi: Store,
+    chrs: Map[String, ModelRegenieAssocSingleChr],
     summary: ModelSingleSummary
   )
   
@@ -63,10 +69,17 @@ object ModelStores extends loamstream.LoamFile {
     groupFile: Store
   )
 
-  final case class ModelRegenieAssocGroup(
+  final case class ModelRegenieAssocGroupChr(
     base: Path,
     log: Store,
     results: Store
+  )
+
+  final case class ModelRegenieAssocGroup(
+    base: Path,
+    results: Store,
+    summary: ModelGroupSummary,
+    chrs: Map[String, ModelRegenieAssocGroupChr]
   )
   
   final case class ModelAssocGroupBase(
@@ -373,9 +386,16 @@ object ModelStores extends loamstream.LoamFile {
                   test -> 
                     ModelRegenieAssocSingle(
                       base = local_dir / s"${baseString}.${test}",
-                      log = store(local_dir / s"${baseString}.${test}.log"),
                       results = store(local_dir / s"${baseString}.${test}.results.tsv.bgz"),
                       resultsTbi = store(local_dir / s"${baseString}.${test}.results.tsv.bgz.tbi"),
+                      chrs = expandChrList(array.chrs).map { chr =>
+                        chr ->
+                          ModelRegenieAssocSingleChr(
+                            base = dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test}.chr${chr}",
+                            log = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test}.chr${chr}.log"),
+                            results = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test}.chr${chr}.results.tsv.bgz")
+                          )
+                      }.toMap,
                       summary = ModelSingleSummary(
                         qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
                         qqPlotLowMaf = store(local_dir / s"${baseString}.${test}.results.qqplot.lowmaf.png"),
@@ -399,8 +419,20 @@ object ModelStores extends loamstream.LoamFile {
                   test -> 
                     ModelRegenieAssocGroup(
                       base = local_dir / s"${baseString}.${test}",
-                      log = store(local_dir / s"${baseString}.${test}.log"),
-                      results = store(local_dir / s"${baseString}.${test}.results.tsv.bgz")
+                      results = store(local_dir / s"${baseString}.${test}.results.tsv.bgz"),
+                      summary = ModelGroupSummary(
+                        top20Results = store(local_dir / s"${baseString}.${test}.results.top20.tsv"),
+                        qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
+                        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png")
+                      ),
+                      chrs = expandChrList(array.chrs).map { chr =>
+                        chr ->
+                          ModelRegenieAssocGroupChr(
+                            base = dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test}.chr${chr}",
+                            log = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test}.chr${chr}.log"),
+                            results = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test}.chr${chr}.results.tsv.bgz")
+                          )
+                      }.toMap
                     )
                 }.toMap
               case false => Map[String, ModelRegenieAssocGroup]()

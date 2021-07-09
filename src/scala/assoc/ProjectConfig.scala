@@ -135,6 +135,7 @@ object ProjectConfig extends loamstream.LoamFile {
     qcSampleFileSrSex: String,
     qcSampleFileMaleCode: String,
     qcSampleFileFemaleCode: String,
+    chrs: Seq[String],
     exportCleanBgen: Boolean) extends Debug
   
   final case class ConfigCohort(
@@ -326,6 +327,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMhtPlot: Path,
     pyTopResults: Path,
     pyTopGroupResults: Path,
+    pyTopRegenieGroupResults: Path,
     pyExtractTopRegions: Path,
     pyPhenoDistPlot: Path,
     pyGenerateRegenieGroupfiles: Path
@@ -366,6 +368,8 @@ object ProjectConfig extends loamstream.LoamFile {
     shFlashPca: Path,
     shEpacts: Path,
     shMergeResults: Path,
+    shMergeRegenieSingleResults: Path,
+    shMergeRegenieGroupResults: Path,
     shRegPlot: Path,
     shRegenieStep1: Path,
     shRegenieStep2Single: Path,
@@ -720,6 +724,7 @@ object ProjectConfig extends loamstream.LoamFile {
           val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
 
           val exportCleanBgen = requiredBool(config = qcConfigThisArray, field = "exportCleanBgen")
+          val chrs = requiredStrList(config = qcConfigThisArray, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT")
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
@@ -738,6 +743,7 @@ object ProjectConfig extends loamstream.LoamFile {
             qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),
             qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),
             qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),
+            chrs = chrs,
             exportCleanBgen = exportCleanBgen
           )
 
@@ -1355,6 +1361,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMhtPlot = path(s"${scriptsDir}/mhtplot.py"),
         pyTopResults = path(s"${scriptsDir}/top_results.py"),
         pyTopGroupResults = path(s"${scriptsDir}/top_group_results.py"),
+        pyTopRegenieGroupResults = path(s"${scriptsDir}/top_regenie_group_results.py"),
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
         pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
         pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py")
@@ -1395,6 +1402,8 @@ object ProjectConfig extends loamstream.LoamFile {
         shFlashPca = path(s"${scriptsDir}/flashpca.sh"),
         shEpacts = path(s"${scriptsDir}/epacts.sh"),
         shMergeResults = path(s"${scriptsDir}/merge_results.sh"),
+        shMergeRegenieSingleResults = path(s"${scriptsDir}/merge_regenie_single_results.sh"),
+        shMergeRegenieGroupResults = path(s"${scriptsDir}/merge_regenie_group_results.sh"),
         shRegPlot = path(s"${scriptsDir}/regplot.sh"),
         shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh"),
         shRegenieStep2Single = path(s"${scriptsDir}/regenie.step2.single.sh"),

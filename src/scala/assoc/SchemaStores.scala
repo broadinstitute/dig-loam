@@ -160,6 +160,16 @@ object SchemaStores extends loamstream.LoamFile {
         }
       case _ => ()
     }
+
+    modelCollections.map(e => e.model.tests).flatten.filter(e => e.matches(".*regenie.*")).size match {
+      case n if n > 0 =>
+        for {
+          chr <- projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
+        } yield {
+            dirTree.analysisModelChrsMap(chr) = appendSubDir(dirTree.analysisModelChrs, "chr" + chr)
+        }
+      case _ => ()
+    }
                   
     sm -> Schema(
       sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
