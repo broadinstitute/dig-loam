@@ -175,7 +175,7 @@ $regenie \
 --phenoFile $phenoFile \
 --bsize $blockSize \
 $btString \
---chr $chr
+--chr $chr \
 --pred $pred \
 --out $out
 
