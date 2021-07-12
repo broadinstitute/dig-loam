@@ -177,6 +177,9 @@ $regenie \
 $btString \
 --chr $chr \
 --pred $pred \
+--anno-file $annoFile \
+--set-list $setList \
+--mask-def $maskDef \
 --out $out
 
 if [ ! -f "${out}_${phenoName}.regenie" ]
