@@ -724,7 +724,6 @@ object ProjectConfig extends loamstream.LoamFile {
           val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
 
           val exportCleanBgen = requiredBool(config = qcConfigThisArray, field = "exportCleanBgen")
-          val chrs = requiredStrList(config = qcConfigThisArray, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT")
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
@@ -743,7 +742,7 @@ object ProjectConfig extends loamstream.LoamFile {
             qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),
             qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),
             qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),
-            chrs = chrs,
+            chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
             exportCleanBgen = exportCleanBgen
           )
 
