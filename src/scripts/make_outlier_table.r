@@ -1,13 +1,13 @@
 library(argparse)
 
 parser <- ArgumentParser()
-parser$add_argument("--ancestry-inferred-outliers", dest="ancestry_inferred_outliers", type="character", help="a comma separated list of labels and files, each delimited by three underscores (eg. ex___file1,omni___file2)")
-parser$add_argument("--kinship-related", nargs='+', dest="kinship_related", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
-parser$add_argument("--kinship-famsizes", nargs='+', dest="kinship_famsizes", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
-parser$add_argument("--imiss", nargs='+', dest="imiss", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
-parser$add_argument("--sampleqc-outliers", nargs='+', dest="sampleqc_outliers", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
-parser$add_argument("--sexcheck-problems", nargs='+', dest="sexcheck_problems", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
-parser$add_argument("--final-exclusions", nargs='+', dest="final_exclusions", type="character", help="a list of labels and files, each delimited by three underscores (eg. ex,file1 omni,file2)")
+parser$add_argument("--ancestry-inferred-outliers", dest="ancestry_inferred_outliers", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--kinship-related", nargs='+', dest="kinship_related", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--kinship-famsizes", nargs='+', dest="kinship_famsizes", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--imiss", nargs='+', dest="imiss", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--sampleqc-outliers", nargs='+', dest="sampleqc_outliers", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--sexcheck-problems", nargs='+', dest="sexcheck_problems", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--final-exclusions", nargs='+', dest="final_exclusions", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--out", dest="out", type="character", help="an output filename ending in '.png' or '.pdf'")
 args<-parser$parse_args()
 
@@ -16,9 +16,13 @@ print(args)
 ids<-list()
 
 print("reading ancestry inferred file")
-x<-scan(args$ancestry_inferred_outliers,what="character")
-if(length(x) > 0) {
-	ids[["ancestry outlier"]]<-x
+for(a in args$ancestry_inferred_outliers) {
+	l<-unlist(strsplit(a,","))[1]
+	if(! l %in% ls(ids)) ids[[l]]<-list()
+	f<-unlist(strsplit(a,","))[2]
+	ancestry_df<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
+	x<-ancestry_df[ancestry_df$V2 == "OUTLIERS",]
+	ids[[l]][["ancestry outlier"]]<-x$V1
 }
 
 print("reading kinship file")
@@ -91,8 +95,8 @@ for(a in args$final_exclusions) {
 	ids[[l]][['final']]<-unique(final)
 }
 
-for(a in ls(ids)[ls(ids) != "ancestry outlier"]) {
-	ids[[a]][['all removed']]<-ids[["ancestry outlier"]]
+for(a in ls(ids)) {
+	ids[[a]][['all removed']]<-ids[[a]][["ancestry outlier"]]
 	for(l in c("extreme missingness","duplicate","cryptic relatedness","sex check",metrics[[a]],"metric pca")) {
 		ids[[a]][['all removed']]<-unique(c(ids[[a]][['all removed']],ids[[a]][[l]]))
 	}
@@ -100,7 +104,7 @@ for(a in ls(ids)[ls(ids) != "ancestry outlier"]) {
 }
 
 header="Method"
-arrays<-ls(ids)[ls(ids) != "ancestry outlier"]
+arrays<-ls(ids)
 ncols = 1
 for(a in arrays) {
 	header = paste(header,paste("\t",a,sep=""),sep="")
