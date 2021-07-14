@@ -254,7 +254,6 @@ object QcReport extends loamstream.LoamFile {
     }
     
     val refPrunedBimStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"${arrayStores(a).prunedData.plink.base}.bim").mkString(",") } }
-    val ancestryInferredStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
     val kin0Strings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).kinshipData.kin0.path}""").mkString(",") } }
     val famSizesStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).kinshipData.famSizes.path}""").mkString(",") } }
     val sexcheckProblemsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).sexcheckData.problems.local.get.path}""").mkString(",") } }
