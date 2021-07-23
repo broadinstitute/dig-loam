@@ -139,7 +139,7 @@ object Intake extends loamstream.LoamFile {
         heterozygousControlsDef = heterozygousControls.map(toLongDef), 
         homozygousCasesDef = homozygousCases.map(toLongDef),
         homozygousControlsDef = homozygousControls.map(toLongDef),
-        failFast = true)
+        failFast = false)
   }
   
   def makeAggregatorMetadataFile(metadata: AggregatorMetadata): Store = {
@@ -216,9 +216,8 @@ object Intake extends loamstream.LoamFile {
           metadata = metadata).
       from(source).
       using(flipDetector).
-      //Filter out rows with REF or ALT columns == ('D' or 'I')
-      filter(noDsOrIsFilter).
       filter(hasAllowedAllelesFilter)
+      //filter(noDsOrIsFilter)
     }
     
     def forVariantData(bucketName: String)(phenotypeVariantConfig: PhenotypeConfig.VariantData): Option[Store] = {
