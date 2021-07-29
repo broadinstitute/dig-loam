@@ -15,7 +15,7 @@ min_p_file2=`cat ${gene_map} ${min_p_file02} | \
 awk -F " " 'NF==2 {map[$1]=$2} NF>2 && map[$1] {$1=map[$1]; print $0}' OFS="\t" | awk -F "\t" 'NR>1 {print $0, $1 "." $2}' OFS='\t' | \
 awk -F "\t" '{print $4, "Var_" $4, $3}' OFS='\t'| sed '1iID_num\tVar\tMAF'`
 
-python minimum_pvalue_test.py --p-value-file ${min_p_file1} \
+python utils.python.pyMinPValTest --p-value-file ${min_p_file1} \
 --gene-group-file ${min_p_file1} --group-variant-file ${min_p_file2} --p-value-file-id-col 2 --p-value-file-p-col 3 \
 --p-value-file-effect-col 4 --gene-group-file-gene-col 1 --gene-group-file-id-col 2 --group-variant-file-id-col 1 \
 --group-variant-file-variant-col 2 --group-variant-file-maf-col 3 --basic --out-file min_p_all.tsv

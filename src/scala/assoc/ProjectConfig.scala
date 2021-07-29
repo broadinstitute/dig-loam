@@ -1366,6 +1366,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
         pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
         pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py")
+        pyMinPValTest = path(s"${scriptsDir}/minimum_pvalue_test.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),
@@ -1433,6 +1434,7 @@ object ProjectConfig extends loamstream.LoamFile {
         rTop20 = path(s"${scriptsDir}/top20.r"),
         rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
         rNullModelResidualPlot = path(s"${scriptsDir}/null_model_residual_plot.r")
+        rDrawQqPlot = path(s"${scriptsDir}/draw_qq_plot.r")
         //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         //rPcair = path(s"${scriptsDir}/pcair.r"),
         //rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
