@@ -373,7 +373,8 @@ object ProjectConfig extends loamstream.LoamFile {
     shRegPlot: Path,
     shRegenieStep1: Path,
     shRegenieStep2Single: Path,
-    shRegenieStep2Group: Path
+    shRegenieStep2Group: Path,
+    shMinPVal: Path
     //shTopResultsAddGenes: Path
     ) extends Debug
   
@@ -1407,7 +1408,8 @@ object ProjectConfig extends loamstream.LoamFile {
         shRegPlot = path(s"${scriptsDir}/regplot.sh"),
         shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh"),
         shRegenieStep2Single = path(s"${scriptsDir}/regenie.step2.single.sh"),
-        shRegenieStep2Group = path(s"${scriptsDir}/regenie.step2.group.sh")
+        shRegenieStep2Group = path(s"${scriptsDir}/regenie.step2.group.sh"),
+        shMinPVal = path(s"${scriptsDir}/min_p_val.sh")
         //shTopResultsAddGenes = path(s"${scriptsDir}/top_results_add_genes.sh")
       )
   

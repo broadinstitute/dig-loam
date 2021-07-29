@@ -13,8 +13,7 @@ object AssocTest extends loamstream.LoamFile {
   import DirTree._
   import AssocSingleHail._
   import AssocGroupEpacts._
-  import AssocRegenie._
-  
+  import ƒ
   def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
