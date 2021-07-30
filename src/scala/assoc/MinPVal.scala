@@ -1,9 +1,5 @@
 object MinPVal extends loamstream.LoamFile {
 
-  /**
-   * Run Masked Group Assoc Analysis via Regenie
-   * 
-   */
   import ProjectConfig._
   import ModelStores._
   import ArrayStores._
@@ -16,16 +12,14 @@ object MinPVal extends loamstream.LoamFile {
 
   def MinPValue(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
-    drm {
+    drm() {
 
-      val input=modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results
-      cmd"""${utils.bash.shMinPVal} $input"""
-
-        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.minpval.log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.minpval.loco, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.minpval.predList)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.minpval.base}".split("/").last)
+      cmd"""${utils.bash.shMinPVal} ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results.minpval.tsv} ${ProjectStores.geneIdMap}
+       """
+        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results, ProjectStores.geneIdMap)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results.minpval.tsv)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results.minpval.tsv}".split("/").last)
 
     }
   }
-
-  

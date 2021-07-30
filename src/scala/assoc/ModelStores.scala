@@ -33,7 +33,8 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelGroupSummary(
     top20Results: Store,
     qqPlot: Store,
-    mhtPlot: Store
+    mhtPlot: Store,
+    minPVal: Store
   )
   
   final case class ModelHailAssocSingle(
@@ -329,6 +330,7 @@ object ModelStores extends loamstream.LoamFile {
                                     top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
                                     qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
                                     mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png")
+                                    minPVal = store(local_dir / s"${baseString}.${test}.results.minpval.tsv")
                                   ),
                                   groups = l.map { group =>
                                     group -> ModelEpactsAssocGroup(
@@ -351,7 +353,8 @@ object ModelStores extends loamstream.LoamFile {
                                   summary = ModelGroupSummary(
                                     top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
                                     qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
-                                    mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png")
+                                    mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
+                                    minPVal = store(local_dir / s"${baseString}.${test}.results.minpval.tsv")
                                   ),
                                   groups = l.map { group =>
                                     group -> ModelEpactsAssocGroup(
@@ -423,7 +426,8 @@ object ModelStores extends loamstream.LoamFile {
                       summary = ModelGroupSummary(
                         top20Results = store(local_dir / s"${baseString}.${test}.results.top20.tsv"),
                         qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
-                        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png")
+                        mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
+                        minPVal = store(local_dir / s"${baseString}.${test}.results.minpval.tsv")
                       ),
                       chrs = expandChrList(array.chrs).map { chr =>
                         chr ->
