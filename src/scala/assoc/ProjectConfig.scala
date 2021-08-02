@@ -330,7 +330,8 @@ object ProjectConfig extends loamstream.LoamFile {
     pyTopRegenieGroupResults: Path,
     pyExtractTopRegions: Path,
     pyPhenoDistPlot: Path,
-    pyGenerateRegenieGroupfiles: Path
+    pyGenerateRegenieGroupfiles: Path,
+    pyMinPValTest: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -397,7 +398,8 @@ object ProjectConfig extends loamstream.LoamFile {
     rConvertPhenoToRegeniePhenoCovars: Path,
     rTop20: Path,
     rRawVariantsSummaryTable: Path,
-    rNullModelResidualPlot: Path
+    rNullModelResidualPlot: Path,
+    rDrawQqPlot: Path 
     //rAncestryClusterTable: Path,
     //rPcair: Path,
     //rUpsetplotBimFam: Path,

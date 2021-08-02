@@ -10,16 +10,18 @@ object MinPVal extends loamstream.LoamFile {
   
 
 
-  def MinPVal(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def MinPVal(test: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     drm() {
 
       cmd"""${utils.bash.shMinPVal} ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results}
-      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results.minpval.tsv} ${ProjectStores.geneIdMap}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get} ${projectStores.geneIdMap.local.get}
        """
-        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results, ProjectStores.geneIdMap)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results.minpval.tsv)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results.minpval.tsv}".split("/").last)
+        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results, projectStores.geneIdMap.local.get)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get}".split("/").last)
 
     }
   }
+
+}

@@ -34,7 +34,7 @@ object ModelStores extends loamstream.LoamFile {
     top20Results: Store,
     qqPlot: Store,
     mhtPlot: Store,
-    minPVal: Store
+    minPVal: Option[Store]
   )
   
   final case class ModelHailAssocSingle(
@@ -329,8 +329,8 @@ object ModelStores extends loamstream.LoamFile {
                                   summary = ModelGroupSummary(
                                     top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
                                     qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
-                                    mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png")
-                                    minPVal = store(local_dir / s"${baseString}.${test}.results.minpval.tsv")
+                                    mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
+                                    minPVal = None 
                                   ),
                                   groups = l.map { group =>
                                     group -> ModelEpactsAssocGroup(
@@ -354,7 +354,8 @@ object ModelStores extends loamstream.LoamFile {
                                     top20Results = store(local_dir / s"${baseString}.${test}.${mask.id}.results.top20.tsv"),
                                     qqPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.qqplot.png"),
                                     mhtPlot = store(local_dir / s"${baseString}.${test}.${mask.id}.results.mhtplot.png"),
-                                    minPVal = store(local_dir / s"${baseString}.${test}.results.minpval.tsv")
+                                    minPVal = None 
+                                  
                                   ),
                                   groups = l.map { group =>
                                     group -> ModelEpactsAssocGroup(
@@ -427,7 +428,7 @@ object ModelStores extends loamstream.LoamFile {
                         top20Results = store(local_dir / s"${baseString}.${test}.results.top20.tsv"),
                         qqPlot = store(local_dir / s"${baseString}.${test}.results.qqplot.png"),
                         mhtPlot = store(local_dir / s"${baseString}.${test}.results.mhtplot.png"),
-                        minPVal = store(local_dir / s"${baseString}.${test}.results.minpval.tsv")
+                        minPVal = Some(store(local_dir / s"${baseString}.${test}.results.minpval.tsv"))
                       ),
                       chrs = expandChrList(array.chrs).map { chr =>
                         chr ->

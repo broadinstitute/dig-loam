@@ -77,16 +77,6 @@ object Main extends loamstream.LoamFile {
   
   }
 
-  //Min p value for group assoc
-  for {
-    x <- modelCollections if x.model.runAssoc
-  } yield {
-  
-    MinPVal(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
-  
-  }
-
-
   
   //// Prepare meta cohort model
   //for {
