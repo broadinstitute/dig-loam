@@ -1365,7 +1365,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyTopRegenieGroupResults = path(s"${scriptsDir}/top_regenie_group_results.py"),
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
         pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
-        pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py")
+        pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py"),
         pyMinPValTest = path(s"${scriptsDir}/minimum_pvalue_test.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
@@ -1433,7 +1433,7 @@ object ProjectConfig extends loamstream.LoamFile {
         rConvertPhenoToRegeniePhenoCovars = path(s"${scriptsDir}/convert_pheno_to_regenie_pheno_covars.r"),
         rTop20 = path(s"${scriptsDir}/top20.r"),
         rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
-        rNullModelResidualPlot = path(s"${scriptsDir}/null_model_residual_plot.r")
+        rNullModelResidualPlot = path(s"${scriptsDir}/null_model_residual_plot.r"),
         rDrawQqPlot = path(s"${scriptsDir}/draw_qq_plot.r")
         //rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         //rPcair = path(s"${scriptsDir}/pcair.r"),

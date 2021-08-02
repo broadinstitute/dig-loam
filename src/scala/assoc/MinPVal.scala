@@ -10,7 +10,7 @@ object MinPVal extends loamstream.LoamFile {
   
 
 
-  def MinPValue(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def MinPVal(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     drm() {
 
