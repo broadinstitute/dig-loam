@@ -6,7 +6,6 @@ set.seed(1)
 parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a prepared phenotype file")
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
-parser$add_argument("--binary", action='store_true', dest="binary", help="a flag to indicate if binary phenotype")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--pcs-include", dest="pcs_include", type="character", help="a pc inclusion filename")
 parser$add_argument("--out", dest="out", type="character", help="an output filename base (ie no extension)")
@@ -58,11 +57,7 @@ for(cv in c(args$pheno_col,unlist(strsplit(covars_analysis,split="\\+")))) {
 print(head(pheno))
 print(covars_analysis)
 
-if(! args$binary) {
-	model<-lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=pheno)
-} else {
-	model<-glm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=pheno,family="binomial")
-}
+model<-lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=pheno)
 res<-resid(model)
 
 out<-paste0(args$out,".%03d.png")

@@ -33,18 +33,18 @@ object AssocTest extends loamstream.LoamFile {
               googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get)
             
             }
-
-            for {
-            
-              test <- modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle.keys
-            
-            } yield {
-            
-              AssocSingleHail(test, configModel, configSchema, configCohorts, None)
-            
-            }
         
           case false => ()
+        
+        }
+
+        for {
+        
+          test <- modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle.keys
+        
+        } yield {
+        
+          AssocSingleHail(test, configModel, configSchema, configCohorts, None)
         
         }
 

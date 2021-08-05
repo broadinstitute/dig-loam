@@ -174,6 +174,10 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 --bsize $blockSize \
+--aaf-bins 0.999999 \
+--minMAC 1 \
+--threads 8 \
+--verbose \
 $btString \
 --chr $chr \
 --pred $pred \
