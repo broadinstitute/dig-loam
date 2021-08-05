@@ -62,6 +62,7 @@ object PrepareModel extends loamstream.LoamFile {
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
         --pheno-col ${configModel.pheno}
+        --sex-col ${array.qcSampleFileSrSex}
         --iid-col ${array.phenoFileId}
         --sampleqc-in ${arrayStores(array).sampleQcStats}
         --kinship-in ${arrayStores(array).kin0}
@@ -226,25 +227,27 @@ object PrepareModel extends loamstream.LoamFile {
     
     }
 
-    val binary = pheno.binary match {
-      case true => "--binary"
-      case false => ""
-    }
+    pheno.binary match {
+
+      case true => ()
+
+      case false =>
     
-    drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.standardR.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
-    
-      cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rNullModelResidualPlot}
-        --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-        --pheno-col ${configModel.pheno}
-        ${binary}
-        --covars "${configModel.covars}"
-        --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.base}"""
-        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.sqrtresVsFit)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.base}".split("/").last)
-    
+        drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.standardR.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
+        
+          cmd"""${utils.binary.binRscript} --vanilla --verbose
+            ${utils.r.rNullModelResidualPlot}
+            --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+            --pheno-col ${configModel.pheno}
+            --covars "${configModel.covars}"
+            --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}"""
+            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.sqrtresVsFit)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}".split("/").last)
+        
+        }
+
     }
 
     

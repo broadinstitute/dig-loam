@@ -245,6 +245,7 @@ object ProjectConfig extends loamstream.LoamFile {
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
     regenieBlockSize: Option[Int],
+    regenieThreads: Option[Int],
     regenieLowmem: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
@@ -442,6 +443,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
       val regenieBlockSize = optionalInt(config = config, field = "regenieBlockSize", min = Some(100))
+      val regenieThreads = optionalInt(config = config, field = "regenieThreads", min = Some(1))
       val regenieLowmem = requiredBool(config = config, field = "regenieLowmem", default = Some(true))
   
       val cloudResources = ConfigCloudResources(
@@ -1268,6 +1270,7 @@ object ProjectConfig extends loamstream.LoamFile {
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
         regenieBlockSize = regenieBlockSize,
+        regenieThreads = regenieThreads,
         regenieLowmem = regenieLowmem,
         cloudResources = cloudResources,
         resources = resources,
