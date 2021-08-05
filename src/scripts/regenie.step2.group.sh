@@ -74,6 +74,15 @@ while :; do
 				exit 1
 			fi
 			;;
+        --threads)
+			if [ "$2" ]; then
+				threads=$2
+				shift
+			else
+				echo "ERROR: --threads requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--bt)
 			bt=true
 			;;
@@ -152,6 +161,7 @@ echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
 echo "blockSize: $blockSize"
+echo "threads: $threads"
 echo "bt: $bt"
 echo "chr: $chr"
 echo "pred: $pred"
@@ -176,7 +186,7 @@ $regenie \
 --bsize $blockSize \
 --aaf-bins 0.999999 \
 --minMAC 1 \
---threads 8 \
+--threads $threads \
 --verbose \
 $btString \
 --chr $chr \
