@@ -7,12 +7,10 @@ object MinPVal extends loamstream.LoamFile {
   import SchemaStores._
   import ProjectStores._
   import DirTree._
-  
-
 
   def MinPVal(test: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
-
-    drm() {
+    // throw new CfgException(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get}")
+    drmWith(imageName = s"${utils.image.imgTools}") {
 
       cmd"""${utils.bash.shMinPVal} ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results}
       ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get} ${projectStores.geneIdMap.local.get}
