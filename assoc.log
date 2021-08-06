@@ -1,0 +1,84 @@
+20:58:13,133 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback-test.xml]
+20:58:13,133 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Could NOT find resource [logback.groovy]
+20:58:13,133 |-INFO in ch.qos.logback.classic.LoggerContext[default] - Found resource [logback.xml] at [jar:file:/humgen/diabetes2/users/ryank/software/dig-loam-stream-releases/loamstream-assembly-1.4-SNAPSHOT.2021_0512.cg-monix.jar!/logback.xml]
+20:58:13,144 |-INFO in ch.qos.logback.core.joran.spi.ConfigurationWatchList@186f8716 - URL [jar:file:/humgen/diabetes2/users/ryank/software/dig-loam-stream-releases/loamstream-assembly-1.4-SNAPSHOT.2021_0512.cg-monix.jar!/logback.xml] is not of type file
+20:58:13,189 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - debug attribute not set
+20:58:13,191 |-INFO in ch.qos.logback.core.joran.action.ConversionRuleAction - registering conversion word colorize with class [org.tuxdude.logback.extensions.LogColorizer]
+20:58:13,310 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [ch.qos.logback.core.ConsoleAppender]
+20:58:13,313 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [STDOUT]
+20:58:13,319 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+20:58:13,365 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [ch.qos.logback.core.rolling.RollingFileAppender]
+20:58:13,367 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [FILE]
+20:58:13,372 |-INFO in ch.qos.logback.core.rolling.FixedWindowRollingPolicy@1d8bd0de - No compression will be used
+20:58:13,383 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+20:58:13,384 |-WARN in ch.qos.logback.core.rolling.RollingFileAppender[FILE] - Append mode is mandatory for RollingFileAppender. Defaulting to append=true.
+20:58:13,384 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[FILE] - Active log file name: .loamstream/logs/loamStream.log
+20:58:13,384 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[FILE] - File property is set to [.loamstream/logs/loamStream.log]
+20:58:13,393 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - About to instantiate appender of type [ch.qos.logback.core.rolling.RollingFileAppender]
+20:58:13,393 |-INFO in ch.qos.logback.core.joran.action.AppenderAction - Naming appender as [JOB_STATE_LOG]
+20:58:13,394 |-INFO in ch.qos.logback.core.rolling.FixedWindowRollingPolicy@45ca843 - No compression will be used
+20:58:13,394 |-INFO in ch.qos.logback.core.joran.action.NestedComplexPropertyIA - Assuming default type [ch.qos.logback.classic.encoder.PatternLayoutEncoder] for [encoder] property
+20:58:13,395 |-WARN in ch.qos.logback.core.rolling.RollingFileAppender[JOB_STATE_LOG] - Append mode is mandatory for RollingFileAppender. Defaulting to append=true.
+20:58:13,395 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[JOB_STATE_LOG] - Active log file name: .loamstream/logs/job-states.log
+20:58:13,395 |-INFO in ch.qos.logback.core.rolling.RollingFileAppender[JOB_STATE_LOG] - File property is set to [.loamstream/logs/job-states.log]
+20:58:13,397 |-INFO in ch.qos.logback.classic.joran.action.RootLoggerAction - Setting level of ROOT logger to TRACE
+20:58:13,397 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [STDOUT] to Logger[ROOT]
+20:58:13,398 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [FILE] to Logger[ROOT]
+20:58:13,398 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [LoamStream] to TRACE
+20:58:13,398 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [loamstream.model.jobs.log] to TRACE
+20:58:13,398 |-INFO in ch.qos.logback.core.joran.action.AppenderRefAction - Attaching appender named [JOB_STATE_LOG] to Logger[loamstream.model.jobs.log]
+20:58:13,398 |-INFO in ch.qos.logback.classic.joran.action.LoggerAction - Setting level of logger [slick] to INFO
+20:58:13,398 |-INFO in ch.qos.logback.classic.joran.action.ConfigurationAction - End of configuration.
+20:58:13,399 |-INFO in ch.qos.logback.classic.joran.JoranConfigurator@11c9af63 - Registering current configuration as safe fallback point
+
+[37m2021-08-05 20:58:13,405[0;39m [32mINFO [main] [l.a.Main$] loamstream 1.4-SNAPSHOT (1.3-403-g5be3c98) branch: cg-monix commit: 5be3c986a384c08c4075d5a614f67fee29cda80a built on: 2021-05-13T00:59:30.531Z[0m 
+[37m2021-08-05 20:58:13,415[0;39m [32mINFO [main] [l.a.Main$] Running with these command-line arguments: --backend uger --disable-hashing --conf loamstream.conf --loams /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/ArrayStores.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/AssocGroupEpacts.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/AssocRegenie.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/AssocSingleHail.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/AssocTest.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/Collections.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/CrossCohort.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/DirTree.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/Fxns.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/Main.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/MetaStores.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/MinPVal.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/ModelStores.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/PrepareEpacts.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/PrepareModel.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/PrepareRegenie.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/PrepareSchema.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/ProjectConfig.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/ProjectStores.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/SchemaStores.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/StoreHelpers.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/Stores.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/Tracking.scala /humgen/diabetes2/users/trangavo/sourcecode/dig-loam/src/scala/assoc/Upload.scala[0m 
+[37m2021-08-05 20:58:13,421[0;39m [32mINFO [main] [l.a.Main$] Worker mode is OFF[0m 
+LoamStream is a genomic analysis stack featuring a high-level language, compiler and runtime engine.
+Usage: scala loamstream.jar [options] [loam file(s)]
+       or if you have an executable produced by SBT Native Packager:
+       loamstream [options] [loam file(s)]
+Options:
+
+  -b, --backend  <arg>              The backend to run jobs on. Options are:
+                                    Uger,Lsf
+      --clean                       Deletes .loamstream/ ; Effectively the same
+                                    as using all of --clean-db, --clean-logs,
+                                    and --clean-scripts
+  -c, --clean-db                    Clean db
+      --clean-logs                  Clean logs
+      --clean-scripts               Clean generated DRM (Uger, LSF) scripts
+      --compile-only                Only compile the supplied .loam files, don't
+                                    run them
+      --conf  <arg>                 Path to config file
+      --disable-hashing             Don't hash files when determining whether a
+                                    job may be skipped.
+  -d, --dry-run                     Show what commands would be run without
+                                    running them
+  -l, --loams  <arg>...             Path(s) to loam script(s)
+  -n, --no-validation               Don't validate the graph produced by
+                                    evaluating .loam files
+  -p, --protect-files-from  <arg>   Path to file containing list of outputs to
+                                    NOT overwrite
+  -r, --run  <arg>...               How to run jobs: <everything> - always run
+                                    jobs, never skip them; <allOf> <regexes> -
+                                    run jobs if their names match ALL of the
+                                    passed regexes<anyOf> <regexes> - run jobs
+                                    if their names match ANY of the passed
+                                    regexes<noneOf> <regexes> - run jobs if
+                                    their names match NONE of the passed
+                                    regexes<ifAnyMissingOutputs> - run jobs if
+                                    any of their outputs are missing
+      --work-dir  <arg>             Path to store logs, db files, and job
+                                    metadata in, analogous to the default
+                                    .loamstream.  Only respected if --worker is
+                                    also supplied.
+  -w, --worker                      Run in worker mode (run on a DRM system on
+                                    behalf of another LS instance)
+  -h, --help                        Show help and exit
+  -v, --version                     Print version information and exit
+
+ trailing arguments:
+  trailing (not required)
+
+Config file 'loamstream.conf' specified, but it doesn't exist.
