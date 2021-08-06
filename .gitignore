@@ -8,3 +8,4 @@ project/target
 .project
 .settings/
 *.pyc
+metals.lock.db
