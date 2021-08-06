@@ -80,7 +80,7 @@ def main(args=None):
 	with hl.hadoop_open(args.pcs_include, "r") as f:
 		pcs = f.read().splitlines()
 
-	covars = [x for x in args.covars.split("+")] if args.covars != "" else []
+	covars = [x for x in args.covars.split("+")] if args.covars else []
 	if args.trans == "invn":
 		pheno_analyzed = args.pheno_col + '_invn_' + "_".join([x.replace("[","").replace("]","") for x in args.covars.split("+")])
 		covars = pcs

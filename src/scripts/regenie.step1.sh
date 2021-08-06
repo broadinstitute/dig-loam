@@ -47,6 +47,15 @@ while :; do
 				exit 1
 			fi
 			;;
+        --threads)
+			if [ "$2" ]; then
+				threads=$2
+				shift
+			else
+				echo "ERROR: --threads requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--bt)
 			bt=true
 			#shift
@@ -91,9 +100,11 @@ echo "bed: $bed"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "blockSize: $blockSize"
+echo "threads: $threads"
 echo "bt: $bt"
 echo "lowmem: $lowmem"
 echo "out: $out"
+echo "log: $log"
 
 if [ $bt ]
 then
@@ -115,6 +126,7 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 --bsize $blockSize \
+--threads $threads \
 $btString \
 $lowmemString \
 --out $out \

@@ -34,6 +34,7 @@ object AssocRegenie extends loamstream.LoamFile {
         --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
         --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
         --block-size ${projectConfig.regenieBlockSize.get}
+        --threads ${projectConfig.regenieThreads.get}
         ${btString}
         ${lowmemString}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
@@ -73,6 +74,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.pheno}
           --block-size ${projectConfig.regenieBlockSize.get}
+          --threads ${projectConfig.regenieThreads.get}
           ${btString}
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
@@ -303,6 +305,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.pheno}
           --block-size ${projectConfig.regenieBlockSize.get}
+          --threads ${projectConfig.regenieThreads.get}
           ${btString}
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}

@@ -304,7 +304,7 @@ object QcReport extends loamstream.LoamFile {
       
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rMakeOutlierTable}
-        --ancestry-inferred-outliers ${projectStores.ancestryOutliers}
+        --ancestry-inferred-outliers ${ancestryInferredStrings.mkString(" ")}
         --kinship-related ${kin0Strings.mkString(" ")}
         --kinship-famsizes ${famSizesStrings.mkString(" ")}
         --imiss ${imissRemoveStrings.mkString(" ")}
@@ -312,7 +312,7 @@ object QcReport extends loamstream.LoamFile {
         --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
         --final-exclusions ${finalSampleExclusionsStrings.mkString(" ")}
         --out ${qcReportStores.tablesData.sampleQc}"""
-        .in(imissRemoveFiles ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryOutliers)
+        .in(imissRemoveFiles ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferred).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryOutliers)
         .out(qcReportStores.tablesData.sampleQc)
         .tag(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
     
