@@ -76,7 +76,7 @@ object Main extends loamstream.LoamFile {
         FilterArray(array)
       
         array.exportCleanVcf match {
-      
+          
           case true => ExportCleanData(array)
           case false => ()
       
