@@ -8,9 +8,5 @@ project/target
 .project
 .settings/
 *.pyc
-<<<<<<< HEAD
 *.DS_Store
 *.code-workspace
-=======
-metals.lock.db
->>>>>>> master

@@ -93,7 +93,7 @@ object AssocSingleHail extends loamstream.LoamFile {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
         --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}
-        --p pvalc
+        --p pval
         --maf maf
         --mac mac
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.qqPlot}
