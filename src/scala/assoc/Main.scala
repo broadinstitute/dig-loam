@@ -76,6 +76,7 @@ object Main extends loamstream.LoamFile {
     AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
   
   }
+
   
   //// Prepare meta cohort model
   //for {

@@ -13,8 +13,9 @@ object AssocTest extends loamstream.LoamFile {
   import DirTree._
   import AssocSingleHail._
   import AssocGroupEpacts._
-  import AssocRegenie._
-  
+  import AssocRegenie._ 
+  import MinPVal._ 
+
   def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
@@ -210,6 +211,7 @@ object AssocTest extends loamstream.LoamFile {
         } yield {
 
           AssocRegenieStep2Group(test, configModel, configSchema, configCohorts, None)
+          MinPVal(test, configModel, configSchema, configCohorts, None)
 
         }
 

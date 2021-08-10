@@ -8,3 +8,5 @@ project/target
 .project
 .settings/
 *.pyc
+*.DS_Store
+*.code-workspace

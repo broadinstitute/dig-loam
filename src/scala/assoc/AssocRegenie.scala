@@ -39,6 +39,7 @@ object AssocRegenie extends loamstream.LoamFile {
         ${lowmemString}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
         --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log}"""
+        
         .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.loco, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}".split("/").last)
