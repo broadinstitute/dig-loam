@@ -1,7 +1,7 @@
 library(argparse)
 
 parser <- ArgumentParser()
-parser$add_argument("--ancestry-inferred-outliers", dest="ancestry_inferred_outliers", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
+parser$add_argument("--ancestry-inferred-outliers", nargs='+', dest="ancestry_inferred_outliers", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--kinship-related", nargs='+', dest="kinship_related", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--kinship-famsizes", nargs='+', dest="kinship_famsizes", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--imiss", nargs='+', dest="imiss", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
