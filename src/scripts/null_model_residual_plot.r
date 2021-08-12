@@ -60,6 +60,10 @@ print(covars_analysis)
 model<-lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=pheno)
 res<-resid(model)
 
+png(paste0(args$out,".dist.png"),width=7, height=7, units='in', res=300)
+plot(density(res))
+dev.off()
+
 out<-paste0(args$out,".%03d.png")
 png(out,width=7, height=7, units='in', res=300)
 plot(model, ask=FALSE)

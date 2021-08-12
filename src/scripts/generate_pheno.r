@@ -30,7 +30,7 @@ STDZ <- function (x) {
 
 # rank-based inverse normalization
 INVN <- function(x){
-	return(sd(x, na.rm=TRUE) * STDZ(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x)))))
+	return(STDZ(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x)))))
 }
 
 pcs_include_quant <- function(d, y, cv, n) {
