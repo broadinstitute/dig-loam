@@ -10,6 +10,7 @@ object ModelStores extends loamstream.LoamFile {
 
   final case class ModelResidualPlots(
     base: Path,
+    dist: Store,
     resVsFit: Store,
     resVsLev: Store,
     sqrtresVsFit: Store,
@@ -114,6 +115,7 @@ object ModelStores extends loamstream.LoamFile {
     samplesAvailable: Store,
     samplesAvailableLog: Store,
     phenoDistPlot: Store,
+    modelVarsSummary: Store,
     pcaBase: Path,
     pcaScores: Store, 
     pcaEigenVecs: Store, 
@@ -245,6 +247,7 @@ object ModelStores extends loamstream.LoamFile {
       samplesAvailable = store(local_dir / s"${baseString}.samples.available.txt"),
       samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
       phenoDistPlot = store(local_dir / s"${baseString}.pheno.distplot.png"),
+      modelVarsSummary = store(local_dir / s"${baseString}.model.vars_summary.tsv"),
       pcaBase = local_dir / s"${baseString}.pca",
       pcaScores = store(local_dir / s"${baseString}.pca.scores.tsv"),
       pcaEigenVecs = store(local_dir / s"${baseString}.pca.eigenvecs.tsv"),
@@ -266,6 +269,7 @@ object ModelStores extends loamstream.LoamFile {
         case true => None
         case false => Some(ModelResidualPlots(
           base = local_dir / s"${baseString}.residuals",
+          dist = store(local_dir / s"${baseString}.residuals.dist.png"),
           resVsFit = store(local_dir / s"${baseString}.residuals.res_vs_fit.png"),
           resVsLev = store(local_dir / s"${baseString}.residuals.res_vs_lev.png"),
           sqrtresVsFit = store(local_dir / s"${baseString}.residuals.sqrtres_vs_fit.png"),

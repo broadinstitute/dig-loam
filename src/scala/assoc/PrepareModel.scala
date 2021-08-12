@@ -137,10 +137,12 @@ object PrepareModel extends loamstream.LoamFile {
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pheno-name ${configModel.pheno}
             --iid-col ${array.phenoFileId}
+            --covars "${configModel.covars}"
             --cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
-            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}"""
+            --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
+            --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary)
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
         
         }
@@ -153,9 +155,11 @@ object PrepareModel extends loamstream.LoamFile {
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pheno-name ${configModel.pheno}
             --iid-col ${array.phenoFileId}
-            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}"""
+            --covars "${configModel.covars}"
+            --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
+            --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary)
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
         
         }
@@ -243,7 +247,7 @@ object PrepareModel extends loamstream.LoamFile {
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.sqrtresVsFit)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.dist, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.sqrtresVsFit)
             .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}".split("/").last)
         
         }
