@@ -207,6 +207,8 @@ object ProjectConfig extends loamstream.LoamFile {
     assocPlatforms: Seq[String],
     maxPcaOutlierIterations: Int,
     covars: String,
+    finalPheno: String,
+    finalCovars: String,
     cohorts: Seq[String],
     metas: Option[Seq[String]],
     merges: Option[Seq[String]],
@@ -373,6 +375,7 @@ object ProjectConfig extends loamstream.LoamFile {
     shMergeRegenieSingleResults: Path,
     shMergeRegenieGroupResults: Path,
     shRegPlot: Path,
+    shRegenieStep0: Path,
     shRegenieStep1: Path,
     shRegenieStep2Single: Path,
     shRegenieStep2Group: Path,
@@ -1111,6 +1114,20 @@ object ProjectConfig extends loamstream.LoamFile {
             case true => ()
             case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
           }
+
+          val trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|"))
+
+          val covars = requiredStrList(config = model, field = "covars").mkString("+")
+
+          val finalPheno = trans match {
+            case Some(s) => pheno + "_" + s
+            case None => pheno
+          }
+
+          val finalCovars = trans match {
+            case Some("invn") => ""
+            case _ => covars
+          }
   
           val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
   
@@ -1188,11 +1205,13 @@ object ProjectConfig extends loamstream.LoamFile {
             id = id,
             schema = schema,
             pheno = pheno,
-            trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|")),
+            trans = trans,
             tests = tests,
             assocPlatforms = tests.map(e => e.split("\\.")(1)).distinct,
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
-            covars = requiredStrList(config = model, field = "covars").mkString("+"),
+            covars = covars,
+            finalPheno = finalPheno,
+            finalCovars = finalCovars,
             cohorts = cohorts,
             metas = (Schemas.filter(e => e.id == schema).head.design, metas) match {
               case ("full", Some(s)) => throw new CfgException("models.metas:  model " + id + " schema " + schema + " 'full' design and metas are not allowed")
@@ -1411,6 +1430,7 @@ object ProjectConfig extends loamstream.LoamFile {
         shMergeRegenieSingleResults = path(s"${scriptsDir}/merge_regenie_single_results.sh"),
         shMergeRegenieGroupResults = path(s"${scriptsDir}/merge_regenie_group_results.sh"),
         shRegPlot = path(s"${scriptsDir}/regplot.sh"),
+        shRegenieStep0 = path(s"${scriptsDir}/regenie.step0.sh"),
         shRegenieStep1 = path(s"${scriptsDir}/regenie.step1.sh"),
         shRegenieStep2Single = path(s"${scriptsDir}/regenie.step2.single.sh"),
         shRegenieStep2Group = path(s"${scriptsDir}/regenie.step2.group.sh"),

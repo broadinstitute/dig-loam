@@ -26,6 +26,20 @@ object AssocRegenie extends loamstream.LoamFile {
       case false => ""
     }
 
+    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
+
+      cmd"""${utils.bash.shRegenieStep0}
+        --plink ${utils.binary.binPlink}
+        --bfile ${arrayStores(array).prunedPlink.base}
+        --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
+        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.base}
+        """
+        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude}".split("/").last)
+
+    }
+
     drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep1.cpus, mem = projectConfig.resources.regenieStep1.mem, maxRunTime = projectConfig.resources.regenieStep1.maxRunTime) {
 
       cmd"""${utils.bash.shRegenieStep1}
@@ -33,14 +47,14 @@ object AssocRegenie extends loamstream.LoamFile {
         --bed ${arrayStores(array).prunedPlink.base}
         --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
         --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
+        --exclude ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude}
         --block-size ${projectConfig.regenieBlockSize.get}
         --threads ${projectConfig.regenieThreads.get}
         ${btString}
         ${lowmemString}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
         --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log}"""
-        
-        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno)
+        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.loco, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}".split("/").last)
 
@@ -72,7 +86,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --sample ${arrayStores(array).cleanBgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-          --pheno-name ${configModel.pheno}
+          --pheno-name ${configModel.finalPheno}
           --block-size ${projectConfig.regenieBlockSize.get}
           --threads ${projectConfig.regenieThreads.get}
           ${btString}
@@ -303,7 +317,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --sample ${arrayStores(array).cleanBgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-          --pheno-name ${configModel.pheno}
+          --pheno-name ${configModel.finalPheno}
           --block-size ${projectConfig.regenieBlockSize.get}
           --threads ${projectConfig.regenieThreads.get}
           ${btString}

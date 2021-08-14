@@ -38,6 +38,15 @@ while :; do
 				exit 1
 			fi
 			;;
+        --exclude)
+			if [ "$2" ]; then
+				exclude=$2
+				shift
+			else
+				echo "ERROR: --exclude requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--block-size)
 			if [ "$2" ]; then
 				blockSize=$2
@@ -99,6 +108,7 @@ echo "regenie: $regenie"
 echo "bed: $bed"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
+echo "exclude: $exclude"
 echo "blockSize: $blockSize"
 echo "threads: $threads"
 echo "bt: $bt"
@@ -125,6 +135,7 @@ $regenie \
 --bed $bed \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
+--exclude $exclude \
 --bsize $blockSize \
 --threads $threads \
 $btString \

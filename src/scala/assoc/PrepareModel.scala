@@ -78,7 +78,7 @@ object PrepareModel extends loamstream.LoamFile {
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable}".split("/").last)
     
     }
-    
+
     val trans = configModel.trans match {
       case Some(s) => configModel.trans.get
       case None => "N/A"
@@ -183,13 +183,13 @@ object PrepareModel extends loamstream.LoamFile {
             ${utils.r.rConvertPhenoToEpactsPed}
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-            --pheno-col ${configModel.pheno}
+            --pheno-analyzed ${configModel.finalPheno}
             --iid-col ${array.phenoFileId}
             --sex-col ${array.qcSampleFileSrSex}
             --male-code ${array.qcSampleFileMaleCode}
             --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
-            --covars "${configModel.covars}"
+            --covars-analyzed "${configModel.finalCovars}"
             --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
             --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
@@ -212,13 +212,13 @@ object PrepareModel extends loamstream.LoamFile {
             ${utils.r.rConvertPhenoToRegeniePhenoCovars}
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-            --pheno-col ${configModel.pheno}
+            --pheno-analyzed ${configModel.finalPheno}
             --iid-col ${array.phenoFileId}
             --sex-col ${array.qcSampleFileSrSex}
             --male-code ${array.qcSampleFileMaleCode}
             --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
-            --covars "${configModel.covars}"
+            --covars-analyzed "${configModel.finalCovars}"
             --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
             --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)

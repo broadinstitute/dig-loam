@@ -45,6 +45,11 @@ object ModelStores extends loamstream.LoamFile {
     summary: ModelSingleSummary
   )
 
+  final case class ModelRegenieStep0(
+    base: Path,
+    exclude: Store
+  )
+
   final case class ModelRegenieStep1(
     base: Path,
     log: Store,
@@ -103,6 +108,7 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelRegenie(
     pheno: Store,
     covars: Store,
+    step0: ModelRegenieStep0,
     step1: ModelRegenieStep1,
     assocSingle: Map[String, ModelRegenieAssocSingle],
     assocGroup: Map[String, ModelRegenieAssocGroup]
@@ -385,6 +391,10 @@ object ModelStores extends loamstream.LoamFile {
           Some(ModelRegenie(
             pheno = store(local_dir / s"${baseString}.regenie.pheno.tsv"),
             covars = store(local_dir / s"${baseString}.regenie.covars.tsv"),
+            step0 = ModelRegenieStep0(
+              base = local_dir / s"${baseString}.regenie.step0",
+              exclude = store(local_dir / s"${baseString}.regenie.step0.zero_variance_exclude.txt")
+            ),
             step1 = ModelRegenieStep1(
               base = local_dir / s"${baseString}.regenie.step1",
               log = store(local_dir / s"${baseString}.regenie.step1.log"),
