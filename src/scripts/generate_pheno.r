@@ -141,14 +141,14 @@ if(! args$binary) {
 		} else {
 			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
 		}
-		out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
-		pcsin <- pcs_include_quant(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "", n = n_pcs)
-		out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
+		out[,paste0(args$pheno_col,"_invn")]<-INVN(residuals(mf))
+		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_invn"), cv = "", n = n_pcs)
+		out_cols <- c(out_cols,paste0(args$pheno_col,"_invn"))
 	} else if(args$trans == 'log') {
 		cat("calculating log transformation\n")
-		out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
-		pcsin <- pcs_include_quant(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis, n = n_pcs)
-		out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
+		out[,paste0(args$pheno_col,"_log")]<-log(out[,args$pheno_col])
+		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_log"), cv = covars_analysis, n = n_pcs)
+		out_cols <- c(out_cols,paste0(args$pheno_col,"_log"))
 	} else {
 		cat("no transformation will be applied\n")
 		pcsin <- pcs_include_quant(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
