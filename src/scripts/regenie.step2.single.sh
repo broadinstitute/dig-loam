@@ -74,12 +74,12 @@ while :; do
 				exit 1
 			fi
 			;;
-        --threads)
+        --min-mac)
 			if [ "$2" ]; then
-				threads=$2
+				minMAC=$2
 				shift
 			else
-				echo "ERROR: --threads requires a non-empty argument."
+				echo "ERROR: --min-mac requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -134,7 +134,7 @@ echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
 echo "blockSize: $blockSize"
-echo "threads: $threads"
+echo "minMAC: $minMAC"
 echo "bt: $bt"
 echo "chr: $chr"
 echo "pred: $pred"
@@ -155,7 +155,7 @@ $regenie \
 --phenoFile $phenoFile \
 --bsize $blockSize \
 --threads $threads \
---minMAC 1 \
+--minMAC $minMAC \
 --verbose \
 $btString \
 --chr $chr \
