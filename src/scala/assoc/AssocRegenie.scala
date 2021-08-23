@@ -88,7 +88,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.finalPheno}
           --block-size ${projectConfig.regenieBlockSize.get}
-          --min-mac ${projectConfig.regenieMinMAC.get}
+          --min-mac ${projectConfig.regenieSingleMinMAC.get}
           ${btString}
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
