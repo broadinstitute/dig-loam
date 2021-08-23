@@ -154,7 +154,6 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 --bsize $blockSize \
---threads $threads \
 --minMAC $minMAC \
 --verbose \
 $btString \
