@@ -1295,6 +1295,7 @@ object ProjectConfig extends loamstream.LoamFile {
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
         regenieBlockSize = regenieBlockSize,
         regenieThreads = regenieThreads,
+        regenieSingleMinMAC = regenieSingleMinMAC,
         regenieLowmem = regenieLowmem,
         cloudResources = cloudResources,
         resources = resources,
