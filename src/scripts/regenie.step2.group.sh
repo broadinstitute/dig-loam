@@ -184,7 +184,7 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 --bsize $blockSize \
---aaf-bins 0.999999 \
+--aaf-bins 0.5 \
 --minMAC 1 \
 --threads $threads \
 --verbose \
