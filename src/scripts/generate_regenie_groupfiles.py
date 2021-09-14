@@ -85,7 +85,7 @@ def main(args=None):
 			mask_sets=annot_df['mask'].unique()
 			with open(args.masks_out, 'w') as mask_file:
 				for mask in args.masks.split(','):
-					mask_sets_used=[x for x in mask_sets if mask in x]
+					mask_sets_used=[x for x in mask_sets if mask in x.split(";")]
 					if len(mask_sets_used) > 0:
 						print("writing mask annotations used for mask " + mask)
 						mask_file.write(mask + "\t" + ",".join(mask_sets_used) + "\n")
