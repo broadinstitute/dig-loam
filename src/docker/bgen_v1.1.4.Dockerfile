@@ -11,6 +11,7 @@ RUN apt-get update && \
 
 RUN wget https://www.well.ox.ac.uk/~gav/resources/bgen_v1.1.4-Ubuntu16.04-x86_64.tgz && \
 	tar -zxvf bgen_v1.1.4-Ubuntu16.04-x86_64.tgz && \
+	chmod +x bgen_v1.1.4-Ubuntu16.04-x86_64 && \
 	cd bgen_v1.1.4-Ubuntu16.04-x86_64 && \
 	chmod +x bgenix && \
 	chmod +x cat-bgen && \
