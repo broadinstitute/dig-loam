@@ -91,10 +91,10 @@ object QcReport extends loamstream.LoamFile {
 
           drmWith(imageName = s"${utils.image.imgTools}") {
         
-            cmd"""zcat ${arrayStores(a).refData.vcf.head.data.local.get} | grep '^#' | tail -1 | cut -f10- | tr '\t' '\n' | awk 'BEGIN { OFS="\t" } {$$1=$$1; print $$1,$$1,0,0,0,-9}' > ${arrayStores(a).refData.fam}"""
+            cmd"""zcat ${arrayStores(a).refData.vcf.head.data.local.get} | grep '^#' | tail -1 | cut -f10- | tr '\t' '\n' | awk 'BEGIN { OFS="\t" } {$$1=$$1; print $$1,$$1,0,0,0,-9}' > ${arrayStores(a).refData.fam.head}"""
               .in(arrayStores(a).refData.vcf.head.data.local.get)
-              .out(arrayStores(a).refData.fam)
-              .tag(s"${arrayStores(a).refData.fam}".split("/").last)
+              .out(arrayStores(a).refData.fam.head)
+              .tag(s"${arrayStores(a).refData.fam.head}".split("/").last)
 
             cmd"""zcat ${arrayStores(a).refData.vcf.head.data.local.get} | grep -v '^#' | cut -f-5 | awk 'BEGIN { OFS="\t" } {$$1=$$1; print $$1,$$3,0,$$2,$$4,$$5}' > ${arrayStores(a).refData.bim.head}"""
               .in(arrayStores(a).refData.vcf.head.data.local.get)
