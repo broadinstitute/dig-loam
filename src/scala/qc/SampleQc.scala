@@ -200,14 +200,17 @@ object SampleQc extends loamstream.LoamFile {
       case Some(s) => s"""--duplicates-keep ${s.toString.split("@")(1)}"""
       case None => ""
     }
+
     val famsizeKeep = array.famsizeKeep match {
       case Some(s) => s"""--famsize-keep ${s.toString.split("@")(1)}"""
       case None => ""
     }
+
     val sampleqcKeep = array.sampleqcKeep match {
       case Some(s) => s"""--sampleqc-keep ${s.toString.split("@")(1)}"""
       case None => ""
     }
+
     val sexcheckKeep = array.sexcheckKeep match {
       case Some(s) => s"""--sexcheck-keep ${s.toString.split("@")(1)}"""
       case None => ""

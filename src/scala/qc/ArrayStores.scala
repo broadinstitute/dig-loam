@@ -832,11 +832,11 @@ object ArrayStores extends loamstream.LoamFile {
       sampleQcMetricClusterData = sampleQcMetricClusterData,
       filterQc = filterQc,
       filterPostQc = filterPostQc,
-      ancestryOutliersKeep = arrayCfg.ancestryOutliersKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
-      duplicatesKeep = arrayCfg.duplicatesKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
-      famsizeKeep = arrayCfg.famsizeKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
-      sampleqcKeep = arrayCfg.sampleqcKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
-      sexcheckKeep = arrayCfg.sexcheckKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
+      ancestryOutliersKeep = arrayCfg.ancestryOutliersKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
+      duplicatesKeep = arrayCfg.duplicatesKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
+      famsizeKeep = arrayCfg.famsizeKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
+      sampleqcKeep = arrayCfg.sampleqcKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
+      sexcheckKeep = arrayCfg.sexcheckKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
       cleanVcf = cleanVcf,
       cleanBgen = cleanBgen)
   
