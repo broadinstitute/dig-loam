@@ -241,6 +241,11 @@ object ArrayStores extends loamstream.LoamFile {
     sampleQcMetricClusterData: Map[String, SampleQcMetricClusterData],
     filterQc: FilterQc,
     filterPostQc: FilterPostQc,
+    ancestryOutliersKeep: Option[Store],
+    duplicatesKeep: Option[Store],
+    famsizeKeep: Option[Store],
+    sampleqcKeep: Option[Store],
+    sexcheckKeep: Option[Store],
     cleanVcf: CleanVcf,
     cleanBgen: Option[MultiPathBgen])
   
@@ -827,6 +832,11 @@ object ArrayStores extends loamstream.LoamFile {
       sampleQcMetricClusterData = sampleQcMetricClusterData,
       filterQc = filterQc,
       filterPostQc = filterPostQc,
+      ancestryOutliersKeep = arrayCfg.ancestryOutliersKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
+      duplicatesKeep = arrayCfg.duplicatesKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
+      famsizeKeep = arrayCfg.famsizeKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
+      sampleqcKeep = arrayCfg.sampleqcKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
+      sexcheckKeep = arrayCfg.sexcheckKeep match { case Some(s) => store(path(checkPath(s))).asInput; case None => None },
       cleanVcf = cleanVcf,
       cleanBgen = cleanBgen)
   

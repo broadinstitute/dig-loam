@@ -192,38 +192,35 @@ object SampleQc extends loamstream.LoamFile {
      */
   
     val ancestryOutliersKeep = array.ancestryOutliersKeep match {
-      case Some(s) => s.mkString(",")
-      case None => None
+      case Some(s) => s"""--ancestry-outliers-keep ${s.toString.split("@")(1)}"""
+      case None => ""
     }
-  
+
     val duplicatesKeep = array.duplicatesKeep match {
-      case Some(s) => s.mkString(",")
-      case None => None
+      case Some(s) => s"""--duplicates-keep ${s.toString.split("@")(1)}"""
+      case None => ""
     }
-  
     val famsizeKeep = array.famsizeKeep match {
-      case Some(s) => s.mkString(",")
-      case None => None
+      case Some(s) => s"""--famsize-keep ${s.toString.split("@")(1)}"""
+      case None => ""
     }
-  
     val sampleqcKeep = array.sampleqcKeep match {
-      case Some(s) => s.mkString(",")
-      case None => None
+      case Some(s) => s"""--sampleqc-keep ${s.toString.split("@")(1)}"""
+      case None => ""
     }
-  
     val sexcheckKeep = array.sexcheckKeep match {
-      case Some(s) => s.mkString(",")
-      case None => None
+      case Some(s) => s"""--sexcheck-keep ${s.toString.split("@")(1)}"""
+      case None => ""
     }
     
     drmWith(imageName = s"${utils.image.imgPython2}") {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyMakeSamplesRestoreTable}
-        --ancestry-outliers-keep "${array.ancestryOutliersKeep.mkString(",")}"
-        --duplicates-keep "${array.duplicatesKeep.mkString(",")}"
-        --famsize-keep "${array.famsizeKeep.mkString(",")}"
-        --sampleqc-keep "${array.sampleqcKeep.mkString(",")}"
-        --sexcheck-keep "${array.sexcheckKeep.mkString(",")}"
+        ${ancestryOutliersKeep}
+        ${duplicatesKeep}
+        ${famsizeKeep}
+        ${sampleqcKeep}
+        ${sexcheckKeep}
         --out ${arrayStores(array).filterQc.samplesRestore}"""
         .out(arrayStores(array).filterQc.samplesRestore)
         .tag(s"${arrayStores(array).filterQc.samplesRestore}".split("/").last)
