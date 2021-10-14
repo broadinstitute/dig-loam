@@ -16,11 +16,8 @@ def main(args=None):
 		for x in args.variant_exclusions:
 			with open(x.split(",")[1]) as mo:
 				failed = [l.split("\t")[2] for l in mo.read().splitlines()]
-			if len(failed) > 0:
 				text_dict[x.split(",")[0]] = failed
 
-		if len(text_dict) == 0:
-			text1 = "no variants"
 		if len(text_dict) == 1:
 			text1 = str("{0:,d}".format(len(text_dict[text_dict.keys()[0]]))) + " variants"
 		if len(text_dict) == 2:

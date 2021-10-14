@@ -192,27 +192,27 @@ object SampleQc extends loamstream.LoamFile {
      */
   
     val ancestryOutliersKeep = array.ancestryOutliersKeep match {
-      case Some(s) => s"""--ancestry-outliers-keep ${s.toString.split("@")(1)}"""
+      case Some(s) => s"""--ancestry-outliers-keep ${s}"""
       case None => ""
     }
 
     val duplicatesKeep = array.duplicatesKeep match {
-      case Some(s) => s"""--duplicates-keep ${s.toString.split("@")(1)}"""
+      case Some(s) => s"""--duplicates-keep ${s}"""
       case None => ""
     }
 
     val famsizeKeep = array.famsizeKeep match {
-      case Some(s) => s"""--famsize-keep ${s.toString.split("@")(1)}"""
+      case Some(s) => s"""--famsize-keep ${s}"""
       case None => ""
     }
 
     val sampleqcKeep = array.sampleqcKeep match {
-      case Some(s) => s"""--sampleqc-keep ${s.toString.split("@")(1)}"""
+      case Some(s) => s"""--sampleqc-keep ${s}"""
       case None => ""
     }
 
     val sexcheckKeep = array.sexcheckKeep match {
-      case Some(s) => s"""--sexcheck-keep ${s.toString.split("@")(1)}"""
+      case Some(s) => s"""--sexcheck-keep ${s}"""
       case None => ""
     }
     
