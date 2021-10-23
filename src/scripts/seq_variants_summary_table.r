@@ -35,10 +35,11 @@ for(f in args$stats_in) {
 
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "0"]<-"Unpl"
 	dfs[[x]]$chr_class[dfs[[x]]$chr %in% as.character(seq(1,22))]<-"Auto"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "23"]<-"X"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "24"]<-"Y"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "25"]<-"XY"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "26"]<-"MT"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "23" | dfs[[x]]$chr == "X" ]<-"X"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "24" | dfs[[x]]$chr == "Y"]<-"Y"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "25" | dfs[[x]]$chr == "XY"]<-"XY"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "26" | dfs[[x]]$chr == "MT"]<-"MT"
+	
 	dfs[[x]]$freq_group[dfs[[x]]$MAF == 0]<-"[0]"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF > 0 & dfs[[x]]$MAF < 0.001]<-"(0,0.001)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.001 & dfs[[x]]$MAF < 0.005]<-"[0.001,0.005)"

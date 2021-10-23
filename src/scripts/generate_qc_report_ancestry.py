@@ -13,10 +13,10 @@ def main(args=None):
 		f.write("\n"); f.write(r"\section{Sample QC}"); f.write("\n")
 		f.write("\n"); f.write(r"\subsection{Ancestry Inference}"); f.write("\n")
 
-		text=r"Prior to association testing, it is useful to infer ancestry in relation to a modern reference panel representing the major human populations. While our particular sample QC process does not directly depend on this information, it is useful to downstream analysis when stratifying the calculation of certain variant statistics that are sensitive to population substructure (eg. Hardy Weinberg equilibrium). Additionally, ancestry inference may identify samples that do not seem to fit into a well-defined major population group, which would allow them to be flagged for removal from association testing."
+		text=r"Prior to association testing, we infer ancestry in relation to a modern reference panel representing the major human populations. While our particular sample QC process does not directly depend on this information, it is useful to downstream analysis when stratifying the calculation of certain variant statistics that are sensitive to population substructure (eg. Hardy Weinberg equilibrium). Additionally, ancestry inference may identify samples that do not seem to fit into a well-defined major population group, which would allow them to be flagged for removal from association testing."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
-		text1 = "each array" if len(args.kg_merged_bim) > 1 else "the array"
+		text1 = "each batch of data was" if len(args.kg_merged_bim) > 1 else "the samples were"
 		text2_dict = collections.OrderedDict()
 		for x in args.kg_merged_bim:
 			df = pd.read_table(x.split(",")[1], header=None)
@@ -32,7 +32,7 @@ def main(args=None):
 		elif len(text2_dict) > 2:
 			text2 = ", ".join([str(text2_dict[x]) + " " + x.replace("_","\_") for x in text2_dict.keys()[0:(len(text2_dict.keys())-1)]]) + " and " + str(text2_dict[text2_dict.keys()[len(text2_dict.keys())-1]]) + " " + text2_dict.keys()[len(text2_dict.keys())-1].replace("_","\_") + " variants"
 
-		text=r"Initially, {0} was merged with reference data. In this case, the reference used was the entire set of 2,504 1000 Genomes Phase 3 Version 5 \cite{{1KG}} samples and our method restricted this merging to a set of 5,166 known ancestry informative SNPs. The merged data consisted of {1}. After merging, principal components (PCs) were computed using FlashPCA2 \cite{{flashpca2}}".format(text1, text2)
+		text=r"Initially, {0} merged with reference data. In this case, the reference used was the entire set of 2,504 1000 Genomes Phase 3 Version 5 \cite{{1KG}} samples and our method restricted this merging to a set of 5,835 known ancestry informative SNPs. The merged data consisted of {1}. After merging, principal components (PCs) were computed using FlashPCA2 \cite{{flashpca2}}".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if len(args.pca_plots) > 1:
@@ -79,7 +79,7 @@ def main(args=None):
 				r"\end{figure}"]
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		text1 = "the array"
+		text1 = "each batch of data" if len(args.kg_merged_bim) > 1 else "the samples"
 		if len(args.cluster_plots) > 1:
 			i = 0
 			for x in args.cluster_plots:
@@ -143,7 +143,7 @@ def main(args=None):
 
 		if len(args.kg_merged_bim) > 1:
 			i = 0
-			text1 = "A final population assignment is determined by setting a hierarchy on the genotyping technologies ("
+			text1 = "A final population assignment was determined by setting a hierarchy on the batches of data ("
 			for x in args.kg_merged_bim:	
 				i = i + 1
 				array = x.split(",")[0]
@@ -151,10 +151,10 @@ def main(args=None):
 					text1 = text1 + array.replace("_","\_")
 				else:
 					text1 = text1 + " > " + array.replace("_","\_")
-			text1 = text1 + ") and assigning each sample to the population determined using the highest technology"
+			text1 = text1 + ") and assigning each sample to the population determined using the highest batch in the hierarchy in which the sample was included."
 		else:
-			text1="Table \ref{table:ancestryFinalTable} describes the final population assignments."
-		text=r"The resulting clusters are then combined with the nearest 1000 Genomes cohort. Table \ref{{table:ancestryClusterTable}} describes the classification using this method. {0}.".format(text1)
+			text1="Table \\ref{table:ancestryFinalTable} describes the final population assignments."
+		text=r"The resulting clusters were then combined with the nearest 1000 Genomes cohort. Table \ref{{table:ancestryClusterTable}} describes the classification using this method. {0}.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[

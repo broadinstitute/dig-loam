@@ -54,13 +54,13 @@ object QcReport extends loamstream.LoamFile {
 
       case n if n > 0 =>
 
-        val statsStrings = { for { a <- projectConfig.Arrays if a.technology != "gwas" } yield { Seq(a.id, s"""${arrayStores(a).refData.variantMetrics.local.get.path}""").mkString(",") } }
+        val seqStatsStrings = { for { a <- projectConfig.Arrays if a.technology != "gwas" } yield { Seq(a.id, s"""${arrayStores(a).refData.variantMetrics.local.get.path}""").mkString(",") } }
 
         drmWith(imageName = s"${utils.image.imgR}") {
         
           cmd"""${utils.binary.binRscript} --vanilla --verbose
             ${utils.r.rSeqVariantsSummaryTable}
-            --stats-in ${statsStrings.mkString(" ")}
+            --stats-in ${seqStatsStrings.mkString(" ")}
             --out ${qcReportStores.tablesData.seqVariantsSummary}"""
             .in(arrayStores.map(e => e._2).map(e => e.refData.variantMetrics.local).flatten.toSeq)
             .out(qcReportStores.tablesData.seqVariantsSummary)
@@ -77,6 +77,20 @@ object QcReport extends loamstream.LoamFile {
             .tag(s"${qcReportStores.tablesData.seqVariantsSummary}.touch".split("/").last)
 
         }
+
+    }
+
+    val statsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).filterPostQc.variantsStats.local.get.path}""").mkString(",") } }
+
+    drmWith(imageName = s"${utils.image.imgR}") {
+    
+      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        ${utils.r.rVariantsExcludeSummaryTable}
+        --stats ${statsStrings.mkString(" ")}
+        --out ${qcReportStores.tablesData.variantsExcludeSummary}"""
+        .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsStats.local).flatten.toSeq)
+        .out(qcReportStores.tablesData.variantsExcludeSummary)
+        .tag(s"${qcReportStores.tablesData.variantsExcludeSummary}.r".split("/").last)
 
     }
 
@@ -98,7 +112,7 @@ object QcReport extends loamstream.LoamFile {
     
     }
     
-    val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.format, a.filename).mkString(",") } }
+    val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.technology, a.format, a.filename).mkString(",") } }
     
     drmWith(imageName = s"${utils.image.imgPython2}") {
     
@@ -233,8 +247,8 @@ object QcReport extends loamstream.LoamFile {
         --narrays ${projectConfig.nArrays}
         ${imissRemoveCmdStrings}
         --fam ${famStrings(0)}
-        --geno-variants-summary-table ${qcReportStores.tablesData.rawVariantsSummary} 
-        --seq-variants-summary-table ${qcReportStores.tablesData.seqVariantsSummary} 
+        --geno-variants-summary-table ${qcReportStores.tablesData.rawVariantsSummary.path.toAbsolutePath()} 
+        --seq-variants-summary-table ${qcReportStores.tablesData.seqVariantsSummary.path.toAbsolutePath()} 
         --bim ${bimStrings.mkString(" ")}
         --out ${qcReportStores.texData.data}"""
         .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).flatten.toSeq ++ bimIn :+ qcReportStores.tablesData.rawVariantsSummary :+ qcReportStores.tablesData.seqVariantsSummary)
@@ -413,6 +427,7 @@ object QcReport extends loamstream.LoamFile {
     }
     
     val finalVariantExclusionsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).filterPostQc.variantsExclude.local.get.path}""").mkString(",") } }
+    val postQcVariantFiltersStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).filterPostQc.vFilters.local.get.path}""").mkString(",") } }
       
     if (projectConfig.nArrays > 1) {
     
@@ -435,8 +450,10 @@ object QcReport extends loamstream.LoamFile {
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
           --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
           --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
+          --variants-exclude-table ${qcReportStores.tablesData.variantsExcludeSummary.path.toAbsolutePath()}
+          --postqc-variant-filters ${postQcVariantFiltersStrings.mkString(" ")}
           --out ${qcReportStores.texData.variantQc}"""
-          .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+          .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf :+ qcReportStores.tablesData.variantsExcludeSummary)
           .out(qcReportStores.texData.variantQc)
           .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
     
@@ -449,8 +466,10 @@ object QcReport extends loamstream.LoamFile {
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
           --bim ${bimStrings.mkString(" ")}
           --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
+          --variants-exclude-table ${qcReportStores.tablesData.variantsExcludeSummary.path.toAbsolutePath()}
+          --postqc-variant-filters ${postQcVariantFiltersStrings.mkString(" ")}
           --out ${qcReportStores.texData.variantQc}"""
-          .in(bimIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
+          .in(bimIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.tablesData.variantsExcludeSummary)
           .out(qcReportStores.texData.variantQc)
           .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
     
