@@ -154,7 +154,6 @@ if(! args$binary) {
 		pcsin <- pcs_include_quant(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 	}
 } else {
-	save.image(file="session.RData")
 	cat("no transformation will be applied\n")
 	pcsin <- pcs_include_binary(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 }
