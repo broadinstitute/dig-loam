@@ -22,7 +22,7 @@ RUN apt-get update && apt-get -y install \
 ENV OPT /opt/vep
 ENV OPT_SRC $OPT/src
 ENV HTSLIB_DIR $OPT_SRC/htslib
-ENV BRANCH release/97.3
+ENV BRANCH release/97
 
 # Working directory
 WORKDIR $OPT_SRC
@@ -35,7 +35,10 @@ RUN if [ "$BRANCH" = "master" ]; \
     # Get ensembl cpanfile in order to get the list of the required Perl libraries
     wget -q "https://raw.githubusercontent.com/Ensembl/ensembl/$BRANCH/cpanfile" -O "ensembl_cpanfile" && \
     # Clone ensembl-vep git repository
-    git clone $BRANCH_OPT --depth 1 https://github.com/Ensembl/ensembl-vep.git && chmod u+x ensembl-vep/*.pl && \
+    #git clone $BRANCH_OPT --depth 1 https://github.com/Ensembl/ensembl-vep.git && chmod u+x ensembl-vep/*.pl && \
+    wget https://github.com/rmkoesterer/ensembl-vep/archive/refs/tags/release/97.3.tar.gz && \
+    tar -xvf 97.3.tar.gz && \
+    mv ensembl-vep-release-97.3 ensembl-vep && \
     # Clone ensembl-variation git repository and compile C code
     git clone $BRANCH_OPT --depth 1 https://github.com/Ensembl/ensembl-variation.git && \
     mkdir var_c_code && \
