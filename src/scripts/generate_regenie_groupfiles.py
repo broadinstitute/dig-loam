@@ -7,11 +7,6 @@ import re
 import gzip
 import datatable as dt
 
-def write_empty_groupfiles(out):
-	Path(out + ".regenie.annotations.tsv").touch()
-	Path(out + ".regenie.setlist.tsv").touch()
-	Path(out + ".regenie.masks.tsv").touch()
-
 def main(args=None):
 
 	with gzip.open(args.filters, 'rb') as f:
@@ -95,12 +90,16 @@ def main(args=None):
 		else:
 
 			print("no variants with non-missing gene annotations remaining ... writing empty files")
-			write_empty_groupfiles(args.out)
+			Path(args.annotations_out).touch()
+			Path(args.setlist_out).touch()
+			Path(args.masks_out).touch()
 
 	else:
 
 		print("no variants remaining after standard filters ... writing empty files")
-		write_empty_groupfiles(args.out)
+		Path(args.annotations_out).touch()
+		Path(args.setlist_out).touch()
+		Path(args.masks_out).touch()
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
