@@ -62,7 +62,7 @@ object PrepareModel extends loamstream.LoamFile {
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
         --pheno-col ${configModel.pheno}
-        --sex-col ${array.qcSampleFileSrSex}
+        --sex-col ${array.phenoFileSex}
         --iid-col ${array.phenoFileId}
         --sampleqc-in ${arrayStores(array).sampleQcStats}
         --kinship-in ${arrayStores(array).kin0}
@@ -185,7 +185,7 @@ object PrepareModel extends loamstream.LoamFile {
             --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --pheno-analyzed ${configModel.finalPheno}
             --iid-col ${array.phenoFileId}
-            --sex-col ${array.qcSampleFileSrSex}
+            --sex-col ${array.phenoFileSex}
             --male-code ${array.qcSampleFileMaleCode}
             --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
@@ -214,7 +214,7 @@ object PrepareModel extends loamstream.LoamFile {
             --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --pheno-analyzed ${configModel.finalPheno}
             --iid-col ${array.phenoFileId}
-            --sex-col ${array.qcSampleFileSrSex}
+            --sex-col ${array.phenoFileSex}
             --male-code ${array.qcSampleFileMaleCode}
             --female-code ${array.qcSampleFileFemaleCode}
             ${transString}
