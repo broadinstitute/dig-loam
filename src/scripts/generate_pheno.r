@@ -146,6 +146,11 @@ if(! args$binary) {
 		out_cols <- c(out_cols,paste0(args$pheno_col,"_invn"))
 	} else if(args$trans == 'log') {
 		cat("calculating log transformation\n")
+		nzero <- nrow(out[out[,args$pheno_col] == 0,])
+		if(nzero > 0) {
+			cat("removing ",nzero," 0 values to allow for log transformation\n")
+			out[,args$pheno_col][out[,args$pheno_col] == 0]<-NA
+		}
 		out[,paste0(args$pheno_col,"_log")]<-log(out[,args$pheno_col])
 		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_log"), cv = covars_analysis, n = n_pcs)
 		out_cols <- c(out_cols,paste0(args$pheno_col,"_log"))

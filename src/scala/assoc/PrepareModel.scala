@@ -242,8 +242,8 @@ object PrepareModel extends loamstream.LoamFile {
           cmd"""${utils.binary.binRscript} --vanilla --verbose
             ${utils.r.rNullModelResidualPlot}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-            --pheno-col ${configModel.pheno}
-            --covars "${configModel.covars}"
+            --pheno-col ${configModel.finalPheno}
+            --covars "${configModel.finalCovars}"
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
