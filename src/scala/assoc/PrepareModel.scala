@@ -51,6 +51,11 @@ object PrepareModel extends loamstream.LoamFile {
       case n if n > 0 => "--keep-related"
       case _ => ""
     }
+
+    val covarsString = configModel.covars match {
+      case Some(_) => s"""--covars "${configModel.covars.get}""""
+      case None => ""
+    }
   
     drmWith(imageName = s"${utils.image.imgR}") {
     
@@ -67,7 +72,7 @@ object PrepareModel extends loamstream.LoamFile {
         --sampleqc-in ${arrayStores(array).sampleQcStats}
         --kinship-in ${arrayStores(array).kin0}
         ${keepRelated}
-        --covars "${configModel.covars}"
+        ${covarsString}
         --out-id-map ${modelStores((configModel, configSchema, configCohorts, configMeta)).sampleMap}
         --out-cohorts-map ${modelStores((configModel, configSchema, configCohorts, configMeta)).cohortMap.local.get}
         --out-pheno-prelim ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}
@@ -87,6 +92,11 @@ object PrepareModel extends loamstream.LoamFile {
     val modelType = pheno.binary match {
       case true => "binary"
       case false => "quantitative"
+    }
+
+    val covarsStringBash = configModel.covars match {
+      case Some(_) => s""""${configModel.covars.get}""""
+      case None => "___NONE___"
     }
     
     drmWith(imageName = s"${utils.image.imgFlashPca}", cores = projectConfig.resources.flashPca.cpus, mem = projectConfig.resources.flashPca.mem, maxRunTime = projectConfig.resources.flashPca.maxRunTime) {
@@ -112,7 +122,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${array.phenoFileId}
         "${trans}"
         ${modelType}
-        "${configModel.covars}"
+        ${covarsStringBash}
         ${projectConfig.minPCs}
         ${projectConfig.maxPCs}
         ${projectConfig.nStddevs}
@@ -137,7 +147,7 @@ object PrepareModel extends loamstream.LoamFile {
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pheno-name ${configModel.pheno}
             --iid-col ${array.phenoFileId}
-            --covars "${configModel.covars}"
+            ${covarsString}
             --cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
             --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
             --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
@@ -155,7 +165,7 @@ object PrepareModel extends loamstream.LoamFile {
             --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --pheno-name ${configModel.pheno}
             --iid-col ${array.phenoFileId}
-            --covars "${configModel.covars}"
+            ${covarsString}
             --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
             --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)

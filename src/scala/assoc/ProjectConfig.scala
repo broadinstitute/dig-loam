@@ -207,7 +207,7 @@ object ProjectConfig extends loamstream.LoamFile {
     tests: Seq[String],
     assocPlatforms: Seq[String],
     maxPcaOutlierIterations: Int,
-    covars: String,
+    covars: Option[String],
     finalPheno: String,
     finalCovars: String,
     cohorts: Seq[String],
@@ -1121,7 +1121,10 @@ object ProjectConfig extends loamstream.LoamFile {
 
           val trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|"))
 
-          val covars = requiredStrList(config = model, field = "covars").mkString("+")
+          val covars = optionalStrList(config = model, field = "covars") match {
+            case Some(l) => Some(l.mkString("+"))
+            case None => None
+          }
 
           val finalPheno = trans match {
             case Some(s) => pheno + "_" + s
@@ -1130,7 +1133,11 @@ object ProjectConfig extends loamstream.LoamFile {
 
           val finalCovars = trans match {
             case Some("invn") => ""
-            case _ => covars
+            case _ =>
+              covars match {
+                case Some(s) => covars.get
+                case None => ""
+              }
           }
   
           val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))

@@ -27,16 +27,16 @@ def main(args=None):
 	print "reading phenotypes from file"
 	df = pd.read_table(args.pheno, sep="\t", dtype = {args.iid_col: np.str})
 
-	covars_factors = args.covars.split("+")
-
 	num_covars = []
 	cat_covars = []
-	for cv in covars_factors:
-		cvv = [char for char in cv]
-		if cvv[0] == "[" and cvv[len(cvv)-1] == "]":
-			cat_covars.append("".join(cvv[1:(len(cvv)-1)]))
-		else:
-			num_covars.append(cv)
+	if args.covars:
+		covars_factors = args.covars.split("+")
+		for cv in covars_factors:
+			cvv = [char for char in cv]
+			if cvv[0] == "[" and cvv[len(cvv)-1] == "]":
+				cat_covars.append("".join(cvv[1:(len(cvv)-1)]))
+			else:
+				num_covars.append(cv)
 
 	for cc in cat_covars:
 		df[cc] = df[cc].astype('category')
@@ -133,11 +133,11 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cohorts-map', help='a model cohort map')
+	parser.add_argument('--covars', help='a + delimited list of covariates, indicating categorical covars with []')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--pheno', help='a phenotype file name', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a phenotype name', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
-	requiredArgs.add_argument('--covars', help='a + delimited list of covariates, indicating categorical covars with []', required=True)
 	requiredArgs.add_argument('--out-plot', help='a plot output filename ending in .png or .pdf', required=True)
 	requiredArgs.add_argument('--out-vars-summary', help='a model vars summary output filename', required=True)
 	args = parser.parse_args()

@@ -71,8 +71,12 @@ pcs_include_binary <- function(d, y, cv, n) {
 	return(inpcs)
 }
 
-cat("removing factor indicators from covariates\n")
-covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+if(args$covars != "___NONE___") {
+	cat("removing factor indicators from covariates\n")
+	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+} else {
+	covars <- c()
+}
 
 cat("read in preliminary phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
@@ -83,35 +87,41 @@ if(length(unique(pheno[,args$pheno_col])) == 1) {
 	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
 	failed <- TRUE
 }
-covars_factors <- unlist(strsplit(args$covars,split="\\+"))
-for(cv in covars_factors) {
-	cvv <- unlist(strsplit(cv,split=""))
-	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
-		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		if(length(unique(pheno[,cvb])) == 1) {
-			cat(paste0("covariate ",cvb," has zero variance\n"))
-			failed <- TRUE
+if(length(covars) > 0) {
+	covars_factors <- unlist(strsplit(args$covars,split="\\+"))
+	for(cv in covars_factors) {
+		cvv <- unlist(strsplit(cv,split=""))
+		if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+			cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+			if(length(unique(pheno[,cvb])) == 1) {
+				cat(paste0("covariate ",cvb," has zero variance\n"))
+				failed <- TRUE
+			} else {
+				for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
+					pheno[,paste0(cvb,val)] <- 0
+					pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
+					covars_factors <- c(covars_factors,paste0(cvb,val))
+				}
+			}
+			covars_factors <- covars_factors[covars_factors != cv]
 		} else {
-			for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-				pheno[,paste0(cvb,val)] <- 0
-				pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-				covars_factors <- c(covars_factors,paste0(cvb,val))
+			if(length(unique(pheno[,cv])) == 1) {
+				cat(paste0("covariate ",cv," has zero variance\n"))
+				failed <- TRUE
 			}
 		}
-		covars_factors <- covars_factors[covars_factors != cv]
-	} else {
-		if(length(unique(pheno[,cv])) == 1) {
-			cat(paste0("covariate ",cv," has zero variance\n"))
-			failed <- TRUE
-		}
 	}
+} else {
+	covars_factors <- c()
 }
 if(failed) {
 	cat("exiting due to invalid model\n")
 	quit(status=1)
 }
 covars_analysis<-paste(c(covars_factors,"1"),collapse="+")
-out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
+if(length(covars_factors) > 0) {
+	out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
+}
 
 cat("read in pcs and merge pheno into them\n")
 pcs<-read.table(args$pcs_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c("IID"="character"))

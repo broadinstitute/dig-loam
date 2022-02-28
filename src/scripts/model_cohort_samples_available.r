@@ -24,9 +24,6 @@ args<-parser$parse_args()
 
 print(args)
 
-cat("removing factor indicators from covariates\n")
-covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
-
 cat("read in pheno file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 
@@ -45,8 +42,16 @@ pheno<-merge(pheno,ancestry,all.x=T)
 cat("limiting to cohorts in list\n")
 pheno<-pheno[pheno$COHORT %in% unlist(strsplit(args$cohorts,",")),]
 
-cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col, covars), collapse=",")),"\n")
-pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col, covars)]
+if(! is.null(args$covars)) {
+	cat("removing factor indicators from covariates\n")
+	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+	cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col, covars), collapse=",")),"\n")
+	pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col, covars)]
+} else {
+	cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col), collapse=",")),"\n")
+	pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col)]
+}
+
 out_cols<-colnames(pheno)
 
 id_map <- data.frame(ID = pheno[,args$iid_col])

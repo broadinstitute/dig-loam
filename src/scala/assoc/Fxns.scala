@@ -688,9 +688,16 @@ object Fxns extends loamstream.LoamFile {
     var fc = Seq[String]()
     for {
       x <- models.map(e => e.covars)
-      y <- x.split("\\+")
     } yield {
-      fc = fc ++ Seq(y.replace("[","").replace("]",""))
+      x match {
+        case Some(s) =>
+          for {
+            y <- x.get.split("\\+")
+          } yield {
+            fc = fc ++ Seq(y.replace("[","").replace("]",""))
+          }
+		case _ => ()
+      }
     }
     fp = fp.distinct
     fc = fc.distinct
