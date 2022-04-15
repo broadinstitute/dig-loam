@@ -55,5 +55,5 @@ IFS=',' read -r -a array <<< "$chrs"
 (for chr in "${array[@]}"; do \
 	resultsFile=`echo $results | sed "s/___CHR___/${chr}/g"`; \
 	zcat $resultsFile | sed '1d'; \
-done) | awk '{if($1 == "X") { idx=23 } else { if($1 == "Y") { idx=24 } else { if($1 == "MT") { idx=25 } else { idx=$1 } } } print idx"\t"$0 }' | sort -n -k1,1 -k3,3 | cut -f2- \
+done) | awk '{if($1 == "X") { idx=23 } else { if($1 == "Y") { idx=24 } else { if($1 == "MT") { idx=25 } else { idx=$1 } } } print idx"\t"$0 }' | sort -T . -n -k1,1 -k3,3 | cut -f2- \
 ) | bgzip -c > $out
