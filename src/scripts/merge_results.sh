@@ -54,5 +54,5 @@ results1=`echo $results | sed "s/___GROUP___/${group1}/g"`; \
 	groupid=`echo $line | awk '{print $1}'`; \
 	groupResults=`echo $results | sed "s/___GROUP___/${groupid}/g"`; \
 	zcat $groupResults | sed '1d'; \
-done < $groupf) | awk '{if($1 == "X") { idx=23 } else { if($1 == "Y") { idx=24 } else { if($1 == "MT") { idx=25 } else { idx=$1 } } } print idx"\t"$0 }' | sort -n -k1,1 -k3,3 | cut -f2- \
+done < $groupf) | awk '{if($1 == "X") { idx=23 } else { if($1 == "Y") { idx=24 } else { if($1 == "MT") { idx=25 } else { idx=$1 } } } print idx"\t"$0 }' | sort -T . -n -k1,1 -k3,3 | cut -f2- \
 ) | bgzip -c > $out

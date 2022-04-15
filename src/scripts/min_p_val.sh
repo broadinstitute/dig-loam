@@ -1,3 +1,5 @@
+#!/bin/bash
+
 in=$1
 out=$2
 gene_map=$3
@@ -21,11 +23,11 @@ cat $gene_map ${out}.temp02.tsv | \
 awk -F " " 'NF==2 {map[$1]=$2} NF>2 && map[$1] {$1=map[$1]; print $0}' OFS="\t" | awk -F "\t" 'NR>1 {print $0, $1 "." $2}' OFS='\t' | \
 awk -F "\t" '{print $4, "Var_" $4, $3}' OFS='\t'| sed '1iID_num\tVar\tMAF' > ${out}.temp2.tsv
 
-rm ${out}.temp01.tsv
-rm ${out}.temp02.tsv
-
-rm ${out}.temp1.tsv
-rm ${out}.temp2.tsv
+#rm ${out}.temp01.tsv
+#rm ${out}.temp02.tsv
+#
+#rm ${out}.temp1.tsv
+#rm ${out}.temp2.tsv
 
 $python $python_script --p-value-file ${out}.temp1.tsv \
 --gene-group-file ${out}.temp1.tsv --group-variant-file ${out}.temp2.tsv --p-value-file-id-col 2 --p-value-file-p-col 3 \
