@@ -17,6 +17,7 @@ object ProjectStores extends loamstream.LoamFile {
     hailUtils: MultiStore,
     regionsExclude: MultiStore,
     kgPurcellVcf: MultiStore,
+    dbSNPvcf: MultiStore,
     kgSample: MultiStore,
     fasta: Store,
     vepCacheDir: Store,
@@ -73,6 +74,10 @@ object ProjectStores extends loamstream.LoamFile {
       kgSample = MultiStore(
         local = Some(store(path(checkPath(projectConfig.kgSample))).asInput),
         google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.kgSample}".split("/").last)); case false => None }
+      ),
+      dbSNPvcf = MultiStore(
+        local = Some(store(path(checkPath(projectConfig.dbSNPvcf))).asInput),
+        google = projectConfig.hailCloud match { case true => Some(store(projectConfig.cloudShare.get / s"${projectConfig.dbSNPvcf}".split("/").last)); case false => None }
       ),
       fasta = store(path(checkPath(projectConfig.fasta))).asInput,
       vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,

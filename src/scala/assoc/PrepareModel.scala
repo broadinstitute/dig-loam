@@ -264,6 +264,62 @@ object PrepareModel extends loamstream.LoamFile {
 
     }
 
+
+
+
+
+
+
+
+
+
+    projectConfig.hailCloud match {
+    
+      case true =>
+        
+        googleWith(projectConfig.cloudResources.mtCluster) {
+        
+          hail"""${utils.python.pyHailModelVariantStats} --
+            --hail-utils ${projectStores.hailUtils.google.get}
+            --mt-in ${arrayStores(array).refMt.google.get}
+            --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
+            --iid-col ${array.phenoFileId}
+            --pheno-col ${configModel.pheno}
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.google.get}
+            --cloud
+            --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.google.get}"""
+              .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.google.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}.google".split("/").last)
+        
+        }
+        
+        local {
+        
+          googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get)
+          googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.local.get)
+        
+        }
+      
+      case false =>
+      
+        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+        
+          cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
+            --mt-in ${arrayStores(array).refMt.local.get}
+            --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+            --iid-col ${array.phenoFileId}
+            --pheno-col ${configModel.pheno}
+            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}
+            --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.local.get}"""
+              .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.local.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}".split("/").last)
+        
+        }
+    
+    }
+
     
     //var filters = Seq[String]()
     //var cohortFilters = Seq[String]()

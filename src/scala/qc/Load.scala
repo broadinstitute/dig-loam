@@ -103,6 +103,7 @@ object Load extends loamstream.LoamFile {
             --hail-utils ${projectStores.hailUtils.google.get}
             --log ${arrayStores(array).refData.hailLog.google.get}
             --vcf-in "${arrayStores(array).refData.vcfGlob.google.get}"
+            --dbsnp-vcf ${projectStores.dbSNPvcf.google.get}
             --sample-in ${projectStores.sampleFile.google.get}
             --id-col ${projectConfig.sampleFileId}
             --variant-metrics-out ${arrayStores(array).refData.variantMetrics.google.get}
@@ -114,7 +115,7 @@ object Load extends loamstream.LoamFile {
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.google.get}
             --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.google.get}
             --mt-out ${arrayStores(array).refData.mt.google.get}"""
-            .in((arrayStores(array).refData.vcf.map(e => e.data.google.get).toSeq ++ arrayStores(array).refData.vcf.map(e => e.tbi.google.get).toSeq) :+ projectStores.hailUtils.google.get :+ projectStores.sampleFile.google.get)
+            .in((arrayStores(array).refData.vcf.map(e => e.data.google.get).toSeq ++ arrayStores(array).refData.vcf.map(e => e.tbi.google.get).toSeq) :+ projectStores.hailUtils.google.get :+ projectStores.dbSNPvcf.google.get :+ projectStores.sampleFile.google.get)
             .out(arrayStores(array).refData.mt.google.get, arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).refData.sitesVcf.google.get)
             .tag(s"${arrayStores(array).refData.mt.google.get}.pyHailLoad".split("/").last)
         
@@ -183,6 +184,7 @@ object Load extends loamstream.LoamFile {
             ${gqThreshold}
             --log ${arrayStores(array).refData.hailLog.local.get}
             --vcf-in "${arrayStores(array).refData.vcfGlob.local.get}"
+            --dbsnp-vcf ${projectStores.dbSNPvcf.local.get}
             --sample-in ${projectStores.sampleFile.local.get}
             --id-col ${projectConfig.sampleFileId}
             --variant-metrics-out ${arrayStores(array).refData.variantMetrics.local.get}
@@ -194,7 +196,7 @@ object Load extends loamstream.LoamFile {
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.local.get}
             --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.local.get}
             --mt-out ${arrayStores(array).refData.mt.local.get}"""
-            .in((arrayStores(array).refData.vcf.map(e => e.data.local.get).toSeq ++ arrayStores(array).refData.vcf.map(e => e.tbi.local.get).toSeq) :+ projectStores.sampleFile.local.get)
+            .in((arrayStores(array).refData.vcf.map(e => e.data.local.get).toSeq ++ arrayStores(array).refData.vcf.map(e => e.tbi.local.get).toSeq) :+ projectStores.dbSNPvcf.local.get :+ projectStores.sampleFile.local.get)
             .out(arrayStores(array).refData.mt.local.get, arrayStores(array).refData.mtCheckpoint.local.get, arrayStores(array).refData.hailLog.local.get, arrayStores(array).refData.variantMetrics.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).refData.sitesVcf.local.get)
             .tag(s"${arrayStores(array).refData.mt.local.get}.pyHailLoad".split("/").last)
   

@@ -118,6 +118,7 @@ def main(args=None):
 		print("read in vep annotations")
 		tbl = hl.read_table(args.annotation)
 		tbl = tbl.select(*annotation_fields)
+		tbl = tbl.annotate(Uploaded_variation = tbl.Uploaded_variation.replace("_",":").replace("/",":"))
 		tbl = tbl.key_by('Uploaded_variation')
 		ht = ht.annotate(annotation = tbl[ht.rsid])
 

@@ -336,7 +336,8 @@ object ProjectConfig extends loamstream.LoamFile {
     pyExtractTopRegions: Path,
     pyPhenoDistPlot: Path,
     pyGenerateRegenieGroupfiles: Path,
-    pyMinPValTest: Path
+    pyMinPValTest: Path,
+    pyHailModelVariantStats: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -1401,7 +1402,8 @@ object ProjectConfig extends loamstream.LoamFile {
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
         pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
         pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py"),
-        pyMinPValTest = path(s"${scriptsDir}/minimum_pvalue_test.py")
+        pyMinPValTest = path(s"${scriptsDir}/minimum_pvalue_test.py"),
+        pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),

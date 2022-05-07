@@ -47,6 +47,7 @@ def main(args=None):
 		for variant_file in args.variants_remove.split(","):
 			try:
 				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
+				tbl = tbl.annotate(f2 = hl.if_else(hl.is_missing(tbl.f2), tbl.f0.contig + ":" + hl.str(tbl.f0.position) + ":" + tbl.f1[0] + ":" + tbl.f1[1], tbl.f2))
 			except:
 				print("skipping empty file " + variant_file)
 			else:
@@ -117,6 +118,7 @@ def main(args=None):
 		print("read in vep annotations")
 		tbl = hl.read_table(args.annotation)
 		tbl = tbl.select(*annotation_fields)
+		tbl = tbl.annotate(Uploaded_variation = tbl.Uploaded_variation.replace("_",":").replace("/",":"))
 		tbl = tbl.key_by('Uploaded_variation')
 		ht = ht.annotate(annotation = tbl[ht.rsid])
 	

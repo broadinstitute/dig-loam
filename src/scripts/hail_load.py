@@ -33,6 +33,11 @@ def main(args=None):
 		print("option --vcf-in or --plink-in must be specified")
 		return -1
 
+	if args.dbsnp_vcf:
+		dbsnp_mt = hl.import_vcf(args.dbsnp_vcf, force_bgz=True, reference_genome=args.reference_genome)
+		dbsnp_ht = dbsnp_mt.rows()
+		mt = mt.annotate_rows(rsid = hl.if_else(hl.is_defined(dbsnp_ht[mt.row_key]), dbsnp_ht[mt.row_key].rsid, hl.if_else(mt.rsid == '.', mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1], mt.rsid)))
+
 	print("replace any spaces in sample ids with an underscore")
 	mt = mt.annotate_cols(s_new = mt.s.replace("\s+","_"))
 	mt = mt.key_cols_by('s_new')
@@ -160,6 +165,7 @@ if __name__ == "__main__":
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--vcf-in', help='a compressed vcf file')
+	parser.add_argument('--dbsnp-vcf', help='a dbsnp build vcf (ex: https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz)')
 	parser.add_argument('--plink-in', help='a plink file set base name')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

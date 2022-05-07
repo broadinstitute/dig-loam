@@ -66,30 +66,48 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 		**{variant_qc: mt[variant_qc].annotate(
 			n_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female])),
 			n_male_homvar = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female])),
+			n_male_homref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female])),
 			n_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female])),
 			n_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female])),
 			n_female_homvar = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female])),
+			n_female_homref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female])),
 			n_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]))
 		)}
 	)
+
+	# if males are switched to haploid in_x_nonpar and in_y_nonpar use this:
+	#		call_rate = (hl.case()
+	#			.when(mt.locus.in_y_nonpar(), (mt[variant_qc].n_male_called / num_males))
+	#			.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called) / (num_males + 2*num_females))
+	#			.default((mt[variant_qc].n_male_called + mt[variant_qc].n_female_called) / (num_males + num_females))),
+	#		AC = (hl.case()
+	#			.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar)
+	#			.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)
+	#			.default(mt[variant_qc].n_male_het + 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)),
+	#		AN = (hl.case()
+	#			.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_called)
+	#			.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called)
+	#			.default(2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called)),
+	#		AF = (hl.case()
+	#			.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar / mt[variant_qc].n_male_called)
+	#			.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))
+	#			.default((mt[variant_qc].n_male_het + 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))),
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
 			call_rate = (hl.case()
 				.when(mt.locus.in_y_nonpar(), (mt[variant_qc].n_male_called / num_males))
-				.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called) / (num_males + 2*num_females))
 				.default((mt[variant_qc].n_male_called + mt[variant_qc].n_female_called) / (num_males + num_females))),
 			AC = (hl.case()
-				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar)
-				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)
+				.when(mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_male_homvar)
+				.when(mt.locus.in_x_nonpar(), 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)
 				.default(mt[variant_qc].n_male_het + 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)),
 			AN = (hl.case()
-				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_called)
-				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_male_called)
 				.default(2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called)),
 			AF = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar / mt[variant_qc].n_male_called)
-				.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))
+				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))
 				.default((mt[variant_qc].n_male_het + 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))),
 			het_freq_hwe = (hl.case()
 				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
@@ -103,6 +121,14 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_het / mt[variant_qc].n_female_called)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
 				.default(mt[variant_qc].n_het / mt[variant_qc].n_called)),
+			n_hom_var = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_homvar)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar)
+				.default(mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_homvar)),
+			n_hom_ref = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_homref)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homref)
+				.default(mt[variant_qc].n_male_homref + mt[variant_qc].n_female_homref)),
 			avg_ab = hl.if_else(
 				'AD' in gt_codes,
 				(hl.case()
@@ -435,11 +461,11 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 		**{variant_qc: mt[variant_qc].annotate(
 			AF_case = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_case_male_hom_var / mt[variant_qc].n_case_male_called)
-				.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_het + 2*mt[variant_qc].n_case_female_hom_var) / (mt[variant_qc].n_case_male_called + 2*mt[variant_qc].n_case_female_called))
+				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_het + 2*mt[variant_qc].n_case_female_hom_var) / (2*mt[variant_qc].n_case_male_called + 2*mt[variant_qc].n_case_female_called))
 				.default((mt[variant_qc].n_case_male_het + 2*mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_het + 2*mt[variant_qc].n_case_female_hom_var) / (2*mt[variant_qc].n_case_male_called + 2*mt[variant_qc].n_case_female_called))),
 			AF_ctrl = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_hom_var / mt[variant_qc].n_ctrl_male_called)
-				.when(mt.locus.in_x_nonpar(), (mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))
+				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))
 				.default((mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called)))
 		)}
 	)
@@ -492,15 +518,15 @@ def mt_add_col_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 		for field in f[1].split(","):
 			if field not in mt.cols().col_value.flatten():
 				absent = True
-			dt = eval("ht." + field).dtype
+			dt = eval("mt." + field).dtype
 			if dt in [hl.tint32, hl.tint64, hl.tfloat32, hl.tfloat64]:
-				field_stats = ht.aggregate(hl.agg.stats(eval("ht." + field)))
+				field_stats = mt.aggregate_cols(hl.agg.stats(eval("mt." + field)))
 				if field_stats.stdev == 0:
 					zero_stddev = True
 				if field_stats.n == 0:
 					all_miss = True
 			else:
-				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))):
+				if len(mt.aggregate_cols(hl.agg.collect_as_set(eval("mt." + field)))):
 					single_val = True
 			f[2] = f[2].replace(field,"mt." + field)
 		if not absent and not zero_stddev and not all_miss and not single_val:
@@ -546,15 +572,15 @@ def mt_add_row_filters(mt: hl.MatrixTable, filters: hl.tarray, struct_name: hl.t
 		for field in f[1].split(","):
 			if field not in mt.rows().row_value.flatten():
 				absent = True
-			dt = eval("ht." + field).dtype
+			dt = eval("mt." + field).dtype
 			if dt in [hl.tint32, hl.tint64, hl.tfloat32, hl.tfloat64]:
-				field_stats = ht.aggregate(hl.agg.stats(eval("ht." + field)))
+				field_stats = mt.aggregate_rows(hl.agg.stats(eval("mt." + field)))
 				if field_stats.stdev == 0:
 					zero_stddev = True
 				if field_stats.n == 0:
 					all_miss = True
 			else:
-				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))):
+				if len(mt.aggregate_rows(hl.agg.collect_as_set(eval("mt." + field)))):
 					single_val = True
 			f[2] = f[2].replace(field,"mt." + field)
 		if not absent and not zero_stddev and not all_miss and not single_val:

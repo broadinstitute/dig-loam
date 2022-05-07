@@ -18,11 +18,6 @@ object AssocSingleHail extends loamstream.LoamFile {
   
     val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
 
-    val transString = configModel.trans match {
-      case Some(_) => s"--trans ${configModel.trans.get}"
-      case None => ""
-    }
-    
     projectConfig.hailCloud match {
     
       case true =>
@@ -34,16 +29,14 @@ object AssocSingleHail extends loamstream.LoamFile {
             --mt-in ${arrayStores(array).refMt.google.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
             --iid-col ${array.phenoFileId}
-            --pheno-col ${configModel.pheno}
+            --pheno-analyzed ${configModel.finalPheno}
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
-            --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
             --test ${test}
-            ${transString}
-            --covars "${configModel.covars}"
+            --covars-analyzed "${configModel.finalCovars}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.google.get}
             --cloud
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.google.get}"""
-              .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get)
+              .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get)
               .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.google.get)
               .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}.google".split("/").last)
         
@@ -64,15 +57,13 @@ object AssocSingleHail extends loamstream.LoamFile {
             --mt-in ${arrayStores(array).refMt.local.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --iid-col ${array.phenoFileId}
-            --pheno-col ${configModel.pheno}
+            --pheno-analyzed ${configModel.finalPheno}
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-            --variant-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             --test ${test}
-            ${transString}
-            --covars "${configModel.covars}"
+            --covars-analyzed "${configModel.finalCovars}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.local.get}"""
-              .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get)
+              .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
               .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).hailLog.local.get)
               .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}".split("/").last)
         
@@ -140,7 +131,8 @@ object AssocSingleHail extends loamstream.LoamFile {
         ${projectStores.fasta}
         ${projectStores.vepCacheDir}
         ${projectStores.vepPluginsDir}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.top1000ResultsAnnot}"""
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.top1000ResultsAnnot}
+        ${projectStores.referenceGenome}"""
       .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
       .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.top1000ResultsAnnot)
       .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.top1000ResultsAnnot}".split("/").last)

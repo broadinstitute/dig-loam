@@ -161,6 +161,7 @@ object ProjectConfig extends loamstream.LoamFile {
     cloudHome: Option[URI],
     projectId: String,
     referenceGenome: String,
+    dbSNPvcf: String,
     regionsExclude: String,
     kgPurcellVcf: String,
     kgSample: String,
@@ -309,6 +310,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
+      val dbSNPvcf = requiredStr(config = config, field = "dbSNPvcf")
       val regionsExclude = requiredStr(config = config, field = "regionsExclude")
       val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
       val kgSample = requiredStr(config = config, field = "kgSample")
@@ -736,6 +738,7 @@ object ProjectConfig extends loamstream.LoamFile {
         referenceGenome = referenceGenome,
         regionsExclude = regionsExclude,
         kgPurcellVcf = kgPurcellVcf,
+        dbSNPvcf = dbSNPvcf,
         kgSample = kgSample,
         kgSampleId = kgSampleId,
         kgSamplePop = kgSamplePop,

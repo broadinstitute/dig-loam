@@ -30,6 +30,14 @@ object Upload extends loamstream.LoamFile {
               googleCopy(projectStores.kgPurcellVcf.local.get, projectStores.kgPurcellVcf.google.get)
             }
         }
+
+        checkURI(s"${projectStores.dbSNPvcf.google.get.uri}") match {
+          case 0 => ()
+          case 1 => 
+            local {
+              googleCopy(projectStores.dbSNPvcf.local.get, projectStores.dbSNPvcf.google.get)
+            }
+        }
         
         checkURI(s"${projectStores.kgSample.google.get.uri}") match {
           case 0 => ()

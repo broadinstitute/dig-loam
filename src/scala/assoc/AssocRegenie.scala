@@ -181,7 +181,8 @@ object AssocRegenie extends loamstream.LoamFile {
     //    ${projectStores.fasta}
     //    ${projectStores.vepCacheDir}
     //    ${projectStores.vepPluginsDir}
-    //    ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(test).summary.top1000ResultsAnnot}"""
+    //    ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(test).summary.top1000ResultsAnnot}
+    //    ${projectStores.referenceGenome}"""
     //  .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(test).summary.top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
     //  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(test).summary.top1000ResultsAnnot)
     //  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(test).summary.top1000ResultsAnnot}".split("/").last)
