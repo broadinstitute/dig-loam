@@ -28,15 +28,10 @@ def main(args=None):
 		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
-		mt = mt.annotate_rows(qual = hl.null(hl.tfloat64), filters = hl.null(hl.tset(hl.tstr)), info = hl.struct(**{}))
+		mt = mt.annotate_rows(qual = hl.missing(hl.tfloat64), filters = hl.missing(hl.tset(hl.tstr)), info = hl.struct(**{}))
 	else:
 		print("option --vcf-in or --plink-in must be specified")
 		return -1
-
-	if args.dbsnp_vcf:
-		dbsnp_mt = hl.import_vcf(args.dbsnp_vcf, force_bgz=True, reference_genome=args.reference_genome)
-		dbsnp_ht = dbsnp_mt.rows()
-		mt = mt.annotate_rows(rsid = hl.if_else(hl.is_defined(dbsnp_ht[mt.row_key]), dbsnp_ht[mt.row_key].rsid, hl.if_else(mt.rsid == '.', mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1], mt.rsid)))
 
 	print("replace any spaces in sample ids with an underscore")
 	mt = mt.annotate_cols(s_new = mt.s.replace("\s+","_"))
@@ -63,6 +58,11 @@ def main(args=None):
 	mt_bi = mt.filter_rows(hl.len(mt.alleles) <= 2)
 	mt_bi = mt_bi.annotate_rows(a_index = 1, was_split = False)
 	mt = mt_bi.union_rows(mt_multi)
+
+	if args.dbsnp_ht:
+		dbsnp_ht = hl.read_table(args.dbsnp_ht)
+		mt = mt.annotate_rows(rsid = hl.if_else(hl.is_defined(dbsnp_ht[mt.row_key]), dbsnp_ht[mt.row_key].rsid, hl.if_else(mt.rsid == '.', mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1], mt.rsid)))
+	mt.rows().show()
 
 	print("write checkpoint matrix table to disk")
 	mt = mt.checkpoint(args.mt_checkpoint, overwrite=True)
@@ -101,43 +101,43 @@ def main(args=None):
 	if 'AB' not in gt_codes:
 		print("add AB")
 		if 'AD' in gt_codes:
-			mt = mt.annotate_entries(AB = hl.if_else(hl.is_defined(mt.AD), hl.if_else(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(AB = hl.if_else(hl.is_defined(mt.AD), hl.if_else(hl.sum(mt.AD) > 0, mt.AD[1] / hl.sum(mt.AD), hl.missing(hl.tfloat64)) , hl.missing(hl.tfloat64)))
 		else:
-			mt = mt.annotate_entries(AB = hl.null(hl.tfloat64))
+			mt = mt.annotate_entries(AB = hl.missing(hl.tfloat64))
 		gt_codes = gt_codes + ['AB']
 
 	if 'AB50' not in gt_codes:
 		print("add AB50")
 		if 'AD' in gt_codes:
-			mt = mt.annotate_entries(AB50 = hl.if_else(hl.is_defined(mt.AD), hl.if_else(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.null(hl.tfloat64)) , hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(AB50 = hl.if_else(hl.is_defined(mt.AD), hl.if_else(hl.sum(mt.AD) > 0, hl.abs((mt.AD[1] / hl.sum(mt.AD)) - 0.5), hl.missing(hl.tfloat64)) , hl.missing(hl.tfloat64)))
 		else:
-			mt = mt.annotate_entries(AB50 = hl.null(hl.tfloat64))
+			mt = mt.annotate_entries(AB50 = hl.missing(hl.tfloat64))
 		gt_codes = gt_codes + ['AB50']
 
 	if 'GQ' not in gt_codes:
 		print("add GQ")
-		mt = mt.annotate_entries(GQ = hl.null(hl.tfloat64))
+		mt = mt.annotate_entries(GQ = hl.missing(hl.tfloat64))
 		gt_codes = gt_codes + ['GQ']
 
 	if args.gq_threshold is not None:
 		if 'GTT' not in gt_codes:
 			print("add GTT")
-			mt = mt.annotate_entries(GTT = hl.if_else(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.if_else(mt.GQ >= args.gq_threshold, mt.GT, hl.null(hl.tcall)), hl.null(hl.tcall)))
+			mt = mt.annotate_entries(GTT = hl.if_else(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.if_else(mt.GQ >= args.gq_threshold, mt.GT, hl.missing(hl.tcall)), hl.missing(hl.tcall)))
 		if 'NALTT' not in gt_codes:
 			print("add NALTT")
-			mt = mt.annotate_entries(NALTT = hl.if_else(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.if_else(mt.GQ >= args.gq_threshold, mt.GT.n_alt_alleles(), hl.null(hl.tint32)), hl.null(hl.tint32)))
+			mt = mt.annotate_entries(NALTT = hl.if_else(hl.is_defined(mt.GQ) & hl.is_defined(mt.GT), hl.if_else(mt.GQ >= args.gq_threshold, mt.GT.n_alt_alleles(), hl.missing(hl.tint32)), hl.missing(hl.tint32)))
 
 	if 'DS' not in gt_codes:
 		print("add DS")
 		if 'PL' in gt_codes:
 			print("adding DS from PL")
-			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.missing(hl.tfloat64)))
 		elif 'GP' in gt_codes:
 			print("adding DS from GP")
-			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.null(hl.tfloat64)))
+			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.missing(hl.tfloat64)))
 		else:
 			print("unable to calculate DS due to missing PL and GP fields, using GT")
-			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GT), mt.GT.n_alt_alleles(), hl.null(hl.tint32)))
+			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GT), mt.GT.n_alt_alleles(), hl.missing(hl.tint32)))
 
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
 	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')
@@ -160,12 +160,12 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
-	parser.add_argument('--min-partitions', type=int, default=None, help='number of min partitions')
+	parser.add_argument('--min-partitions', type=int, default=100, help='number of min partitions')
 	parser.add_argument('--gq-threshold', type=int, help='add filtered entry fields set to missing where GQ is below threshold')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--vcf-in', help='a compressed vcf file')
-	parser.add_argument('--dbsnp-vcf', help='a dbsnp build vcf (ex: https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz)')
+	parser.add_argument('--dbsnp-ht', help='a dbsnp build vcf (ex: https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz)')
 	parser.add_argument('--plink-in', help='a plink file set base name')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

@@ -6,15 +6,15 @@ def unphase_genotypes(mt: hl.MatrixTable) -> hl.MatrixTable:
 		GT=hl.case()
 			.when(mt.GT.is_diploid(), hl.call(mt.GT[0], mt.GT[1], phased=False))
 			.when(mt.GT.is_haploid(), hl.call(mt.GT[0], mt.GT[0], phased=False))
-			.default(hl.null(hl.tcall))
+			.default(hl.missing(hl.tcall))
 	)
 
 def adjust_sex_chromosomes(mt: hl.MatrixTable, is_female: hl.tstr) -> hl.MatrixTable:
 
 	return mt.annotate_entries(
 		GT = hl.case(missing_false=True)
-			.when(mt[is_female] & (mt.locus.in_y_par() | mt.locus.in_y_nonpar()), hl.null(hl.tcall))
-			.when((~ mt[is_female]) & (mt.locus.in_x_nonpar() | mt.locus.in_y_nonpar()) & mt.GT.is_het(), hl.null(hl.tcall))
+			.when(mt[is_female] & (mt.locus.in_y_par() | mt.locus.in_y_nonpar()), hl.missing(hl.tcall))
+			.when((~ mt[is_female]) & (mt.locus.in_x_nonpar() | mt.locus.in_y_nonpar()) & mt.GT.is_het(), hl.missing(hl.tcall))
 			.default(mt.GT)
 	)
 
@@ -42,11 +42,11 @@ def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, ph
 		print("skipping sex imputation due to missing X chromosome data")
 		tbl = mt.cols().select()
 		tbl = tbl.annotate(
-			is_female = hl.null(hl.tbool),
-			f_stat = hl.null(hl.tfloat64),
-			n_called = hl.null(hl.tint64),
-			expected_homs = hl.null(hl.tfloat64),
-			observed_homs = hl.null(hl.tint64)
+			is_female = hl.missing(hl.tbool),
+			f_stat = hl.missing(hl.tfloat64),
+			n_called = hl.missing(hl.tint64),
+			expected_homs = hl.missing(hl.tfloat64),
+			observed_homs = hl.missing(hl.tint64)
 		)
 
 	mt = mt.annotate_cols(impute_sex = tbl[mt.s])
@@ -111,15 +111,15 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				.default((mt[variant_qc].n_male_het + 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))),
 			het_freq_hwe = (hl.case()
 				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
-				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 				.default(hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe)),
 			p_value_hwe = (hl.case()
 				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.hardy_weinberg_test(mt.GT)).p_value)
-				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 				.default(hl.agg.hardy_weinberg_test(mt.GT).p_value)),
 			het = (hl.case()
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_het / mt[variant_qc].n_female_called)
-				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 				.default(mt[variant_qc].n_het / mt[variant_qc].n_called)),
 			n_hom_var = (hl.case()
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_homvar)
@@ -133,22 +133,22 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				'AD' in gt_codes,
 				(hl.case()
 					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.mean(mt.AB)))
-					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 					.default(hl.agg.mean(mt.AB))),
-				hl.null(hl.tfloat64)
+				hl.missing(hl.tfloat64)
 			),
 			avg_het_ab = hl.if_else(
 				'AD' in gt_codes,
 				(hl.case()
 					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
-					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 					.default(hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB)))),
-				hl.null(hl.tfloat64)
+				hl.missing(hl.tfloat64)
 			),
 			avg_alt_gq = hl.if_else(
 				'GQ' in gt_codes,
 				hl.agg.filter(mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
-				hl.null(hl.tfloat64)
+				hl.missing(hl.tfloat64)
 			)
 		)}
 	)
@@ -262,69 +262,69 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #				.default((mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))),
 #			het_freq_hwe_case = (hl.case()
 #				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
-#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #				.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe))),
 #			het_freq_hwe_ctrl = (hl.case()
 #				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
-#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #				.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.hardy_weinberg_test(mt.GT).het_freq_hwe))),
 #			p_value_hwe_case = (hl.case()
 #				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.hardy_weinberg_test(mt.GT)).p_value)
-#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #				.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.hardy_weinberg_test(mt.GT).p_value))),
 #			p_value_hwe_ctrl = (hl.case()
 #				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.hardy_weinberg_test(mt.GT)).p_value)
-#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #				.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.hardy_weinberg_test(mt.GT).p_value))),
 #			het_case = (hl.case()
 #				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_case_female_het / mt[variant_qc].n_case_female_called)
-#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #				.default((mt[variant_qc].n_case_male_het + mt[variant_qc].n_case_female_het) / (mt[variant_qc].n_case_male_called + mt[variant_qc].n_case_female_called))),
 #			het_ctrl = (hl.case()
 #				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_ctrl_female_het / mt[variant_qc].n_ctrl_female_called)
-#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #				.default((mt[variant_qc].n_ctrl_male_het + mt[variant_qc].n_ctrl_female_het) / (mt[variant_qc].n_ctrl_male_called + mt[variant_qc].n_ctrl_female_called))),
 #			avg_ab_case = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.mean(mt.AB)))
-#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #					.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.mean(mt.AB)))),
-#				hl.null(hl.tfloat64)
+#				hl.missing(hl.tfloat64)
 #			),
 #			avg_ab_ctrl = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.mean(mt.AB)))
-#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #					.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.mean(mt.AB)))),
-#				hl.null(hl.tfloat64)
+#				hl.missing(hl.tfloat64)
 #			),
 #			avg_het_ab_case = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 1), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
-#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #					.default(hl.agg.filter(mt.pheno[is_case] == 1, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
-#				hl.null(hl.tfloat64)
+#				hl.missing(hl.tfloat64)
 #			),
 #			avg_het_ab_ctrl = hl.if_else(
 #				'AD' in gt_codes,
 #				(hl.case()
 #					.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female] & (mt.pheno[is_case] == 0), hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))
-#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.null(hl.tfloat64))
+#					.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
 #					.default(hl.agg.filter(mt.pheno[is_case] == 0, hl.agg.filter(mt.GT.is_het(), hl.agg.mean(mt.AB))))),
-#				hl.null(hl.tfloat64)
+#				hl.missing(hl.tfloat64)
 #			),
 #			avg_alt_gq_case = hl.if_else(
 #				'GQ' in gt_codes,
 #				hl.agg.filter((mt.pheno[is_case] == 1) & mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
-#				hl.null(hl.tfloat64)
+#				hl.missing(hl.tfloat64)
 #			),
 #			avg_alt_gq_ctrl = hl.if_else(
 #				'GQ' in gt_codes,
 #				hl.agg.filter((mt.pheno[is_case] == 0) & mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
-#				hl.null(hl.tfloat64)
+#				hl.missing(hl.tfloat64)
 #			)
 #		)}
 #	)
@@ -367,11 +367,11 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 #		**{variant_qc: mt[variant_qc].annotate(
 #			diff_miss = hl.if_else(
 #				((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0)), 
-#				hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'NA'),
+#				hl.struct(p_value = 1.0, odds_ratio = hl.missing(hl.tfloat64), ci_95_lower = hl.missing(hl.tfloat64), ci_95_upper = hl.missing(hl.tfloat64), test = 'NA'),
 #				hl.if_else(
 #					((mt[variant_qc].diff_miss_expected_c1 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c2 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c3 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c4 < diff_miss_min_expected_cell_count)),
 #					hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(test = 'fisher_exact'),
-#					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'chi_squared')
+#					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.missing(hl.tfloat64), ci_95_upper = hl.missing(hl.tfloat64), test = 'chi_squared')
 #				)
 #			)
 #		)}
@@ -419,11 +419,11 @@ def add_diff_miss(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr, i
 		**{variant_qc: mt[variant_qc].annotate(
 			diff_miss = hl.if_else(
 				((hl.int32(mt[variant_qc].n_case_not_called) == 0) & (hl.int32(mt[variant_qc].n_ctrl_not_called) == 0)), 
-				hl.struct(p_value = 1.0, odds_ratio = hl.null(hl.tfloat64), ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'NA'),
+				hl.struct(p_value = 1.0, odds_ratio = hl.missing(hl.tfloat64), ci_95_lower = hl.missing(hl.tfloat64), ci_95_upper = hl.missing(hl.tfloat64), test = 'NA'),
 				hl.if_else(
 					((mt[variant_qc].diff_miss_expected_c1 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c2 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c3 < diff_miss_min_expected_cell_count) | (mt[variant_qc].diff_miss_expected_c4 < diff_miss_min_expected_cell_count)),
 					hl.fisher_exact_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(test = 'fisher_exact'),
-					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.null(hl.tfloat64), ci_95_upper = hl.null(hl.tfloat64), test = 'chi_squared')
+					hl.chi_squared_test(hl.int32(mt[variant_qc].n_case_called), hl.int32(mt[variant_qc].n_case_not_called), hl.int32(mt[variant_qc].n_ctrl_called), hl.int32(mt[variant_qc].n_ctrl_not_called)).annotate(ci_95_lower = hl.missing(hl.tfloat64), ci_95_upper = hl.missing(hl.tfloat64), test = 'chi_squared')
 				)
 			)
 		)}

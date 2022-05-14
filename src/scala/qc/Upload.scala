@@ -31,11 +31,15 @@ object Upload extends loamstream.LoamFile {
             }
         }
 
-        checkURI(s"${projectStores.dbSNPvcf.google.get.uri}") match {
+        checkURI(s"${projectStores.dbSNPht.google.get.uri}") match {
           case 0 => ()
           case 1 => 
             local {
-              googleCopy(projectStores.dbSNPvcf.local.get, projectStores.dbSNPvcf.google.get)
+              //googleCopy(projectStores.dbSNPht.local.get, projectStores.dbSNPht.google.get)
+              cmd"""${gsutilBinaryOpt.get} -m cp -r ${projectStores.dbSNPht.local.get} ${projectStores.dbSNPht.google.get}"""
+              .in(projectStores.dbSNPht.local.get)
+              .out(projectStores.dbSNPht.google.get)
+              .tag(s"${projectStores.dbSNPht.local.get}.googleCopy".split("/").last)
             }
         }
         

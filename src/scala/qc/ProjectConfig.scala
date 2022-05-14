@@ -157,11 +157,12 @@ object ProjectConfig extends loamstream.LoamFile {
     loamstreamVersion: String,
     pipelineVersion: String,
     hailCloud: Boolean,
+    hailVersion: String,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
     referenceGenome: String,
-    dbSNPvcf: String,
+    dbSNPht: String,
     regionsExclude: String,
     kgPurcellVcf: String,
     kgSample: String,
@@ -307,10 +308,11 @@ object ProjectConfig extends loamstream.LoamFile {
       val pipelineVersion = requiredStr(config = config, field = "pipelineVersion")
       val projectId = requiredStr(config = config, field = "projectId")
       val hailCloud = requiredBool(config = config, field = "hailCloud")
+      val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
-      val dbSNPvcf = requiredStr(config = config, field = "dbSNPvcf")
+      val dbSNPht = requiredStr(config = config, field = "dbSNPht")
       val regionsExclude = requiredStr(config = config, field = "regionsExclude")
       val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
       val kgSample = requiredStr(config = config, field = "kgSample")
@@ -733,12 +735,13 @@ object ProjectConfig extends loamstream.LoamFile {
         pipelineVersion = pipelineVersion,
         projectId = projectId,
         hailCloud = hailCloud,
+        hailVersion = hailVersion,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
         regionsExclude = regionsExclude,
         kgPurcellVcf = kgPurcellVcf,
-        dbSNPvcf = dbSNPvcf,
+        dbSNPht = dbSNPht,
         kgSample = kgSample,
         kgSampleId = kgSampleId,
         kgSamplePop = kgSamplePop,
@@ -790,7 +793,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
   
       val image = Image(
-        imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
+        imgHail = path(s"${imagesDir}/hail-${projectConfig.hailVersion}.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2v2.simg"),
         imgR = path(s"${imagesDir}/r.simg"),

@@ -9,7 +9,7 @@ dbNSFP=$6
 results=$7
 warnings=$8
 header=$9
-referenceGenome=$10
+referenceGenome=${10}
 
 vep -i $sitesVcf \
 --fork $cpus \

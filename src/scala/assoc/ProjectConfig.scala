@@ -231,6 +231,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pipelineVersion: String,
     referenceGenome: String,
     hailCloud: Boolean,
+    hailVersion: String,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
@@ -435,6 +436,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val projectId = requiredStr(config = config, field = "projectId")
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
       val hailCloud = requiredBool(config = config, field = "hailCloud")
+      val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val geneIdMap = requiredStr(config = config, field = "geneIdMap")
@@ -1287,6 +1289,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pipelineVersion = pipelineVersion,
         projectId = projectId,
         hailCloud = hailCloud,
+        hailVersion = hailVersion,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
@@ -1341,7 +1344,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
   
       val image = Image(
-        imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
+        imgHail = path(s"${imagesDir}/hail-${projectConfig.hailVersion}.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2v2.simg"),
         imgPython3 = path(s"${imagesDir}/python_v3.7.9.simg"),

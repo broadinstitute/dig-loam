@@ -65,13 +65,13 @@ def main(args=None):
 			n_samples = mt.aggregate_cols(hl.agg.count_where(mt.COHORT == cohort))
 			n_variants = mt.aggregate_rows(hl.agg.count_where(mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1))
 			mt = mt.annotate_entries(
-				GT = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tcall), mt.GT),
-				AB = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.AB),
-				AB50 = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.AB50),
-				GQ = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tfloat64), mt.GQ),
-				GTT = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tcall), mt.GTT),
-				NALTT = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tint32), mt.NALTT),
-				DS = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.null(hl.tint32), mt.DS)
+				GT = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tcall), mt.GT),
+				AB = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tfloat64), mt.AB),
+				AB50 = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tfloat64), mt.AB50),
+				GQ = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tfloat64), mt.GQ),
+				GTT = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tcall), mt.GTT),
+				NALTT = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tint32), mt.NALTT),
+				DS = hl.if_else((mt.COHORT == cohort) & (mt['ls_filters']['ls_knockouts_' + cohort]['exclude'] == 1), hl.missing(hl.tint32), mt.DS)
 			)
 			print("performed genotype knockouts for " + str(n_variants) + " variants in " + str(n_samples) + " " + cohort + " cohort samples")
 	else:
