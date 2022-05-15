@@ -141,6 +141,13 @@ object Ancestry extends loamstream.LoamFile {
         .tag(s"${arrayStores(array).ancestryClusterData.base}.binKlustakwik".split("/").last)
   
     }
+
+    val srRace = projectConfig.sampleFileSrRace match {
+  
+      case Some(s) => s"--sr-race ${s}"
+      case None => ""
+  
+    }
   
     val afrCodes = projectConfig.sampleFileAFRCodes match {
   
@@ -188,7 +195,7 @@ object Ancestry extends loamstream.LoamFile {
         --sample-file ${projectStores.sampleFile.local.get}
         --project-id ${projectConfig.projectId}
         --sample-id ${projectConfig.sampleFileId}
-        --sr-race ${projectConfig.sampleFileSrRace}
+        ${srRace}
         ${afrCodes}
         ${amrCodes}
         ${eurCodes}

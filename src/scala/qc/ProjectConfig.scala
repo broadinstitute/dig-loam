@@ -181,7 +181,7 @@ object ProjectConfig extends loamstream.LoamFile {
     sampleFileSrSex: String,
     sampleFileMaleCode: String,
     sampleFileFemaleCode: String,
-    sampleFileSrRace: String,
+    sampleFileSrRace: Option[String],
     sampleFileAFRCodes: Option[Seq[String]],
     sampleFileAMRCodes: Option[Seq[String]],
     sampleFileEURCodes: Option[Seq[String]],
@@ -331,7 +331,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val sampleFileSrSex = requiredStr(config = config, field = "sampleFileSrSex")
       val sampleFileMaleCode = requiredStr(config = config, field = "sampleFileMaleCode")
       val sampleFileFemaleCode = requiredStr(config = config, field = "sampleFileFemaleCode")
-      val sampleFileSrRace = requiredStr(config = config, field = "sampleFileSrRace")
+      val sampleFileSrRace = optionalStr(config = config, field = "sampleFileSrRace")
       val sampleFileAFRCodes = optionalStrList(config = config, field = "sampleFileAFRCodes")
       val sampleFileAMRCodes = optionalStrList(config = config, field = "sampleFileAMRCodes")
       val sampleFileEURCodes = optionalStrList(config = config, field = "sampleFileEURCodes")
