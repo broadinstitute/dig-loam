@@ -28,6 +28,7 @@ def main(args=None):
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
+	mt = mt.annotate_rows(rsid = hl.if_else(hl.is_missing(mt.rsid), mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1], mt.rsid))
 
 	print("annotate samples with phenotype file")
 	tbl = hl.import_table(

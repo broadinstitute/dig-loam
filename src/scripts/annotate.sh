@@ -9,6 +9,7 @@ dbNSFP=$6
 results=$7
 warnings=$8
 header=$9
+referenceGenome=${10}
 
 vep -i $sitesVcf \
 --fork $cpus \
@@ -28,7 +29,7 @@ vep -i $sitesVcf \
 --tsl \
 --biotype \
 --regulatory \
---assembly GRCh37 \
+--assembly $referenceGenome \
 --flag_pick_allele \
 --pick_order tsl,biotype,appris,rank,ccds,canonical,length \
 --domains flags \

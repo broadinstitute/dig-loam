@@ -282,7 +282,7 @@ object ArrayStores extends loamstream.LoamFile {
       case (o,p) if inputTypesGwasVcf.contains((o,p)) =>
         Some(Plink(
           base = dirTree.base.local.get / rawBaseString,
-          data = bedBimFam(path(checkPlinkPath(s"${dirTree.base.local.get}" + s"/${rawBaseString}")))
+          data = bedBimFam(path(s"${dirTree.base.local.get}" + s"/${rawBaseString}"))
         ))
       case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)

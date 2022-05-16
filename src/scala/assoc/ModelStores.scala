@@ -122,6 +122,8 @@ object ModelStores extends loamstream.LoamFile {
     samplesAvailableLog: Store,
     phenoDistPlot: Store,
     modelVarsSummary: Store,
+    variantStats: MultiStore,
+    variantStatsHailLog: MultiStore,
     pcaBase: Path,
     pcaScores: Store, 
     pcaEigenVecs: Store, 
@@ -189,7 +191,7 @@ object ModelStores extends loamstream.LoamFile {
       case Some(_) => schema.masks.get.size
       case None => 0
     }
-  
+
     val modelSingleHailTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "hail")
     val modelSingleRegenieTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "regenie")
     val modelGroupEpactsTests = model.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts")
@@ -254,6 +256,14 @@ object ModelStores extends loamstream.LoamFile {
       samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
       phenoDistPlot = store(local_dir / s"${baseString}.pheno.distplot.png"),
       modelVarsSummary = store(local_dir / s"${baseString}.model.vars_summary.tsv"),
+      variantStats = MultiStore(
+        local = Some(store(local_dir / s"${baseString}.variant_stats.tsv.bgz")),
+        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.tsv.bgz")); case false => None }
+      ),
+      variantStatsHailLog = MultiStore(
+        local = Some(store(local_dir / s"${baseString}.variant_stats.hail.log")),
+        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.hail.log")); case false => None }
+      ),
       pcaBase = local_dir / s"${baseString}.pca",
       pcaScores = store(local_dir / s"${baseString}.pca.scores.tsv"),
       pcaEigenVecs = store(local_dir / s"${baseString}.pca.eigenvecs.tsv"),

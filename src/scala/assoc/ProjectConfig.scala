@@ -231,6 +231,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pipelineVersion: String,
     referenceGenome: String,
     hailCloud: Boolean,
+    hailVersion: String,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
@@ -336,7 +337,8 @@ object ProjectConfig extends loamstream.LoamFile {
     pyExtractTopRegions: Path,
     pyPhenoDistPlot: Path,
     pyGenerateRegenieGroupfiles: Path,
-    pyMinPValTest: Path
+    pyMinPValTest: Path,
+    pyHailModelVariantStats: Path
     //pyAddGeneAnnot: Path
     //pyHailModelVariantStats: Path,
     //pyHailFilterModelVariants: Path,
@@ -434,6 +436,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val projectId = requiredStr(config = config, field = "projectId")
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
       val hailCloud = requiredBool(config = config, field = "hailCloud")
+      val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val geneIdMap = requiredStr(config = config, field = "geneIdMap")
@@ -1286,6 +1289,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pipelineVersion = pipelineVersion,
         projectId = projectId,
         hailCloud = hailCloud,
+        hailVersion = hailVersion,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
@@ -1340,7 +1344,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
   
       val image = Image(
-        imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
+        imgHail = path(s"${imagesDir}/hail-${projectConfig.hailVersion}.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
         imgPython2 = path(s"${imagesDir}/python2v2.simg"),
         imgPython3 = path(s"${imagesDir}/python_v3.7.9.simg"),
@@ -1401,7 +1405,8 @@ object ProjectConfig extends loamstream.LoamFile {
         pyExtractTopRegions = path(s"${scriptsDir}/extract_top_regions.py"),
         pyPhenoDistPlot = path(s"${scriptsDir}/pheno_dist_plot.py"),
         pyGenerateRegenieGroupfiles = path(s"${scriptsDir}/generate_regenie_groupfiles.py"),
-        pyMinPValTest = path(s"${scriptsDir}/minimum_pvalue_test.py")
+        pyMinPValTest = path(s"${scriptsDir}/minimum_pvalue_test.py"),
+        pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py")
         //pyAddGeneAnnot = path(s"${scriptsDir}/add_gene_annot.py")
         //pyHailModelVariantStats = path(s"${scriptsDir}/hail_model_variant_stats.py"),
         //pyHailFilterModelVariants = path(s"${scriptsDir}/hail_filter_model_variants.py"),

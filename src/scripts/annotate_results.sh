@@ -75,6 +75,7 @@ fasta=$4
 dirCache=$5
 dirPlugins=$6
 results=$7
+referenceGenome=$8
 
 (tabix -H $sitesVcf; \
 (while read line; do \
@@ -112,7 +113,7 @@ vep -i ${results}.1.tmp \
 --regulatory \
 --pick_allele \
 --pick_order tsl,biotype,appris,rank,ccds,canonical,length \
---assembly GRCh37 \
+--assembly $referenceGenome \
 --output_file STDOUT \
 --warning_file ${results}.2.tmp.warnings \
 | awk -v h=${results}.2.tmp.header '/^##/{print > h; next} 1' > ${results}.2.tmp
