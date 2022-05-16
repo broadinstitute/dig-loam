@@ -387,14 +387,16 @@ def add_diff_miss(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr, i
 		)
 
 	if 'n_case_called' not in list(mt[variant_qc].keys()):
-		mt = mt.annotate_rows(
-			**{variant_qc: mt[variant_qc].annotate(
-				n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
-				n_case_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 1)),
-				n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
-				n_ctrl_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 0))
-			)}
-		)
+		mt = mt.annotate_rows(**{variant_qc: mt[variant_qc].annotate(n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)))})
+
+	if 'n_case_not_called' not in list(mt[variant_qc].keys()):
+		mt = mt.annotate_rows(**{variant_qc: mt[variant_qc].annotate(n_case_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 1)))})
+
+	if 'n_ctrl_called' not in list(mt[variant_qc].keys()):
+		mt = mt.annotate_rows(**{variant_qc: mt[variant_qc].annotate(n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)))})
+
+	if 'n_ctrl_not_called' not in list(mt[variant_qc].keys()):
+		mt = mt.annotate_rows(**{variant_qc: mt[variant_qc].annotate(n_ctrl_not_called = hl.agg.count_where((~ hl.is_defined(mt.GT)) & (mt.pheno[is_case] == 0)))})
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
@@ -459,6 +461,14 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
+			AC_case = (hl.case()
+				.when(mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_case_male_hom_var)
+				.when(mt.locus.in_x_nonpar(), 2*mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_het + 2*mt[variant_qc].n_case_female_hom_var)
+				.default(mt[variant_qc].n_case_male_het + 2*mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_het + 2*mt[variant_qc].n_case_female_hom_var)),
+			AC_ctrl = (hl.case()
+				.when(mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_ctrl_male_hom_var)
+				.when(mt.locus.in_x_nonpar(), 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var)
+				.default(mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var)),
 			AF_case = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_case_male_hom_var / mt[variant_qc].n_case_male_called)
 				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_het + 2*mt[variant_qc].n_case_female_hom_var) / (2*mt[variant_qc].n_case_male_called + 2*mt[variant_qc].n_case_female_called))
@@ -467,6 +477,31 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_hom_var / mt[variant_qc].n_ctrl_male_called)
 				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))
 				.default((mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called)))
+		)}
+	)
+
+	mt = mt.annotate_rows(
+		**{variant_qc: mt[variant_qc].annotate(
+			MAC_case = hl.if_else(
+				mt[variant_qc].AF_case <= 0.5,
+				mt[variant_qc].AC_case,
+				2*mt[variant_qc].n_case_called - mt[variant_qc].AC_case
+			),
+			MAC_ctrl = hl.if_else(
+				mt[variant_qc].AF_ctrl <= 0.5,
+				mt[variant_qc].AC_ctrl,
+				2*mt[variant_qc].n_ctrl_called - mt[variant_qc].AC_ctrl
+			),
+			MAF_case = hl.if_else(
+				mt[variant_qc].AF_case <= 0.5,
+				mt[variant_qc].AF_case,
+				1 - mt[variant_qc].AF_case
+			),
+			MAF_ctrl = hl.if_else(
+				mt[variant_qc].AF_ctrl <= 0.5,
+				mt[variant_qc].AF_ctrl,
+				1 - mt[variant_qc].AF_ctrl
+			)
 		)}
 	)
 

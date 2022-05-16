@@ -14,7 +14,7 @@ object AssocTest extends loamstream.LoamFile {
   import AssocSingleHail._
   import AssocGroupEpacts._
   import AssocRegenie._ 
-  import MinPVal._ 
+  //import MinPVal._ 
 
   def AssocTest(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
@@ -211,7 +211,7 @@ object AssocTest extends loamstream.LoamFile {
         } yield {
 
           AssocRegenieStep2Group(test, configModel, configSchema, configCohorts, None)
-          MinPVal(test, configModel, configSchema, configCohorts, None)
+          //MinPVal(test, configModel, configSchema, configCohorts, None)
 
         }
 

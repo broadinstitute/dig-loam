@@ -44,29 +44,45 @@ def main(args=None):
 	print("calculate global variant qc")
 	mt = hl.variant_qc(mt, name="variant_qc")
 	mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
-	if args.test != 'hail.q.lm':
+	if args.binary:
 		print("add case/ctrl variant qc")
 		mt = hail_utils.add_case_ctrl_stats_results(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_analyzed)
+		print("add differential missingness")
+		mt = hail_utils.add_diff_miss(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_analyzed, diff_miss_min_expected_cell_count = 5)
 
+	tbl = mt.rows()
+	tbl = tbl.annotate(
+		chr = tbl.locus.contig,
+		pos = tbl.locus.position,
+		ref = tbl.alleles[0],
+		alt = tbl.alleles[1]
+	)
+	tbl = tbl.select(*['chr', 'pos', 'ref', 'alt', 'rsid','variant_qc'])
+	tbl = tbl.flatten()
+	tbl = tbl.rename(dict(zip(list(tbl.row),[x.replace('variant_qc.','') if x.startswith('variant_qc') else x for x in list(tbl.row)])))
+	tbl = tbl.key_by()
+	tbl = tbl.annotate(chr_idx = hl.if_else(tbl.locus.in_autosome(), hl.int(tbl.chr), hl.if_else(tbl.locus.contig == "X", 23, hl.if_else(tbl.locus.contig == "Y", 24, hl.if_else(tbl.locus.contig == "MT", 25, 26)))))
+	tbl = tbl.order_by(hl.int(tbl.chr_idx), hl.int(tbl.pos), tbl.ref, tbl.alt)
+	tbl = tbl.drop(tbl.chr_idx)
+	tbl = tbl.rename({'chr': '#chr'})
+	tbl = tbl.drop(
+		'locus',
+		'alleles',
+		'homozygote_count',
+		'n_case_not_called',
+		'n_ctrl_not_called',
+		'diff_miss_row1_sum',
+		'diff_miss_row2_sum',
+		'diff_miss_col1_sum',
+		'diff_miss_col2_sum',
+		'diff_miss_tbl_sum',
+		'diff_miss_expected_c1',
+		'diff_miss_expected_c2',
+		'diff_miss_expected_c3',
+		'diff_miss_expected_c4'
+	)
 
-
-
-
-
-	tbl = tbl.select(
-				chr = tbl.locus.contig,
-				pos = tbl.locus.position,
-				id = tbl.rsid,
-				ref = tbl.alleles[0],
-				alt = tbl.alleles[1],
-
-	mt_results = mt_results.key_by()
-	mt_results = mt_results.annotate(chr_idx = hl.if_else(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.if_else(mt_results.locus.contig == "X", 23, hl.if_else(mt_results.locus.contig == "Y", 24, hl.if_else(mt_results.locus.contig == "MT", 25, 26)))))
-	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
-	mt_results = mt_results.order_by(hl.int(mt_results.chr_idx), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
-	mt_results = mt_results.drop(mt_results.chr_idx)
-	mt_results = mt_results.rename({'chr': '#chr'})
-	mt_results.export(args.out)
+	tbl.export(args.out)
 
 	if args.cloud:
 		hl.copy_log(args.log)
@@ -75,6 +91,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--binary', action='store_true', default=False, help='flag indicates whether or not the phenotype analyzed is binary')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a matrix table', required=True)
