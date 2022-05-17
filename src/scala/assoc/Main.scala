@@ -70,7 +70,7 @@ object Main extends loamstream.LoamFile {
 
   //Cohort variant association
   for {
-    x <- modelCollections if x.model.runAssoc
+    x <- modelCollections if ! x.model.tests.isEmpty
   } yield {
   
     AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)

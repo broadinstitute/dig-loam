@@ -156,14 +156,28 @@ object Fxns extends loamstream.LoamFile {
     }
   }
   
-  def optionalStrList(config: loamstream.conf.DataConfig, field: String): Option[Seq[String]] = {
+  def optionalStrList(config: loamstream.conf.DataConfig, field: String, regex: String = ".*" , default: Option[Seq[String]] = None): Option[Seq[String]] = {
     Try(config.getStrList(field)) match {
       case Success(o)           => 
+        for ( x <- o ) {
+          x.toString.matches(regex) match {
+            case false => throw new CfgException("optionalStrList: field " + field + " value " + x.toString + " does not match required regex format " + regex)
+            case true  => ()
+          }
+        }
         o.size match {
           case x if(x >= 1) => Some(o)
           case _ => None
         }
-      case Failure(NonFatal(e)) => None
+      case Failure(NonFatal(e)) => 
+        default match {
+          case Some(s) =>
+            s.toString.matches(regex) match {
+              case false => throw new CfgException("optionalStrList: field " + field + " value " + s.toString + " does not match required regex format " + regex)
+              case true  => Some(s)
+            }
+          case None => None
+        }
       case Failure(_)           => throw new CfgException("optionalStrList: field '" + field + "' fatal error")
     }
   }
