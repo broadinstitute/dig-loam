@@ -122,8 +122,8 @@ object ModelStores extends loamstream.LoamFile {
     samplesAvailableLog: Store,
     phenoDistPlot: Store,
     modelVarsSummary: Store,
-    variantStats: MultiStore,
-    variantStatsHailLog: MultiStore,
+    variantStats: Option[MultiStore],
+    variantStatsHailLog: Option[MultiStore],
     pcaBase: Path,
     pcaScores: Store, 
     pcaEigenVecs: Store, 
@@ -192,11 +192,6 @@ object ModelStores extends loamstream.LoamFile {
       case None => 0
     }
 
-    val modelSingleHailTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "hail")
-    val modelSingleRegenieTests = model.tests.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "regenie")
-    val modelGroupEpactsTests = model.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts")
-    val modelGroupRegenieTests = model.tests.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "regenie")
-
     var phenoMasksAvailable = Seq[MaskFilter]()
     schema.masks match {
       case Some(_) =>
@@ -244,6 +239,32 @@ object ModelStores extends loamstream.LoamFile {
         }
       case None => ()
     }
+
+    val variantStats = model.methods match {
+      case Some(s) =>
+        s.contains("variant.stats") match {
+          case true =>
+            Some(MultiStore(
+              local = Some(store(local_dir / s"${baseString}.variant_stats.tsv.bgz")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.tsv.bgz")); case false => None }
+            ))
+          case false => None
+        }
+      case None => None
+    }
+
+    val variantStatsHailLog = model.methods match {
+      case Some(s) =>
+        s.contains("variant.stats") match {
+          case true =>
+            Some(MultiStore(
+              local = Some(store(local_dir / s"${baseString}.variant_stats.hail.log")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.hail.log")); case false => None }
+            ))
+          case false => None
+        }
+      case None => None
+    }
   
     sm -> Model(
       sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
@@ -256,14 +277,8 @@ object ModelStores extends loamstream.LoamFile {
       samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
       phenoDistPlot = store(local_dir / s"${baseString}.pheno.distplot.png"),
       modelVarsSummary = store(local_dir / s"${baseString}.model.vars_summary.tsv"),
-      variantStats = MultiStore(
-        local = Some(store(local_dir / s"${baseString}.variant_stats.tsv.bgz")),
-        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.tsv.bgz")); case false => None }
-      ),
-      variantStatsHailLog = MultiStore(
-        local = Some(store(local_dir / s"${baseString}.variant_stats.hail.log")),
-        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.hail.log")); case false => None }
-      ),
+      variantStats = variantStats,
+      variantStatsHailLog = variantStatsHailLog,
       pcaBase = local_dir / s"${baseString}.pca",
       pcaScores = store(local_dir / s"${baseString}.pca.scores.tsv"),
       pcaEigenVecs = store(local_dir / s"${baseString}.pca.eigenvecs.tsv"),
@@ -292,12 +307,12 @@ object ModelStores extends loamstream.LoamFile {
           qq = store(local_dir / s"${baseString}.residuals.qq.png")
         ))
       },
-      hail = model.assocPlatforms.contains("hail") match {
-        case true =>
-          Some(ModelHail(
-            assocSingle = model.runAssoc match {
-              case true =>
-                modelSingleHailTests.map { test =>
+      hail = model.tests match {
+        case Some(_) =>
+          model.assocPlatforms.get.contains("hail") match {
+            case true =>
+              Some(ModelHail(
+                assocSingle = model.tests.get.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "hail").map { test =>
                   test -> 
                     ModelHailAssocSingle(
                       results = MultiStore(
@@ -324,24 +339,24 @@ object ModelStores extends loamstream.LoamFile {
                       )
                     )
                 }.toMap
-              case false => Map[String, ModelHailAssocSingle]()
-            }
-          ))
-        case false => None
+              ))
+            case false => None
+          }
+        case None => None
       },
-      epacts = model.assocPlatforms.contains("epacts") match {
-        case true =>
-          Some(ModelEpacts(
-            ped = store(local_dir / s"${baseString}.epacts.ped"),
-            modelVars = store(local_dir / s"${baseString}.epacts.model.vars"),
-            assocGroup = model.runAssoc match {
-              case true =>
-                masksAvailable.size match {
+      epacts = model.tests match {
+        case Some(_) =>
+          model.assocPlatforms.get.contains("epacts") match {
+            case true =>
+              Some(ModelEpacts(
+                ped = store(local_dir / s"${baseString}.epacts.ped"),
+                modelVars = store(local_dir / s"${baseString}.epacts.model.vars"),
+                assocGroup = masksAvailable.size match {
                   case 0 => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
                   case _ =>
                     schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
                       case true => 
-                        modelGroupEpactsTests.map { test =>
+                        model.tests.get.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts").map { test =>
                           test ->
                             phenoMasksAvailable.map { mask =>
                               val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
@@ -365,7 +380,7 @@ object ModelStores extends loamstream.LoamFile {
                             }.toMap
                         }.toMap
                       case false =>
-                        modelGroupEpactsTests.map { test =>
+                        model.tests.get.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts").map { test =>
                           test ->
                             masksAvailable.map { mask =>
                               val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
@@ -391,29 +406,29 @@ object ModelStores extends loamstream.LoamFile {
                         }.toMap
                     }
                 }
-              case false => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
-            }
-          ))
-        case false => None
+              ))
+            case false => None
+          }
+        case None => None
       },
-      regenie = model.assocPlatforms.contains("regenie") match {
-        case true => 
-          Some(ModelRegenie(
-            pheno = store(local_dir / s"${baseString}.regenie.pheno.tsv"),
-            covars = store(local_dir / s"${baseString}.regenie.covars.tsv"),
-            step0 = ModelRegenieStep0(
-              base = local_dir / s"${baseString}.regenie.step0",
-              exclude = store(local_dir / s"${baseString}.regenie.step0.zero_variance_exclude.txt")
-            ),
-            step1 = ModelRegenieStep1(
-              base = local_dir / s"${baseString}.regenie.step1",
-              log = store(local_dir / s"${baseString}.regenie.step1.log"),
-              loco = store(local_dir / s"${baseString}.regenie.step1_1.loco"),
-              predList = store(local_dir / s"${baseString}.regenie.step1_pred.list")
-            ),
-            assocSingle = model.runAssoc match {
-              case true =>
-                modelSingleRegenieTests.map { test =>
+      regenie = model.tests match {
+        case Some(_) =>
+          model.assocPlatforms.get.contains("regenie") match {
+            case true => 
+              Some(ModelRegenie(
+                pheno = store(local_dir / s"${baseString}.regenie.pheno.tsv"),
+                covars = store(local_dir / s"${baseString}.regenie.covars.tsv"),
+                step0 = ModelRegenieStep0(
+                  base = local_dir / s"${baseString}.regenie.step0",
+                  exclude = store(local_dir / s"${baseString}.regenie.step0.zero_variance_exclude.txt")
+                ),
+                step1 = ModelRegenieStep1(
+                  base = local_dir / s"${baseString}.regenie.step1",
+                  log = store(local_dir / s"${baseString}.regenie.step1.log"),
+                  loco = store(local_dir / s"${baseString}.regenie.step1_1.loco"),
+                  predList = store(local_dir / s"${baseString}.regenie.step1_pred.list")
+                ),
+                assocSingle = model.tests.get.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "regenie").map { test =>
                   test -> 
                     ModelRegenieAssocSingle(
                       base = local_dir / s"${baseString}.${test}",
@@ -441,12 +456,8 @@ object ModelStores extends loamstream.LoamFile {
                         regPlotsPdf = store(local_dir / s"${baseString}.${test}.results.sig.regplots.pdf")
                       )
                     )
-                }.toMap
-              case false => Map[String, ModelRegenieAssocSingle]()
-            },
-            assocGroup = model.runAssoc match {
-              case true =>
-                modelGroupRegenieTests.map { test =>
+                }.toMap,
+                assocGroup = model.tests.get.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "regenie").map { test =>
                   test -> 
                     ModelRegenieAssocGroup(
                       base = local_dir / s"${baseString}.${test}",
@@ -467,10 +478,10 @@ object ModelStores extends loamstream.LoamFile {
                       }.toMap
                     )
                 }.toMap
-              case false => Map[String, ModelRegenieAssocGroup]()
-            }
-          ))
-        case false => None
+              ))
+            case false => None
+          }
+        case None => None
       }
     )
   }.toMap

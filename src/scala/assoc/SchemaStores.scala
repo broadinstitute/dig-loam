@@ -90,7 +90,7 @@ object SchemaStores extends loamstream.LoamFile {
         case false => None
     }
 
-    val groupFile = modelCollections.map(e => e.model.tests).flatten.filter(e => e.matches(".*epacts.*")).size match {
+    val groupFile = modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
       case n if n > 0 =>
         Some(SchemaBasePhenoMaskStore(
           base = SchemaBaseMaskStore(
@@ -143,7 +143,7 @@ object SchemaStores extends loamstream.LoamFile {
       case _ => None
     }
 
-    modelCollections.map(e => e.model.tests).flatten.filter(e => e.matches(".*epacts.*")).size match {
+    modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
       case n if n > 0 =>
         try {
           val gFile = checkPath(s"""${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
@@ -161,7 +161,7 @@ object SchemaStores extends loamstream.LoamFile {
       case _ => ()
     }
 
-    modelCollections.map(e => e.model.tests).flatten.filter(e => e.matches(".*regenie.*")).size match {
+    modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*regenie.*")).size match {
       case n if n > 0 =>
         for {
           chr <- projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
@@ -453,7 +453,7 @@ object SchemaStores extends loamstream.LoamFile {
           case _ => Map[ConfigPheno, MultiStore]()
         }
       ),
-      epacts = modelCollections.map(e => e.model.tests).flatten.filter(e => e.matches(".*epacts.*")).size match {
+      epacts = modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
         case n if n > 0 =>
           Some(SchemaEpactsStore(
             groupFile = groupFile.get,
@@ -476,7 +476,7 @@ object SchemaStores extends loamstream.LoamFile {
           ))
         case _ => None
       },
-      regenie = modelCollections.map(e => e.model.tests).flatten.filter(e => e.matches(".*regenie.*")).size match {
+      regenie = modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*regenie.*")).size match {
         case n if n > 0 =>
           Some(SchemaRegenieStore(
             setlist = SchemaBasePhenoStore(
@@ -530,7 +530,7 @@ object SchemaStores extends loamstream.LoamFile {
           ))
         case _ => None
       },
-      vcf = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+      vcf = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
         case n if n > 0 =>
           schema.knockoutFilters match {
             case Some(_) =>
@@ -550,7 +550,7 @@ object SchemaStores extends loamstream.LoamFile {
         case _ => None
       },
       vcfHailLog = MultiStore(
-        local = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+        local = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
           case n if n > 0 =>
             (schema.knockoutFilters, projectConfig.hailCloud) match {
               case (Some(_), false) => Some(store(local_dir / s"${baseString}.vcf.hail.log"))
@@ -558,7 +558,7 @@ object SchemaStores extends loamstream.LoamFile {
             }
           case _ => None
         },
-        google = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+        google = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
           case n if n > 0 =>
             (schema.knockoutFilters, projectConfig.hailCloud) match {
               case (Some(_), true) => Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
@@ -567,7 +567,7 @@ object SchemaStores extends loamstream.LoamFile {
           case _ => None
         }
       ),
-      bgen = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+      bgen = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
         case n if n > 0 =>
           (schema.knockoutFilters, array.exportCleanBgen) match {
             case (Some(_), _) | (_, false) =>

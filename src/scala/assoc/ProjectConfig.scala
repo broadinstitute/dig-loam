@@ -8,6 +8,9 @@ object ProjectConfig extends loamstream.LoamFile {
 
   val modelDesigns = Seq("full","strat")
   val modelTrans = Seq("log","invn")
+  val modelMethods = Seq(
+    "variant.stats"
+  )
   val assocTests = Seq(
     "single.hail.q.lm",
     "single.hail.b.wald",
@@ -204,8 +207,9 @@ object ProjectConfig extends loamstream.LoamFile {
     schema: String,
     pheno: String,
     trans: Option[String],
-    tests: Seq[String],
-    assocPlatforms: Seq[String],
+    tests: Option[Seq[String]],
+    methods: Option[Seq[String]],
+    assocPlatforms: Option[Seq[String]],
     maxPcaOutlierIterations: Int,
     covars: Option[String],
     finalPheno: String,
@@ -213,8 +217,7 @@ object ProjectConfig extends loamstream.LoamFile {
     cohorts: Seq[String],
     metas: Option[Seq[String]],
     merges: Option[Seq[String]],
-    knowns: Option[Seq[String]],
-    runAssoc: Boolean) extends Debug
+    knowns: Option[Seq[String]]) extends Debug
   
   //final case class ConfigSection(
   //  id: String,
@@ -1143,7 +1146,8 @@ object ProjectConfig extends loamstream.LoamFile {
               }
           }
   
-          val tests = requiredStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+          val tests = optionalStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+          val methods = optionalStrList(config = model, field = "methods", regex = modelMethods.mkString("|"))
   
           val cohorts = optionalStrList(config = model, field = "cohorts") match {
             case Some(s) =>
@@ -1221,7 +1225,11 @@ object ProjectConfig extends loamstream.LoamFile {
             pheno = pheno,
             trans = trans,
             tests = tests,
-            assocPlatforms = tests.map(e => e.split("\\.")(1)).distinct,
+            methods = methods,
+            assocPlatforms = tests match { 
+              case Some(s) => Some(s.map(e => e.split("\\.")(1)).distinct)
+              case None => None
+            },
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = covars,
             finalPheno = finalPheno,
@@ -1235,8 +1243,7 @@ object ProjectConfig extends loamstream.LoamFile {
               case ("full", Some(s)) => throw new CfgException("models.merges: model " + id + " schema " + schema + " 'full' design and merges are not allowed")
               case _ => merges
             },
-            knowns = knowns,
-            runAssoc = requiredBool(config = model, field = "runAssoc", default = Some(true))
+            knowns = knowns
           )
   
         }
