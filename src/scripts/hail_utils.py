@@ -445,16 +445,20 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 			n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
 			n_case_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+			n_case_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+			n_case_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+			n_ctrl_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+			n_ctrl_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 0))
 		)}
 	)
@@ -476,7 +480,23 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 			AF_ctrl = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_hom_var / mt[variant_qc].n_ctrl_male_called)
 				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))
-				.default((mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called)))
+				.default((mt[variant_qc].n_ctrl_male_het + 2*mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_het + 2*mt[variant_qc].n_ctrl_female_hom_var) / (2*mt[variant_qc].n_ctrl_male_called + 2*mt[variant_qc].n_ctrl_female_called))),
+			n_hom_var_case = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_case_female_hom_var)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_case_male_hom_var)
+				.default(mt[variant_qc].n_case_male_hom_var + mt[variant_qc].n_case_female_hom_var)),
+			n_hom_var_ctrl = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_ctrl_female_hom_var)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_hom_var)
+				.default(mt[variant_qc].n_ctrl_male_hom_var + mt[variant_qc].n_ctrl_female_hom_var)),
+			n_hom_ref_case = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_case_female_hom_ref)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_case_male_hom_ref)
+				.default(mt[variant_qc].n_case_male_hom_ref + mt[variant_qc].n_case_female_hom_ref)),
+			n_hom_ref_ctrl = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_ctrl_female_hom_ref)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_hom_ref)
+				.default(mt[variant_qc].n_ctrl_male_hom_ref + mt[variant_qc].n_ctrl_female_hom_ref))
 		)}
 	)
 
