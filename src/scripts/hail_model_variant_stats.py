@@ -69,8 +69,6 @@ def main(args=None):
 		'locus',
 		'alleles',
 		'homozygote_count',
-		'n_case_not_called',
-		'n_ctrl_not_called',
 		'diff_miss_row1_sum',
 		'diff_miss_row2_sum',
 		'diff_miss_col1_sum',
