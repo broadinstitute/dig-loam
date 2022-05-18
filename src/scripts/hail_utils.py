@@ -496,7 +496,15 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 			n_hom_ref_ctrl = (hl.case()
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_ctrl_female_hom_ref)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_hom_ref)
-				.default(mt[variant_qc].n_ctrl_male_hom_ref + mt[variant_qc].n_ctrl_female_hom_ref))
+				.default(mt[variant_qc].n_ctrl_male_hom_ref + mt[variant_qc].n_ctrl_female_hom_ref)),
+			n_het_case = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_case_female_het)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_case_male_het)
+				.default(mt[variant_qc].n_case_male_het + mt[variant_qc].n_case_female_het)),
+			n_het_ctrl = (hl.case()
+				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_ctrl_female_het)
+				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_ctrl_male_het)
+				.default(mt[variant_qc].n_ctrl_male_het + mt[variant_qc].n_ctrl_female_het))
 		)}
 	)
 
