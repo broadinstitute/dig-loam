@@ -3,10 +3,16 @@
 target
 project/project
 project/target
+project/metals.sbt
+project/.bloop
 /bin/
 .classpath
 .project
 .settings/
+.cache-main
 *.pyc
+.vscode
+.metals
+.bloop
 *.DS_Store
 *.code-workspace
