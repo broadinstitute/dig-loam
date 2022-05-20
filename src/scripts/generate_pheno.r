@@ -8,6 +8,7 @@ parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a c
 parser$add_argument("--pcs-in", dest="pcs_in", type="character", help="pca score file")
 parser$add_argument("--iid-col", dest="iid_col", type="character", help='a column name for sample ID in phenotype file')
 parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
+parser$add_argument("--binary", action='store_true', dest="binary", help="a flag to indicate if binary phenotype")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--min-pcs", dest="min_pcs", type="integer", help="minimum number of pcs to include in analysis")
 parser$add_argument("--max-pcs", dest="max_pcs", type="integer", help="maximum number of pcs to include in analysis")
@@ -29,10 +30,10 @@ STDZ <- function (x) {
 
 # rank-based inverse normalization
 INVN <- function(x){
-	return(sd(x, na.rm=TRUE) * STDZ(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x)))))
+	return(STDZ(qnorm((rank(x,na.last="keep") - 0.5)/sum(!is.na(x)))))
 }
 
-pcs_include <- function(d, y, cv, n) {
+pcs_include_quant <- function(d, y, cv, n) {
 	if(cv != "") {
 		m <- summary(lm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d))
 	} else {
@@ -51,8 +52,31 @@ pcs_include <- function(d, y, cv, n) {
 	return(inpcs)
 }
 
-cat("removing factor indicators from covariates\n")
-covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+pcs_include_binary <- function(d, y, cv, n) {
+	if(cv != "") {
+		m <- summary(glm(as.formula(paste(y,"~",cv,"+",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d,family="binomial"))
+	} else {
+		m <- summary(glm(as.formula(paste(y,"~",paste(paste("PC",seq(1,n,1),sep=""),collapse="+"),sep="")),data=d,family="binomial"))
+	}
+	print(m)
+	mc <- as.data.frame(m$coefficients)
+	s <- rownames(mc[mc[,"Pr(>|z|)"] <= 0.05,])
+	spcs <- s[grep("^PC",s)]
+	if(length(spcs) > 0) {
+		mpc <- max(as.integer(gsub("PC","",spcs)))
+		inpcs <- paste("PC",seq(1,mpc,1),sep="")
+	} else {
+		inpcs<-c()
+	}
+	return(inpcs)
+}
+
+if(args$covars != "___NONE___") {
+	cat("removing factor indicators from covariates\n")
+	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+} else {
+	covars <- c()
+}
 
 cat("read in preliminary phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
@@ -63,35 +87,41 @@ if(length(unique(pheno[,args$pheno_col])) == 1) {
 	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
 	failed <- TRUE
 }
-covars_factors <- unlist(strsplit(args$covars,split="\\+"))
-for(cv in covars_factors) {
-	cvv <- unlist(strsplit(cv,split=""))
-	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
-		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
-		if(length(unique(pheno[,cvb])) == 1) {
-			cat(paste0("covariate ",cvb," has zero variance\n"))
-			failed <- TRUE
+if(length(covars) > 0) {
+	covars_factors <- unlist(strsplit(args$covars,split="\\+"))
+	for(cv in covars_factors) {
+		cvv <- unlist(strsplit(cv,split=""))
+		if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
+			cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
+			if(length(unique(pheno[,cvb])) == 1) {
+				cat(paste0("covariate ",cvb," has zero variance\n"))
+				failed <- TRUE
+			} else {
+				for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
+					pheno[,paste0(cvb,val)] <- 0
+					pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
+					covars_factors <- c(covars_factors,paste0(cvb,val))
+				}
+			}
+			covars_factors <- covars_factors[covars_factors != cv]
 		} else {
-			for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-				pheno[,paste0(cvb,val)] <- 0
-				pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-				covars_factors <- c(covars_factors,paste0(cvb,val))
+			if(length(unique(pheno[,cv])) == 1) {
+				cat(paste0("covariate ",cv," has zero variance\n"))
+				failed <- TRUE
 			}
 		}
-		covars_factors <- covars_factors[covars_factors != cv]
-	} else {
-		if(length(unique(pheno[,cv])) == 1) {
-			cat(paste0("covariate ",cv," has zero variance\n"))
-			failed <- TRUE
-		}
 	}
+} else {
+	covars_factors <- c()
 }
 if(failed) {
 	cat("exiting due to invalid model\n")
 	quit(status=1)
 }
 covars_analysis<-paste(c(covars_factors,"1"),collapse="+")
-out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
+if(length(covars_factors) > 0) {
+	out_cols<-c(out_cols,covars_factors[! covars_factors %in% out_cols])
+}
 
 cat("read in pcs and merge pheno into them\n")
 pcs<-read.table(args$pcs_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c("IID"="character"))
@@ -112,25 +142,35 @@ if(ncol(pcs)-1 < args$max_pcs) {
 	n_pcs <- args$max_pcs
 }
 
-if(args$trans == 'invn') {
-	cat("calculating invn transformation\n")
-	if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
-		cat(paste("including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+if(! args$binary) {
+	if(args$trans == 'invn') {
+		cat("calculating invn transformation\n")
+		if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
+			cat(paste("including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+		} else {
+			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+		}
+		out[,paste0(args$pheno_col,"_invn")]<-INVN(residuals(mf))
+		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_invn"), cv = "", n = n_pcs)
+		out_cols <- c(out_cols,paste0(args$pheno_col,"_invn"))
+	} else if(args$trans == 'log') {
+		cat("calculating log transformation\n")
+		nzero <- nrow(out[out[,args$pheno_col] == 0,])
+		if(nzero > 0) {
+			cat("removing ",nzero," 0 values to allow for log transformation\n")
+			out[,args$pheno_col][out[,args$pheno_col] == 0]<-NA
+		}
+		out[,paste0(args$pheno_col,"_log")]<-log(out[,args$pheno_col])
+		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_log"), cv = covars_analysis, n = n_pcs)
+		out_cols <- c(out_cols,paste0(args$pheno_col,"_log"))
 	} else {
-		mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+		cat("no transformation will be applied\n")
+		pcsin <- pcs_include_quant(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 	}
-	out[,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_")]<-INVN(residuals(mf))
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"), cv = "", n = n_pcs)
-	out_cols <- c(out_cols,paste(args$pheno_col,"invn",paste(unlist(strsplit(covars,"\\+")),collapse="_"),sep="_"))
-} else if(args$trans == 'log') {
-	cat("calculating log transformation\n")
-	out[,paste(args$pheno_col,"_log",sep="")]<-log(out[,args$pheno_col])
-	pcsin <- pcs_include(d = out, y = paste(args$pheno_col,"_log",sep=""), cv = covars_analysis, n = n_pcs)
-	out_cols <- c(out_cols,paste(args$pheno_col,"_log",sep=""))
 } else {
 	cat("no transformation will be applied\n")
-	pcsin <- pcs_include(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
+	pcsin <- pcs_include_binary(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 }
 
 pc_outliers <- c()

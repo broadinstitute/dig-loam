@@ -7,6 +7,7 @@ parser$add_argument("--cohorts-map-in", dest="cohorts_map_in", type="character",
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
 parser$add_argument("--cohorts", dest="cohorts", type="character", help="A comma separated list of cohorts")
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
+parser$add_argument("--sex-col", dest="sex_col", type="character", help="a column name for sex")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
 parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
 parser$add_argument("--kinship-in", dest="kinship_in", type="character", help="a kinship file containing related pairs")
@@ -22,9 +23,6 @@ parser$add_argument("--out", dest="out", type="character", help="a sample list f
 args<-parser$parse_args()
 
 print(args)
-
-cat("removing factor indicators from covariates\n")
-covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 
 cat("read in pheno file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
@@ -44,8 +42,16 @@ pheno<-merge(pheno,ancestry,all.x=T)
 cat("limiting to cohorts in list\n")
 pheno<-pheno[pheno$COHORT %in% unlist(strsplit(args$cohorts,",")),]
 
-cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, covars), collapse=",")),"\n")
-pheno<-pheno[,c(args$iid_col, args$pheno_col, covars)]
+if(! is.null(args$covars)) {
+	cat("removing factor indicators from covariates\n")
+	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
+	cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col, covars), collapse=",")),"\n")
+	pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col, covars)]
+} else {
+	cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col), collapse=",")),"\n")
+	pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col)]
+}
+
 out_cols<-colnames(pheno)
 
 id_map <- data.frame(ID = pheno[,args$iid_col])

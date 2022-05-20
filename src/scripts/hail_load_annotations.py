@@ -10,7 +10,7 @@ def main(args=None):
 		hl.init(idempotent=True)
 
 	print("import annotations")
-	ht = hl.import_table(args.annotations, impute=True, no_header=False, delimiter='\t', missing='-')
+	ht = hl.import_table(args.annotations, impute=True, no_header=False, delimiter='\t', missing='-', min_partitions=args.min_partitions)
 	ht = ht.rename({'#Uploaded_variation': 'Uploaded_variation'})
 	ht.describe()
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
-	parser.add_argument('--min-partitions', type=int, default=None, help='number of min partitions')
+	parser.add_argument('--min-partitions', type=int, default=100, help='number of min partitions')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--annotations', help='an annotation file', required=True)

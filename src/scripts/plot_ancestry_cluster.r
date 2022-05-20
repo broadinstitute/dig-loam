@@ -64,8 +64,13 @@ names(cl)[1]<-"CLUSTER"
 pcs<-cbind(pcs,cl)
 idcol<-args$sample_id
 sample_file<-read.table(args$sample_file, header=T, as.is=T, stringsAsFactors=F, sep="\t", colClasses=c(eval(parse(text=paste0(idcol,"=\"character\"")))))
-sample_file<-sample_file[,c(args$sample_id,args$sr_race)]
-sample_file[,args$sr_race]<-paste0("sr_",sample_file[,args$sr_race])
+if(! is.null(args$sr_race)) {
+	sample_file[,"___sr_race___"] <- sample_file[,args$sr_race]
+} else {
+	sample_file[,"___sr_race___"] <- "NONE"
+}
+sample_file<-sample_file[,c(args$sample_id,"___sr_race___")]
+sample_file[,"___sr_race___"]<-paste0("sr_",sample_file[,"___sr_race___"])
 names(sample_file)[1]<-"IID"
 pheno<-merge(pcs,sample_file,all.x=T)
 
@@ -164,7 +169,7 @@ print(centers_project)
 
 cat("\ngenerate cluster table and add centers\n")
 cluster_table<-as.data.frame.matrix(table(pheno[,c("CLUSTER","GROUP")]))
-cluster_table<-cbind(cluster_table,as.data.frame.matrix(table(pheno[,c("CLUSTER",args$sr_race)])))
+cluster_table<-cbind(cluster_table,as.data.frame.matrix(table(pheno[,c("CLUSTER","___sr_race___")])))
 cluster_table$cluster<-as.integer(row.names(cluster_table))
 centers_project$ASSIGNED<-"OUTLIERS"
 centers_project$cluster<-as.integer(row.names(centers_project))

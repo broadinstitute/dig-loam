@@ -14,4 +14,5 @@ project/.bloop
 .vscode
 .metals
 .bloop
-
+*.DS_Store
+*.code-workspace

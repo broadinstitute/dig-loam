@@ -57,10 +57,10 @@ object PrepareSchema extends loamstream.LoamFile {
     
     }
   
-    val binaryFilterPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
-      case n if n > 0 => projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
-      case _ => Seq[ConfigPheno]()
-    }
+    //val binaryFilterPhenos = schemaFilterFields.filter(e => e.schema.id == configSchema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+    //  case n if n > 0 => projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
+    //  case _ => Seq[ConfigPheno]()
+    //}
     
     projectConfig.hailCloud match {
     
@@ -739,238 +739,9 @@ object PrepareSchema extends loamstream.LoamFile {
   
     }
   
-    // write pyHailFilterSchemaPhenoVariants
-    //   read in schema level filters.tsv.bgz and pheno level filter files, generated above, to generate pheno specific filters.tsv.bgz file (ie *.PurpleHair.filters.tsv.bgz)
-    // run pyGeneratePhenoGroupfile to generate main group file along with main masked group files
-    // write pyGeneratePhenoGroupfile
-    //   filter each group file from pyGeneratePhenoGroupfile directly for each phenotype (ie using python), extract any variants that dont pass in *.PurpleHair.filters.tsv.bgz, then create new group files that are pheno specific
-    //   make sure that any genes in the group file that become empty after filtering are removed from the file
-    
-    projectConfig.hailCloud match {
-    
-      case true =>
-    
-        val maskedGroupFilesString = schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
-          case n if n > 0 =>
-            val x = "--masked-groupfiles-out"
-            val y = for {
-              (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
-            } yield {
-              s"""${k.id},${v.google.get.toString.split("@")(1)}"""
-            }
-            x + " " + y.mkString(" ")
-          case _ => ""
-        }
-    
-        var generateGroupfileOut = Seq(schemaStores((configSchema, configCohorts)).groupFile.base.base.google.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.base.google.get)
-    
-        schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
-            case n if n > 0 =>
-              generateGroupfileOut = generateGroupfileOut ++ {
-                for {
-                  (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
-                } yield {
-                  v.google.get
-                }
-              }
-            case _ => ()
-        }
-  
-        googleWith(projectConfig.cloudResources.mtCluster) {
-        
-          hail"""${utils.python.pyHailGenerateGroupfile} --
-            --cloud
-            --hail-utils ${projectStores.hailUtils.google.get}
-            ${maskedGroupFilesString}
-            --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
-            --groupfile-out ${schemaStores((configSchema, configCohorts)).groupFile.base.base.google.get}
-            --log ${schemaStores((configSchema, configCohorts)).groupFileHailLog.base.google.get}"""
-            .in(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get)
-            .out(generateGroupfileOut)
-            .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}.google".split("/").last)
-    
-        }
-    
-        local {
-        
-          googleCopy(schemaStores((configSchema, configCohorts)).groupFile.base.base.google.get, schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get)
-          googleCopy(schemaStores((configSchema, configCohorts)).groupFileHailLog.base.google.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.base.local.get)
-        
-        }
-        
-        schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
-          case n if n > 0 =>
-            for {
-              (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
-            } yield {
-              local {
-                googleCopy(v.google.get, v.local.get)
-              }
-            }
-          case _ => ()
-        }
-  
-      case false =>
-    
-        val maskedGroupFilesString = schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
-          case n if n > 0 =>
-            val x = "--masked-groupfiles-out"
-            val y = for {
-              (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
-            } yield {
-              s"""${k.id},${v.local.get.toString.split("@")(1)}"""
-            }
-            x + " " + y.mkString(" ")
-          case _ => ""
-        }
-        
-        var generateGroupfileOut = Seq(schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.base.local.get)
-        
-        schemaStores((configSchema, configCohorts)).groupFile.base.masks.size match {
-          case n if n > 0 =>
-            generateGroupfileOut = generateGroupfileOut ++ {
-              for {
-                (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.base.masks
-              } yield {
-                v.local.get
-              }
-            }
-          case _ => ()
-        }
-  
-        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
-        
-          cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
-            ${maskedGroupFilesString}
-            --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
-            --groupfile-out ${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}
-            --log ${schemaStores((configSchema, configCohorts)).groupFileHailLog.base.local.get}"""
-            .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get)
-            .out(generateGroupfileOut)
-            .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.base.base.local.get}".split("/").last)
-        
-        }
-    
-    }
-  
-    for {
-    
-      pheno <- binaryFilterPhenos
-    
-    } yield {
-  
-      projectConfig.hailCloud match {
-    
-        case true =>
-      
-          val maskedGroupFilesString = schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
-            case n if n > 0 =>
-              val x = "--masked-groupfiles-out"
-              val y = for {
-                (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
-              } yield {
-                s"""${k.id},${v.google.get.toString.split("@")(1)}"""
-              }
-              x + " " + y.mkString(" ")
-            case _ => ""
-          }
-      
-          var generateGroupfileOut = Seq(schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.google.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.phenos(pheno).google.get)
-      
-          schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
-              case n if n > 0 =>
-                generateGroupfileOut = generateGroupfileOut ++ {
-                  for {
-                    (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
-                  } yield {
-                    v.google.get
-                  }
-                }
-              case _ => ()
-          }
-      
-          googleWith(projectConfig.cloudResources.mtCluster) {
-          
-            hail"""${utils.python.pyHailGenerateGroupfile} --
-              --cloud
-              --hail-utils ${projectStores.hailUtils.google.get}
-              ${maskedGroupFilesString}
-              --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get}
-              --groupfile-out ${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.google.get}
-              --log ${schemaStores((configSchema, configCohorts)).groupFileHailLog.phenos(pheno).google.get}"""
-              .in(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get)
-              .out(generateGroupfileOut)
-              .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get}.google".split("/").last)
-      
-          }
-      
-          local {
-          
-            googleCopy(schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.google.get, schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get)
-            googleCopy(schemaStores((configSchema, configCohorts)).groupFileHailLog.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.phenos(pheno).local.get)
-          
-          }
-          
-          schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
-            case n if n > 0 =>
-              for {
-                (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
-              } yield {
-                local {
-                  googleCopy(v.google.get, v.local.get)
-                }
-              }
-            case _ => ()
-          }
-      
-        case false =>
-      
-          val maskedGroupFilesString = schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
-            case n if n > 0 =>
-              val x = "--masked-groupfiles-out"
-              val y = for {
-                (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
-              } yield {
-                s"""${k.id},${v.local.get.toString.split("@")(1)}"""
-              }
-              x + " " + y.mkString(" ")
-            case _ => ""
-          }
-          
-          var generateGroupfileOut = Seq(schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get, schemaStores((configSchema, configCohorts)).groupFileHailLog.phenos(pheno).local.get)
-          
-          schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks.size match {
-            case n if n > 0 =>
-              generateGroupfileOut = generateGroupfileOut ++ {
-                for {
-                  (k, v) <- schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).masks
-                } yield {
-                  v.local.get
-                }
-              }
-            case _ => ()
-          }
-      
-          drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
-          
-            cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
-              ${maskedGroupFilesString}
-              --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get}
-              --groupfile-out ${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get}
-              --log ${schemaStores((configSchema, configCohorts)).groupFileHailLog.phenos(pheno).local.get}"""
-              .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get)
-              .out(generateGroupfileOut)
-              .tag(s"${schemaStores((configSchema, configCohorts)).groupFile.phenos(pheno).base.local.get}".split("/").last)
-          
-          }
-      
-      }
-  
-    }
-  
     schemaStores((configSchema, configCohorts)).vcf match {
     
-      case Some(s) =>
+      case Some(_) =>
     
         projectConfig.hailCloud match {
         
@@ -1028,6 +799,30 @@ object PrepareSchema extends loamstream.LoamFile {
     
       case None => ()
     
+    }
+
+    schemaStores((configSchema, configCohorts)).epacts match {
+
+      case Some(_) =>
+
+        import PrepareEpacts._
+
+        PrepareEpacts(configSchema, configCohorts)
+
+      case None => ()
+
+    }
+
+    schemaStores((configSchema, configCohorts)).regenie match {
+
+      case Some(_) =>
+
+        import PrepareRegenie._
+
+        PrepareRegenie(configSchema, configCohorts)
+
+      case None => ()
+
     }
   
   }

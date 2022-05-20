@@ -23,6 +23,12 @@ object Stores extends loamstream.LoamFile {
     base: MultiPath,
     data: MultiStore,
     tbi: MultiStore)
+
+  final case class MultiPathBgen(
+    base: MultiPath,
+    data: MultiStore,
+    sample: MultiStore,
+    bgi: MultiStore)
   
   final case class Plink(
     base: Path,

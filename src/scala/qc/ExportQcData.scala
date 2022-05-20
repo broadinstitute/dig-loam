@@ -71,7 +71,8 @@ object ExportQcData extends loamstream.LoamFile {
           googleCopy(arrayStores(array).filteredData.variantFilters.local.get, arrayStores(array).filteredData.variantFilters.google.get)
     
         }
-    
+
+        // has failed in past with pre-emptible workers
         google {
         
           hail"""${utils.python.pyHailExportQcData} --

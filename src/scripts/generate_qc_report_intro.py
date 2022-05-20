@@ -40,10 +40,17 @@ def main(args=None):
 
 		## introduction
 		nArrays = len(args.array_data)
+		nGwas = 0
+		nWes = 0
+		nWgs = 0
 		samples = []
 		for a in args.array_data:
-			aType = a.split(",")[0]
-			aFile = a.split(",")[1]
+			aTech = a.split(",")[0]
+			if aTech == "gwas": nGwas = nGwas+1
+			if aTech == "wes": nWes = nWes+1
+			if aTech == "wgs": nWgs = nWgs+1
+			aType = a.split(",")[1]
+			aFile = a.split(",")[2]
 			if aType == "vcf":
 				print "loading vcf file " + aFile
 				try:
@@ -65,13 +72,37 @@ def main(args=None):
 		f.write("\n"); f.write(r"\clearpage"); f.write("\n")
 		f.write("\n"); f.write(r"\section{Introduction}"); f.write("\n")
 
-		if nArrays > 1:
-			geno_platforms_text = "distributed across {0:d} different genotype arrays".format(nArrays)
+		geno_platforms_text = []
+		harmonization_text = "The"
+		if nGwas == 1:
+			geno_platforms_text = geno_platforms_text + ["a microarray batch"]
+			harmonization_text = "After harmonizing the microarray with modern reference data, the"
+		elif nGwas > 1:
+			geno_platforms_text = geno_platforms_text + ["{0:d} microarray batches".format(nGwas)]
+			harmonization_text = "After harmonizing each microarray with modern reference data, the"
+		
+		if nWes == 1:
+			geno_platforms_text = geno_platforms_text + ["a single whole exome sequencing batch"]
+		elif nWes > 1:
+			geno_platforms_text = geno_platforms_text + ["{0:d} whole exome sequencing batches".format(nWes)]
+		
+		if nWgs == 1:
+			geno_platforms_text = geno_platforms_text + ["a single whole genome sequencing batch"]
+		elif nWgs > 1:
+			geno_platforms_text = geno_platforms_text + ["{0:d} whole genome sequencing batches".format(nWes)]
+		
+		if len(geno_platforms_text) == 1:
+			geno_platforms_text_merged = geno_platforms_text[0]
+		elif len(geno_platforms_text) == 2:
+			geno_platforms_text_merged = " and ".join(geno_platforms_text)
+		elif len(geno_platforms_text) > 2:
+			geno_platforms_text_merged = ", ".join(geno_platforms_text[:len(geno_platforms_text)-1]) + ", and " + geno_platforms_text[len(geno_platforms_text)-1]
 		else:
-			geno_platforms_text = "genotyped on a single array"
-		text = "This document contains details of our in-house quality control procedure and its application to the {0:s} dataset. We received genotypes for {1:,d} unique samples {2:s}. Quality control was performed on these data to detect samples and variants that did not fit our standards for inclusion in association testing. After harmonizing with modern reference data, the highest quality variants were used in a battery of tests to assess the quality of each sample. Duplicate pairs, samples exhibiting excessive sharing of identity by descent, samples whose genotypic sex did not match their clinical sex, and outliers detected among several sample-by-variant statistics have been flagged for removal from further analysis. Additionally, genotypic ancestry was inferred with respect to a modern reference panel, allowing for variant filtering and association analyses to be performed within population as needed.".format(args.id, nSamples, geno_platforms_text)
+			sys.exit("failed to configure geno_platforms_text")
+
+		text = "This document contains details of our in-house quality control procedure and its application to the {0:s} dataset. We received individual level data for {1:,d} unique samples with genotypic variants determined via {2:s}. Quality control was performed on these data to detect samples and variants that did not fit our standards for inclusion in association testing. {3:s} highest quality variants were used in a battery of tests to assess the quality of each sample. Duplicate pairs, samples exhibiting excessive sharing of identity by descent, samples whose genotypic sex did not match their clinical sex, and outliers detected among several sample-by-variant statistics have been flagged for removal from further analysis. Additionally, genotypic ancestry was inferred with respect to a modern reference panel, allowing for variant filtering and association analyses to be performed within population as needed.".format(args.id, nSamples, geno_platforms_text_merged, harmonization_text)
 		if nArrays > 1:
-			text = text + "With the exception of inferring each samples ancestry, QC was performed on each array separately as much as possible, allowing for flexibility in the way the data can be used in downstream analyses."
+			text = text + "With the exception of inferring each samples ancestry, QC was performed on each batch separately as much as possible, allowing for flexibility in the way the data can be used in downstream analyses."
 		f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
 	print "finished\n"

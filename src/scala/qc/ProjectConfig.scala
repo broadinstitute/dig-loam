@@ -104,6 +104,7 @@ object ProjectConfig extends loamstream.LoamFile {
     tableHail: ConfigMachine,
     standardPlink: ConfigMachine,
     highMemPlink: ConfigMachine,
+    standardPlinkMultiCpu: ConfigMachine,
     standardR: ConfigMachine,
     highMemR: ConfigMachine,
     flashPca: ConfigMachine,
@@ -113,7 +114,8 @@ object ProjectConfig extends loamstream.LoamFile {
     vep: ConfigMachine,
     king: ConfigMachine,
     klustakwik: ConfigMachine,
-    tabix: ConfigMachine) extends Debug
+    tabix: ConfigMachine,
+    bgenix: ConfigMachine) extends Debug
   
   final case class ConfigArray(
     id: String,
@@ -129,17 +131,17 @@ object ProjectConfig extends loamstream.LoamFile {
     sampleMetricCovars: Option[String],
     chrs: Seq[String],
     gqThreshold: Option[Int],
-    ancestryOutliersKeep: Option[Seq[String]],
-    duplicatesKeep: Option[Seq[String]],
-    famsizeKeep: Option[Seq[String]],
-    sampleqcKeep: Option[Seq[String]],
-    sexcheckKeep: Option[Seq[String]],
+    ancestryOutliersKeep: Option[String],
+    duplicatesKeep: Option[String],
+    famsizeKeep: Option[String],
+    sampleqcKeep: Option[String],
+    sexcheckKeep: Option[String],
     qcVariantFilters: Option[Seq[String]],
     qcVariantSampleN: Option[Int],
     qcVariantSampleSeed: Option[Int],
     postQcSampleFilters: Option[Seq[String]],
     postQcVariantFilters: Option[Seq[String]],
-    exportCleanVcf: Boolean) extends Debug
+    exportCleanBgen: Boolean) extends Debug
 
   //final case class ConfigSection(
   //  id: String,
@@ -155,10 +157,12 @@ object ProjectConfig extends loamstream.LoamFile {
     loamstreamVersion: String,
     pipelineVersion: String,
     hailCloud: Boolean,
+    hailVersion: String,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
     referenceGenome: String,
+    dbSNPht: String,
     regionsExclude: String,
     kgPurcellVcf: String,
     kgSample: String,
@@ -177,7 +181,7 @@ object ProjectConfig extends loamstream.LoamFile {
     sampleFileSrSex: String,
     sampleFileMaleCode: String,
     sampleFileFemaleCode: String,
-    sampleFileSrRace: String,
+    sampleFileSrRace: Option[String],
     sampleFileAFRCodes: Option[Seq[String]],
     sampleFileAMRCodes: Option[Seq[String]],
     sampleFileEURCodes: Option[Seq[String]],
@@ -210,6 +214,8 @@ object ProjectConfig extends loamstream.LoamFile {
     imgPython2: Path,
     imgR: Path,
     imgTools: Path,
+    imgPlink2: Path,
+    imgBgen: Path,
     imgTexLive: Path,
     imgEnsemblVep: Path,
     imgFlashPca: Path,
@@ -220,6 +226,8 @@ object ProjectConfig extends loamstream.LoamFile {
     binGenotypeHarmonizer: Path,
     binKing: Path,
     binPlink: Path,
+    binPlink2: Path,
+    binBgenix: Path,
     binTabix: Path,
     binGhostscript: Path,
     binKlustakwik: Path,
@@ -244,7 +252,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMergeVariantLists: Path,
     pyBimToUid: Path,
     pyHailUtils: Path,
-    pyHailExportCleanArrayData: Path,
+    pyHailExportCleanVcf: Path,
     pyGenerateReportHeader: Path,
     pyGenerateQcReportIntro: Path,
     pyGenerateQcReportData: Path,
@@ -275,6 +283,8 @@ object ProjectConfig extends loamstream.LoamFile {
     rCalcIstatsAdj: Path,
     rIstatsAdjPca: Path,
     rRawVariantsSummaryTable: Path,
+    rSeqVariantsSummaryTable: Path,
+    rVariantsExcludeSummaryTable: Path,
     rAncestryClusterTable: Path,
     rMakeOutlierTable: Path,
     rUpsetplotBimFam: Path,
@@ -298,9 +308,11 @@ object ProjectConfig extends loamstream.LoamFile {
       val pipelineVersion = requiredStr(config = config, field = "pipelineVersion")
       val projectId = requiredStr(config = config, field = "projectId")
       val hailCloud = requiredBool(config = config, field = "hailCloud")
+      val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
+      val dbSNPht = requiredStr(config = config, field = "dbSNPht")
       val regionsExclude = requiredStr(config = config, field = "regionsExclude")
       val kgPurcellVcf = requiredStr(config = config, field = "kgPurcellVcf")
       val kgSample = requiredStr(config = config, field = "kgSample")
@@ -319,7 +331,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val sampleFileSrSex = requiredStr(config = config, field = "sampleFileSrSex")
       val sampleFileMaleCode = requiredStr(config = config, field = "sampleFileMaleCode")
       val sampleFileFemaleCode = requiredStr(config = config, field = "sampleFileFemaleCode")
-      val sampleFileSrRace = requiredStr(config = config, field = "sampleFileSrRace")
+      val sampleFileSrRace = optionalStr(config = config, field = "sampleFileSrRace")
       val sampleFileAFRCodes = optionalStrList(config = config, field = "sampleFileAFRCodes")
       val sampleFileAMRCodes = optionalStrList(config = config, field = "sampleFileAMRCodes")
       val sampleFileEURCodes = optionalStrList(config = config, field = "sampleFileEURCodes")
@@ -389,6 +401,10 @@ object ProjectConfig extends loamstream.LoamFile {
           val thisConfig = requiredObj(config = config, field = "highMemPlink")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         },
+        standardPlinkMultiCpu = {
+          val thisConfig = requiredObj(config = config, field = "standardPlinkMultiCpu")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
         standardR = {
           val thisConfig = requiredObj(config = config, field = "standardR")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
@@ -427,6 +443,10 @@ object ProjectConfig extends loamstream.LoamFile {
         },
         tabix = {
           val thisConfig = requiredObj(config = config, field = "tabix")
+          ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
+        },
+        bgenix = {
+          val thisConfig = requiredObj(config = config, field = "bgenix")
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
@@ -654,17 +674,17 @@ object ProjectConfig extends loamstream.LoamFile {
             sampleMetricCovars = optionalStrList(config = array, field = "sampleMetricCovars") match { case Some(s) => Some(s.mkString("+")); case None => None },
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
             gqThreshold = optionalInt(config = array, field = "gqThreshold", min = Some(0)),
-            ancestryOutliersKeep = optionalStrList(config = array, field = "ancestryOutliersKeep"),
-            duplicatesKeep = optionalStrList(config = array, field = "duplicatesKeep"),
-            famsizeKeep = optionalStrList(config = array, field = "famsizeKeep"),
-            sampleqcKeep = optionalStrList(config = array, field = "sampleqcKeep"),
-            sexcheckKeep = optionalStrList(config = array, field = "sexcheckKeep"),
+            ancestryOutliersKeep = optionalStr(config = array, field = "ancestryOutliersKeep"),
+            duplicatesKeep = optionalStr(config = array, field = "duplicatesKeep"),
+            famsizeKeep = optionalStr(config = array, field = "famsizeKeep"),
+            sampleqcKeep = optionalStr(config = array, field = "sampleqcKeep"),
+            sexcheckKeep = optionalStr(config = array, field = "sexcheckKeep"),
             qcVariantFilters = qcVariantFilters,
             qcVariantSampleN = optionalInt(config = array, field = "qcVariantSampleN", min = Some(1000)),
             qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed", min = Some(0)),
             postQcSampleFilters = postQcSampleFilters,
             postQcVariantFilters = postQcVariantFilters,
-            exportCleanVcf = requiredBool(config = array, field = "exportCleanVcf")
+            exportCleanBgen = requiredBool(config = array, field = "exportCleanBgen")
           )
       
         }
@@ -715,11 +735,13 @@ object ProjectConfig extends loamstream.LoamFile {
         pipelineVersion = pipelineVersion,
         projectId = projectId,
         hailCloud = hailCloud,
+        hailVersion = hailVersion,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
         regionsExclude = regionsExclude,
         kgPurcellVcf = kgPurcellVcf,
+        dbSNPht = dbSNPht,
         kgSample = kgSample,
         kgSampleId = kgSampleId,
         kgSamplePop = kgSamplePop,
@@ -771,11 +793,13 @@ object ProjectConfig extends loamstream.LoamFile {
       val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
   
       val image = Image(
-        imgHail = path(s"${imagesDir}/hail-0.2.61.simg"),
+        imgHail = path(s"${imagesDir}/hail-${projectConfig.hailVersion}.simg"),
         imgLocuszoom = path(s"${imagesDir}/locuszoom.simg"),
-        imgPython2 = path(s"${imagesDir}/python2.simg"),
+        imgPython2 = path(s"${imagesDir}/python2v2.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
+        imgPlink2 = path(s"${imagesDir}/plink2_v2.3a.simg"),
+        imgBgen = path(s"${imagesDir}/bgen_v1.1.4.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
@@ -787,6 +811,8 @@ object ProjectConfig extends loamstream.LoamFile {
         binGenotypeHarmonizer = path("/usr/local/bin/GenotypeHarmonizer.jar"),
         binKing = path("/usr/local/bin/king"),
         binPlink = path("/usr/local/bin/plink"),
+        binPlink2 = path("/usr/local/bin/plink2"),
+        binBgenix = path("/usr/local/bin/bgenix"),
         binTabix = path("/usr/local/bin/tabix"),
         binGhostscript = path("/usr/local/bin/gs"),
         binKlustakwik = path("/usr/local/bin/KlustaKwik"),
@@ -812,7 +838,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
         pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
         pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
-        pyHailExportCleanArrayData = path(s"${scriptsDir}/hail_export_clean_array_data.py"),
+        pyHailExportCleanVcf = path(s"${scriptsDir}/hail_export_clean_vcf.py"),
         pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
         pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
         pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
@@ -845,6 +871,8 @@ object ProjectConfig extends loamstream.LoamFile {
         rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
         rIstatsAdjPca = path(s"${scriptsDir}/istats_adj_pca.r"),
         rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
+        rSeqVariantsSummaryTable = path(s"${scriptsDir}/seq_variants_summary_table.r"),
+        rVariantsExcludeSummaryTable = path(s"${scriptsDir}/variants_exclude_summary_table.r"),
         rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
         rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),

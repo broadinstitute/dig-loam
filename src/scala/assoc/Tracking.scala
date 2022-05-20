@@ -35,28 +35,30 @@ object Tracking extends loamstream.LoamFile {
         case Some(s) => s.id
         case None => "none"
       }
-      for {
-        test <- modelStores(ms).assocSingle.keys
-      } yield {
-        writeObject(obj = modelStores(ms).assocSingle(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocSingle.${test}")
+
+      modelStores(ms).hail match {
+        case Some(_) =>
+          for {
+            test <- modelStores(ms).hail.get.assocSingle.keys
+          } yield {
+            writeObject(obj = modelStores(ms).hail.get.assocSingle(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.hail.assocSingle.${test}")
+          }
+        case None => ()
       }
-      
-      for {
-        test <- modelStores(ms).assocGroup.keys
-      } yield {
-        writeObject(obj = modelStores(ms).assocGroup(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroup.${test}")
-        writeObject(obj = modelStores(ms).assocGroup(test).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocGroup.${test}.groups.keys")
-      }
-      
-      for {
-        test <- modelStores(ms).assocMaskGroup.keys
-      } yield {
-        for {
-          mask <- modelStores(ms).assocMaskGroup(test).keys
-        } yield {
-          writeObject(obj = modelStores(ms).assocMaskGroup(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${test}.${mask.id}")
-          writeObject(obj = modelStores(ms).assocMaskGroup(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.assocMaskGroup.${test}.${mask.id}.groups.keys")
-        }
+
+      modelStores(ms).epacts match {
+        case Some(_) =>
+          for {
+            test <- modelStores(ms).epacts.get.assocGroup.keys
+          } yield {
+            for {
+              mask <- modelStores(ms).epacts.get.assocGroup(test).keys
+            } yield {
+              writeObject(obj = modelStores(ms).epacts.get.assocGroup(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.epacts.assocGroup.${test}.${mask.id}")
+              writeObject(obj = modelStores(ms).epacts.get.assocGroup(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.epacts.assocGroup.${test}.${mask.id}.groups.keys")
+            }
+          }
+        case None => ()
       }
   
     }

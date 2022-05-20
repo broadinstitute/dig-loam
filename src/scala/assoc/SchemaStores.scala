@@ -22,7 +22,16 @@ object SchemaStores extends loamstream.LoamFile {
   final case class SchemaBasePhenoMaskStore(
     base: SchemaBaseMaskStore,
     phenos: Map[ConfigPheno, SchemaBaseMaskStore])
-  
+
+  final case class SchemaEpactsStore(
+    groupFile: SchemaBasePhenoMaskStore,
+    hailLog: SchemaBasePhenoStore)
+
+  final case class SchemaRegenieStore(
+    setlist: SchemaBasePhenoStore,
+    annotations: SchemaBasePhenoStore,
+    masks: SchemaBasePhenoStore)
+
   final case class Schema(
     sampleMap: Store,
     cohortMap: MultiStore,
@@ -41,10 +50,17 @@ object SchemaStores extends loamstream.LoamFile {
     variantFilterTable: SchemaBasePhenoStore,
     variantFilterHailTable: SchemaBasePhenoStore,
     variantFilterHailLog: SchemaBasePhenoStore,
-    groupFile: SchemaBasePhenoMaskStore,
-    groupFileHailLog: SchemaBasePhenoStore,
+    epacts: Option[SchemaEpactsStore],
+    //groupFile: SchemaBasePhenoMaskStore,
+    //groupFileHailLog: SchemaBasePhenoStore,
+    regenie: Option[SchemaRegenieStore],
+    //regenieSetlist: SchemaBasePhenoStore,
+    //regenieAnnotations: SchemaBasePhenoStore,
+    //regenieMasks: SchemaBasePhenoStore,
+    //regenieHailLog: SchemaBasePhenoStore,
     vcf: Option[MultiPathVcf],
-    vcfHailLog: MultiStore
+    vcfHailLog: MultiStore,
+    bgen: Option[MultiPathBgen]
   )
   
   val schemaStores = {
@@ -73,68 +89,86 @@ object SchemaStores extends loamstream.LoamFile {
         case true => Some(dirTree.analysisSchemaMap(schema).google.get)
         case false => None
     }
-  
-    val groupFile = SchemaBasePhenoMaskStore(
-      base = SchemaBaseMaskStore(
-        base = MultiStore(
-          local = Some(store(local_dir / s"${baseString}.variant.groupfile.tsv")),
-          google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.tsv")); case false => None }
-        ),
-        masks = schema.masks match {
-          case Some(_) =>
-            schema.masks.get.size match {
-              case n if n > 0 =>
-                schema.masks.get.map { mask =>
-                  mask -> MultiStore(
-                    local = Some(store(local_dir / s"${baseString}.variant.groupfile.${mask.id}.tsv")),
-                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.${mask.id}.tsv")); case false => None }
-                  )
-                }.toMap
-              case _ => Map[MaskFilter, MultiStore]()
+
+    val groupFile = modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
+      case n if n > 0 =>
+        Some(SchemaBasePhenoMaskStore(
+          base = SchemaBaseMaskStore(
+            base = MultiStore(
+              local = Some(store(local_dir / s"${baseString}.variant.epacts.groupfile.tsv")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.epacts.groupfile.tsv")); case false => None }
+            ),
+            masks = schema.masks match {
+              case Some(_) =>
+                schema.masks.get.size match {
+                  case n if n > 0 =>
+                    schema.masks.get.map { mask =>
+                      mask -> MultiStore(
+                        local = Some(store(local_dir / s"${baseString}.variant.epacts.groupfile.${mask.id}.tsv")),
+                        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.epacts.groupfile.${mask.id}.tsv")); case false => None }
+                      )
+                    }.toMap
+                  case _ => Map[MaskFilter, MultiStore]()
+                }
+              case None => Map[MaskFilter, MultiStore]()
             }
-          case None => Map[MaskFilter, MultiStore]()
-        }
-      ),
-      phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
-        case n if n > 0 =>
-          projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
-            pheno -> SchemaBaseMaskStore(
-              base = MultiStore(
-                local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.groupfile.tsv")),
-                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.groupfile.tsv")); case false => None }
-              ),
-              masks = schema.masks match {
-                case Some(_) =>
-                  schema.masks.get.size match {
-                    case n if n > 0 =>
-                      schema.masks.get.map { mask =>
-                        mask -> MultiStore(
-                          local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.groupfile.${mask.id}.tsv")),
-                          google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.groupfile.${mask.id}.tsv")); case false => None }
-                        )
-                      }.toMap
-                    case _ => Map[MaskFilter, MultiStore]()
+          ),
+          phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+            case n if n > 0 =>
+              projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+                pheno -> SchemaBaseMaskStore(
+                  base = MultiStore(
+                    local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.epacts.groupfile.tsv")),
+                    google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.epacts.groupfile.tsv")); case false => None }
+                  ),
+                  masks = schema.masks match {
+                    case Some(_) =>
+                      schema.masks.get.size match {
+                        case n if n > 0 =>
+                          schema.masks.get.map { mask =>
+                            mask -> MultiStore(
+                              local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.epacts.groupfile.${mask.id}.tsv")),
+                              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.epacts.groupfile.${mask.id}.tsv")); case false => None }
+                            )
+                          }.toMap
+                        case _ => Map[MaskFilter, MultiStore]()
+                      }
+                    case None => Map[MaskFilter, MultiStore]()
                   }
-                case None => Map[MaskFilter, MultiStore]()
-              }
-            )
-          }.toMap
-        case _ =>  Map[ConfigPheno, SchemaBaseMaskStore]()
-      }
-    )
-  
-    try {
-      val gFile = checkPath(s"""${groupFile.base.base.local.get.toString.split("@")(1)}""")
-      val l = fileToList(gFile).map(e => e.split("\t")(0))
-      for {
-        group <- l
-      } yield {
-          dirTree.analysisModelGroupsMap(group) = appendSubDir(dirTree.analysisModelGroups, group)
-      }
+                )
+              }.toMap
+            case _ =>  Map[ConfigPheno, SchemaBaseMaskStore]()
+          }
+        ))
+      case _ => None
     }
-    catch {
-      case x: CfgException =>
-        println(s"""skipping split assoc test by group due to missing group file: ${groupFile.base.base.local.get.toString.split("@")(1)}""")
+
+    modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
+      case n if n > 0 =>
+        try {
+          val gFile = checkPath(s"""${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
+          val l = fileToList(gFile).map(e => e.split("\t")(0))
+          for {
+            group <- l
+          } yield {
+              dirTree.analysisModelGroupsMap(group) = appendSubDir(dirTree.analysisModelGroups, group)
+          }
+        }
+        catch {
+          case x: CfgException =>
+            println(s"""skipping split assoc test by group due to missing group file: ${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
+        }
+      case _ => ()
+    }
+
+    modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*regenie.*")).size match {
+      case n if n > 0 =>
+        for {
+          chr <- projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
+        } yield {
+            dirTree.analysisModelChrsMap(chr) = appendSubDir(dirTree.analysisModelChrs, "chr" + chr)
+        }
+      case _ => ()
     }
                   
     sm -> Schema(
@@ -419,27 +453,87 @@ object SchemaStores extends loamstream.LoamFile {
           case _ => Map[ConfigPheno, MultiStore]()
         }
       ),
-      groupFile = groupFile,
-      groupFileHailLog = SchemaBasePhenoStore(
-        base = MultiStore(
-          local = Some(store(local_dir / s"${baseString}.variant.groupfile.hail.log")),
-          google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.groupfile.hail.log")); case false => None }
-        ),
-        phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
-          case n if n > 0 =>
-            projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
-              pheno -> MultiStore(
-                local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.groupfile.hail.log")),
-                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.groupfile.hail.log")); case false => None }
-              )
-            }.toMap
-          case _ => Map[ConfigPheno, MultiStore]()
-        }
-      ),
-      vcf = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+      epacts = modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
         case n if n > 0 =>
-          (schema.knockoutFilters, array.exportCleanVcf) match {
-            case (Some(_), _) | (_, false) =>
+          Some(SchemaEpactsStore(
+            groupFile = groupFile.get,
+            hailLog = SchemaBasePhenoStore(
+              base = MultiStore(
+                local = Some(store(local_dir / s"${baseString}.variant.epacts.groupfile.hail.log")),
+                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.epacts.groupfile.hail.log")); case false => None }
+              ),
+              phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+                case n if n > 0 =>
+                  projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+                    pheno -> MultiStore(
+                      local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.epacts.groupfile.hail.log")),
+                      google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.epacts.groupfile.hail.log")); case false => None }
+                    )
+                  }.toMap
+                case _ => Map[ConfigPheno, MultiStore]()
+              }
+            )
+          ))
+        case _ => None
+      },
+      regenie = modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*regenie.*")).size match {
+        case n if n > 0 =>
+          Some(SchemaRegenieStore(
+            setlist = SchemaBasePhenoStore(
+              base = MultiStore(
+                local = Some(store(local_dir / s"${baseString}.variant.regenie.setlist.tsv")),
+                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.regenie.setlist.tsv")); case false => None }
+              ),
+              phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+                case n if n > 0 =>
+                  projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+                    pheno -> MultiStore(
+                      local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.regenie.setlist.tsv")),
+                      google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.regenie.setlist.tsv")); case false => None }
+                    )
+                  }.toMap
+                case _ => Map[ConfigPheno, MultiStore]()
+              }
+            ),
+            annotations = SchemaBasePhenoStore(
+              base = MultiStore(
+                local = Some(store(local_dir / s"${baseString}.variant.regenie.annotations.tsv")),
+                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.regenie.annotations.tsv")); case false => None }
+              ),
+              phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+                case n if n > 0 =>
+                  projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+                    pheno -> MultiStore(
+                      local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.regenie.annotations.tsv")),
+                      google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.regenie.annotations.tsv")); case false => None }
+                    )
+                  }.toMap
+                case _ => Map[ConfigPheno, MultiStore]()
+              }
+            ),
+            masks = SchemaBasePhenoStore(
+              base = MultiStore(
+                local = Some(store(local_dir / s"${baseString}.variant.regenie.masks.tsv")),
+                google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant.regenie.masks.tsv")); case false => None }
+              ),
+              phenos = schemaFilterFields.filter(e => e.schema.id == schema.id).head.fields.filter(e => e.startsWith("variant_qc.diff_miss")).size match {
+                case n if n > 0 =>
+                  projectConfig.Phenos.filter(e => e.binary && projectConfig.Models.filter(f => f.schema == schema.id).map(g => g.pheno).contains(e.id)).map { pheno =>
+                    pheno -> MultiStore(
+                      local = Some(store(local_dir / s"${baseString}.${pheno.id}.variant.regenie.masks.tsv")),
+                      google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${pheno.id}.variant.regenie.masks.tsv")); case false => None }
+                    )
+                  }.toMap
+                case _ => Map[ConfigPheno, MultiStore]()
+              }
+            )
+          ))
+        case _ => None
+      },
+      vcf = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
+        case n if n > 0 =>
+          schema.knockoutFilters match {
+            case Some(_) =>
               Some(MultiPathVcf(
                 base = MultiPath(
                   local = Some(local_dir / baseString),
@@ -456,23 +550,46 @@ object SchemaStores extends loamstream.LoamFile {
         case _ => None
       },
       vcfHailLog = MultiStore(
-        local = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+        local = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
           case n if n > 0 =>
-            (schema.knockoutFilters, array.exportCleanVcf, projectConfig.hailCloud) match {
-              case (Some(_), _, false) | (_, false, false) => Some(store(local_dir / s"${baseString}.vcf.hail.log"))
+            (schema.knockoutFilters, projectConfig.hailCloud) match {
+              case (Some(_), false) => Some(store(local_dir / s"${baseString}.vcf.hail.log"))
               case _ => None
             }
           case _ => None
         },
-        google = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).map(e => e.tests).flatten).size match {
+        google = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
           case n if n > 0 =>
-            (schema.knockoutFilters, array.exportCleanVcf, projectConfig.hailCloud) match {
-              case (Some(_), _, true) | (_, false, true) => Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
+            (schema.knockoutFilters, projectConfig.hailCloud) match {
+              case (Some(_), true) => Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
               case _ => None
             }
           case _ => None
         }
-      )
+      ),
+      bgen = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
+        case n if n > 0 =>
+          (schema.knockoutFilters, array.exportCleanBgen) match {
+            case (Some(_), _) | (_, false) =>
+              Some(MultiPathBgen(
+                base = MultiPath(
+                  local = Some(local_dir / baseString),
+                  google = projectConfig.hailCloud match { case true => Some(cloud_dir.get / baseString); case false => None }
+                ),
+                data = MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.bgen")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.bgen")); case false => None }
+                ),
+                sample = MultiStore(
+                  local = Some(store(local_dir / s"${baseString}.sample")),
+                  google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.sample")); case false => None }
+                ),
+                bgi = MultiStore(local = Some(store(local_dir / s"${baseString}.bgen.bgi")), google = None)
+              ))
+            case _ => None
+          }
+        case _ => None
+      }
     )
   }.toMap
   

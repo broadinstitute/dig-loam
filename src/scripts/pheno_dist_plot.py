@@ -27,11 +27,41 @@ def main(args=None):
 	print "reading phenotypes from file"
 	df = pd.read_table(args.pheno, sep="\t", dtype = {args.iid_col: np.str})
 
+	num_covars = []
+	cat_covars = []
+	if args.covars:
+		covars_factors = args.covars.split("+")
+		for cv in covars_factors:
+			cvv = [char for char in cv]
+			if cvv[0] == "[" and cvv[len(cvv)-1] == "]":
+				cat_covars.append("".join(cvv[1:(len(cvv)-1)]))
+			else:
+				num_covars.append(cv)
+
+	for cc in cat_covars:
+		df[cc] = df[cc].astype('category')
+
+	summary_all = df[[args.pheno_name]+cat_covars+num_covars].describe(include='all')
+	summary_all['COHORT'] = "-"
+	summary_all['STAT'] = summary_all.index
+	summary_all.reset_index(drop=True)
+	summary_all = summary_all[['COHORT','STAT'] + [c for c in summary_all.columns if c not in ['COHORT','STAT']]]
+
 	if args.cohorts_map:
 		cohorts = pd.read_table(args.cohorts_map, header=None, sep="\t", names=[args.iid_col,"COHORT"])
 		cohorts[args.iid_col] = cohorts[args.iid_col].astype(str)
 		df = df.merge(cohorts)
 		df['COHORT'] = df['COHORT'].astype('category')
+
+		for cohort in df['COHORT'].unique():
+			summary_cohort = df[[args.pheno_name]+cat_covars+num_covars][df['COHORT'] == cohort].describe(include='all')
+			summary_cohort['COHORT'] = cohort
+			summary_cohort['STAT'] = summary_cohort.index
+			summary_cohort.reset_index(drop=True)
+			summary_cohort = summary_cohort[['COHORT','STAT'] + [c for c in summary_cohort.columns if c not in ['COHORT','STAT']]]
+			summary_all = pd.concat([summary_all, summary_cohort])
+
+	summary_all.to_csv(args.out_vars_summary, header=True, index=False, sep="\t", na_rep="NA")
 
 	df.dropna(subset = [args.pheno_name], inplace=True)
 
@@ -98,15 +128,17 @@ def main(args=None):
 			ax.set_ylabel("")
 			fig.tight_layout(w_pad=1)
 
-	plt.savefig(args.out,dpi=300)
+	plt.savefig(args.out_plot,dpi=300)
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--cohorts-map', help='a model cohort map')
+	parser.add_argument('--covars', help='a + delimited list of covariates, indicating categorical covars with []')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--pheno', help='a phenotype file name', required=True)
 	requiredArgs.add_argument('--pheno-name', help='a phenotype name', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
-	requiredArgs.add_argument('--out', help='an output filename ending in .png or .pdf', required=True)
+	requiredArgs.add_argument('--out-plot', help='a plot output filename ending in .png or .pdf', required=True)
+	requiredArgs.add_argument('--out-vars-summary', help='a model vars summary output filename', required=True)
 	args = parser.parse_args()
 	main(args)

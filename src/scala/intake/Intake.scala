@@ -139,7 +139,7 @@ object Intake extends loamstream.LoamFile {
         heterozygousControlsDef = heterozygousControls.map(toLongDef), 
         homozygousCasesDef = homozygousCases.map(toLongDef),
         homozygousControlsDef = homozygousControls.map(toLongDef),
-        failFast = true)
+        failFast = false)
   }
   
   def makeAggregatorMetadataFile(metadata: AggregatorMetadata): Store = {
@@ -163,7 +163,7 @@ object Intake extends loamstream.LoamFile {
       destOpt: Option[Store] = None,
       //TODO: Default to real location
       dryRun: Boolean = false,
-      bucketName: String = "dig-integration-tests"): (Store, Option[Store], Option[Store]) = {
+      bucketName: String): (Store, Option[Store], Option[Store]) = {
     
     require(sourceStore.isPathStore)
 
@@ -201,6 +201,14 @@ object Intake extends loamstream.LoamFile {
           logStore = filterLog,
           append = true)
       }
+
+      val hasAllowedAllelesFilter: DataRowPredicate = {
+        DataRowFilters.hasAllowedAlleles(
+          refColumn = columnNames.REF, 
+          altColumn = columnNames.ALT, 
+          logStore = filterLog,
+          append = true)
+      }
       
       uploadTo(
           bucketName = bucketName,
@@ -208,8 +216,8 @@ object Intake extends loamstream.LoamFile {
           metadata = metadata).
       from(source).
       using(flipDetector).
-      //Filter out rows with REF or ALT columns == ('D' or 'I')
-      filter(noDsOrIsFilter)
+      filter(hasAllowedAllelesFilter)
+      //filter(noDsOrIsFilter)
     }
     
     def forVariantData(bucketName: String)(phenotypeVariantConfig: PhenotypeConfig.VariantData): Option[Store] = {
@@ -243,7 +251,7 @@ object Intake extends loamstream.LoamFile {
               phenotypeVariantConfig.columnNames).
           filter(oddsRatioFilter). //if ODDS_RATIO is present, only keep rows with ODDS_RATIO > 0.0
           //filter(betaFilter). //if BETA is present, only keep rows with -10.0 < BETA < 10.0
-          via(toVariantRows).
+          via(toVariantRows, filterLog, append = true).
           filter(AggregatorVariantRowFilters.validEaf(filterLog, append = true)). //(eaf > 0.0) && (eaf < 1.0)
           filter(AggregatorVariantRowFilters.validMaf(filterLog, append = true)). //(maf > 0.0) && (maf <= 0.5)
           map(DataRowTransforms.upperCaseAlleles). // "aTgC" => "ATGC"
@@ -289,7 +297,7 @@ object Intake extends loamstream.LoamFile {
               bucketName = bucketName,
               uploadType = UploadType.VariantCounts,
               phenotypeVariantCountConfig.columnNames).
-          via(toVariantCountRows).
+          via(toVariantCountRows, filterLog, append=true).
           map(upperCaseAlleles). // "aTgC" => "ATGC"
           withMetric(Metrics.count(countFile)).
           withMetric(Metrics.writeSummaryStatsTo(summaryStatsFile)).
@@ -559,7 +567,7 @@ object Intake extends loamstream.LoamFile {
         aggregatorIntakePipelineConfig, 
         flipDetector,
         dryRun = cfgDryRun,
-        bucketName = "dig-analysis-data")
+        bucketName = metadata.bucketName)
     }
     
     val qqPlot: Store = store(Paths.workDir / s"""${generalMetadata.dataset}_${phenotype}.intake.qqplot.png""")

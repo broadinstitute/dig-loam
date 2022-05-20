@@ -69,7 +69,7 @@ def main(args=None):
 		mt = mt.annotate_cols(ANCESTRY_INFERRED = tbl[mt.s].ANCESTRY_INFERRED)
 
 	print("reduce to samples with non-missing phenotype")
-	mt = mt.filter_cols(hl.is_missing(mt.pheno[args.pheno_col]), keep=False)
+	mt = mt.filter_cols(hl.is_missing(mt.pheno[args.pheno_analyzed]), keep=False)
 
 	if args.pops:
 		print("reduce to samples in populations " + args.pops)
@@ -80,19 +80,15 @@ def main(args=None):
 	with hl.hadoop_open(args.pcs_include, "r") as f:
 		pcs = f.read().splitlines()
 
-	covars = [x for x in args.covars.split("+")] if args.covars != "" else []
-	if args.trans == "invn":
-		pheno_analyzed = args.pheno_col + '_invn_' + "_".join([x.replace("[","").replace("]","") for x in args.covars.split("+")])
-		covars = pcs
-	else:
-		pheno_analyzed = args.pheno_col
+	covars = [x for x in args.covars_analyzed.split("+")] if args.covars_analyzed else []
+	if len(covars) > 0:
 		pheno_df = mt.cols().to_pandas()
 		for cov in covars:
 			if cov[0] == "[" and cov[-1] == "]":
 				for val in sorted(pheno_df['pheno.' + cov[1:-1]].unique())[1:]:
 					covars = covars + [cov[1:-1] + str(val)]
 				covars = [x for x in covars if x != cov]
-		covars = covars + pcs
+	covars = covars + pcs
 
 	n_all = mt.rows().count()
 	print(str(n_all) + " variants remaining for analysis")
@@ -102,7 +98,7 @@ def main(args=None):
 	mt = hail_utils.update_variant_qc(mt, is_female = "is_female", variant_qc = "variant_qc")
 	if args.test != 'hail.q.lm':
 		print("add case/ctrl variant qc")
-		mt = hail_utils.add_case_ctrl_stats_results(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = pheno_analyzed)
+		mt = hail_utils.add_case_ctrl_stats_results(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_analyzed)
 
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
 	mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
@@ -110,9 +106,9 @@ def main(args=None):
 	mt_y = mt_y.filter_cols(mt_y.is_female, keep=False)
 
 	def linear_regression(mt):
-		print("running linear_regression: " + pheno_analyzed + " ~ 1 + " + "+".join(covars))
+		print("running linear_regression: " + args.pheno_analyzed + " ~ 1 + " + "+".join(covars))
 		tbl = hl.linear_regression_rows(
-			y = mt.pheno[pheno_analyzed],
+			y = mt.pheno[args.pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
 			pass_through = [
@@ -151,10 +147,10 @@ def main(args=None):
 		return tbl
 
 	def logistic_regression(mt, test):
-		print("running logistic_regression (" + test + "): " + pheno_analyzed + " ~ 1 + " + "+".join(covars))
+		print("running logistic_regression (" + test + "): " + args.pheno_analyzed + " ~ 1 + " + "+".join(covars))
 		tbl = hl.logistic_regression_rows(
-			test = test.replace("hail.b.",""),
-			y = mt.pheno[pheno_analyzed],
+			test = test.replace("single.hail.b.",""),
+			y = mt.pheno[args.pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
 			pass_through = [
@@ -174,7 +170,7 @@ def main(args=None):
 			]
 		)
 
-		if test == 'hail.b.wald':
+		if test == 'single.hail.b.wald':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -201,7 +197,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'hail.b.firth':
+		elif test == 'single.hail.b.firth':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -227,7 +223,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'hail.b.lrt':
+		elif test == 'single.hail.b.lrt':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -253,7 +249,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'hail.b.score':
+		elif test == 'single.hail.b.score':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -277,12 +273,12 @@ def main(args=None):
 			)
 		return tbl
 
-	if args.test == 'hail.q.lm':
+	if args.test == 'single.hail.q.lm':
 		mt_nony_results = linear_regression(mt_nony)
 		mt_y_results = linear_regression(mt_y)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	elif args.test in ['hail.b.wald','hail.b.firth','hail.b.lrt','hail.b.score']:
+	elif args.test in ['single.hail.b.wald','single.hail.b.firth','single.hail.b.lrt','single.hail.b.score']:
 		mt_nony_results = logistic_regression(mt_nony, args.test)
 		mt_y_results = logistic_regression(mt_y, args.test)
 		mt_results = mt_nony_results.union(mt_y_results)
@@ -305,8 +301,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
-	parser.add_argument('--trans', help='a transformation code')
-	parser.add_argument('--covars', help="a '+' separated list of covariates")
+	parser.add_argument('--covars-analyzed', help="a '+' separated list of covariates used in analysis")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")
 	parser.add_argument('--extract-ld', help="a file containing hild proxy results in the form (SNP_A	SNP_B	R2)")
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
@@ -317,10 +312,9 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--mt-in', help='a matrix table', required=True)
 	requiredArgs.add_argument('--pheno-in', help='a phenotype file', required=True)
 	requiredArgs.add_argument('--pcs-include', help='a file containing a list of PCs to include in test', required=True)
-	requiredArgs.add_argument('--variant-stats-in', help='a file containing variant stats to include in output', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
-	requiredArgs.add_argument('--pheno-col', help='a column name for the phenotype', required=True)
-	requiredArgs.add_argument('--test', choices=['hail.b.wald','hail.b.lrt','hail.b.firth','hail.b.score','hail.q.lm'], help='a regression test code', required=True)
+	requiredArgs.add_argument('--pheno-analyzed', help='a column name for the phenotype used in analysis', required=True)
+	requiredArgs.add_argument('--test', choices=['single.hail.b.wald','single.hail.b.lrt','single.hail.b.firth','single.hail.b.score','single.hail.q.lm'], help='a regression test code', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)

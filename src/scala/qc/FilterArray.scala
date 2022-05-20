@@ -89,8 +89,9 @@ object FilterArray extends loamstream.LoamFile {
           googleCopy(arrayStores(array).filterPostQc.sFilters.local.get, arrayStores(array).filterPostQc.sFilters.google.get)
         
         }
-  
-        googleWith(projectConfig.cloudResources.mtCluster) {
+
+        // has failed in past with pre-emptible workers
+        google {
   
           hail"""${utils.python.pyHailFilter} --
             --cloud

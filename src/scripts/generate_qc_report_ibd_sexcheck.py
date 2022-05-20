@@ -64,9 +64,7 @@ def main(args=None):
 
 		text_dict2 = collections.OrderedDict()
 		for x in args.restore:
-			print "HERE1"
 			df = pd.read_table(x.split(",")[1])
-			print "HERE2"
 			df = df[df['RestoreFrom'] == "duplicatesKeep"]
 			if df.shape[0] > 0:
 				text_dict2[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
@@ -80,7 +78,7 @@ def main(args=None):
 		elif len(text_dict2) > 2:
 			text2 = ", ".join([str(text_dict2[x]) + " " + x.replace("_","\_") for x in text_dict2.keys()[0:(len(text_dict2.keys())-1)]]) + " and " + str(text_dict2[text_dict2.keys()[len(text_dict2.keys())-1]]) + " " + text_dict2.keys()[len(text_dict2.keys())-1].replace("_","\_")
 
-		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the array data. Upon manual inspection, If the clinical data for any of the duplicate pairs was nearly identical (same date of birth, etc.), then the sample with the higher call rate was reinstated. If the clinical data did not match or a manual inspection was not performed, both samples were removed. In this case, {1} samples have been reinstated.".format(text1, text2)
+		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the data. Upon manual inspection, If the clinical data for any of the duplicate pairs was nearly identical (same date of birth, etc.), then the sample with the higher call rate was reinstated. If the clinical data did not match or a manual inspection was not performed, both samples were removed. In this case, {1} samples were reinstated.".format(text1, text2)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 
@@ -177,7 +175,7 @@ def main(args=None):
 		elif len(text_dict3) > 2:
 			text3 = ", ".join([str(text_dict3[x]) + " " + x.replace("_","\_") for x in text_dict3.keys()[0:(len(text_dict3.keys())-1)]]) + " and " + str(text_dict3[text_dict3.keys()[len(text_dict3.keys())-1]]) + " " + text_dict3.keys()[len(text_dict3.keys())-1].replace("_","\_")
 
-		text=r"Each array was checked for genotype / clinical data agreement for sex. {0} flagged as a 'PROBLEM' by Hail because it was unable to impute sex and {1} flagged for removal because the genotype based sex did not match their clinical sex. Upon further inspection, {2} samples were manually reinstated during this step.".format(text1, text2, text3)
+		text=r"Each batch of data was checked for genotype / clinical data agreement for sex. {0} flagged as a 'PROBLEM' by Hail because it was unable to impute sex and {1} flagged for removal because the genotype based sex did not match their clinical sex. Upon further inspection, {2} samples were manually reinstated during this step.".format(text1, text2, text3)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"

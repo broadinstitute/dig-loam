@@ -4,6 +4,8 @@ import pandas as pd
 import csv
 from pathlib import Path
 import time
+import tempfile
+import shutil
 
 def main(args=None):
 
@@ -116,6 +118,7 @@ def main(args=None):
 		print("read in vep annotations")
 		tbl = hl.read_table(args.annotation)
 		tbl = tbl.select(*annotation_fields)
+		tbl = tbl.annotate(Uploaded_variation = tbl.Uploaded_variation.replace("_",":").replace("/",":"))
 		tbl = tbl.key_by('Uploaded_variation')
 		ht = ht.annotate(annotation = tbl[ht.rsid])
 

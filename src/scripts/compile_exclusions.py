@@ -15,7 +15,7 @@ def main(args=None):
 	restore_temp = restore[restore['RestoreFrom'] == "ancestryOutliersKeep"]
 	if restore_temp.shape[0] > 0:
 		print "restoring " + str(restore_temp.shape[0]) + " samples from ancestryOutliersKeep list"
-		exc=[a for a in exc if a not in restore_temp['IID']]
+		exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 	final=exc
 
 	print "reading kinship related file"
@@ -33,7 +33,7 @@ def main(args=None):
 			restore_temp = restore[restore['RestoreFrom'] == "duplicatesKeep"]
 			if restore_temp.shape[0] > 0:
 				print "restoring " + str(restore_temp.shape[0]) + " samples from duplicatesKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID']]
+				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "reading kinship famsizes file"
@@ -48,7 +48,7 @@ def main(args=None):
 			restore_temp = restore[restore['RestoreFrom'] == "famsizeKeep"]
 			if restore_temp.shape[0] > 0:
 				print "restoring " + str(restore_temp.shape[0]) + " samples from famsizeKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID']]
+				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "reading sampleqc outliers file"
@@ -63,7 +63,7 @@ def main(args=None):
 			restore_temp = restore[restore['RestoreFrom'] == "sampleqcKeep"]
 			if restore_temp.shape[0] > 0:
 				print "restoring " + str(restore_temp.shape[0]) + " samples from sampleqcKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID']]
+				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "reading sampleqc incomplete observations file"
@@ -89,7 +89,7 @@ def main(args=None):
 			restore_temp = restore[restore['RestoreFrom'] == "sexcheckKeep"]
 			if restore_temp.shape[0] > 0:
 				print "restoring " + str(restore_temp.shape[0]) + " samples from sexcheckKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID']]
+				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "writing final sample exclusions to file"
