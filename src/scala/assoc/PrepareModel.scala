@@ -336,7 +336,7 @@ object PrepareModel extends loamstream.LoamFile {
 	        		${binaryString}
                     --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}
                     --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get}"""
-                      .in(projectStores.hailUtils.local.get, arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get)
+                      .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get)
                       .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get)
                       .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}".split("/").last)
                 
