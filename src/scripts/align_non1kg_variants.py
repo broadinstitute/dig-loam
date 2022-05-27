@@ -54,7 +54,7 @@ def main(args=None):
 	bim['status'] = "ignore"
 
 	with open(args.ref,"r") as ref_file:
-		ref_seq = ref_file.read()
+		ref_seq = ref_file.read().upper()
 
 	snps = []
 	n = bim[bim['kg'] == 0].shape[0]
