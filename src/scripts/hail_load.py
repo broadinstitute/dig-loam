@@ -40,7 +40,8 @@ def main(args=None):
 	mt = mt.rename({'s_new': 's'})
 
 	print("add pheno annotations, replacing any spaces in sample ids with an underscore")
-	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types={args.id_col: hl.tstr, args.sex_col: hl.tstr})
+	sample_in_types = {args.id_col: hl.tstr, args.sex_col: hl.tstr} if args.sex_col else {args.id_col: hl.tstr}
+	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types=sample_in_types)
 	tbl = tbl.annotate(**{args.id_col + '_new': tbl[args.id_col].replace("\s+","_")})
 	tbl = tbl.key_by(args.id_col + '_new')
 	tbl = tbl.drop(args.id_col)
@@ -70,20 +71,30 @@ def main(args=None):
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
 
-	print("impute sex on appropriate variants, compare to sample file and add annotations")
-	mt = hail_utils.annotate_sex(
-		mt = mt, 
-		ref_genome = hl.get_reference(args.reference_genome), 
-		pheno_struct = 'pheno', 
-		pheno_sex = args.sex_col, 
-		male_code = args.male_code, 
-		female_code = args.female_code
-	)
+	print("impute sex on appropriate variants, compare to sample file (if supplied) and add annotations")
+	if args.sex_col and args.male_code and args.female_code:
+		mt = hail_utils.annotate_sex(
+			mt = mt, 
+			ref_genome = hl.get_reference(args.reference_genome), 
+			pheno_struct = 'pheno', 
+			pheno_sex = args.sex_col, 
+			male_code = args.male_code, 
+			female_code = args.female_code
+		)
+	else:
+		mt = hail_utils.annotate_sex(
+			mt = mt, 
+			ref_genome = hl.get_reference(args.reference_genome)
+		)
 
 	print("write sexcheck results to file")
 	tbl = mt.cols()
 	tbl = tbl.rename({'s': 'IID'})
-	tbl_out = tbl.select(pheno_sex = tbl.pheno[args.sex_col], sexcheck = tbl.sexcheck, is_female = tbl.is_female, f_stat = tbl.impute_sex.f_stat, n_called = tbl.impute_sex.n_called, expected_homs = tbl.impute_sex.expected_homs, observed_homs = tbl.impute_sex.observed_homs)
+	if args.sex_col and args.male_code and args.female_code:
+		tbl_out = tbl.select(pheno_sex = tbl.pheno[args.sex_col], sexcheck = tbl.sexcheck, is_female = tbl.is_female, f_stat = tbl.impute_sex.f_stat, n_called = tbl.impute_sex.n_called, expected_homs = tbl.impute_sex.expected_homs, observed_homs = tbl.impute_sex.observed_homs)
+	else:
+		tbl = tbl.annotate(pheno_sex = hl.missing(hl.tbool))
+		tbl_out = tbl.select(pheno_sex = tbl.pheno_sex, sexcheck = tbl.sexcheck, is_female = tbl.is_female, f_stat = tbl.impute_sex.f_stat, n_called = tbl.impute_sex.n_called, expected_homs = tbl.impute_sex.expected_homs, observed_homs = tbl.impute_sex.observed_homs)
 	tbl_out.export(args.sexcheck_out)
 
 	print("write sexcheck problems to file")
@@ -167,14 +178,14 @@ if __name__ == "__main__":
 	parser.add_argument('--vcf-in', help='a compressed vcf file')
 	parser.add_argument('--dbsnp-ht', help='a dbsnp build vcf (ex: https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz)')
 	parser.add_argument('--plink-in', help='a plink file set base name')
+	parser.add_argument('--sex-col', help='a column name for sex in the sample file')
+	parser.add_argument('--male-code', help='a code for male')
+	parser.add_argument('--female-code', help='a code for female')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--sample-in', help='a tab delimited sample file', required=True)
 	requiredArgs.add_argument('--id-col', help='a column name for sample id in the sample file', required=True)
 	requiredArgs.add_argument('--variant-metrics-out', help='an output filename for variant qc metrics', required=True)
-	requiredArgs.add_argument('--sex-col', help='a column name for sex in the sample file', required=True)
-	requiredArgs.add_argument('--male-code', help='a code for male', required=True)
-	requiredArgs.add_argument('--female-code', help='a code for female', required=True)
 	requiredArgs.add_argument('--sexcheck-out', help='an output filename for sexcheck results', required=True)
 	requiredArgs.add_argument('--sexcheck-problems-out', help='an output filename for sexcheck results that were problems', required=True)
 	requiredArgs.add_argument('--sites-vcf-out', help='an output filename for a sites only VCF file (must end in .vcf)', required=True)

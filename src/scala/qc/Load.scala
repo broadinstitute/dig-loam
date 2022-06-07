@@ -25,6 +25,21 @@ object Load extends loamstream.LoamFile {
     val gqThreshold =  array.gqThreshold.getOrElse("") match { case "" => ""; case _ => s"--gq-threshold ${array.gqThreshold.get}" }
   
     val inputType = array.technology + "_" + array.format
+
+    val srSexString = projectConfig.sampleFileSrSex match {
+      case Some(_) => s"""--sex-col "${projectConfig.sampleFileSrSex.get}""""
+      case None => ""
+    }
+
+    val maleCodeString = projectConfig.sampleFileMaleCode match {
+      case Some(_) => s"""--male-code "${projectConfig.sampleFileMaleCode.get}""""
+      case None => ""
+    }
+
+    val femaleCodeString = projectConfig.sampleFileFemaleCode match {
+      case Some(_) => s"""--female-code "${projectConfig.sampleFileFemaleCode.get}""""
+      case None => ""
+    }
   
     projectConfig.hailCloud match {
   
@@ -107,9 +122,9 @@ object Load extends loamstream.LoamFile {
             --sample-in ${projectStores.sampleFile.google.get}
             --id-col ${projectConfig.sampleFileId}
             --variant-metrics-out ${arrayStores(array).refData.variantMetrics.google.get}
-            --sex-col ${projectConfig.sampleFileSrSex}
-            --male-code ${projectConfig.sampleFileMaleCode}
-            --female-code ${projectConfig.sampleFileFemaleCode}
+            ${srSexString}
+            ${maleCodeString}
+            ${femaleCodeString}
             --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck.google.get}
             --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems.google.get}
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.google.get}
@@ -188,9 +203,9 @@ object Load extends loamstream.LoamFile {
             --sample-in ${projectStores.sampleFile.local.get}
             --id-col ${projectConfig.sampleFileId}
             --variant-metrics-out ${arrayStores(array).refData.variantMetrics.local.get}
-            --sex-col ${projectConfig.sampleFileSrSex}
-            --male-code ${projectConfig.sampleFileMaleCode}
-            --female-code ${projectConfig.sampleFileFemaleCode}
+            ${srSexString}
+            ${maleCodeString}
+            ${femaleCodeString}
             --sexcheck-out ${arrayStores(array).sexcheckData.sexcheck.local.get}
             --sexcheck-problems-out ${arrayStores(array).sexcheckData.problems.local.get}
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.local.get}
