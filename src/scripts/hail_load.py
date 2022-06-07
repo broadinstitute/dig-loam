@@ -40,7 +40,8 @@ def main(args=None):
 	mt = mt.rename({'s_new': 's'})
 
 	print("add pheno annotations, replacing any spaces in sample ids with an underscore")
-	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types={args.id_col: hl.tstr, args.sex_col: hl.tstr})
+	sample_in_types = {args.id_col: hl.tstr, args.sex_col: hl.tstr} if args.sex_col else {args.id_col: hl.tstr}
+	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types=sample_in_types)
 	tbl = tbl.annotate(**{args.id_col + '_new': tbl[args.id_col].replace("\s+","_")})
 	tbl = tbl.key_by(args.id_col + '_new')
 	tbl = tbl.drop(args.id_col)
