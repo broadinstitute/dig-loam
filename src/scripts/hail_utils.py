@@ -18,12 +18,14 @@ def adjust_sex_chromosomes(mt: hl.MatrixTable, is_female: hl.tstr) -> hl.MatrixT
 			.default(mt.GT)
 	)
 
-def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, pheno_struct: hl.tstr, pheno_sex: hl.tstr, male_code: hl.tstr, female_code: hl.tstr) -> hl.MatrixTable:
+def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, pheno_struct: hl.tstr = None, pheno_sex: hl.tstr = None, male_code: hl.tstr = None, female_code: hl.tstr = None) -> hl.MatrixTable:
 
-	mt = mt.annotate_cols(
-		pheno_female = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'female') | (mt[pheno_struct][pheno_sex] == 'Female') | (mt[pheno_struct][pheno_sex] == 'f') | (mt[pheno_struct][pheno_sex] == 'F') | (mt[pheno_struct][pheno_sex] == female_code), False),
-		pheno_male = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'male') | (mt[pheno_struct][pheno_sex] == 'Male') | (mt[pheno_struct][pheno_sex] == 'm') | (mt[pheno_struct][pheno_sex] == 'M') | (mt[pheno_struct][pheno_sex] == male_code), False)
-	)
+	if pheno_sex is not None:
+
+		mt = mt.annotate_cols(
+			pheno_female = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'female') | (mt[pheno_struct][pheno_sex] == 'Female') | (mt[pheno_struct][pheno_sex] == 'f') | (mt[pheno_struct][pheno_sex] == 'F') | (mt[pheno_struct][pheno_sex] == female_code), False),
+			pheno_male = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'male') | (mt[pheno_struct][pheno_sex] == 'Male') | (mt[pheno_struct][pheno_sex] == 'm') | (mt[pheno_struct][pheno_sex] == 'M') | (mt[pheno_struct][pheno_sex] == male_code), False)
+		)
 
 	if hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in ref_genome.x_contigs], keep=True).count()[0] > 0:
 		tbl = hl.impute_sex(
@@ -51,9 +53,14 @@ def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, ph
 
 	mt = mt.annotate_cols(impute_sex = tbl[mt.s])
 
-	mt = mt.annotate_cols(sexcheck = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]) & ~ hl.is_missing(mt.impute_sex.is_female), hl.if_else((mt.pheno_female & mt.impute_sex.is_female) | (mt.pheno_male & ~ mt.impute_sex.is_female), "OK", "PROBLEM"), "OK"))
+	if pheno_sex is not None:
+		mt = mt.annotate_cols(sexcheck = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]) & ~ hl.is_missing(mt.impute_sex.is_female), hl.if_else((mt.pheno_female & mt.impute_sex.is_female) | (mt.pheno_male & ~ mt.impute_sex.is_female), "OK", "PROBLEM"), "OK"))
+		mt = mt.annotate_cols(is_female = hl.if_else(mt.pheno_female & hl.is_missing(mt.impute_sex.is_female), True, hl.if_else(mt.pheno_male & hl.is_missing(mt.impute_sex.is_female), False, mt.impute_sex.is_female)))
+	else:
+		mt = mt.annotate_cols(sexcheck = "OK")
+		mt = mt.annotate_cols(is_female = hl.if_else(hl.is_missing(mt.impute_sex.is_female), hl.missing(hl.tbool), mt.impute_sex.is_female))
 
-	return mt.annotate_cols(is_female = hl.if_else(mt.pheno_female & hl.is_missing(mt.impute_sex.is_female), True, hl.if_else(mt.pheno_male & hl.is_missing(mt.impute_sex.is_female), False, mt.impute_sex.is_female)))
+	return mt
 
 def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tstr) -> hl.MatrixTable:
 
