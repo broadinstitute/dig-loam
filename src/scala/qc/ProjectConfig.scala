@@ -178,9 +178,9 @@ object ProjectConfig extends loamstream.LoamFile {
     dbNSFP: String,
     sampleFile: String,
     sampleFileId: String,
-    sampleFileSrSex: String,
-    sampleFileMaleCode: String,
-    sampleFileFemaleCode: String,
+    sampleFileSrSex: Option[String],
+    sampleFileMaleCode: Option[String],
+    sampleFileFemaleCode: Option[String],
     sampleFileSrRace: Option[String],
     sampleFileAFRCodes: Option[Seq[String]],
     sampleFileAMRCodes: Option[Seq[String]],
@@ -329,9 +329,9 @@ object ProjectConfig extends loamstream.LoamFile {
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
       val sampleFile = requiredStr(config = config, field = "sampleFile")
       val sampleFileId = requiredStr(config = config, field = "sampleFileId")
-      val sampleFileSrSex = requiredStr(config = config, field = "sampleFileSrSex")
-      val sampleFileMaleCode = requiredStr(config = config, field = "sampleFileMaleCode")
-      val sampleFileFemaleCode = requiredStr(config = config, field = "sampleFileFemaleCode")
+      val sampleFileSrSex = optionalStr(config = config, field = "sampleFileSrSex")
+      val sampleFileMaleCode = optionalStr(config = config, field = "sampleFileMaleCode")
+      val sampleFileFemaleCode = optionalStr(config = config, field = "sampleFileFemaleCode")
       val sampleFileSrRace = optionalStr(config = config, field = "sampleFileSrRace")
       val sampleFileAFRCodes = optionalStrList(config = config, field = "sampleFileAFRCodes")
       val sampleFileAMRCodes = optionalStrList(config = config, field = "sampleFileAMRCodes")
@@ -652,6 +652,17 @@ object ProjectConfig extends loamstream.LoamFile {
               Some(s)
             case None => None
           }
+
+          val chrs = requiredStrList(config = array, field = "chrs", regex = "[1-9]|1[0-9]|2[0-2]|X|Y|MT|(1-[2-9]|1-1[0-9]|1-2[0-2])|(2-[3-9]|2-1[0-9]|2-2[0-2])|(3-[4-9]|3-1[0-9]|3-2[0-2])|(4-[5-9]|4-1[0-9]|4-2[0-2])|(5-[6-9]|5-1[0-9]|5-2[0-2])|(6-[7-9]|6-1[0-9]|6-2[0-2])|(7-[8-9]|7-1[0-9]|7-2[0-2])|(8-9|8-1[0-9]|8-2[0-2])|(9-1[0-9]|9-2[0-2])|(10-1[1-9]|10-2[0-2])|(11-1[2-9]|11-2[0-2])|(12-1[3-9]|12-2[0-2])|(13-1[4-9]|13-2[0-2])|(14-1[5-9]|14-2[0-2])|(15-1[6-9]|15-2[0-2])|(16-1[7-9]|16-2[0-2])|(17-1[8-9]|17-2[0-2])|(18-19|18-2[0-2])|(19-2[0-2])|(20-2[1-2])|(21-22)")
+
+          chrs.contains("X") match {
+            case false =>
+              (sampleFileSrSex, sampleFileMaleCode, sampleFileFemaleCode) match {
+                case (Some(_), Some(_), Some(_)) => ()
+                case _ => throw new CfgException("arrays.chrs: if any arrays do not include X chromosome, then sampleFileSrSex, sampleFileMaleCode, and sampleFileFemaleCode must be defined")
+              }
+            case true => ()
+          }
       
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
@@ -673,7 +684,7 @@ object ProjectConfig extends loamstream.LoamFile {
             },
             nSampleMetricPcs = optionalInt(config = array, field = "nSampleMetricPcs", min = Some(0)),
             sampleMetricCovars = optionalStrList(config = array, field = "sampleMetricCovars") match { case Some(s) => Some(s.mkString("+")); case None => None },
-            chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
+            chrs = chrs,
             gqThreshold = optionalInt(config = array, field = "gqThreshold", min = Some(0)),
             ancestryOutliersKeep = optionalStr(config = array, field = "ancestryOutliersKeep"),
             duplicatesKeep = optionalStr(config = array, field = "duplicatesKeep"),
