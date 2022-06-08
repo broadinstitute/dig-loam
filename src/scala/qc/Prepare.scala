@@ -27,7 +27,7 @@ object Prepare extends loamstream.LoamFile {
   
         drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
-          cmd"""${utils.binary.binPlink} --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data.local.get} --allow-no-sex --keep-allele-order --output-chr MT --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
+          cmd"""${utils.binary.binPlink} --vcf ${arrayStores(arrayCfg).rawData.vcf.get.data.local.get} --allow-no-sex --keep-allele-order --output-chr MT --double-id --make-bed --out ${arrayStores(arrayCfg).rawData.plink.get.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
             .in(arrayStores(arrayCfg).rawData.vcf.get.data.local.get)
             .out(arrayStores(arrayCfg).rawData.plink.get.data)
             .tag(s"${arrayStores(arrayCfg).rawData.vcf.get.base.local.get}.convert_to_plink".split("/").last)
