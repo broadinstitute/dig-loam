@@ -18,7 +18,7 @@ def adjust_sex_chromosomes(mt: hl.MatrixTable, is_female: hl.tstr) -> hl.MatrixT
 			.default(mt.GT)
 	)
 
-def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, pheno_struct: hl.tstr = None, pheno_sex: hl.tstr = None, male_code: hl.tstr = None, female_code: hl.tstr = None) -> hl.MatrixTable:
+def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.tstr, pheno_struct: hl.tstr = None, pheno_sex: hl.tstr = None, male_code: hl.tstr = None, female_code: hl.tstr = None) -> hl.MatrixTable:
 
 	if pheno_sex is not None:
 
@@ -27,7 +27,7 @@ def annotate_sex(mt: hl.MatrixTable, ref_genome: hl.genetics.ReferenceGenome, ph
 			pheno_male = hl.if_else(~ hl.is_missing(mt[pheno_struct][pheno_sex]), (mt[pheno_struct][pheno_sex] == 'male') | (mt[pheno_struct][pheno_sex] == 'Male') | (mt[pheno_struct][pheno_sex] == 'm') | (mt[pheno_struct][pheno_sex] == 'M') | (mt[pheno_struct][pheno_sex] == male_code), False)
 		)
 
-	if hl.filter_intervals(mt, [hl.parse_locus_interval(x) for x in ref_genome.x_contigs], keep=True).count()[0] > 0:
+	if hl.filter_intervals(mt, [hl.parse_locus_interval(x, reference_genome=ref_genome) for x in hl.get_reference(ref_genome).x_contigs], keep=True).count()[0] > 0:
 		tbl = hl.impute_sex(
 			mt.filter_rows(
 				(hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)) & 

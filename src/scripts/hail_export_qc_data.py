@@ -14,7 +14,7 @@ def main(args=None):
 	print("make hild region variants table")
 	with hl.hadoop_open(args.regions_exclude, 'r') as f:
 		hild = f.read().splitlines()
-	tbl_hild = hl.filter_intervals(mt.rows().select(), [hl.parse_locus_interval(x) for x in hild], keep=True)
+	tbl_hild = hl.filter_intervals(mt.rows().select(), [hl.parse_locus_interval(x, reference_genome=args.reference_genome) for x in hild], keep=True)
 
 	print("add variant filter out table for QC")
 	mt = mt.annotate_rows(
