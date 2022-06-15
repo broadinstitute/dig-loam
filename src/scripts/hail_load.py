@@ -22,7 +22,12 @@ def main(args=None):
 
 	if args.vcf_in:
 		print("read vcf file")
-		mt = hl.import_vcf(args.vcf_in, force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False)
+		if args.reference_genome == 'GRCh38':
+			recode = {f"{i}":f"chr{i}" for i in (list(range(1, 23)) + ['X', 'Y'])}
+			recode['MT'] = 'chrM'
+		else:
+			recode = None
+		mt = hl.import_vcf(args.vcf_in, force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False, contig_recoding=recode)
 	elif args.plink_in:
 		print("read plink file")
 		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
@@ -75,7 +80,7 @@ def main(args=None):
 	if args.sex_col and args.male_code and args.female_code:
 		mt = hail_utils.annotate_sex(
 			mt = mt, 
-			ref_genome = hl.get_reference(args.reference_genome), 
+			ref_genome = args.reference_genome,
 			pheno_struct = 'pheno', 
 			pheno_sex = args.sex_col, 
 			male_code = args.male_code, 

@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import argparse
+import os
 
 def complement(a):
 	if a != "NA":
@@ -38,72 +39,82 @@ def complement(a):
 
 def main(args=None):
 
-	bim = pd.read_table(args.bim, header=None, sep=None, engine='python')
-	bim.columns = ["chr","rsid","cm","pos","a1","a2"]
-	bim['kg'] = 0
-	print "loaded bim file with " + str(bim.shape[0]) + " variants"
+	if os.path.isfile(args.bim) and os.path.getsize(args.bim) > 0:
 
+		bim = pd.read_table(args.bim, header=None, sep=None, engine='python')
+		bim.columns = ["chr","rsid","cm","pos","a1","a2"]
+		bim['kg'] = 0
+		print "loaded bim file with " + str(bim.shape[0]) + " variants"
 
-	if args.kg_ids:
-		with open(args.kg_ids) as f:
-			x=f.read().splitlines()
-		bim.loc[bim['rsid'].isin(x),'kg'] = 1
-
-	bim['ref'] = bim['a1']
-	bim['alt'] = bim['a2']
-	bim['status'] = "ignore"
-
-	with open(args.ref,"r") as ref_file:
-		ref_seq = ref_file.read()
-
-	snps = []
-	n = bim[bim['kg'] == 0].shape[0]
-	print "iterating over " + str(n) + " non 1kg rows for comparison with ref_seq"
-
-	for idx, row in bim[bim['kg'] == 0].iterrows():
-		if row[3] <= len(ref_seq):
-			ref = ref_seq[row[3]-1]
-			bim.loc[idx,'ref'] = ref
-			bima1 = row[4]
-			bima2 = row[5]
-			bima1comp = complement(bima1)
-			bima2comp = complement(bima2)
-			if bima1 + bima2 not in ["AT","TA","GC","CG"]:
-				if bima1 == "0" or bima2 == "0":
-					print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
-					bim.loc[idx,'status'] = "remove_mono"
-				else:
-					if bima1 == ref:
-						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : match"
-						bim.loc[idx,'alt'] = bima2
-						bim.loc[idx,'status'] = "match"
-					elif bima2 == ref:
-						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : reverse"
-						bim.loc[idx,'alt'] = bima1
-						bim.loc[idx,'status'] = "reverse"
-					elif bima1comp == ref:
-						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : flip"
-						bim.loc[idx,'alt'] = bima2comp
-						bim.loc[idx,'status'] = "flip"
-					elif bima2comp == ref:
-						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : flip_reverse"
-						bim.loc[idx,'alt'] = bima1comp
-						bim.loc[idx,'status'] = "flip_reverse"
-					else:
+		if args.kg_ids:
+			with open(args.kg_ids) as f:
+				x=f.read().splitlines()
+			bim.loc[bim['rsid'].isin(x),'kg'] = 1
+	
+		bim['ref'] = bim['a1']
+		bim['alt'] = bim['a2']
+		bim['status'] = "ignore"
+	
+		with open(args.ref,"r") as ref_file:
+			ref_seq = ref_file.read().upper()
+	
+		snps = []
+		n = bim[bim['kg'] == 0].shape[0]
+		print "iterating over " + str(n) + " non 1kg rows for comparison with ref_seq"
+	
+		for idx, row in bim[bim['kg'] == 0].iterrows():
+			if row[3] <= len(ref_seq):
+				ref = ref_seq[row[3]-1]
+				bim.loc[idx,'ref'] = ref
+				bima1 = row[4]
+				bima2 = row[5]
+				bima1comp = complement(bima1)
+				bima2comp = complement(bima2)
+				if bima1 + bima2 not in ["AT","TA","GC","CG"]:
+					if bima1 == "0" or bima2 == "0":
 						print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
-						bim.loc[idx,'status'] = "remove_nomatch"
-		else:
-			bim.loc[idx,'status'] = "remove_nomatch"
+						bim.loc[idx,'status'] = "remove_mono"
+					else:
+						if bima1 == ref:
+							print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : match"
+							bim.loc[idx,'alt'] = bima2
+							bim.loc[idx,'status'] = "match"
+						elif bima2 == ref:
+							print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : reverse"
+							bim.loc[idx,'alt'] = bima1
+							bim.loc[idx,'status'] = "reverse"
+						elif bima1comp == ref:
+							print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : flip"
+							bim.loc[idx,'alt'] = bima2comp
+							bim.loc[idx,'status'] = "flip"
+						elif bima2comp == ref:
+							print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : flip_reverse"
+							bim.loc[idx,'alt'] = bima1comp
+							bim.loc[idx,'status'] = "flip_reverse"
+						else:
+							print str(idx) + " / " + str(n) + " " + bima1 + "/" + bima2 + " " + ref + " : remove"
+							bim.loc[idx,'status'] = "remove_nomatch"
+			else:
+				bim.loc[idx,'status'] = "remove_nomatch"
+	
+		print "writing results to files"
+	
+		bim['rsid'][bim['status'].isin(["remove_mono","remove_nomatch"])].to_csv(args.out_remove, header=False, index=False)
+		bim['rsid'][bim['status'] == "remove_mono"].to_csv(args.out_mono, header=False, index=False)
+		bim['rsid'][bim['status'] == "remove_nomatch"].to_csv(args.out_nomatch, header=False, index=False)
+		bim['rsid'][bim['status'] == "ignore"].to_csv(args.out_ignore, header=False, index=False)
+		bim['rsid'][bim['status'].isin(["flip","flip_reverse"])].to_csv(args.out_flip, header=False, index=False)
+		bim = bim[~bim['status'].isin(["remove_mono","remove_nomatch"])].reset_index(drop=True)
+		bim[['rsid','ref']].to_csv(args.out_force_a1, header=False, index=False, sep=" ")
 
-	print "writing results to files"
+	else:
 
-	bim['rsid'][bim['status'].isin(["remove_mono","remove_nomatch"])].to_csv(args.out_remove, header=False, index=False)
-	bim['rsid'][bim['status'] == "remove_mono"].to_csv(args.out_mono, header=False, index=False)
-	bim['rsid'][bim['status'] == "remove_nomatch"].to_csv(args.out_nomatch, header=False, index=False)
-	bim['rsid'][bim['status'] == "ignore"].to_csv(args.out_ignore, header=False, index=False)
-	bim['rsid'][bim['status'].isin(["flip","flip_reverse"])].to_csv(args.out_flip, header=False, index=False)
-	bim = bim[~bim['status'].isin(["remove_mono","remove_nomatch"])].reset_index(drop=True)
-	bim[['rsid','ref']].to_csv(args.out_force_a1, header=False, index=False, sep=" ")
+		with open(args.out_remove, mode='a'): pass
+		with open(args.out_mono, mode='a'): pass
+		with open(args.out_nomatch, mode='a'): pass
+		with open(args.out_ignore, mode='a'): pass
+		with open(args.out_flip, mode='a'): pass
+		with open(args.out_force_a1, mode='a'): pass
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()

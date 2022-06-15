@@ -27,7 +27,12 @@ def main(args=None):
 	mt = mt.filter_rows((hl.is_missing(hl.len(mt.filters)) | (hl.len(mt.filters) == 0)) & (mt.variant_qc_raw.AN > 1) & (mt.variant_qc_raw.AF > 0) & (mt.variant_qc_raw.AF < 1), keep=True)
 
 	print("read kg vcf file")
-	kg = hl.import_vcf(args.kg_vcf_in, force_bgz=True, reference_genome=args.reference_genome)
+	if args.reference_genome == 'GRCh38':
+		recode = {f"{i}":f"chr{i}" for i in (list(range(1, 23)) + ['X', 'Y'])}
+		recode['MT'] = 'chrM'
+	else:
+		recode = None
+	kg = hl.import_vcf(args.kg_vcf_in, force_bgz=True, reference_genome=args.reference_genome, contig_recoding=recode)
 
 	print("split multiallelic variants in kg data")
 	kg = hl.split_multi_hts(kg)

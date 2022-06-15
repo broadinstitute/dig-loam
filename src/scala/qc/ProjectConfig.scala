@@ -214,6 +214,7 @@ object ProjectConfig extends loamstream.LoamFile {
     imgPython2: Path,
     imgR: Path,
     imgTools: Path,
+    imgKing: Path,
     imgPlink2: Path,
     imgBgen: Path,
     imgTexLive: Path,
@@ -264,6 +265,7 @@ object ProjectConfig extends loamstream.LoamFile {
   
   final case class Bash(
     shFindPossibleDuplicateVariants: Path,
+    shExtractIndels: Path,
     shAnnotate: Path,
     shAnnotateResults: Path,
     shKing: Path,
@@ -809,6 +811,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgPython2 = path(s"${imagesDir}/python2v2.simg"),
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
+        imgKing = path(s"${imagesDir}/king-2.2.8.simg"),
         imgPlink2 = path(s"${imagesDir}/plink2_v2.3a.simg"),
         imgBgen = path(s"${imagesDir}/bgen_v1.1.4.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
@@ -862,6 +865,7 @@ object ProjectConfig extends loamstream.LoamFile {
   
       val bash = Bash(
         shFindPossibleDuplicateVariants = path(s"${scriptsDir}/find_possible_duplicate_variants.sh"),
+        shExtractIndels = path(s"${scriptsDir}/extract_indels.sh"),
         shAnnotate = path(s"${scriptsDir}/annotate.sh"),
         shAnnotateResults = path(s"${scriptsDir}/annotate_results.sh"),
         shKing = path(s"${scriptsDir}/king.sh"),

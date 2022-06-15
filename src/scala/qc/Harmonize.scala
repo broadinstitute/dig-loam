@@ -51,8 +51,8 @@ object Harmonize extends loamstream.LoamFile {
   
           drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-            cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --exclude ${arrayStores(arrayCfg).annotatedData.get.snplist} --chr $chr --keep-allele-order --make-bed --out ${chrData.otherPlink.get.base} --output-chr MT --memory ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)} --seed 1"""
-              .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
+            cmd"""${utils.bash.shExtractIndels} ${utils.binary.binPlink} ${arrayStores(arrayCfg).annotatedData.get.plink.base} ${arrayStores(arrayCfg).annotatedData.get.snplist} $chr ${chrData.otherPlink.get.base} ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)}"""
+              .in(arrayStores(arrayCfg).annotatedData.get.plink.data :+ arrayStores(arrayCfg).annotatedData.get.snplist)
               .out(chrData.otherPlink.get.data)
               .tag(s"${chrData.otherPlink.get.base}".split("/").last)
   
