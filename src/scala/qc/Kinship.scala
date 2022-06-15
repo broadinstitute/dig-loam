@@ -16,7 +16,7 @@ object Kinship extends loamstream.LoamFile {
   
   def Kinship(array: ConfigArray): Unit = {
   
-    drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.king.cpus, mem = projectConfig.resources.king.mem, maxRunTime = projectConfig.resources.king.maxRunTime) {
+    drmWith(imageName = s"${utils.image.imgKing}", cores = projectConfig.resources.king.cpus, mem = projectConfig.resources.king.mem, maxRunTime = projectConfig.resources.king.maxRunTime) {
   
       cmd"""${utils.bash.shKing} ${utils.binary.binKing} ${arrayStores(array).filteredData.plink.base.local.get}.bed ${arrayStores(array).kinshipData.base} ${projectConfig.resources.king.cpus} ${arrayStores(array).kinshipData.log} ${arrayStores(array).kinshipData.kin0}"""
       .in(arrayStores(array).filteredData.plink.data.local.get)
