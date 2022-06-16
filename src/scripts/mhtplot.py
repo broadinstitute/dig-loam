@@ -30,20 +30,22 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 	print "maximum -1*log10(p-value): {0:.3g}".format(np.max(df[logp]))
 	
 	print "calculating genomic positions"
-	df[chr] = df[chr].astype(str)
-	df[chrInt] = df[chr].replace({'X': '23', 'Y': '24', 'MT': '25'}).astype(int)
+	df[chr] = df[chr].str.replace("chr","")
+	df[chrInt] = df[chr].replace({'X': '23', 'Y': '24', 'MT': '25', 'M': '25'}).astype(int)
 	df.sort_values(by=[chrInt,pos], inplace=True)
 	ticks = []
 	lastbase = 0
 	df[gpos] = 0
 	nchr = len(list(np.unique(df[chr].values)))
-	chrs = list(np.sort(np.unique(df[chr][~df[chr].isin(['X','Y','MT'])].values.astype(int))).astype(str))
+	chrs = list(np.sort(np.unique(df[chr][~df[chr].isin(['X','Y','MT','M'])].values.astype(int))).astype(str))
 	if 'X' in df[chr].values:
 		chrs.extend(['X'])
 	if 'Y' in df[chr].values:
 		chrs.extend(['Y'])
 	if 'MT' in df[chr].values:
 		chrs.extend(['MT'])
+	if 'M' in df[chr].values:
+		chrs.extend(['M'])
 
 	if not bicolor:
 		chr_hex = ["#08306B","#41AB5D","#000000","#F16913","#3F007D","#EF3B2C","#08519C","#238B45","#252525","#D94801","#54278F","#CB181D","#2171B5","#006D2C","#525252","#A63603","#6A51A3","#A50F15","#4292C6","#00441B","#737373","#7F2704","#807DBA","#67000D","#6BAED6"]

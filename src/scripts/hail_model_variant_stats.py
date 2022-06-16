@@ -61,24 +61,16 @@ def main(args=None):
 	tbl = tbl.flatten()
 	tbl = tbl.rename(dict(zip(list(tbl.row),[x.replace('variant_qc.','') if x.startswith('variant_qc') else x for x in list(tbl.row)])))
 	tbl = tbl.key_by()
-	tbl = tbl.annotate(chr_idx = hl.if_else(tbl.locus.in_autosome(), hl.int(tbl.chr), hl.if_else(tbl.locus.contig == "X", 23, hl.if_else(tbl.locus.contig == "Y", 24, hl.if_else(tbl.locus.contig == "MT", 25, 26)))))
+	tbl = tbl.annotate(chr_idx = hl.if_else(tbl.locus.in_autosome(), hl.int(tbl.chr.replace("chr","")), hl.if_else(tbl.locus.contig.replace("chr","") == "X", 23, hl.if_else(tbl.locus.contig.replace("chr","") == "Y", 24, hl.if_else(tbl.locus.contig.replace("chr","") == "MT", 25, hl.if_else(tbl.locus.contig.replace("chr","") == "M", 25, 26))))))
 	tbl = tbl.order_by(hl.int(tbl.chr_idx), hl.int(tbl.pos), tbl.ref, tbl.alt)
 	tbl = tbl.drop(tbl.chr_idx)
 	tbl = tbl.rename({'chr': '#chr'})
-	tbl = tbl.drop(
-		'locus',
-		'alleles',
-		'homozygote_count',
-		'diff_miss_row1_sum',
-		'diff_miss_row2_sum',
-		'diff_miss_col1_sum',
-		'diff_miss_col2_sum',
-		'diff_miss_tbl_sum',
-		'diff_miss_expected_c1',
-		'diff_miss_expected_c2',
-		'diff_miss_expected_c3',
-		'diff_miss_expected_c4'
-	)
+
+	drop_cols = ['locus', 'alleles', 'homozygote_count']
+	if args.binary:
+		drop_cols = drop_cols + ['diff_miss_row1_sum', 'diff_miss_row2_sum', 'diff_miss_col1_sum', 'diff_miss_col2_sum', 'diff_miss_tbl_sum', 'diff_miss_expected_c1', 'diff_miss_expected_c2', 'diff_miss_expected_c3', 'diff_miss_expected_c4']
+
+	tbl = tbl.drop(*drop_cols)
 
 	tbl.export(args.out)
 

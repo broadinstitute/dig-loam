@@ -101,8 +101,14 @@ def main(args=None):
 		mt = hail_utils.add_case_ctrl_stats_results(mt, is_female = "is_female", variant_qc = "variant_qc", is_case = args.pheno_analyzed)
 
 	print("generate Y and non-Y chromosome sets (to account for male only Y chromosome)")
-	mt_nony = hl.filter_intervals(mt, [hl.parse_locus_interval(str(x)) for x in range(1,23)] + [hl.parse_locus_interval(x) for x in ['X','MT']], keep=True)
-	mt_y = hl.filter_intervals(mt, [hl.parse_locus_interval('Y')], keep=True)
+	if args.reference_genome == 'GRCh38':
+		nony_intervals = [hl.parse_locus_interval("chr" + str(x), reference_genome=args.reference_genome) for x in range(1,23)] + [hl.parse_locus_interval("chr" + x, reference_genome=args.reference_genome) for x in ['X','M']]
+		y_intervals = [hl.parse_locus_interval('chrY', reference_genome=args.reference_genome)]
+	else:
+		nony_intervals = [hl.parse_locus_interval(str(x), reference_genome=args.reference_genome) for x in range(1,23)] + [hl.parse_locus_interval(x, reference_genome=args.reference_genome) for x in ['X','MT']]
+		y_intervals = [hl.parse_locus_interval('Y', reference_genome=args.reference_genome)]
+	mt_nony = hl.filter_intervals(mt, nony_intervals, keep=True)
+	mt_y = hl.filter_intervals(mt, y_intervals, keep=True)
 	mt_y = mt_y.filter_cols(mt_y.is_female, keep=False)
 
 	def linear_regression(mt):
@@ -288,7 +294,7 @@ def main(args=None):
 		return 1
 
 	mt_results = mt_results.key_by()
-	mt_results = mt_results.annotate(chr_idx = hl.if_else(mt_results.locus.in_autosome(), hl.int(mt_results.chr), hl.if_else(mt_results.locus.contig == "X", 23, hl.if_else(mt_results.locus.contig == "Y", 24, hl.if_else(mt_results.locus.contig == "MT", 25, 26)))))
+	mt_results = mt_results.annotate(chr_idx = hl.if_else(mt_results.locus.in_autosome(), hl.int(mt_results.chr.replace("chr","")), hl.if_else(mt_results.locus.contig.replace("chr","") == "X", 23, hl.if_else(mt_results.locus.contig.replace("chr","") == "Y", 24, hl.if_else(mt_results.locus.contig.replace("chr","") == "MT", 25, hl.if_else(mt_results.locus.contig.replace("chr","") == "M", 25, 26))))))
 	mt_results = mt_results.drop(mt_results.locus, mt_results.alleles)
 	mt_results = mt_results.order_by(hl.int(mt_results.chr_idx), hl.int(mt_results.pos), mt_results.ref, mt_results.alt)
 	mt_results = mt_results.drop(mt_results.chr_idx)
@@ -301,6 +307,7 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
+	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--covars-analyzed', help="a '+' separated list of covariates used in analysis")
 	parser.add_argument('--extract', help="a variant list to extract for analysis")
 	parser.add_argument('--extract-ld', help="a file containing hild proxy results in the form (SNP_A	SNP_B	R2)")

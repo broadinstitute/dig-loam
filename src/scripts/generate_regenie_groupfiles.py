@@ -36,8 +36,8 @@ def main(args=None):
 		if df.shape[0] > 0:
 
 			df[['chr','pos']]=df.locus.str.split(":",expand=True)
-			df['chr_num']=df['chr']
-			df.replace({'chr_num': {'X': '23', 'Y': '24', 'XY': '25', 'MT': '26'}}, inplace=True)
+			df['chr_num']=df['chr'].str.replace("chr","")
+			df.replace({'chr_num': {'X': '23', 'Y': '24', 'XY': '25', 'MT': '26', 'M': '26'}}, inplace=True)
 			df.chr_num=df.chr_num.astype(int)
 			df.pos=df.pos.astype(int)
 			df.sort_values(by=['chr_num','pos'],inplace=True)

@@ -26,6 +26,7 @@ object AssocSingleHail extends loamstream.LoamFile {
         
           hail"""${utils.python.pyHailAssoc} --
             --hail-utils ${projectStores.hailUtils.google.get}
+            --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refMt.google.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
             --iid-col ${array.phenoFileId}
@@ -54,6 +55,7 @@ object AssocSingleHail extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+            --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refMt.local.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --iid-col ${array.phenoFileId}
@@ -207,23 +209,23 @@ object AssocSingleHail extends loamstream.LoamFile {
   
     }
     
-    drmWith(imageName = s"${utils.image.imgLocuszoom}", cores = projectConfig.resources.locuszoom.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.locuszoom.maxRunTime) {
-    
-      cmd"""${utils.bash.shRegPlot} 
-        ${utils.binary.binTabix}
-        ${utils.binary.binLocuszoom}
-        ${utils.binary.binGhostscript}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.sigRegions}
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}
-        EUR
-        hg19
-        1000G_Nov2014
-        ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.regPlotsBase}"""
-        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.sigRegions)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.regPlotsPdf)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.regPlotsPdf}".split("/").last)
-    
-    }
+    //drmWith(imageName = s"${utils.image.imgLocuszoom}", cores = projectConfig.resources.locuszoom.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.locuszoom.maxRunTime) {
+    //
+    //  cmd"""${utils.bash.shRegPlot} 
+    //    ${utils.binary.binTabix}
+    //    ${utils.binary.binLocuszoom}
+    //    ${utils.binary.binGhostscript}
+    //    ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.sigRegions}
+    //    ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get}
+    //    EUR
+    //    hg19
+    //    1000G_Nov2014
+    //    ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.regPlotsBase}"""
+    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.sigRegions)
+    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.regPlotsPdf)
+    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(test).summary.regPlotsPdf}".split("/").last)
+    //
+    //}
   
   }
 
