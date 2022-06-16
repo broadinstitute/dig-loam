@@ -57,6 +57,7 @@ object ProjectConfig extends loamstream.LoamFile {
   val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
   val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
   val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
+  val regenieTests = assocTests.filter(e => e.split("\\.")(1) != "regenie")
   
   final case class ConfigMachine(
     cpus: Int,
@@ -1147,6 +1148,19 @@ object ProjectConfig extends loamstream.LoamFile {
           }
   
           val tests = optionalStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+          tests match {
+            case Some(_) =>
+              tests.get.intersect(regenieTests).size match {
+                case n if n > 0 =>
+                  Arrays.filter(e => Cohorts.filter(e => Schemas.filter(e => e.id == schema).head.cohorts.contains(e.id)).map(e => e.array).contains(e.id)).filter(e => e.exportCleanBgen == false).size > 0 match {
+                    case true => throw new CfgException("models.tests: model " + id + " regenie tests require a clean bgen file, but exportCleanBgen == false for at least one array included in the model")
+                    case false => ()
+                  }
+                case _ => ()
+              }
+            case None => ()
+          }
+
           val methods = optionalStrList(config = model, field = "methods", regex = modelMethods.mkString("|"))
   
           val cohorts = optionalStrList(config = model, field = "cohorts") match {

@@ -84,7 +84,7 @@ pos=`echo $line | awk '{print $2}'`; \
 rsid=`echo $line | awk '{print $3}'`; \
 ref=`echo $line | awk '{print $4}'`; \
 alt=`echo $line | awk '{print $5}'`; \
-tabix $sitesVcf ${chr}:${pos}-${pos} | awk '{print $1"\t"$0}' | \
+tabix $sitesVcf ${chr}:${pos}-${pos} | awk 'BEGIN { OFS="\t" } {$1=gsub("chr","",$1); print $1"\t"$0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "X") { $1 = "23" } print $0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "Y") { $1 = "24" } print $0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "MT") { $1 = "25" } print $0}' | \
