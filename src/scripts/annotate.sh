@@ -29,6 +29,9 @@ vep -i $sitesVcf \
 --tsl \
 --biotype \
 --regulatory \
+--hgvs \
+--hgvsg \
+--af_gnomad \
 --assembly $referenceGenome \
 --flag_pick_allele \
 --pick_order tsl,biotype,appris,rank,ccds,canonical,length \
