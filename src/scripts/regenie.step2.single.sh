@@ -65,26 +65,14 @@ while :; do
 				exit 1
 			fi
 			;;
-		--block-size)
+        --cli-options)
 			if [ "$2" ]; then
-				blockSize=$2
+				cliOptions=$2
 				shift
 			else
-				echo "ERROR: --block-size requires a non-empty argument."
+				echo "ERROR: --cli-options requires a non-empty argument."
 				exit 1
 			fi
-			;;
-        --min-mac)
-			if [ "$2" ]; then
-				minMAC=$2
-				shift
-			else
-				echo "ERROR: --min-mac requires a non-empty argument."
-				exit 1
-			fi
-			;;
-		--bt)
-			bt=true
 			;;
         --chr)
 			if [ "$2" ]; then
@@ -133,19 +121,10 @@ echo "sample: $sample"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
-echo "blockSize: $blockSize"
-echo "minMAC: $minMAC"
-echo "bt: $bt"
 echo "chr: $chr"
 echo "pred: $pred"
 echo "out: $out"
-
-if [ $bt ]
-then
-	btString="--bt --firth --firth-se --approx --pThresh 0.05"
-else
-	btString=""
-fi
+echo "cliOptions: $cliOptions"
 
 $regenie \
 --step 2 \
@@ -153,20 +132,23 @@ $regenie \
 --sample $sample \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
---bsize $blockSize \
---minMAC $minMAC \
---verbose \
-$btString \
+$cliOptions \
 --chr $chr \
 --pred $pred \
---out $out
+--out $out \
+--gz \
+--verbose
 
-if [ ! -f "${out}_${phenoName}.regenie" ]
+# header
+#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P EXTRA
+
+if [ ! -f "${out}_${phenoName}.regenie.gz" ]
 then
 	EXITCODE=1
 else
-	(head -1 ${out}_${phenoName}.regenie | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"MAF","MAC","P"}'; sed '1d' ${out}_${phenoName}.regenie | awk 'BEGIN { OFS="\t" } {$1=$1; if($6 > 0.5) { maf=1-$6 } else { maf=$6 }; print $0,maf,sprintf("%.0f",2*$8*maf),10^(-$NF)}') | $bgzip -c > ${out}.results.tsv.bgz
-	rm ${out}_${phenoName}.regenie
+	n=`zcat ${out}_${phenoName}.regenie.gz | head -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+	(zcat ${out}_${phenoName}.regenie.gz | head -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"P"}'; zcat ${out}_${phenoName}.regenie.gz | sed '1d' | awk -v c=$n 'BEGIN { OFS="\t" } {$1=$1; print $0,10^(-$c)}') | $bgzip -c > ${out}.results.tsv.bgz
+	rm ${out}_${phenoName}.regenie.gz
 	EXITCODE=0
 fi
 

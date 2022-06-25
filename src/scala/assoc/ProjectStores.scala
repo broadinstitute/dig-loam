@@ -17,7 +17,8 @@ object ProjectStores extends loamstream.LoamFile {
     fasta: Store,
     vepCacheDir: Store,
     vepPluginsDir: Store,
-    dbNSFP: Store)
+    dbNSFP: Store,
+    annotationStores: Map[ConfigAnnotationTable, MultiStore])
   
   val projectStores = {
   
@@ -29,6 +30,15 @@ object ProjectStores extends loamstream.LoamFile {
           local = Some(store(path(checkPath(known.hiLd))).asInput),
           google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${known.id}." + s"${known.hiLd}".split("/").last)); case false => None }
         )
+      )
+  
+    }.toMap
+
+    val annotationStores = projectConfig.annotationTables.map { annot =>
+  
+      annot -> MultiStore(
+        local = Some(store(path(checkPath(annot.ht))).asInput),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.base.google.get / s"${annot.ht}".split("/").last)); case false => None }
       )
   
     }.toMap
@@ -46,7 +56,8 @@ object ProjectStores extends loamstream.LoamFile {
       fasta = store(path(checkPath(projectConfig.fasta))).asInput,
       vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,
       vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput,
-      dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput
+      dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
+      annotationStores = annotationStores
     )
   
   }

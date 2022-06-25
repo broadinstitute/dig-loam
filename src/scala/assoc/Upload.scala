@@ -39,6 +39,32 @@ object Upload extends loamstream.LoamFile {
             }
           case _ => ()
         }
+
+        for {
+           a <- projectConfig.annotationTables
+        } yield {
+          projectStores.annotationStores(a).local match {
+            case Some(r) =>
+              projectStores.annotationStores(a).google match {
+                case Some(s) =>
+                  ifURI(s"${s.uri}") match {
+                    case 0 => ()
+                    case 1 => 
+                      local {
+                        local {
+                          //googleCopy(r, s)
+                          cmd"""${gsutilBinaryOpt.get} -m cp -r ${r} ${s}"""
+                          .in(r)
+                          .out(s)
+                          .tag(s"${r}.googleCopy".split("/").last)
+                        }
+                      }
+                  }
+                case _ => ()
+              }
+            case _ => ()
+          }
+        }
   
       case false => ()
   

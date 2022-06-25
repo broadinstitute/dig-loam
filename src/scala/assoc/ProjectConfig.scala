@@ -63,6 +63,10 @@ object ProjectConfig extends loamstream.LoamFile {
     cpus: Int,
     mem: Int,
     maxRunTime: Int) extends Debug
+
+  final case class ConfigAnnotationTable(
+    id: String,
+    ht: String) extends Debug
   
   final case class ConfigNumericFilters(
     id: String,
@@ -262,6 +266,7 @@ object ProjectConfig extends loamstream.LoamFile {
     nCohorts: Int,
     nMetas: Int,
     maxSigRegions: Option[Int],
+    annotationTables: Seq[ConfigAnnotationTable],
     numericVariantFilters: Seq[ConfigNumericFilters],
     booleanVariantFilters: Seq[ConfigBooleanFilters],
     categoricalVariantFilters: Seq[ConfigCategoricalFilters],
@@ -315,6 +320,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyAlignNon1kgVariants: Path,
     pyHailLoad: Path,
     pyHailLoadAnnotations: Path,
+    pyHailLoadUserAnnotations: Path,
     pyHailExportQcData: Path,
     pyHailFilter: Path,
     pyHailAncestryPcaMerge1kg: Path,
@@ -585,6 +591,17 @@ object ProjectConfig extends loamstream.LoamFile {
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
+
+      val annotationTables = {
+        for {
+          annot <- requiredObjList(config = config, field = "annotationTables")
+        } yield {
+          ConfigAnnotationTable(
+            id = requiredStr(config = annot, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+            ht = requiredStr(config = annot, field = "ht")
+          )
+        }
+      }
   
       val numericVariantFilters = {
         for {
@@ -1337,6 +1354,7 @@ object ProjectConfig extends loamstream.LoamFile {
         nCohorts = nCohorts,
         nMetas = nMetas,
         maxSigRegions = maxSigRegions,
+        annotationTables = annotationTables,
         numericVariantFilters =  numericVariantFilters,
         booleanVariantFilters = booleanVariantFilters,
         categoricalVariantFilters = categoricalVariantFilters,
@@ -1400,6 +1418,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py"),
         pyHailLoad = path(s"${scriptsDir}/hail_load.py"),
         pyHailLoadAnnotations = path(s"${scriptsDir}/hail_load_annotations.py"),
+        pyHailLoadUserAnnotations = path(s"${scriptsDir}/hail_load_user_annotations.py"),
         pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py"),
         pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py"),
         pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py"),

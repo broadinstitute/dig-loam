@@ -65,28 +65,16 @@ while :; do
 				exit 1
 			fi
 			;;
-		--block-size)
+		--cli-options)
 			if [ "$2" ]; then
-				blockSize=$2
+				cliOptions=$2
 				shift
 			else
-				echo "ERROR: --block-size requires a non-empty argument."
+				echo "ERROR: --cli-options requires a non-empty argument."
 				exit 1
 			fi
 			;;
-        --threads)
-			if [ "$2" ]; then
-				threads=$2
-				shift
-			else
-				echo "ERROR: --threads requires a non-empty argument."
-				exit 1
-			fi
-			;;
-		--bt)
-			bt=true
-			;;
-        --chr)
+		--chr)
 			if [ "$2" ]; then
 				chr=$2
 				shift
@@ -160,22 +148,13 @@ echo "sample: $sample"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
-echo "blockSize: $blockSize"
-echo "threads: $threads"
-echo "bt: $bt"
 echo "chr: $chr"
 echo "pred: $pred"
 echo "annoFile: $annoFile"
 echo "setList: $setList"
 echo "maskDef: $maskDef"
 echo "out: $out"
-
-if [ $bt ]
-then
-	btString="--bt --firth --firth-se --approx --pThresh 0.05"
-else
-	btString=""
-fi
+echo "cliOptions: $cliOptions"
 
 $regenie \
 --step 2 \
@@ -183,26 +162,42 @@ $regenie \
 --sample $sample \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
---bsize $blockSize \
---aaf-bins 0.5 \
---minMAC 1 \
---threads $threads \
---verbose \
-$btString \
+$cliOptions \
 --chr $chr \
 --pred $pred \
 --anno-file $annoFile \
 --set-list $setList \
 --mask-def $maskDef \
---out $out
+--out $out \
+--gz \
+--htp ALL \
+--verbose
 
-if [ ! -f "${out}_${phenoName}.regenie" ]
-then
-	EXITCODE=1
-else
-	(head -2 ${out}_${phenoName}.regenie | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"MAF","MAC","P"}'; sed '1,2d' ${out}_${phenoName}.regenie | awk 'BEGIN { OFS="\t" } {$1=$1; if($6 > 0.5) { maf=1-$6 } else { maf=$6 }; print $0,maf,sprintf("%.0f",2*$7*maf),10^(-$NF)}') | $bgzip -c > ${out}.results.tsv.bgz
-	rm ${out}_${phenoName}.regenie
-	EXITCODE=0
-fi
+## quantitative trait header
+###MASKS=<0of5_1pct="0of5_1pct,0of5_1pct;LoF_HC";LoF_HC="0of5_1pct;LoF_HC">
+#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA
+#1 974537 ENSG00000187583.0of5_1pct.1 ref 0of5_1pct.1 0.0138889 108 ADD -0.249906 0.594486 0.176713 0.171203 DF=1
+#
+###MASKS=<0of5_1pct="0of5_1pct,0of5_1pct;LoF_HC";LoF_HC="0of5_1pct;LoF_HC">
+#Name	Chr	Pos	Ref	Alt	Trait	Cohort	Model	Effect	LCI_Effect	UCI_Effect	Pval	AAF	Num_Cases	Cases_Ref	Cases_Het	Cases_Alt	Num_Controls	Controls_Ref	Controls_Het	Controls_Alt	Info
+#ENSG00000187583.0of5_1pct.1	1	974537	ref	0of5_1pct.1	CaffeineConsumption	COHORT_NAME	ADD-WGR-LR	-0.249906	-1.41508	0.915266	0.674213	0.0138889	108	106	1	1	NA	NA	NA	NA	REGENIE_SE=0.594486;MAC=3.000000;DF=1
 
-exit $EXITCODE
+## binary trait header
+###MASKS=<0of5_1pct="0of5_1pct,0of5_1pct;LoF_HC";LoF_HC="0of5_1pct;LoF_HC">
+#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ A1FREQ_CASES A1FREQ_CONTROLS N TEST BETA SE CHISQ LOG10P EXTRA
+#1 974537 ENSG00000187583.0of5_1pct.singleton ref 0of5_1pct.singleton 0.0045045 0.01 0 111 ADD 1.11045 5.19977 0.0456069 0.0804555 DF=1
+#
+###MASKS=<0of5_1pct="0of5_1pct,0of5_1pct;LoF_HC";LoF_HC="0of5_1pct;LoF_HC">
+#Name	Chr	Pos	Ref	Alt	Trait	Cohort	Model	Effect	LCI_Effect	UCI_Effect	Pval	AAF	Num_Cases	Cases_Ref	Cases_Het	Cases_Alt	Num_Controls	Controls_Ref	Controls_Het	Controls_Alt	Info
+#ENSG00000187583.0of5_1pct.singleton	1	974537	ref	0of5_1pct.singleton	PurpleHair	COHORT_NAME	ADD-WGR-FIRTH	3.03573	0.000113817	80969	0.830892	0.0045045	50	49	1	0	61	61	0	0	REGENIE_BETA=1.110452;REGENIE_SE=5.199774;MAC=1.000000;DF=1
+
+#if [ ! -f "${out}_${phenoName}.regenie.gz" ]
+#then
+#	EXITCODE=1
+#else
+#	(zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"MAF","MAC","P"}'; zcat ${out}_${phenoName}.regenie.gz | sed '1,2d' | awk 'BEGIN { OFS="\t" } {$1=$1; if($6 > 0.5) { maf=1-$6 } else { maf=$6 }; print $0,maf,sprintf("%.0f",2*$7*maf),10^(-$NF)}') | $bgzip -c > ${out}.results.tsv.bgz
+#	rm ${out}_${phenoName}.regenie.gz
+#	EXITCODE=0
+#fi
+#
+#exit $EXITCODE

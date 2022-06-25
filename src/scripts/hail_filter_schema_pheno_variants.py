@@ -42,16 +42,16 @@ def main(args=None):
 	ht = ht.key_by('locus','alleles','rsid')
 
 	print("annotate hail table with pheno stats")
-	tbl = hl.read_table(args.pheno_stats_in, )
-	tbl = tbl.key_by('locus','alleles','rsid')
-	tbl = tbl.select(*['variant_qc'])
-	ht = ht.annotate(**{'variant_qc': ht['variant_qc'].annotate(**tbl[ht.key]['variant_qc'])})
+	pheno_stats_tbl = hl.read_table(args.pheno_stats_in, )
+	pheno_stats_tbl = pheno_stats_tbl.key_by('locus','alleles','rsid')
+	pheno_stats_tbl = pheno_stats_tbl.select(*['variant_qc'])
+	ht = ht.annotate(**{'variant_qc': ht['variant_qc'].annotate(**pheno_stats_tbl[ht.key]['variant_qc'])})
 
 	print("annotate hail table with schema filters")
-	tbl = hl.read_table(args.schema_filters_in, )
-	tbl = tbl.key_by('locus','alleles','rsid')
-	schema_fields_keep = [x for x in list(tbl.row_value.keys()) if x != 'annotation']
-	ht = ht.join(tbl)
+	schema_filters_tbl = hl.read_table(args.schema_filters_in, )
+	schema_filters_tbl = schema_filters_tbl.key_by('locus','alleles','rsid')
+	schema_fields_keep = [x for x in list(schema_filters_tbl.row_value.keys()) if x != 'annotation']
+	ht = ht.join(schema_filters_tbl)
 
 	print("key rows by locus and alleles")
 	ht = ht.key_by('locus','alleles')
@@ -116,11 +116,25 @@ def main(args=None):
 
 	if args.annotation:
 		print("read in vep annotations")
-		tbl = hl.read_table(args.annotation)
-		tbl = tbl.select(*annotation_fields)
-		tbl = tbl.annotate(Uploaded_variation = tbl.Uploaded_variation.replace("_",":").replace("/",":"))
-		tbl = tbl.key_by('Uploaded_variation')
-		ht = ht.annotate(annotation = tbl[ht.rsid])
+		annotations_tbl = hl.read_table(args.annotation)
+		annotations_tbl = annotations_tbl.select(*annotation_fields)
+		annotations_tbl = annotations_tbl.annotate(Uploaded_variation = annotations_tbl.Uploaded_variation.replace("_",":").replace("/",":"))
+		annotations_tbl = annotations_tbl.key_by('Uploaded_variation')
+		ht = ht.annotate(annotation = annotations_tbl[ht.rsid])
+	
+	if args.user_annotations:
+		print("read in user annotations")
+		for annot in args.user_annotations:
+			user_annot_id = annot.split(",")[0]
+			user_annot_ht = annot.split(",")[1]
+			user_annotation_fields = [x.replace("file_" + user_annot_id + ".","") for x in variant_qc_fields if x.startswith("file_" + user_annot_id + ".")]
+			for c in variant_qc_cohort_fields:
+				user_annotation_fields = user_annotation_fields + [x for x in variant_qc_cohort_fields[c] if x.startswith("file_" + user_annot_id + ".")]
+			user_annotation_fields = list(set(user_annotation_fields))
+			user_annot_tbl = hl.read_table(user_annot_ht)
+			user_annot_tbl = user_annot_tbl.select(*user_annotation_fields)
+			user_annot_tbl=user_annot_tbl.annotate(**{'file_mpc': hl.struct(**{x: user_annot_tbl[x] for x in user_annotation_fields})})
+			ht = ht.join(user_annot_tbl, how='left')
 
 	print("write ht.checkpoint1 hail table to temporary directory")
 	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint1", overwrite=True)
@@ -212,6 +226,7 @@ if __name__ == "__main__":
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--annotation', help="a hail table containing annotations from vep")
+	parser.add_argument('--user-annotations', nargs='+', help="a space delimited list of annotation ids and hail tables containing user defined annotations, each separated by commas")
 	parser.add_argument('--filters', help='filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--cohort-filters', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--knockout-filters', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')

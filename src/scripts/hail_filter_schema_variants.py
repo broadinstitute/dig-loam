@@ -46,12 +46,12 @@ def main(args=None):
 		ht = ht.annotate(ls_previous_exclude = 0)
 		for variant_file in args.variants_remove.split(","):
 			try:
-				tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
-				tbl = tbl.annotate(f2 = hl.if_else(hl.is_missing(tbl.f2), tbl.f0.contig + ":" + hl.str(tbl.f0.position) + ":" + tbl.f1[0] + ":" + tbl.f1[1], tbl.f2))
+				variants_remove_tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
+				variants_remove_tbl = variants_remove_tbl.annotate(f2 = hl.if_else(hl.is_missing(variants_remove_tbl.f2), variants_remove_tbl.f0.contig + ":" + hl.str(variants_remove_tbl.f0.position) + ":" + variants_remove_tbl.f1[0] + ":" + variants_remove_tbl.f1[1], variants_remove_tbl.f2))
 			except:
 				print("skipping empty file " + variant_file)
 			else:
-				ht = ht.annotate(ls_previous_exclude = hl.if_else(hl.is_defined(tbl[ht.key]), 1, ht.ls_previous_exclude))
+				ht = ht.annotate(ls_previous_exclude = hl.if_else(hl.is_defined(variants_remove_tbl[ht.key]), 1, ht.ls_previous_exclude))
 	
 	print("key rows by locus and alleles")
 	ht = ht.key_by('locus','alleles')
@@ -116,11 +116,25 @@ def main(args=None):
 	
 	if args.annotation:
 		print("read in vep annotations")
-		tbl = hl.read_table(args.annotation)
-		tbl = tbl.select(*annotation_fields)
-		tbl = tbl.annotate(Uploaded_variation = tbl.Uploaded_variation.replace("_",":").replace("/",":"))
-		tbl = tbl.key_by('Uploaded_variation')
-		ht = ht.annotate(annotation = tbl[ht.rsid])
+		annotation_tbl = hl.read_table(args.annotation)
+		annotation_tbl = annotation_tbl.select(*annotation_fields)
+		annotation_tbl = annotation_tbl.annotate(Uploaded_variation = annotation_tbl.Uploaded_variation.replace("_",":").replace("/",":"))
+		annotation_tbl = annotation_tbl.key_by('Uploaded_variation')
+		ht = ht.annotate(annotation = annotation_tbl[ht.rsid])
+
+	if args.user_annotations:
+		print("read in user annotations")
+		for annot in args.user_annotations:
+			user_annot_id = annot.split(",")[0]
+			user_annot_ht = annot.split(",")[1]
+			user_annotation_fields = [x.replace("file_" + user_annot_id + ".","") for x in variant_qc_fields if x.startswith("file_" + user_annot_id + ".")]
+			for c in variant_qc_cohort_fields:
+				user_annotation_fields = user_annotation_fields + [x for x in variant_qc_cohort_fields[c] if x.startswith("file_" + user_annot_id + ".")]
+			user_annotation_fields = list(set(user_annotation_fields))
+			user_annot_tbl = hl.read_table(user_annot_ht)
+			user_annot_tbl = user_annot_tbl.select(*user_annotation_fields)
+			user_annot_tbl=user_annot_tbl.annotate(**{'file_mpc': hl.struct(**{x: user_annot_tbl[x] for x in user_annotation_fields})})
+			ht = ht.join(user_annot_tbl, how='left')
 	
 	start_time = time.time()
 	print("write ht.checkpoint1 hail table to temporary directory")
@@ -187,13 +201,18 @@ def main(args=None):
 	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint2", overwrite=True)
 	elapsed_time = time.time() - start_time
 	print(time.strftime("write ht.checkpoint2 hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
-	
+
+	print(ht.describe())
+	print(ht.show())
 	mask_fields = []
 	if len(masks) > 0:
 		mask_ids = [x[0] for x in masks]
 		for m in set(mask_ids):
 			start_time = time.time()
 			masks_row = [x for x in masks if x[0] == m]
+			print(m)
+			print(masks_row)
+			print([[x[1],x[2],x[3]] for x in masks_row])
 			ht = hail_utils.ht_add_filters(ht, [[x[1],x[2],x[3]] for x in masks_row], 'ls_mask_' + m)
 			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
 			fields_out = fields_out + ['ls_mask_' + m]
@@ -243,6 +262,7 @@ if __name__ == "__main__":
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--annotation', help="a hail table containing annotations from vep")
+	parser.add_argument('--user-annotations', nargs='+', help="a space delimited list of annotation ids and hail tables containing user defined annotations, each separated by commas")
 	parser.add_argument('--variants-remove', help="a comma separated list of files containing variants to remove")
 	parser.add_argument('--filters', help='filter id, column name, expression; exclude variants satisfying this expression')
 	parser.add_argument('--cohort-filters', help='cohort id, filter id, column name, expression; exclude variants satisfying this expression')
