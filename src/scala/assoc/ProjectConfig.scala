@@ -5,59 +5,85 @@ object ProjectConfig extends loamstream.LoamFile {
 
   val refGenomes = Seq("GRCh37","GRCh38")
   val ancestryCodes = Seq("EUR","AFR","AMR","SAS","EAS")
+  val platforms = Seq("hail","epacts","regenie")
+  val hailModels = Seq("lm","wald","firth","lrt","score")
+  val epactsModels = Seq(
+    "b.burden",
+    "b.burdenFirth",
+    "b.collapse",
+    "b.madsen",
+    "b.wcnt",
+    "q.burden",
+    "q.reverse",
+    "q.wilcox",
+    "b.skat",
+    "b.VT",
+    "b.emmaxCMC",
+    "b.emmaxVT",
+    "q.mmskat",
+    "q.skat",
+    "q.VT",
+    "q.emmaxCMC",
+    "q.emmaxVT
+  )
 
   val modelDesigns = Seq("full","strat")
   val modelTrans = Seq("log","invn")
   val modelMethods = Seq(
     "variant.stats"
   )
-  val assocTests = Seq(
-    "single.hail.q.lm",
-    "single.hail.b.wald",
-    "single.hail.b.firth",
-    "single.hail.b.lrt",
-    "single.hail.b.score",
-    "group.epacts.b.burden",
-    "group.epacts.b.burdenFirth",
-    "group.epacts.b.collapse",
-    "group.epacts.b.madsen",
-    "group.epacts.b.wcnt",
-    "group.epacts.q.burden",
-    "group.epacts.q.reverse",
-    "group.epacts.q.wilcox",
-    "group.epacts.b.skat",
-    "group.epacts.b.VT",
-    "group.epacts.b.emmaxCMC",
-    "group.epacts.b.emmaxVT",
-    "group.epacts.q.mmskat",
-    "group.epacts.q.skat",
-    "group.epacts.q.VT",
-    "group.epacts.q.emmaxCMC",
-    "group.epacts.q.emmaxVT",
-    "single.regenie.b.firth",
-    "single.regenie.q.lm",
-    "group.regenie.b.burdenFirth",
-    "group.regenie.b.burden",
-    "group.regenie.q.burden"
-    //NOT YET IMPLEMENTED "single.epacts.b.wald",
-    //NOT YET IMPLEMENTED "single.epacts.b.score",
-    //NOT YET IMPLEMENTED "single.epacts.b.firth",
-    //NOT YET IMPLEMENTED "single.epacts.b.spa2",
-    //NOT YET IMPLEMENTED "single.epacts.b.lrt",
-    //NOT YET IMPLEMENTED "single.epacts.b.glrt",
-    //NOT YET IMPLEMENTED "single.epacts.q.lm",
-    //NOT YET IMPLEMENTED "single.epacts.q.linear",
-    //NOT YET IMPLEMENTED "single.epacts.q.reverse",
-    //NOT YET IMPLEMENTED "single.epacts.q.wilcox",
-    //NOT YET IMPLEMENTED "single.epacts.q.emmax",
-  )
 
-  // note: regenie uses ridge regression to avoid need for GRM so all tests may include relateds
-  val famTests = assocTests.filter(e => Seq("group.epacts.b.emmaxCMC","group.epacts.b.emmaxVT","group.epacts.q.mmskat","group.epacts.q.emmaxCMC","group.epacts.q.emmaxVT","single.regenie.b.firth","single.regenie.q.lm","group.regenie.b.burdenFirth","group.regenie.b.burden","group.regenie.q.burden").contains(e))
-  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
-  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
-  val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
-  val regenieTests = assocTests.filter(e => e.split("\\.")(1) != "regenie")
+  //val assocTests = Seq(
+  //  "single.hail.q.lm",
+  //  "single.hail.b.wald",
+  //  "single.hail.b.firth",
+  //  "single.hail.b.lrt",
+  //  "single.hail.b.score",
+  //  "group.epacts.b.burden",
+  //  "group.epacts.b.burdenFirth",
+  //  "group.epacts.b.collapse",
+  //  "group.epacts.b.madsen",
+  //  "group.epacts.b.wcnt",
+  //  "group.epacts.q.burden",
+  //  "group.epacts.q.reverse",
+  //  "group.epacts.q.wilcox",
+  //  "group.epacts.b.skat",
+  //  "group.epacts.b.VT",
+  //  "group.epacts.b.emmaxCMC",
+  //  "group.epacts.b.emmaxVT",
+  //  "group.epacts.q.mmskat",
+  //  "group.epacts.q.skat",
+  //  "group.epacts.q.VT",
+  //  "group.epacts.q.emmaxCMC",
+  //  "group.epacts.q.emmaxVT",
+  //  "single.regenie.b",
+  //  "single.regenie.q",
+  //  "group.regenie.b",
+  //  "group.regenie.q"
+  //  //OBSELETE "single.regenie.b.firth",
+  //  //OBSELETE "single.regenie.q.lm",
+  //  //OBSELETE "group.regenie.b.burdenFirth",
+  //  //OBSELETE "group.regenie.b.burden",
+  //  //OBSELETE "group.regenie.q.burden",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.wald",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.score",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.firth",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.spa2",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.lrt",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.glrt",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.lm",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.linear",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.reverse",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.wilcox",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.emmax",
+  //)
+  //
+  //// note: regenie uses ridge regression to avoid need for GRM so all tests may include relateds
+  //val famTests = assocTests.filter(e => Seq("group.epacts.b.emmaxCMC","group.epacts.b.emmaxVT","group.epacts.q.mmskat","group.epacts.q.emmaxCMC","group.epacts.q.emmaxVT","single.regenie.b.cli","single.regenie.q.cli","group.regenie.b.cli","group.regenie.q.cli").contains(e))
+  //val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
+  //val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
+  //val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
+  //val regenieTests = assocTests.filter(e => e.split("\\.")(1) == "regenie")
   
   final case class ConfigMachine(
     cpus: Int,
@@ -67,6 +93,13 @@ object ProjectConfig extends loamstream.LoamFile {
   final case class ConfigAnnotationTable(
     id: String,
     ht: String) extends Debug
+
+  final case class ConfigTest(
+    id: String,
+    grouped: Boolean,
+    platform: String,
+    model: Option[String],
+    cliOpts: Option[String]) extends Debug
   
   final case class ConfigNumericFilters(
     id: String,
@@ -256,10 +289,6 @@ object ProjectConfig extends loamstream.LoamFile {
     maxPCs: Int,
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
-    regenieBlockSize: Option[Int],
-    regenieThreads: Option[Int],
-    regenieSingleMinMAC: Option[Int],
-    regenieLowmem: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
@@ -267,6 +296,7 @@ object ProjectConfig extends loamstream.LoamFile {
     nMetas: Int,
     maxSigRegions: Option[Int],
     annotationTables: Seq[ConfigAnnotationTable],
+    Tests: Seq[ConfigTest],
     numericVariantFilters: Seq[ConfigNumericFilters],
     booleanVariantFilters: Seq[ConfigBooleanFilters],
     categoricalVariantFilters: Seq[ConfigCategoricalFilters],
@@ -463,10 +493,6 @@ object ProjectConfig extends loamstream.LoamFile {
       val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
-      val regenieBlockSize = optionalInt(config = config, field = "regenieBlockSize", min = Some(100))
-      val regenieThreads = optionalInt(config = config, field = "regenieThreads", min = Some(1))
-      val regenieSingleMinMAC = optionalInt(config = config, field = "regenieSingleMinMAC", min = Some(3))
-      val regenieLowmem = requiredBool(config = config, field = "regenieLowmem", default = Some(true))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -591,6 +617,30 @@ object ProjectConfig extends loamstream.LoamFile {
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
+
+      val Tests = {
+        for {
+          test <- requiredObjList(config = config, field = "tests")
+        } yield {
+          val p = requiredStr(config = test, field = "platform", regex = plaforms.mkString("|"))
+          val m = p match {
+            case "hail" => Some(requiredStr(config = test, field = "model", regex = hailModels.mkString("|")))
+            case "epacts" => Some(requiredStr(config = test, field = "model", regex = epactsModels.mkString("|")))
+            case _ => None
+          }
+          val cli = p match {
+            case "regenie" => Some(requiredStr(config = test, field = "regenie"))
+            case _ => None
+          }
+          ConfigTest(
+            id = requiredStr(config = test, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+            grouped = requiredBool(config = test, field = "grouped"),
+            platform = p,
+            model = m,
+            cliOpts = cli
+          )
+        }
+      }
 
       val annotationTables = {
         for {
@@ -1164,10 +1214,10 @@ object ProjectConfig extends loamstream.LoamFile {
               }
           }
   
-          val tests = optionalStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+          val tests = optionalStrList(config = model, field = "tests", regex = Tests.map(e => e.id).mkString("|"))
           tests match {
             case Some(_) =>
-              tests.get.intersect(regenieTests).size match {
+              tests.get.intersect(Tests.filter(e => e.platform == "regenie").map(e => e.id)).size match {
                 case n if n > 0 =>
                   Arrays.filter(e => Cohorts.filter(e => Schemas.filter(e => e.id == schema).head.cohorts.contains(e.id)).map(e => e.array).contains(e.id)).filter(e => e.exportCleanBgen == false).size > 0 match {
                     case true => throw new CfgException("models.tests: model " + id + " regenie tests require a clean bgen file, but exportCleanBgen == false for at least one array included in the model")
@@ -1258,7 +1308,7 @@ object ProjectConfig extends loamstream.LoamFile {
             tests = tests,
             methods = methods,
             assocPlatforms = tests match { 
-              case Some(s) => Some(s.map(e => e.split("\\.")(1)).distinct)
+              case Some(s) => Some(Tests.filter(e => s.contains(e.id)).map(e => e.platform).distinct)
               case None => None
             },
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
@@ -1344,10 +1394,6 @@ object ProjectConfig extends loamstream.LoamFile {
         maxPCs = maxPCs,
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
-        regenieBlockSize = regenieBlockSize,
-        regenieThreads = regenieThreads,
-        regenieSingleMinMAC = regenieSingleMinMAC,
-        regenieLowmem = regenieLowmem,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
@@ -1355,6 +1401,7 @@ object ProjectConfig extends loamstream.LoamFile {
         nMetas = nMetas,
         maxSigRegions = maxSigRegions,
         annotationTables = annotationTables,
+        Tests = Tests,
         numericVariantFilters =  numericVariantFilters,
         booleanVariantFilters = booleanVariantFilters,
         categoricalVariantFilters = categoricalVariantFilters,

@@ -12,7 +12,7 @@ object AssocGroupEpacts extends loamstream.LoamFile {
   import ProjectStores._
   import DirTree._
   
-  def AssocGroupEpacts(test: String, groupCountMap: scala.collection.mutable.Map[String, Int], configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def AssocGroupEpacts(configTest: ConfigTest, groupCountMap: scala.collection.mutable.Map[String, Int], configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
   
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
     
@@ -28,22 +28,22 @@ object AssocGroupEpacts extends loamstream.LoamFile {
         for {
           gm <- schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).masks.keys.toList
         } yield {
-          val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(gm).groups.keys
+          val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(gm).groups.keys
         
           modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
-            case n if n == modelTestGroupsKeys.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${test} (${n}/${groupCountMap.keys.toList.size})""")
-            case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${test} (${m}/${groupCountMap.keys.toList.size}) - ${modelTestGroupsKeys.toList.toSet.diff(modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet))}""")
+            case n if n == modelTestGroupsKeys.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${configTest.id} (${n}/${groupCountMap.keys.toList.size})""")
+            case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${configTest.id} (${m}/${groupCountMap.keys.toList.size}) - ${modelTestGroupsKeys.toList.toSet.diff(modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet))}""")
           }
         }
       case false =>
         for {
           gm <- schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks.keys.toList
         } yield {
-          val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(gm).groups.keys
+          val modelTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(gm).groups.keys
         
           modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet).size match {
-            case n if n == modelTestGroupsKeys.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${test} (${n}/${groupCountMap.keys.toList.size})""")
-            case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${test} (${m}/${groupCountMap.keys.toList.size}) - ${modelTestGroupsKeys.toList.toSet.diff(modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet))}""")
+            case n if n == modelTestGroupsKeys.size => println(s"""extracting group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${configTest.id} (${n}/${groupCountMap.keys.toList.size})""")
+            case m => throw new CfgException(s"""unable to find some group sizes for masked group files ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks(gm).local.get.toString.split("@")(1)} under model ${configModel.id} and test ${configTest.id} (${m}/${groupCountMap.keys.toList.size}) - ${modelTestGroupsKeys.toList.toSet.diff(modelTestGroupsKeys.toList.toSet.intersect(groupCountMap.keys.toList.toSet))}""")
           }
         }
     }
@@ -54,7 +54,7 @@ object AssocGroupEpacts extends loamstream.LoamFile {
     
     } yield {
     
-      val groupMasks = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test).keys.toList.filter(e => modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(e).groups.keys.toList.contains(group))
+      val groupMasks = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest).keys.toList.filter(e => modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(e).groups.keys.toList.contains(group))
     
       ! groupMasks.isEmpty match {
     
@@ -91,7 +91,7 @@ object AssocGroupEpacts extends loamstream.LoamFile {
           for {
             gm <- groupMasks
           } yield {
-            epactsOut = epactsOut ++ Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(gm).groups(group).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(gm).groups(group).results)
+            epactsOut = epactsOut ++ Seq(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(gm).groups(group).groupFile, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(gm).groups(group).results)
           }
     
           val groupMasksString = groupMasks.map(e => e.id).mkString(",")
@@ -122,18 +122,18 @@ object AssocGroupEpacts extends loamstream.LoamFile {
               ${vcfString}
               ${groupFileIn}
               --groupid "${group}"
-              --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(groupMasks.head).groups(group).groupFile.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
+              --groupfout ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(groupMasks.head).groups(group).groupFile.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
               --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}
               --vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
-              --test ${test.replace("group.epacts.","")}
+              --test ${configTest.model.get}
               --field "DS"
               ${maxGroupSizeString}
               --masks ${groupMasksString}
-              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}
               --run 1"""
               .in(epactsIn)
               .out(epactsOut)
-              .tag(s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}""".split("/").last)
+              .tag(s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(groupMasks.head).groups(group).results.toString.split("@")(1).replace(groupMasks.head.id,"___MASK___")}""".split("/").last)
           
           }
         
@@ -145,22 +145,22 @@ object AssocGroupEpacts extends loamstream.LoamFile {
     
     for {
     
-      mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test).keys.toList
+      mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest).keys.toList
     
     } yield {
     
-      val modelMaskTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).groups.keys
+      val modelMaskTestGroupsKeys = modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).groups.keys
       
       modelMaskTestGroupsKeys.size match {
       
         case n if n > 0 =>
       
-          val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).groups(modelMaskTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
+          val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).groups(modelMaskTestGroupsKeys.head.split("\t")(0)).results.toString.split("@")(1).replace(modelMaskTestGroupsKeys.head.split("\t")(0), "___GROUP___")}"""
           
           val maskResultsFiles = for {
             group <- modelMaskTestGroupsKeys.toList
           } yield {
-            modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).groups(group.split("\t")(0)).results
+            modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).groups(group.split("\t")(0)).results
           }
       
           drmWith(imageName = s"${utils.image.imgTools}") {
@@ -168,10 +168,10 @@ object AssocGroupEpacts extends loamstream.LoamFile {
             cmd"""${utils.bash.shMergeResults}
                --results ${maskResultsFile}
                --groupf ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks(mask).local.get}
-               --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results}"""
+               --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results}"""
               .in(maskResultsFiles :+ schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.masks(mask).local.get)
-              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results)
-              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results}".split("/").last)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results}".split("/").last)
           
           }
       
@@ -182,36 +182,36 @@ object AssocGroupEpacts extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgPython2}") {
       
         cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results}
+          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results}
           --p PVALUE
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.qqPlot}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.qqPlot)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.qqPlot}".split("/").last)
+          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.qqPlot}"""
+          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results)
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.qqPlot)
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.qqPlot}".split("/").last)
         
         cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results}
+          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results}
           --chr "#CHROM"
           --pos "BEGIN,END"
           --p PVALUE
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.mhtPlot}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.mhtPlot)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.mhtPlot}".split("/").last)
+          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.mhtPlot}"""
+          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results)
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.mhtPlot)
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.mhtPlot}".split("/").last)
       
       }
     
       drmWith(imageName = s"${utils.image.imgPython2}") {
     
         cmd"""${utils.binary.binPython} ${utils.python.pyTopGroupResults}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results}
+          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results}
           --group-id-map ${projectStores.geneIdMap.local.get}
           --n 20
           --p PVALUE 
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.top20Results}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).results, projectStores.geneIdMap.local.get)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.top20Results)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(test)(mask).summary.top20Results}".split("/").last)
+          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.top20Results}"""
+          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).results, projectStores.geneIdMap.local.get)
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.top20Results)
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.assocGroup(configTest)(mask).summary.top20Results}".split("/").last)
       
       }
     

@@ -155,7 +155,7 @@ def main(args=None):
 	def logistic_regression(mt, test):
 		print("running logistic_regression (" + test + "): " + args.pheno_analyzed + " ~ 1 + " + "+".join(covars))
 		tbl = hl.logistic_regression_rows(
-			test = test.replace("single.hail.b.",""),
+			test = test,
 			y = mt.pheno[args.pheno_analyzed],
 			x = mt.GT.n_alt_alleles(),
 			covariates = [1] + [mt.pheno[x] for x in covars],
@@ -176,7 +176,7 @@ def main(args=None):
 			]
 		)
 
-		if test == 'single.hail.b.wald':
+		if test == 'wald':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -203,7 +203,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'single.hail.b.firth':
+		elif test == 'firth':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -229,7 +229,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'single.hail.b.lrt':
+		elif test == 'lrt':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -255,7 +255,7 @@ def main(args=None):
 				converged = tbl.fit.converged,
 				exploded = tbl.fit.exploded
 			)
-		elif test == 'single.hail.b.score':
+		elif test == 'score':
 			tbl = tbl.select(
 				chr = tbl.locus.contig,
 				pos = tbl.locus.position,
@@ -279,12 +279,12 @@ def main(args=None):
 			)
 		return tbl
 
-	if args.test == 'single.hail.q.lm':
+	if args.test == 'lm':
 		mt_nony_results = linear_regression(mt_nony)
 		mt_y_results = linear_regression(mt_y)
 		mt_results = mt_nony_results.union(mt_y_results)
 
-	elif args.test in ['single.hail.b.wald','single.hail.b.firth','single.hail.b.lrt','single.hail.b.score']:
+	elif args.test in ['wald','firth','lrt','score']:
 		mt_nony_results = logistic_regression(mt_nony, args.test)
 		mt_y_results = logistic_regression(mt_y, args.test)
 		mt_results = mt_nony_results.union(mt_y_results)
