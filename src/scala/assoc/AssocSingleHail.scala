@@ -32,7 +32,7 @@ object AssocSingleHail extends loamstream.LoamFile {
             --iid-col ${array.phenoFileId}
             --pheno-analyzed ${configModel.finalPheno}
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
-            --test ${test.model.get}
+            --test ${configTest.model.get}
             --covars-analyzed "${configModel.finalCovars}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.google.get}
             --cloud
@@ -61,7 +61,7 @@ object AssocSingleHail extends loamstream.LoamFile {
             --iid-col ${array.phenoFileId}
             --pheno-analyzed ${configModel.finalPheno}
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-            --test ${test.model.get}
+            --test ${configTest.model.get}
             --covars-analyzed "${configModel.finalCovars}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.local.get}"""
@@ -164,7 +164,8 @@ object AssocSingleHail extends loamstream.LoamFile {
         --pos pos
         --known-loci "${hiLdStrings.mkString(",")}"
         --p pval
-        --test ${test}
+        --platform ${configTest.platform}
+        --model ${configTest.model.get}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top20AnnotAlignedRisk}"""
         .in(top20In)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top20AnnotAlignedRisk)

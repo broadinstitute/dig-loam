@@ -21,11 +21,6 @@ object AssocRegenie extends loamstream.LoamFile {
       case false => ""
     }
 
-    val lowmemString = projectConfig.regenieLowmem match {
-      case true => "--lowmem"
-      case false => ""
-    }
-
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
       cmd"""${utils.bash.shRegenieStep0}
@@ -48,10 +43,7 @@ object AssocRegenie extends loamstream.LoamFile {
         --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
         --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
         --exclude ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude}
-        --block-size ${projectConfig.regenieBlockSize.get}
-        --threads ${projectConfig.regenieThreads.get}
         ${btString}
-        ${lowmemString}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
         --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log}"""
         .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude)
@@ -62,7 +54,7 @@ object AssocRegenie extends loamstream.LoamFile {
 
   }
 
-  def AssocRegenieStep2Single(configTest: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def AssocRegenieStep2Single(configTest: ConfigTest, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
@@ -270,7 +262,7 @@ object AssocRegenie extends loamstream.LoamFile {
 
   }
 
-  def AssocRegenieStep2Group(configTest: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def AssocRegenieStep2Group(configTest: ConfigTest, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 

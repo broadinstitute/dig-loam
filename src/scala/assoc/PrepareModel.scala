@@ -49,7 +49,7 @@ object PrepareModel extends loamstream.LoamFile {
     
     val keepRelated = configModel.tests match {
       case Some(_) =>
-        famTests.intersect(configModel.tests.get).size match {
+        projectConfig.Tests.filter(e => configModel.tests.contains(e.id)).filter(e => e.includeFams == true).size match {
           case n if n > 0 => "--keep-related"
           case _ => ""
         }

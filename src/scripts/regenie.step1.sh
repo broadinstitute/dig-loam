@@ -47,30 +47,8 @@ while :; do
 				exit 1
 			fi
 			;;
-		--block-size)
-			if [ "$2" ]; then
-				blockSize=$2
-				shift
-			else
-				echo "ERROR: --block-size requires a non-empty argument."
-				exit 1
-			fi
-			;;
-        --threads)
-			if [ "$2" ]; then
-				threads=$2
-				shift
-			else
-				echo "ERROR: --threads requires a non-empty argument."
-				exit 1
-			fi
-			;;
 		--bt)
 			bt=true
-			#shift
-			;;
-		--lowmem)
-			lowmem=true
 			#shift
 			;;
 		--out)
@@ -109,10 +87,7 @@ echo "bed: $bed"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "exclude: $exclude"
-echo "blockSize: $blockSize"
-echo "threads: $threads"
 echo "bt: $bt"
-echo "lowmem: $lowmem"
 echo "out: $out"
 echo "log: $log"
 
@@ -123,23 +98,16 @@ else
 	btString=""
 fi
 
-if [ $lowmem ]
-then
-	lowmemString="--lowmem --lowmem-prefix ${out}.tmp_rg"
-else
-	lowmemString=""
-fi
-
 $regenie \
 --step 1 \
 --bed $bed \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 --exclude $exclude \
---bsize $blockSize \
---threads $threads \
+--bsize 200 \
 $btString \
-$lowmemString \
+--lowmem \
+--lowmem-prefix ${out}.tmp_rg \
 --out $out \
 > $log
 

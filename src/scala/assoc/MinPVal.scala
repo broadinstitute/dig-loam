@@ -8,20 +8,20 @@ object MinPVal extends loamstream.LoamFile {
   import ProjectStores._
   import DirTree._
 
-  def MinPVal(test: String, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
-    // throw new CfgException(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get}")
+  def MinPVal(configTest: ConfigTest, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+
     drmWith(imageName = s"${utils.image.imgPython3}") {
 
       cmd"""${utils.bash.shMinPVal}
-      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results}
-      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results}
+      ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.minPVal.get}
       ${projectStores.geneIdMap.local.get}
       ${utils.binary.binPython}
       ${utils.python.pyMinPValTest}
        """
-        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).results, projectStores.geneIdMap.local.get)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).summary.minPVal.get}".split("/").last)
+        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results, projectStores.geneIdMap.local.get)
+        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.minPVal.get)
+        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.minPVal.get}".split("/").last)
 
     }
   }

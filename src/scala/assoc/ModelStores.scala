@@ -353,7 +353,7 @@ object ModelStores extends loamstream.LoamFile {
                 ped = store(local_dir / s"${baseString}.epacts.ped"),
                 modelVars = store(local_dir / s"${baseString}.epacts.model.vars"),
                 assocGroup = masksAvailable.size match {
-                  case 0 => Map[String, Map[MaskFilter, ModelAssocGroupBase]]()
+                  case 0 => Map[ConfigTest, Map[MaskFilter, ModelAssocGroupBase]]()
                   case _ =>
                     schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
                       case true =>

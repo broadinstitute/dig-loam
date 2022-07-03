@@ -24,7 +24,7 @@ object ProjectConfig extends loamstream.LoamFile {
     "q.skat",
     "q.VT",
     "q.emmaxCMC",
-    "q.emmaxVT
+    "q.emmaxVT"
   )
 
   val modelDesigns = Seq("full","strat")
@@ -97,6 +97,7 @@ object ProjectConfig extends loamstream.LoamFile {
   final case class ConfigTest(
     id: String,
     grouped: Boolean,
+    includeFams: Boolean,
     platform: String,
     model: Option[String],
     cliOpts: Option[String]) extends Debug
@@ -622,19 +623,20 @@ object ProjectConfig extends loamstream.LoamFile {
         for {
           test <- requiredObjList(config = config, field = "tests")
         } yield {
-          val p = requiredStr(config = test, field = "platform", regex = plaforms.mkString("|"))
+          val p = requiredStr(config = test, field = "platform", regex = platforms.mkString("|"))
           val m = p match {
             case "hail" => Some(requiredStr(config = test, field = "model", regex = hailModels.mkString("|")))
             case "epacts" => Some(requiredStr(config = test, field = "model", regex = epactsModels.mkString("|")))
             case _ => None
           }
           val cli = p match {
-            case "regenie" => Some(requiredStr(config = test, field = "regenie"))
+            case "regenie" => Some(requiredStr(config = test, field = "cliOpts"))
             case _ => None
           }
           ConfigTest(
             id = requiredStr(config = test, field = "id", regex = "^[a-zA-Z0-9_]*$"),
             grouped = requiredBool(config = test, field = "grouped"),
+            includeFams = requiredBool(config = test, field = "includeFams"),
             platform = p,
             model = m,
             cliOpts = cli
