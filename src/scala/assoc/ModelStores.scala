@@ -458,7 +458,7 @@ object ModelStores extends loamstream.LoamFile {
                       )
                     )
                 }.toMap,
-                assocGroup = tests.filter(e => (e.grouped == false && e.platform == "regenie")).map { test => 
+                assocGroup = tests.filter(e => (e.grouped == true && e.platform == "regenie")).map { test => 
                   test -> 
                     ModelRegenieAssocGroup(
                       base = local_dir / s"${baseString}.${test.id}",

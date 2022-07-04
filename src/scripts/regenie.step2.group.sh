@@ -83,7 +83,7 @@ while :; do
 				exit 1
 			fi
 			;;
-        --pred)
+		--pred)
 			if [ "$2" ]; then
 				pred=$2
 				shift
@@ -252,11 +252,11 @@ then
 		rm ${out}_${phenoName}.regenie.gz
 	fi
 
+	(join -1 1 -2 1 -t $'\t' <(zcat ${out}.results.standard.tsv.bgz | head -1) <(zcat ${out}.results.htp.tsv.bgz | head -1); join -1 1 -2 1 -t $'\t' <(zcat ${out}.results.standard.tsv.bgz | sed '1d') <(zcat ${out}.results.htp.tsv.bgz | sed '1d')) | cut -f2- | bgzip -c > ${out}.results.tsv.bgz
+
+	rm ${out}.results.standard.tsv.bgz
+	rm ${out}.results.htp.tsv.bgz
+
 fi
-
-(join -1 1 -2 1 -t $'\t' <(zcat ${out}.results.standard.tsv.bgz | head -1) <(zcat ${out}.results.htp.tsv.bgz | head -1); join -1 1 -2 1 -t $'\t' <(zcat ${out}.results.standard.tsv.bgz | sed '1d') <(zcat ${out}.results.htp.tsv.bgz | sed '1d')) | cut -f2- | bgzip -c > ${out}.results.tsv.bgz
-
-rm ${out}.results.standard.tsv.bgz
-rm ${out}.results.htp.tsv.bgz
 
 exit $EXITCODE

@@ -1442,7 +1442,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
         imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg"),
-        imgRegenie = path(s"${imagesDir}/regenie-v2.0.2.simg")
+        imgRegenie = path(s"${imagesDir}/regenie-v3.1.2.simg")
       )
   
       val binary = Binary(

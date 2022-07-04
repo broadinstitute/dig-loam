@@ -74,7 +74,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.finalPheno}
-          ${configTest.cliOpts.get}
+          --cli-options "${configTest.cliOpts.get}"
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).base}"""
@@ -299,12 +299,13 @@ object AssocRegenie extends loamstream.LoamFile {
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.finalPheno}
-          ${configTest.cliOpts.get}
+          --cli-options "${configTest.cliOpts.get}"
+          --group-stats
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --anno-file ${annoFile}
-		  --set-list ${setList}
-		  --mask-def ${maskDef}
+          --set-list ${setList}
+          --mask-def ${maskDef}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).base}"""
           .in(arrayStores(array).cleanBgen.get.data.local.get, arrayStores(array).cleanBgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
           .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).results)
