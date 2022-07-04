@@ -321,7 +321,7 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--pcs-include', help='a file containing a list of PCs to include in test', required=True)
 	requiredArgs.add_argument('--iid-col', help='a column name for sample ID', required=True)
 	requiredArgs.add_argument('--pheno-analyzed', help='a column name for the phenotype used in analysis', required=True)
-	requiredArgs.add_argument('--test', choices=['single.hail.b.wald','single.hail.b.lrt','single.hail.b.firth','single.hail.b.score','single.hail.q.lm'], help='a regression test code', required=True)
+	requiredArgs.add_argument('--test', choices=['wald','lrt','firth','score','lm'], help='a regression test code', required=True)
 	requiredArgs.add_argument('--out', help='an output file basename', required=True)
 	args = parser.parse_args()
 	main(args)

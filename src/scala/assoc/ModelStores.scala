@@ -169,7 +169,7 @@ object ModelStores extends loamstream.LoamFile {
   
     val array = projectConfig.Arrays.filter(e => e.id == cohorts.head.array).head
     val pheno = projectConfig.Phenos.filter(e => e.id == model.pheno).head
-    val tests = projectConfig.Tests.filter(e => model.tests.contains(e.id))
+    val tests = projectConfig.Tests.filter(e => model.tests.get.contains(e.id))
   
     val nullString = meta match {
       case Some(s) => s"${projectConfig.projectId}.${model.id}.${meta.get.id}"
@@ -313,7 +313,7 @@ object ModelStores extends loamstream.LoamFile {
           model.assocPlatforms.get.contains("hail") match {
             case true =>
               Some(ModelHail(
-                assocSingle = tests.filter(e => e.grouped == false && e.platform == "hail").map { test =>
+                assocSingle = tests.filter(e => (e.grouped == false && e.platform == "hail")).map { test =>
                   test -> 
                     ModelHailAssocSingle(
                       results = MultiStore(
@@ -357,7 +357,7 @@ object ModelStores extends loamstream.LoamFile {
                   case _ =>
                     schemaStores((schema, cohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
                       case true =>
-                        tests.filter(e => e.grouped == true && e.platform == "epacts").map { test => 
+                        tests.filter(e => (e.grouped == true && e.platform == "epacts")).map { test => 
                           test ->
                             phenoMasksAvailable.map { mask =>
                               val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.phenos(pheno).masks(mask).local.get.toString.split("@")(1)}""")
@@ -381,7 +381,7 @@ object ModelStores extends loamstream.LoamFile {
                             }.toMap
                         }.toMap
                       case false =>
-                        tests.filter(e => e.grouped == true && e.platform == "epacts").map { test => 
+                        tests.filter(e => (e.grouped == true && e.platform == "epacts")).map { test => 
                           test ->
                             masksAvailable.map { mask =>
                               val gFile = checkPath(s"""${schemaStores((schema, cohorts)).epacts.get.groupFile.base.masks(mask).local.get.toString.split("@")(1)}""")
@@ -429,7 +429,7 @@ object ModelStores extends loamstream.LoamFile {
                   loco = store(local_dir / s"${baseString}.regenie.step1_1.loco"),
                   predList = store(local_dir / s"${baseString}.regenie.step1_pred.list")
                 ),
-                assocSingle = tests.filter(e => e.grouped == false && e.platform == "regenie").map { test => 
+                assocSingle = tests.filter(e => (e.grouped == false && e.platform == "regenie")).map { test => 
                   test -> 
                     ModelRegenieAssocSingle(
                       base = local_dir / s"${baseString}.${test.id}",
@@ -458,7 +458,7 @@ object ModelStores extends loamstream.LoamFile {
                       )
                     )
                 }.toMap,
-                assocGroup = tests.filter(e => e.grouped == false && e.platform == "regenie").map { test => 
+                assocGroup = tests.filter(e => (e.grouped == false && e.platform == "regenie")).map { test => 
                   test -> 
                     ModelRegenieAssocGroup(
                       base = local_dir / s"${baseString}.${test.id}",

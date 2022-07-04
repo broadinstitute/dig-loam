@@ -7,7 +7,7 @@ parser$add_argument("--pos", dest="pos", type="character", help="position column
 parser$add_argument("--known-loci", dest="known_loci", help='a comma separated list of known loci files')
 parser$add_argument("--p", dest="p", type="character", help="a pvalue column name")
 parser$add_argument("--platform", dest="platform", type="character", help="a statistical test")
-parser$add_argument("--model", dest="test", type="character", help="a statistical test")
+parser$add_argument("--model", dest="model", type="character", help="a statistical test")
 parser$add_argument("--out", dest="out", type="character", help="an output filename")
 args<-parser$parse_args()
 
