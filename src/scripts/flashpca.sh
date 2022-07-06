@@ -187,3 +187,5 @@ mv ${outPrefix}.tmp.${N}.pcs.include $pcsIncludeFile
 
 # remove remaining temporary files
 rm ${outPrefix}.tmp*
+
+exit 0
