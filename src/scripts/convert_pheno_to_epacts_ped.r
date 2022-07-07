@@ -44,7 +44,11 @@ if(length(covars_analyzed) > 0) {
 	cat(paste(covars_analyzed, collapse="\n"), "\n", file=args$model_vars, append=TRUE)
 }
 
-merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, pheno_analyzed)
+if(! is.null(args$sex_col)) {
+	merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", args$sex_col, pheno_analyzed)
+} else {
+	merlin_header <- c(paste0("#FAM_ID_",args$iid_col), paste0("IND_ID_", args$iid_col), "FAT_ID", "MOT_ID", "SEX", pheno_analyzed)
+}
 header <- c(merlin_header, colnames(pheno)[! colnames(pheno) %in% c(args$iid_col, merlin_header, pcs)])
 
 pheno$FAT_ID <- 0
@@ -53,7 +57,11 @@ pheno$MOT_ID <- 0
 names(pheno)[names(pheno) == args$iid_col] <- paste0("#FAM_ID_", args$iid_col)
 pheno[, paste0("IND_ID_", args$iid_col)] <- pheno[, paste0("#FAM_ID_", args$iid_col)]
 
-pheno[,args$sex_col] <- mapvalues(pheno[,args$sex_col], from = c(args$male_code, args$female_code), to = c(1, 2))
+if(! is.null(args$sex_col)) {
+	pheno[,args$sex_col] <- mapvalues(pheno[,args$sex_col], from = c(args$male_code, args$female_code), to = c(1, 2))
+} else {
+	pheno$SEX <- 0
+}
 
 pheno<-pheno[,c(header,pcs)]
 
