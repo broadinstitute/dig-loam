@@ -828,9 +828,6 @@ object ProjectConfig extends loamstream.LoamFile {
             phenoFileSexFemaleCode = optionalStr(config = array, field = "phenoFileSexFemaleCode"),
             qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile"),
             qcSampleFileId = requiredStr(config = qcConfig, field = "sampleFileId"),
-            qcSampleFileSrSex = optionalStr(config = qcConfig, field = "sampleFileSrSex"),
-            qcSampleFileMaleCode = optionalStr(config = qcConfig, field = "sampleFileMaleCode"),
-            qcSampleFileFemaleCode = optionalStr(config = qcConfig, field = "sampleFileFemaleCode"),
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
             exportCleanBgen = exportCleanBgen
           )
