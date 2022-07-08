@@ -53,7 +53,7 @@ object PrepareModel extends loamstream.LoamFile {
           case n if n > 0 => "--keep-related"
           case _ => ""
         }
-      case None => ""
+      case None => "--keep-related"
     }
 
     val covarsString = configModel.covars match {
