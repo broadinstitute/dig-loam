@@ -438,7 +438,7 @@ object PrepareSchema extends loamstream.LoamFile {
             val y = for {
               a <- projectConfig.annotationTables
             } yield {
-              s"""${a.id},${projectStores.annotationStores(a).local.get.toString.split("@")(1)}"""
+              s"""${a.id},${a.includeGeneInIdx.toString.toLowerCase},${projectStores.annotationStores(a).local.get.toString.split("@")(1)}"""
             }
             x + " " + y.mkString(" ")
           case _ => ""
