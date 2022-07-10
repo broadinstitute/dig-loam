@@ -63,7 +63,7 @@ def main(args=None):
 			i=0
 			for mask in args.masks.split(','):
 				i=i+1
-				print("adding annotations for mask " + str(i) + " / " + str(len(args.masks)))
+				print("adding annotations for mask " + str(i) + " / " + str(len(args.masks.split(','))))
 				mask_df=df[df['ls_mask_' + mask + '.exclude'] == 0][['rsid','annotation.Gene']]
 				mask_df['mask']=mask
 				if i == 1:

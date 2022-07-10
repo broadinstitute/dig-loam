@@ -92,7 +92,8 @@ object ProjectConfig extends loamstream.LoamFile {
 
   final case class ConfigAnnotationTable(
     id: String,
-    ht: String) extends Debug
+    ht: String,
+    includeGeneInIdx: Boolean) extends Debug
 
   final case class ConfigTest(
     id: String,
@@ -649,7 +650,8 @@ object ProjectConfig extends loamstream.LoamFile {
         } yield {
           ConfigAnnotationTable(
             id = requiredStr(config = annot, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-            ht = requiredStr(config = annot, field = "ht")
+            ht = requiredStr(config = annot, field = "ht"),
+            includeGeneInIdx = requiredBool(config = annot, field = "includeGeneInIdx")
           )
         }
       }
