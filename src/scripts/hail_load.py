@@ -89,7 +89,7 @@ def main(args=None):
 	else:
 		mt = hail_utils.annotate_sex(
 			mt = mt, 
-			ref_genome = hl.get_reference(args.reference_genome)
+			ref_genome = args.reference_genome
 		)
 
 	print("write sexcheck results to file")

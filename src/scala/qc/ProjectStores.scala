@@ -23,6 +23,7 @@ object ProjectStores extends loamstream.LoamFile {
     vepCacheDir: Store,
     vepPluginsDir: Store,
     dbNSFP: Store,
+    gnomad: Store,
     sampleFile: MultiStore,
     ancestryInferred: MultiStore,
     ancestryOutliers: Store)
@@ -83,6 +84,7 @@ object ProjectStores extends loamstream.LoamFile {
       vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,
       vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput,
       dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
+      gnomad = store(path(checkPath(projectConfig.gnomad))).asInput,
       sampleFile = MultiStore(
         local = Some(store(path(projectConfig.sampleFile)).asInput),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }

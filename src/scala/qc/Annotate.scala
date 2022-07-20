@@ -15,8 +15,8 @@ object Annotate extends loamstream.LoamFile {
   
     drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
   
-      cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf.local.get} ${projectConfig.resources.vep.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations.local.get} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader} ${projectConfig.referenceGenome}"""
-      .in(arrayStores(array).refData.sitesVcf.local.get, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP)
+      cmd"""${utils.bash.shAnnotate} ${arrayStores(array).refData.sitesVcf.local.get} ${projectConfig.resources.vep.cpus} ${projectStores.fasta} ${projectStores.vepCacheDir} ${projectStores.vepPluginsDir} ${projectStores.dbNSFP} ${arrayStores(array).refData.annotations.local.get} ${arrayStores(array).refData.annotationWarnings} ${arrayStores(array).refData.annotationHeader} ${projectConfig.referenceGenome} ${projectStores.gnomad}"""
+      .in(arrayStores(array).refData.sitesVcf.local.get, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP, projectStores.gnomad)
       .out(arrayStores(array).refData.annotations.local.get, arrayStores(array).refData.annotationWarnings, arrayStores(array).refData.annotationHeader)
       .tag(s"${arrayStores(array).refData.annotations.local.get}".split("/").last)
   
