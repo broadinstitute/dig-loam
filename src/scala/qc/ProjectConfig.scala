@@ -176,6 +176,7 @@ object ProjectConfig extends loamstream.LoamFile {
     vepCacheDir: String,
     vepPluginsDir: String,
     dbNSFP: String,
+    gnomad: String,
     sampleFile: String,
     sampleFileId: String,
     sampleFileSrSex: Option[String],
@@ -328,6 +329,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")
       val vepPluginsDir = requiredStr(config = config, field = "vepPluginsDir")
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
+      val gnomad = requiredStr(config = config, field = "gnomad")
       val sampleFile = requiredStr(config = config, field = "sampleFile")
       val sampleFileId = requiredStr(config = config, field = "sampleFileId")
       val sampleFileSrSex = optionalStr(config = config, field = "sampleFileSrSex")
@@ -766,6 +768,7 @@ object ProjectConfig extends loamstream.LoamFile {
         vepCacheDir = vepCacheDir,
         vepPluginsDir = vepPluginsDir,
         dbNSFP = dbNSFP,
+        gnomad = gnomad,
         sampleFile = sampleFile,
         sampleFileId = sampleFileId,
         sampleFileSrSex = sampleFileSrSex,

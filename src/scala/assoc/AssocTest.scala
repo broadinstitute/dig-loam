@@ -20,7 +20,7 @@ object AssocTest extends loamstream.LoamFile {
 
     val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
 
-    configModel.tests.get.filter(e => e.split("\\.")(1) == "hail").size match {
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.platform == "hail").size match {
 
       case n if n > 0 =>
 
@@ -53,7 +53,7 @@ object AssocTest extends loamstream.LoamFile {
 
     }
 
-    configModel.tests.get.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "epacts").size match {
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.grouped == true && e.platform == "epacts").size match {
 
       case n if n > 0 =>
       
@@ -172,7 +172,7 @@ object AssocTest extends loamstream.LoamFile {
 
     }
 
-    configModel.tests.get.filter(e => e.split("\\.")(1) == "regenie").size match {
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.platform == "regenie").size match {
 
       case n if n > 0 =>
         
@@ -182,7 +182,7 @@ object AssocTest extends loamstream.LoamFile {
         
     }
 
-    configModel.tests.get.filter(e => e.split("\\.")(0) == "single" && e.split("\\.")(1) == "regenie").size match {
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.grouped == false && e.platform == "epacts").size match {
 
       case n if n > 0 =>
 
@@ -200,7 +200,7 @@ object AssocTest extends loamstream.LoamFile {
         
     }
 
-    configModel.tests.get.filter(e => e.split("\\.")(0) == "group" && e.split("\\.")(1) == "regenie").size match {
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.grouped == true && e.platform == "regenie").size match {
 
       case n if n > 0 =>
 

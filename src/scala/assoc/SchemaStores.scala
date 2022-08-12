@@ -530,7 +530,7 @@ object SchemaStores extends loamstream.LoamFile {
           ))
         case _ => None
       },
-      vcf = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
+      vcf = projectConfig.Tests.filter(e => projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten.contains(e.id)).filter(e => e.platform != "hail").size match {
         case n if n > 0 =>
           schema.knockoutFilters match {
             case Some(_) =>
@@ -550,7 +550,7 @@ object SchemaStores extends loamstream.LoamFile {
         case _ => None
       },
       vcfHailLog = MultiStore(
-        local = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
+        local = projectConfig.Tests.filter(e => projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten.contains(e.id)).filter(e => e.platform != "hail").size match {
           case n if n > 0 =>
             (schema.knockoutFilters, projectConfig.hailCloud) match {
               case (Some(_), false) => Some(store(local_dir / s"${baseString}.vcf.hail.log"))
@@ -558,7 +558,7 @@ object SchemaStores extends loamstream.LoamFile {
             }
           case _ => None
         },
-        google = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
+        google = projectConfig.Tests.filter(e => projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten.contains(e.id)).filter(e => e.platform != "hail").size match {
           case n if n > 0 =>
             (schema.knockoutFilters, projectConfig.hailCloud) match {
               case (Some(_), true) => Some(store(cloud_dir.get / s"${baseString}.vcf.hail.log"))
@@ -567,7 +567,7 @@ object SchemaStores extends loamstream.LoamFile {
           case _ => None
         }
       ),
-      bgen = nonHailTests.intersect(projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten).size match {
+      bgen = projectConfig.Tests.filter(e => projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten.contains(e.id)).filter(e => e.platform != "hail").size match {
         case n if n > 0 =>
           (schema.knockoutFilters, array.exportCleanBgen) match {
             case (Some(_), _) | (_, false) =>

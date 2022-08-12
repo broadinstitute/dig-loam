@@ -65,28 +65,16 @@ while :; do
 				exit 1
 			fi
 			;;
-		--block-size)
+		--cli-options)
 			if [ "$2" ]; then
-				blockSize=$2
+				cliOptions=$2
 				shift
 			else
-				echo "ERROR: --block-size requires a non-empty argument."
+				echo "ERROR: --cli-options requires a non-empty argument."
 				exit 1
 			fi
 			;;
-        --threads)
-			if [ "$2" ]; then
-				threads=$2
-				shift
-			else
-				echo "ERROR: --threads requires a non-empty argument."
-				exit 1
-			fi
-			;;
-		--bt)
-			bt=true
-			;;
-        --chr)
+		--chr)
 			if [ "$2" ]; then
 				chr=$2
 				shift
@@ -95,7 +83,7 @@ while :; do
 				exit 1
 			fi
 			;;
-        --pred)
+		--pred)
 			if [ "$2" ]; then
 				pred=$2
 				shift
@@ -131,6 +119,10 @@ while :; do
 				exit 1
 			fi
 			;;
+		--group-stats)
+			groupStats=true
+			#shift
+			;;
 		--out)
 			if [ "$2" ]; then
 				out=$2
@@ -160,22 +152,16 @@ echo "sample: $sample"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
-echo "blockSize: $blockSize"
-echo "threads: $threads"
-echo "bt: $bt"
 echo "chr: $chr"
 echo "pred: $pred"
 echo "annoFile: $annoFile"
 echo "setList: $setList"
 echo "maskDef: $maskDef"
+echo "groupStats: $groupStats"
 echo "out: $out"
+echo "cliOptions: $cliOptions"
 
-if [ $bt ]
-then
-	btString="--bt --firth --firth-se --approx --pThresh 0.05"
-else
-	btString=""
-fi
+EXITCODE=0
 
 $regenie \
 --step 2 \
@@ -183,26 +169,94 @@ $regenie \
 --sample $sample \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
---bsize $blockSize \
---aaf-bins 0.5 \
---minMAC 1 \
---threads $threads \
---verbose \
-$btString \
+$cliOptions \
 --chr $chr \
 --pred $pred \
 --anno-file $annoFile \
 --set-list $setList \
 --mask-def $maskDef \
---out $out
+--out $out \
+--gz \
+--verbose
 
-if [ ! -f "${out}_${phenoName}.regenie" ]
+#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA
+
+if [ ! -f "${out}_${phenoName}.regenie.gz" ]
 then
 	EXITCODE=1
 else
-	(head -2 ${out}_${phenoName}.regenie | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"MAF","MAC","P"}'; sed '1,2d' ${out}_${phenoName}.regenie | awk 'BEGIN { OFS="\t" } {$1=$1; if($6 > 0.5) { maf=1-$6 } else { maf=$6 }; print $0,maf,sprintf("%.0f",2*$7*maf),10^(-$NF)}') | $bgzip -c > ${out}.results.tsv.bgz
-	rm ${out}_${phenoName}.regenie
-	EXITCODE=0
+	n=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+	test_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep TEST | awk '{print $1}'`
+	id_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ID | awk '{print $1}'`
+	(zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "UID",$0,"P"}'; zcat ${out}_${phenoName}.regenie.gz | sed '1,2d' | awk -v c=$n -v id=$id_col -v test=$test_col 'BEGIN { OFS="\t" } {$1=$1; print $id":"$test,$0,10^(-$c)}' | sort -T . -k1,1) | $bgzip -c > ${out}.results.tsv.bgz
+	#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA P
+	rm ${out}_${phenoName}.regenie.gz
+fi
+
+if [ $groupStats ]
+
+then
+
+	mv  ${out}.results.tsv.bgz  ${out}.results.standard.tsv.bgz
+
+	$regenie \
+	--step 2 \
+	--bgen $bgen \
+	--sample $sample \
+	--covarFile $covarFile \
+	--phenoFile $phenoFile \
+	$cliOptions \
+	--chr $chr \
+	--pred $pred \
+	--anno-file $annoFile \
+	--set-list $setList \
+	--mask-def $maskDef \
+	--out $out \
+	--gz \
+	--htp ALL \
+	--verbose
+
+	#Name	Chr	Pos	Ref	Alt	Trait	Cohort	Model	Effect	LCI_Effect	UCI_Effect	Pval	AAF	Num_Cases	Cases_Ref	Cases_Het	Cases_Alt	Num_Controls	Controls_Ref	Controls_Het	Controls_Alt	Info
+
+	if [ ! -f "${out}_${phenoName}.regenie.gz" ]
+	then
+		EXITCODE=1
+	else
+		if [[ $cliOptions == *"--qt"* ]]
+		then
+			echo "quant: $cliOptions" >> check
+			id_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Name | awk '{print $1}'`
+			model_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Model | awk '{print $1}'`
+			ref_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Ref | awk '{print $1}'`
+			het_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Het | awk '{print $1}'`
+			alt_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Alt | awk '{print $1}'`
+			info_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Info | awk '{print $1}'`
+			(echo -e "UID\tModel\tnHomRef\tnHet\tnHomAlt\tMAC"; zcat ${out}_${phenoName}.regenie.gz | sed '1,2d' | awk -v id=$id_col -v model=$model_col -v ref=$ref_col -v het=$het_col -v alt=$alt_col -v info=$info_col 'BEGIN { OFS="\t" } {$1=$1; split($info, x, ";"); mac="NA"; for(i in x){split(x[i],y,"="); if(y[1]=="MAC"){mac=y[2]}}; if($model == "ADD-WGR-ACATO" || $model == "ADD-WGR-ACATV" || $model == "ADD-WGR-BURDEN-ACAT" || $model == "ADD-WGR-BURDEN-MINP" || $model == "ADD-WGR-SKAT" || $model == "ADD-WGR-SKATO" || $model == "ADD-WGR-SKATO-ACAT") { TEST=$model; sub("-WGR-","-",TEST) } else { TEST="ADD" }; print $id":"TEST,$model,$ref,$het,$alt,mac}' | sort -T . -k1,1) | $bgzip -c > ${out}.results.htp.tsv.bgz
+			#ID	Model	nHomRef	nHet	nHomAlt	MAC
+		else
+			echo "binary: $cliOptions" >> check
+			id_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Name | awk '{print $1}'`
+			model_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Model | awk '{print $1}'`
+			case_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Num_Cases | awk '{print $1}'`
+			ctrl_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Num_Controls | awk '{print $1}'`
+			case_ref_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Ref | awk '{print $1}'`
+			case_het_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Het | awk '{print $1}'`
+			case_alt_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Alt | awk '{print $1}'`
+			ctrl_ref_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Controls_Ref | awk '{print $1}'`
+			ctrl_het_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Controls_Het | awk '{print $1}'`
+			ctrl_alt_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Controls_Alt | awk '{print $1}'`
+			info_col=`zcat ${out}_${phenoName}.regenie.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Info | awk '{print $1}'`
+			(echo -e "UID\tModel\tnHomRefCases\tnHetCases\tnHomAltCases\tnHomRefControls\tnHetControls\tnHomAltControls\tMAC"; zcat ${out}_${phenoName}.regenie.gz | sed '1,2d' | awk -v id=$id_col -v model=$model_col -v case_ref=$case_ref_col -v case_het=$case_het_col -v case_alt=$case_alt_col -v ctrl_ref=$ctrl_ref_col -v ctrl_het=$ctrl_het_col -v ctrl_alt=$ctrl_alt_col -v info=$info_col 'BEGIN { OFS="\t" } {$1=$1; split($info, x, ";"); mac="NA"; for(i in x){split(x[i],y,"="); if(y[1]=="MAC"){mac=y[2]}}; if($model == "ADD-WGR-ACATO" || $model == "ADD-WGR-ACATV" || $model == "ADD-WGR-BURDEN-ACAT" || $model == "ADD-WGR-BURDEN-MINP" || $model == "ADD-WGR-SKAT" || $model == "ADD-WGR-SKATO" || $model == "ADD-WGR-SKATO-ACAT") { TEST=$model; sub("-WGR-","-",TEST) } else { TEST="ADD" }; print $id":"TEST,$model,$case_ref,$case_het,$case_alt,$ctrl_ref,$ctrl_het,$ctrl_alt,mac}' | sort -T . -k1,1) | $bgzip -c > ${out}.results.htp.tsv.bgz
+			#ID	Model	nHomRefCases	nHetCases	nHomAltCases	nHomRefControls	nHetControls	nHomAltControls	MAC
+		fi
+		rm ${out}_${phenoName}.regenie.gz
+	fi
+
+	(join -1 1 -2 1 -t $'\t' <(zcat ${out}.results.standard.tsv.bgz | head -1) <(zcat ${out}.results.htp.tsv.bgz | head -1); join -1 1 -2 1 -t $'\t' <(zcat ${out}.results.standard.tsv.bgz | sed '1d') <(zcat ${out}.results.htp.tsv.bgz | sed '1d')) | cut -f2- | bgzip -c > ${out}.results.tsv.bgz
+
+	rm ${out}.results.standard.tsv.bgz
+	rm ${out}.results.htp.tsv.bgz
+
 fi
 
 exit $EXITCODE

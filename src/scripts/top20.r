@@ -6,7 +6,8 @@ parser$add_argument("--chr", dest="chr", type="character", help="chromosome colu
 parser$add_argument("--pos", dest="pos", type="character", help="position column name")
 parser$add_argument("--known-loci", dest="known_loci", help='a comma separated list of known loci files')
 parser$add_argument("--p", dest="p", type="character", help="a pvalue column name")
-parser$add_argument("--test", dest="test", type="character", help="a statistical test")
+parser$add_argument("--platform", dest="platform", type="character", help="a statistical test")
+parser$add_argument("--model", dest="model", type="character", help="a statistical test")
 parser$add_argument("--out", dest="out", type="character", help="an output filename")
 args<-parser$parse_args()
 
@@ -14,7 +15,7 @@ print(args)
 
 x<-read.table(args$results,header=T,as.is=T,sep="\t",comment.char="")
 
-if(args$test %in% c("single.hail.b.wald","single.hail.b.lrt","single.hail.b.firth")) {
+if(args$platform == "hail" & args$model %in% c("wald","lrt","firth")) {
 	x$or <- exp(x$beta)
 	pre<-names(x)[1:(grep("\\bpval\\b",names(x))-1)]
 	pre<-pre[grep("\\bor\\b",pre,invert=TRUE)]

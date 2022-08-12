@@ -84,7 +84,7 @@ pos=`echo $line | awk '{print $2}'`; \
 rsid=`echo $line | awk '{print $3}'`; \
 ref=`echo $line | awk '{print $4}'`; \
 alt=`echo $line | awk '{print $5}'`; \
-tabix $sitesVcf ${chr}:${pos}-${pos} | awk 'BEGIN { OFS="\t" } {$1=gsub("chr","",$1); print $1"\t"$0}' | \
+tabix $sitesVcf ${chr}:${pos}-${pos} | awk 'BEGIN { OFS="\t" } {gsub("chr","",$1); print $1"\t"$0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "X") { $1 = "23" } print $0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "Y") { $1 = "24" } print $0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "MT") { $1 = "25" } print $0}' | \
@@ -143,12 +143,11 @@ while read line; do
 	fi
 done < <(sed '1d' ${results}.2.tmp)
 
-(head -1 $topResults | awk 'BEGIN{OFS="\t"}{print "#Uploaded variation\t"$0}'; sed '1d' $topResults | awk 'BEGIN{OFS="\t"}{print $3"\t"$0}') > ${results}.4.tmp
+h1=`head -1 $topResults`
+h2=`head -1 ${results}.3.tmp | cut -d$'\t' -f2-`
 
+(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1) | awk -F'\t' 'BEGIN { OFS="\t" } {x=$1; $1=$2; $2=$3; $3=x; print $0}') > ${results}.4.tmp
 p=`head -1 $topResults | tr '\t' '\n' | grep -n "pval" | awk -F':' '{print $1}'`
-
-h1=`head -1 ${results}.4.tmp | cut -f2-`
-h2=`head -1 ${results}.3.tmp | cut -f2-`
-(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1)) | sort -n -k${p},${p} | awk 'BEGIN { OFS="\t" } {x=$1; $1=$2; $2=$3; $3=x; print $0}' > $results
+sort -n -k${p},${p} ${results}.4.tmp > $results
 
 rm ${results}.*.tmp*

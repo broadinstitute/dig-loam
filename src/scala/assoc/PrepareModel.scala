@@ -49,18 +49,23 @@ object PrepareModel extends loamstream.LoamFile {
     
     val keepRelated = configModel.tests match {
       case Some(_) =>
-        famTests.intersect(configModel.tests.get).size match {
+        projectConfig.Tests.filter(e => configModel.tests.contains(e.id)).filter(e => e.includeFams == true).size match {
           case n if n > 0 => "--keep-related"
           case _ => ""
         }
-      case None => ""
+      case None => "--keep-related"
     }
 
     val covarsString = configModel.covars match {
       case Some(_) => s"""--covars "${configModel.covars.get}""""
       case None => ""
     }
-  
+
+    val sexColString = array.phenoFileSex match {
+      case Some(_) => s"""--sex-col ${array.phenoFileSex.get}"""
+      case None => ""
+    }
+
     drmWith(imageName = s"${utils.image.imgR}") {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
@@ -71,7 +76,7 @@ object PrepareModel extends loamstream.LoamFile {
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
         --pheno-col ${configModel.pheno}
-        --sex-col ${array.phenoFileSex}
+        ${sexColString}
         --iid-col ${array.phenoFileId}
         --sampleqc-in ${arrayStores(array).sampleQcStats}
         --kinship-in ${arrayStores(array).kin0}
@@ -213,6 +218,12 @@ object PrepareModel extends loamstream.LoamFile {
           case Some(_) => s"--trans ${configModel.trans.get}"
           case None => ""
         }
+
+        val sexColString = (array.phenoFileSex, array.phenoFileSexMaleCode, array.phenoFileSexFemaleCode) match {
+          case (Some(_),Some(_),Some(_)) => s"""--sex-col ${array.phenoFileSex.get} --male-code ${array.phenoFileSexMaleCode.get} --female-code ${array.phenoFileSexFemaleCode}"""
+          case (Some(_),_,_) => throw new CfgException("options phenoFileSexMaleCode and phenoFileSexFemaleCode are required with phenoFileSex for array '" + array)
+          case (_,_,_) => ""
+        }
 	    
         configModel.assocPlatforms.get.contains("epacts") match {
         
@@ -226,9 +237,7 @@ object PrepareModel extends loamstream.LoamFile {
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
                 --pheno-analyzed ${configModel.finalPheno}
                 --iid-col ${array.phenoFileId}
-                --sex-col ${array.phenoFileSex}
-                --male-code ${array.qcSampleFileMaleCode}
-                --female-code ${array.qcSampleFileFemaleCode}
+                ${sexColString}
                 ${transString}
                 --covars-analyzed "${configModel.finalCovars}"
                 --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
@@ -255,9 +264,6 @@ object PrepareModel extends loamstream.LoamFile {
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
                 --pheno-analyzed ${configModel.finalPheno}
                 --iid-col ${array.phenoFileId}
-                --sex-col ${array.phenoFileSex}
-                --male-code ${array.qcSampleFileMaleCode}
-                --female-code ${array.qcSampleFileFemaleCode}
                 ${transString}
                 --covars-analyzed "${configModel.finalCovars}"
                 --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}

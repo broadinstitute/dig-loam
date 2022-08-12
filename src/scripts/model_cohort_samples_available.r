@@ -42,14 +42,20 @@ pheno<-merge(pheno,ancestry,all.x=T)
 cat("limiting to cohorts in list\n")
 pheno<-pheno[pheno$COHORT %in% unlist(strsplit(args$cohorts,",")),]
 
+if(! is.null(args$sex_col)) {
+	cols_extract <- c(args$iid_col, args$pheno_col, args$sex_col)
+} else {
+	cols_extract <- c(args$iid_col, args$pheno_col)
+}
+
 if(! is.null(args$covars)) {
 	cat("removing factor indicators from covariates\n")
 	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
-	cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col, covars), collapse=",")),"\n")
-	pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col, covars)]
+	cat(paste0("extracting model specific columns from pheno file: ", paste(c(cols_extract, covars), collapse=",")),"\n")
+	pheno<-pheno[,c(cols_extract, covars)]
 } else {
-	cat(paste0("extracting model specific columns from pheno file: ", paste(c(args$iid_col, args$pheno_col, args$sex_col), collapse=",")),"\n")
-	pheno<-pheno[,c(args$iid_col, args$pheno_col, args$sex_col)]
+	cat(paste0("extracting model specific columns from pheno file: ", paste(cols_extract, collapse=",")),"\n")
+	pheno<-pheno[,cols_extract]
 }
 
 out_cols<-colnames(pheno)

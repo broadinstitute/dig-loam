@@ -5,64 +5,103 @@ object ProjectConfig extends loamstream.LoamFile {
 
   val refGenomes = Seq("GRCh37","GRCh38")
   val ancestryCodes = Seq("EUR","AFR","AMR","SAS","EAS")
+  val platforms = Seq("hail","epacts","regenie")
+  val hailModels = Seq("lm","wald","firth","lrt","score")
+  val epactsModels = Seq(
+    "b.burden",
+    "b.burdenFirth",
+    "b.collapse",
+    "b.madsen",
+    "b.wcnt",
+    "q.burden",
+    "q.reverse",
+    "q.wilcox",
+    "b.skat",
+    "b.VT",
+    "b.emmaxCMC",
+    "b.emmaxVT",
+    "q.mmskat",
+    "q.skat",
+    "q.VT",
+    "q.emmaxCMC",
+    "q.emmaxVT"
+  )
 
   val modelDesigns = Seq("full","strat")
   val modelTrans = Seq("log","invn")
   val modelMethods = Seq(
     "variant.stats"
   )
-  val assocTests = Seq(
-    "single.hail.q.lm",
-    "single.hail.b.wald",
-    "single.hail.b.firth",
-    "single.hail.b.lrt",
-    "single.hail.b.score",
-    "group.epacts.b.burden",
-    "group.epacts.b.burdenFirth",
-    "group.epacts.b.collapse",
-    "group.epacts.b.madsen",
-    "group.epacts.b.wcnt",
-    "group.epacts.q.burden",
-    "group.epacts.q.reverse",
-    "group.epacts.q.wilcox",
-    "group.epacts.b.skat",
-    "group.epacts.b.VT",
-    "group.epacts.b.emmaxCMC",
-    "group.epacts.b.emmaxVT",
-    "group.epacts.q.mmskat",
-    "group.epacts.q.skat",
-    "group.epacts.q.VT",
-    "group.epacts.q.emmaxCMC",
-    "group.epacts.q.emmaxVT",
-    "single.regenie.b.firth",
-    "single.regenie.q.lm",
-    "group.regenie.b.burdenFirth",
-    "group.regenie.b.burden",
-    "group.regenie.q.burden"
-    //NOT YET IMPLEMENTED "single.epacts.b.wald",
-    //NOT YET IMPLEMENTED "single.epacts.b.score",
-    //NOT YET IMPLEMENTED "single.epacts.b.firth",
-    //NOT YET IMPLEMENTED "single.epacts.b.spa2",
-    //NOT YET IMPLEMENTED "single.epacts.b.lrt",
-    //NOT YET IMPLEMENTED "single.epacts.b.glrt",
-    //NOT YET IMPLEMENTED "single.epacts.q.lm",
-    //NOT YET IMPLEMENTED "single.epacts.q.linear",
-    //NOT YET IMPLEMENTED "single.epacts.q.reverse",
-    //NOT YET IMPLEMENTED "single.epacts.q.wilcox",
-    //NOT YET IMPLEMENTED "single.epacts.q.emmax",
-  )
 
-  // note: regenie uses ridge regression to avoid need for GRM so all tests may include relateds
-  val famTests = assocTests.filter(e => Seq("group.epacts.b.emmaxCMC","group.epacts.b.emmaxVT","group.epacts.q.mmskat","group.epacts.q.emmaxCMC","group.epacts.q.emmaxVT","single.regenie.b.firth","single.regenie.q.lm","group.regenie.b.burdenFirth","group.regenie.b.burden","group.regenie.q.burden").contains(e))
-  val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
-  val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
-  val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
-  val regenieTests = assocTests.filter(e => e.split("\\.")(1) != "regenie")
+  //val assocTests = Seq(
+  //  "single.hail.q.lm",
+  //  "single.hail.b.wald",
+  //  "single.hail.b.firth",
+  //  "single.hail.b.lrt",
+  //  "single.hail.b.score",
+  //  "group.epacts.b.burden",
+  //  "group.epacts.b.burdenFirth",
+  //  "group.epacts.b.collapse",
+  //  "group.epacts.b.madsen",
+  //  "group.epacts.b.wcnt",
+  //  "group.epacts.q.burden",
+  //  "group.epacts.q.reverse",
+  //  "group.epacts.q.wilcox",
+  //  "group.epacts.b.skat",
+  //  "group.epacts.b.VT",
+  //  "group.epacts.b.emmaxCMC",
+  //  "group.epacts.b.emmaxVT",
+  //  "group.epacts.q.mmskat",
+  //  "group.epacts.q.skat",
+  //  "group.epacts.q.VT",
+  //  "group.epacts.q.emmaxCMC",
+  //  "group.epacts.q.emmaxVT",
+  //  "single.regenie.b",
+  //  "single.regenie.q",
+  //  "group.regenie.b",
+  //  "group.regenie.q"
+  //  //OBSELETE "single.regenie.b.firth",
+  //  //OBSELETE "single.regenie.q.lm",
+  //  //OBSELETE "group.regenie.b.burdenFirth",
+  //  //OBSELETE "group.regenie.b.burden",
+  //  //OBSELETE "group.regenie.q.burden",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.wald",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.score",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.firth",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.spa2",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.lrt",
+  //  //NOT YET IMPLEMENTED "single.epacts.b.glrt",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.lm",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.linear",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.reverse",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.wilcox",
+  //  //NOT YET IMPLEMENTED "single.epacts.q.emmax",
+  //)
+  //
+  //// note: regenie uses ridge regression to avoid need for GRM so all tests may include relateds
+  //val famTests = assocTests.filter(e => Seq("group.epacts.b.emmaxCMC","group.epacts.b.emmaxVT","group.epacts.q.mmskat","group.epacts.q.emmaxCMC","group.epacts.q.emmaxVT","single.regenie.b.cli","single.regenie.q.cli","group.regenie.b.cli","group.regenie.q.cli").contains(e))
+  //val groupTests = assocTests.filter(e => e.split("\\.")(0) == "group")
+  //val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
+  //val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
+  //val regenieTests = assocTests.filter(e => e.split("\\.")(1) == "regenie")
   
   final case class ConfigMachine(
     cpus: Int,
     mem: Int,
     maxRunTime: Int) extends Debug
+
+  final case class ConfigAnnotationTable(
+    id: String,
+    ht: String,
+    includeGeneInIdx: Boolean) extends Debug
+
+  final case class ConfigTest(
+    id: String,
+    grouped: Boolean,
+    includeFams: Boolean,
+    platform: String,
+    model: Option[String],
+    cliOpts: Option[String]) extends Debug
   
   final case class ConfigNumericFilters(
     id: String,
@@ -134,12 +173,11 @@ object ProjectConfig extends loamstream.LoamFile {
     qcHailCloud: Boolean,
     phenoFile: String,
     phenoFileId: String,
-    phenoFileSex: String,
+    phenoFileSex: Option[String],
+    phenoFileSexMaleCode: Option[String],
+    phenoFileSexFemaleCode: Option[String],
     qcSampleFile: String,
     qcSampleFileId: String,
-    qcSampleFileSrSex: String,
-    qcSampleFileMaleCode: String,
-    qcSampleFileFemaleCode: String,
     chrs: Seq[String],
     exportCleanBgen: Boolean) extends Debug
   
@@ -252,16 +290,14 @@ object ProjectConfig extends loamstream.LoamFile {
     maxPCs: Int,
     nStddevs: Int,
     diffMissMinExpectedCellCount: Int,
-    regenieBlockSize: Option[Int],
-    regenieThreads: Option[Int],
-    regenieSingleMinMAC: Option[Int],
-    regenieLowmem: Boolean,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
     nCohorts: Int,
     nMetas: Int,
     maxSigRegions: Option[Int],
+    annotationTables: Seq[ConfigAnnotationTable],
+    Tests: Seq[ConfigTest],
     numericVariantFilters: Seq[ConfigNumericFilters],
     booleanVariantFilters: Seq[ConfigBooleanFilters],
     categoricalVariantFilters: Seq[ConfigCategoricalFilters],
@@ -315,6 +351,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyAlignNon1kgVariants: Path,
     pyHailLoad: Path,
     pyHailLoadAnnotations: Path,
+    pyHailLoadUserAnnotations: Path,
     pyHailExportQcData: Path,
     pyHailFilter: Path,
     pyHailAncestryPcaMerge1kg: Path,
@@ -457,10 +494,6 @@ object ProjectConfig extends loamstream.LoamFile {
       val maxPCs = requiredInt(config = config, field = "maxPCs", min = Some(0), max = Some(20))
       val nStddevs = requiredInt(config = config, field = "nStddevs", min = Some(1))
       val diffMissMinExpectedCellCount = requiredInt(config = config, field = "diffMissMinExpectedCellCount", min = Some(0), default = Some(5))
-      val regenieBlockSize = optionalInt(config = config, field = "regenieBlockSize", min = Some(100))
-      val regenieThreads = optionalInt(config = config, field = "regenieThreads", min = Some(1))
-      val regenieSingleMinMAC = optionalInt(config = config, field = "regenieSingleMinMAC", min = Some(3))
-      val regenieLowmem = requiredBool(config = config, field = "regenieLowmem", default = Some(true))
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -585,6 +618,43 @@ object ProjectConfig extends loamstream.LoamFile {
           ConfigMachine(cpus = requiredInt(config = thisConfig, field = "cpus"), mem = requiredInt(config = thisConfig, field = "mem"), maxRunTime = requiredInt(config = thisConfig, field = "maxRunTime"))
         }
       )
+
+      val Tests = {
+        for {
+          test <- requiredObjList(config = config, field = "tests")
+        } yield {
+          val p = requiredStr(config = test, field = "platform", regex = platforms.mkString("|"))
+          val m = p match {
+            case "hail" => Some(requiredStr(config = test, field = "model", regex = hailModels.mkString("|")))
+            case "epacts" => Some(requiredStr(config = test, field = "model", regex = epactsModels.mkString("|")))
+            case _ => None
+          }
+          val cli = p match {
+            case "regenie" => Some(requiredStr(config = test, field = "cliOpts"))
+            case _ => None
+          }
+          ConfigTest(
+            id = requiredStr(config = test, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+            grouped = requiredBool(config = test, field = "grouped"),
+            includeFams = requiredBool(config = test, field = "includeFams"),
+            platform = p,
+            model = m,
+            cliOpts = cli
+          )
+        }
+      }
+
+      val annotationTables = {
+        for {
+          annot <- requiredObjList(config = config, field = "annotationTables")
+        } yield {
+          ConfigAnnotationTable(
+            id = requiredStr(config = annot, field = "id", regex = "^[a-zA-Z0-9_]*$"),
+            ht = requiredStr(config = annot, field = "ht"),
+            includeGeneInIdx = requiredBool(config = annot, field = "includeGeneInIdx")
+          )
+        }
+      }
   
       val numericVariantFilters = {
         for {
@@ -755,12 +825,11 @@ object ProjectConfig extends loamstream.LoamFile {
             qcHailCloud = requiredBool(config = qcConfig, field = "hailCloud"),
             phenoFile = requiredStr(config = array, field = "phenoFile"),
             phenoFileId = requiredStr(config = array, field = "phenoFileId"),
-            phenoFileSex = requiredStr(config = array, field = "phenoFileSex"),
+            phenoFileSex = optionalStr(config = array, field = "phenoFileSex"),
+            phenoFileSexMaleCode = optionalStr(config = array, field = "phenoFileSexMaleCode"),
+            phenoFileSexFemaleCode = optionalStr(config = array, field = "phenoFileSexFemaleCode"),
             qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile"),
             qcSampleFileId = requiredStr(config = qcConfig, field = "sampleFileId"),
-            qcSampleFileSrSex = requiredStr(config = qcConfig, field = "sampleFileSrSex"),
-            qcSampleFileMaleCode = requiredStr(config = qcConfig, field = "sampleFileMaleCode"),
-            qcSampleFileFemaleCode = requiredStr(config = qcConfig, field = "sampleFileFemaleCode"),
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
             exportCleanBgen = exportCleanBgen
           )
@@ -1147,10 +1216,10 @@ object ProjectConfig extends loamstream.LoamFile {
               }
           }
   
-          val tests = optionalStrList(config = model, field = "tests", regex = assocTests.mkString("|"))
+          val tests = optionalStrList(config = model, field = "tests", regex = Tests.map(e => e.id).mkString("|"))
           tests match {
             case Some(_) =>
-              tests.get.intersect(regenieTests).size match {
+              tests.get.intersect(Tests.filter(e => e.platform == "regenie").map(e => e.id)).size match {
                 case n if n > 0 =>
                   Arrays.filter(e => Cohorts.filter(e => Schemas.filter(e => e.id == schema).head.cohorts.contains(e.id)).map(e => e.array).contains(e.id)).filter(e => e.exportCleanBgen == false).size > 0 match {
                     case true => throw new CfgException("models.tests: model " + id + " regenie tests require a clean bgen file, but exportCleanBgen == false for at least one array included in the model")
@@ -1241,7 +1310,7 @@ object ProjectConfig extends loamstream.LoamFile {
             tests = tests,
             methods = methods,
             assocPlatforms = tests match { 
-              case Some(s) => Some(s.map(e => e.split("\\.")(1)).distinct)
+              case Some(s) => Some(Tests.filter(e => s.contains(e.id)).map(e => e.platform).distinct)
               case None => None
             },
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
@@ -1327,16 +1396,14 @@ object ProjectConfig extends loamstream.LoamFile {
         maxPCs = maxPCs,
         nStddevs = nStddevs,
         diffMissMinExpectedCellCount = diffMissMinExpectedCellCount,
-        regenieBlockSize = regenieBlockSize,
-        regenieThreads = regenieThreads,
-        regenieSingleMinMAC = regenieSingleMinMAC,
-        regenieLowmem = regenieLowmem,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
         nCohorts = nCohorts,
         nMetas = nMetas,
         maxSigRegions = maxSigRegions,
+        annotationTables = annotationTables,
+        Tests = Tests,
         numericVariantFilters =  numericVariantFilters,
         booleanVariantFilters = booleanVariantFilters,
         categoricalVariantFilters = categoricalVariantFilters,
@@ -1375,7 +1442,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
         imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg"),
-        imgRegenie = path(s"${imagesDir}/regenie-v2.0.2.simg")
+        imgRegenie = path(s"${imagesDir}/regenie-v3.1.2.simg")
       )
   
       val binary = Binary(
@@ -1400,6 +1467,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyAlignNon1kgVariants = path(s"${scriptsDir}/align_non1kg_variants.py"),
         pyHailLoad = path(s"${scriptsDir}/hail_load.py"),
         pyHailLoadAnnotations = path(s"${scriptsDir}/hail_load_annotations.py"),
+        pyHailLoadUserAnnotations = path(s"${scriptsDir}/hail_load_user_annotations.py"),
         pyHailExportQcData = path(s"${scriptsDir}/hail_export_qc_data.py"),
         pyHailAncestryPcaMerge1kg = path(s"${scriptsDir}/hail_ancestry_pca_merge_1kg.py"),
         pyHailPcaMerge1kg = path(s"${scriptsDir}/hail_pca_merge_1kg.py"),

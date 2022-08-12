@@ -413,6 +413,66 @@ object PrepareSchema extends loamstream.LoamFile {
         .tag(s"${schemaStores((configSchema, configCohorts)).masks.base.local.get}".split("/").last)
     
     }
+
+    val userAnnotationsInString = projectConfig.hailCloud match {
+
+      case true =>
+
+        projectConfig.annotationTables.size match {
+          case n if n > 0 =>
+            val x = "--user-annotations"
+            val y = for {
+              a <- projectConfig.annotationTables
+            } yield {
+              s"""${a.id},${a.includeGeneInIdx.toString.toLowerCase},${projectStores.annotationStores(a).google.get.toString.split("@")(1)}"""
+            }
+            x + " " + y.mkString(" ")
+          case _ => ""
+        }
+
+      case false =>
+
+        projectConfig.annotationTables.size match {
+          case n if n > 0 =>
+            val x = "--user-annotations"
+            val y = for {
+              a <- projectConfig.annotationTables
+            } yield {
+              s"""${a.id},${a.includeGeneInIdx.toString.toLowerCase},${projectStores.annotationStores(a).local.get.toString.split("@")(1)}"""
+            }
+            x + " " + y.mkString(" ")
+          case _ => ""
+        }
+
+    }
+
+    val userAnnotationsIn = projectConfig.hailCloud match {
+
+      case true =>
+
+        projectConfig.annotationTables.size match {
+          case n if n > 0 =>
+            for {
+              a <- projectConfig.annotationTables
+            } yield {
+              projectStores.annotationStores(a).google.get
+            }
+          case _ => Seq()
+        }
+
+      case false =>
+
+        projectConfig.annotationTables.size match {
+          case n if n > 0 =>
+            for {
+              a <- projectConfig.annotationTables
+            } yield {
+              projectStores.annotationStores(a).local.get
+            }
+          case _ => Seq()
+        }
+
+    }
   
     projectConfig.hailCloud match {
     
@@ -464,6 +524,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
             ${cohortStatsInString}
             --annotation ${arrayStores(array).refAnnotationsHt.google.get}
+            ${userAnnotationsInString}
             --filters ${schemaStores((configSchema, configCohorts)).filters.base.google.get}
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.base.google.get}
             --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.base.google.get}
@@ -472,7 +533,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.google.get}
             --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
             --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.google.get}"""
-              .in(cohortStatsIn)
+              .in(cohortStatsIn ++ userAnnotationsIn)
               .out(schemaStores((configSchema, configCohorts)).variantFilterTable.base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.google.get)
               .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}.google".split("/").last)
         
@@ -522,6 +583,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             ${cohortStatsInString}
+            ${userAnnotationsInString}
             --annotation ${arrayStores(array).refAnnotationsHt.local.get}
             --filters ${schemaStores((configSchema, configCohorts)).filters.base.local.get}
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get}
@@ -531,7 +593,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}
             --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
             --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.local.get}"""
-              .in(cohortStatsIn)
+              .in(cohortStatsIn ++ userAnnotationsIn)
               .out(schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.base.local.get)
               .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}".split("/").last)
         
@@ -661,6 +723,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.google.get}
               --schema-filters-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.google.get}
               ${cohortStatsInString}
+              ${userAnnotationsInString}
               --annotation ${arrayStores(array).refAnnotationsHt.google.get}
               --filters ${schemaStores((configSchema, configCohorts)).filters.phenos(pheno).google.get}
               --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).google.get}
@@ -669,7 +732,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).google.get}
               --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get}
               --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).google.get}"""
-                .in(cohortStatsIn)
+                .in(cohortStatsIn ++ userAnnotationsIn)
                 .out(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).google.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).google.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}.google".split("/").last)
           
@@ -721,6 +784,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
               --schema-filters-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
               ${cohortStatsInString}
+              ${userAnnotationsInString}
               --annotation ${arrayStores(array).refAnnotationsHt.local.get}
               --filters ${schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get}
               --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get}
@@ -729,7 +793,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
               --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get}
               --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).local.get}"""
-                .in(cohortStatsIn)
+                .in(cohortStatsIn ++ userAnnotationsIn)
                 .out(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).variantFilterHailLog.phenos(pheno).local.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}".split("/").last)
           

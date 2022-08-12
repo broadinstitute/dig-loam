@@ -60,7 +60,7 @@ def main(args=None):
 				else:
 					samples = samples + [a for a in handle.header][-1].split('\t')[9:]
 			elif aType == "plink":
-				handle = pd.read_table(aFile + ".fam", header=None)
+				handle = pd.read_table(aFile + ".fam", header=None, sep = None)
 				handle.columns = ['fid','iid','fat','mot','sex','pheno']
 				samples = samples + handle['iid'].tolist()
 			else:
