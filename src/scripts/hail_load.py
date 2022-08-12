@@ -147,10 +147,10 @@ def main(args=None):
 		print("add DS")
 		if 'PL' in gt_codes:
 			print("adding DS from PL")
-			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.PL), hl.pl_dosage(mt.PL), hl.missing(hl.tfloat64)))
+			mt = mt.annotate_entries(DS = hl.if_else((hl.is_defined(mt.PL)) & (hl.is_defined(mt.GT)), hl.pl_dosage(mt.PL), hl.missing(hl.tfloat64)))
 		elif 'GP' in gt_codes:
 			print("adding DS from GP")
-			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GP), hl.gp_dosage(mt.GP), hl.missing(hl.tfloat64)))
+			mt = mt.annotate_entries(DS = hl.if_else((hl.is_defined(mt.GP)) & (hl.is_defined(mt.GT)), hl.gp_dosage(mt.GP), hl.missing(hl.tfloat64)))
 		else:
 			print("unable to calculate DS due to missing PL and GP fields, using GT")
 			mt = mt.annotate_entries(DS = hl.if_else(hl.is_defined(mt.GT), mt.GT.n_alt_alleles(), hl.missing(hl.tint32)))
