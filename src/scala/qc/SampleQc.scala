@@ -56,12 +56,13 @@ object SampleQc extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
   
           cmd"""${utils.binary.binPython} ${utils.python.pyHailSampleqc}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --clusters-in ${projectStores.ancestryInferred.local.get}
             --qc-out ${arrayStores(array).sampleQcData.stats.local.get}
             --log ${arrayStores(array).sampleQcData.hailLog.local.get}"""
-            .in(arrayStores(array).refData.mt.local.get, projectStores.ancestryInferred.local.get)
+            .in(arrayStores(array).refData.mt.local.get, projectStores.ancestryInferred.local.get, projectStores.tmpDir)
             .out(arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).sampleQcData.hailLog.local.get)
             .tag(s"${arrayStores(array).sampleQcData.stats.local.get}".split("/").last)
   

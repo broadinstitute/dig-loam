@@ -3,7 +3,7 @@ library(argparse)
 parser <- ArgumentParser()
 parser$add_argument("--input", nargs='+', dest="input", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
 parser$add_argument("--exclusions", nargs='+', dest="exclusions", type="character", help="a list of labels and files, each delimited by comma (eg. ex,file1 omni,file2)")
-parser$add_argument("--type", choices=c("bim","fam"), dest="type", type="character", help="a file type")
+parser$add_argument("--type", choices=c("variant","sample"), dest="type", type="character", help="a file type")
 parser$add_argument("--ancestry", dest="ancestry", type="character", help="an inferred ancestry file")
 parser$add_argument("--out", dest="out", type="character", help="an output filename ending in '.png' or '.pdf'")
 args<-parser$parse_args()
@@ -24,25 +24,24 @@ for(inp in args$input) {
 	if(! l %in% names(ids)) {
 		ids[[l]]<-c()
 	}
-	if(args$type == "fam") {
-		tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F,colClasses=c("V1"="character","V2"="character"))
+	if(args$type == "sample") {
+		sample_list<-scan(f,what="character")
 		if(! is.null(args$ancestry)) {
-			anc <- anc[anc$IID %in% tbl[,2],]
+			anc <- anc[anc$IID %in% sample_list,]
 			for(c in unique(anc$FINAL)) {
 				if(paste(l," (",c,")",sep="") %in% names(ids)) {
-					ids[[paste(l," (",c,")",sep="")]]<-c(ids[[paste(l," (",c,")",sep="")]],tbl[,2][tbl[,2] %in% anc$IID[anc$FINAL == c]])
+					ids[[paste(l," (",c,")",sep="")]]<-c(ids[[paste(l," (",c,")",sep="")]],sample_list[sample_list %in% anc$IID[anc$FINAL == c]])
 				} else {
-					ids[[paste(l," (",c,")",sep="")]]<-tbl[,2][tbl[,2] %in% anc$IID[anc$FINAL == c]]
+					ids[[paste(l," (",c,")",sep="")]]<-sample_list[sample_list %in% anc$IID[anc$FINAL == c]]
 				}
 			}
 		} else {
-			ids[[l]]<-c(ids[[l]],tbl[,2])
+			ids[[l]]<-c(ids[[l]],sample_list)
 		}
 		xLabel = "Samples"
-	} else if(args$type == "bim") {
-		tbl<-read.table(f,header=F,as.is=T,stringsAsFactors=F)
-		tbl$id<-paste(tbl$V1,tbl$V4,tbl$V5,tbl$V6,sep=":")
-		ids[[l]]<-c(ids[[l]],tbl$id)
+	} else if(args$type == "variant") {
+		variant_list<-scan(f,what="character")
+		ids[[l]]<-c(ids[[l]],variant_list)
 		xLabel = "Variants"
 	} else {
 		stop(paste("file type ",args$type," not supported",sep=""))
@@ -53,7 +52,7 @@ if(! is.null(args$exclusions)) {
 	for(excl in args$exclusions) {
 		l<-unlist(strsplit(excl,","))[1]
 		f<-unlist(strsplit(excl,","))[2]
-		if(args$type == "fam") {
+		if(args$type == "sample") {
 			excl_list<-scan(f, what="character")
 			if(! is.null(args$ancestry)) {
 				for(c in unique(anc$FINAL)) {
@@ -72,7 +71,7 @@ if(! is.null(args$exclusions)) {
 	}
 }
 
-if(! is.null(args$ancestry) && args$type == "fam") {
+if(! is.null(args$ancestry) && args$type == "sample") {
 	ids <- ids[c(grep("AFR",names(ids)), grep("AMR",names(ids)), grep("EAS",names(ids)), grep("EUR",names(ids)), grep("SAS",names(ids)))]
 }
 

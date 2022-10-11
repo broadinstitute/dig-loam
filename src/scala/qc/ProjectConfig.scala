@@ -7,7 +7,7 @@ object ProjectConfig extends loamstream.LoamFile {
   val ancestryCodes = Seq("EUR","AFR","AMR","SAS","EAS")
   val gwasTech = Seq("gwas")
   val seqTech = Seq("wgs","wes")
-  val arrayFormats = Seq("plink","vcf")
+  val arrayFormats = Seq("plink","vcf","mt")
   
   val inputTypesPlink = {
     (for {
@@ -41,6 +41,20 @@ object ProjectConfig extends loamstream.LoamFile {
   val inputTypesSeqVcf = for {
     x <- seqTech
     y <- Seq("vcf")
+  } yield {
+    (x, y)
+  }
+
+  val inputTypesSeqMT = for {
+    x <- seqTech
+    y <- Seq("mt")
+  } yield {
+    (x, y)
+  }
+
+  val inputTypesGwasMT = for {
+    x <- gwasTech
+    y <- Seq("mt")
   } yield {
     (x, y)
   }
@@ -158,6 +172,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pipelineVersion: String,
     hailCloud: Boolean,
     hailVersion: String,
+    tmpDir: String,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
@@ -290,7 +305,7 @@ object ProjectConfig extends loamstream.LoamFile {
     rVariantsExcludeSummaryTable: Path,
     rAncestryClusterTable: Path,
     rMakeOutlierTable: Path,
-    rUpsetplotBimFam: Path,
+    rUpsetplotVariantSample: Path,
     rMakeMetricDistPlot: Path) extends Debug
   
   final case class Utils(
@@ -312,6 +327,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val projectId = requiredStr(config = config, field = "projectId")
       val hailCloud = requiredBool(config = config, field = "hailCloud")
       val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
+      val tmpDir = requiredStr(config = config, field = "tmpDir")
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
@@ -751,6 +767,7 @@ object ProjectConfig extends loamstream.LoamFile {
         projectId = projectId,
         hailCloud = hailCloud,
         hailVersion = hailVersion,
+        tmpDir = tmpDir,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
@@ -893,7 +910,7 @@ object ProjectConfig extends loamstream.LoamFile {
         rVariantsExcludeSummaryTable = path(s"${scriptsDir}/variants_exclude_summary_table.r"),
         rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
         rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
-        rUpsetplotBimFam = path(s"${scriptsDir}/upsetplot.bimfam.r"),
+        rUpsetplotVariantSample = path(s"${scriptsDir}/upsetplot.variant.sample.r"),
         rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r")
       )
   

@@ -14,14 +14,14 @@ object QcReport extends loamstream.LoamFile {
   
   def QcReport(): Unit = {
 
-    projectConfig.Arrays.filter(e => e.technology == "gwas").size match {
+    projectConfig.Arrays.filter(e => (e.technology == "gwas") && (e.format != "mt")).size match {
 
       case n if n > 0 =>
 
-        val freqStrings = { for { a <- projectConfig.Arrays if a.technology == "gwas" } yield { Seq(a.id, s"""${arrayStores(a).rawData.freq.get.path}""").mkString(",") } }
-        val indelStrings = { for { a <- projectConfig.Arrays if a.technology == "gwas" } yield { Seq(a.id, s"""${arrayStores(a).rawData.indel.get.path}""").mkString(",") } }
-        val multiStrings = { for { a <- projectConfig.Arrays if a.technology == "gwas" } yield { Seq(a.id, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
-        val dupVarsRemoveStrings = { for { a <- projectConfig.Arrays if a.technology == "gwas" } yield { Seq(a.id, s"""${arrayStores(a).rawData.dupVarsRemove.get.path}""").mkString(",") } }
+        val freqStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).rawData.freq.get.path}""").mkString(",") } }
+        val indelStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).rawData.indel.get.path}""").mkString(",") } }
+        val multiStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
+        val dupVarsRemoveStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).rawData.dupVarsRemove.get.path}""").mkString(",") } }
         
         drmWith(imageName = s"${utils.image.imgR}") {
         
@@ -112,8 +112,22 @@ object QcReport extends loamstream.LoamFile {
     
     }
     
-    val dataStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.technology, a.format, a.filename).mkString(",") } }
-    
+    val dataStrings = { 
+      for {
+        a <- projectConfig.Arrays
+      } yield {
+        Seq(a.technology, a.format, s"""${arrayStores(a).refData.sampleList.local.get.path}""").mkString(",")
+      }
+    }
+
+    val dataIn = { 
+      for {
+        a <- projectConfig.Arrays
+      } yield {
+        arrayStores(a).refData.sampleList.local.get
+      }
+    }
+
     drmWith(imageName = s"${utils.image.imgPython2}") {
     
   	  cmd"""${utils.binary.binPython} ${utils.python.pyGenerateReportHeader}
@@ -128,75 +142,45 @@ object QcReport extends loamstream.LoamFile {
         --email "${projectConfig.email}"
         --out ${qcReportStores.texData.intro} 
         --array-data ${dataStrings.mkString(" ")}"""
+        .in(dataIn)
         .out(qcReportStores.texData.intro)
         .tag(s"${qcReportStores.texData.intro}".split("/").last)
     
     }
-
-    projectConfig.Arrays.filter(e => seqTech.contains(e.technology)).size match {
-
-      case n if n > 0 =>
-
-        for {
-          a <- projectConfig.Arrays.filter(e => seqTech.contains(e.technology))
-        } yield {
-
-          drmWith(imageName = s"${utils.image.imgTools}") {
-        
-            cmd"""zcat ${arrayStores(a).refData.vcf.head.data.local.get} | grep '^#' | tail -1 | cut -f10- | tr '\t' '\n' | awk 'BEGIN { OFS="\t" } {$$1=$$1; print $$1,$$1,0,0,0,-9}' > ${arrayStores(a).refData.fam.head}"""
-              .in(arrayStores(a).refData.vcf.head.data.local.get)
-              .out(arrayStores(a).refData.fam.head)
-              .tag(s"${arrayStores(a).refData.fam.head}".split("/").last)
-
-            cmd"""zcat ${arrayStores(a).refData.vcf.head.data.local.get} | grep -v '^#' | cut -f-5 | awk 'BEGIN { OFS="\t" } {$$1=$$1; print $$1,$$3,0,$$2,$$4,$$5}' > ${arrayStores(a).refData.bim.head}"""
-              .in(arrayStores(a).refData.vcf.head.data.local.get)
-              .out(arrayStores(a).refData.bim.head)
-              .tag(s"${arrayStores(a).refData.bim.head}".split("/").last)
-
-          }
-        
-        }
-        
-      case _ => ()
-        
-    }
-        
     
-    val famStrings = {
+    val sampleStrings = {
       for {
         a <- projectConfig.Arrays
       } yield {
-        Seq(a.id, s"""${arrayStores(a).refData.fam.head.path}""").mkString(",")
+        Seq(a.id, s"""${arrayStores(a).refData.sampleList.local.get.path}""").mkString(",")
       }
     }
     
-    val bimStrings = {
+    val varStrings = {
       for {
         a <- projectConfig.Arrays
-        b <- arrayStores(a).refData.bim
       } yield {
-        Seq(a.id, s"""${b.path}""").mkString(",")
+        Seq(a.id, s"""${arrayStores(a).refData.varList.local.get.path}""").mkString(",")
       }
     }
 
-    val imissRemoveStrings = { for { a <- projectConfig.Arrays if gwasTech.contains(a.technology) } yield { Seq(a.id, s"""${arrayStores(a).rawData.imissRemove.get.path}""").mkString(",") } }
+    val imissRemoveStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).rawData.imissRemove.get.path}""").mkString(",") } }
     val imissRemoveCmdStrings = imissRemoveStrings.size match {
       case n if n > 0 => s"""--imiss ${imissRemoveStrings.mkString(" ")}"""
       case _ => ""
     }
-    val imissRemoveFiles = { for { a <- projectConfig.Arrays if gwasTech.contains(a.technology) } yield { arrayStores(a).rawData.imissRemove.get } }.toSeq
-    
-    val famIn = for {
+    val imissRemoveFiles = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { arrayStores(a).rawData.imissRemove.get } }.toSeq
+
+    val sampleIn = for {
       a <- projectConfig.Arrays
     } yield {
-      arrayStores(a).refData.fam.head
+      arrayStores(a).refData.sampleList.local.get
     }
     
-    val bimIn = for {
+    val variantIn = for {
       a <- projectConfig.Arrays
-      b <- arrayStores(a).refData.bim
     } yield {
-      b
+      arrayStores(a).refData.varList.local.get
     }
     
     if (projectConfig.nArrays > 1) {
@@ -204,20 +188,20 @@ object QcReport extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgR}") {
     
         cmd"""${utils.binary.binRscript} --vanilla --verbose
-          ${utils.r.rUpsetplotBimFam}
-          --input ${famStrings.mkString(" ")}
-          --type fam
+          ${utils.r.rUpsetplotVariantSample}
+          --input ${sampleStrings.mkString(" ")}
+          --type sample
           --out ${qcReportStores.figureData.samplesUpsetPlotPdf.get}"""
-          .in(famIn)
+          .in(sampleIn)
           .out(qcReportStores.figureData.samplesUpsetPlotPdf.get)
           .tag(s"${qcReportStores.figureData.samplesUpsetPlotPdf.get}".split("/").last)
         
         cmd"""${utils.binary.binRscript} --vanilla --verbose
-          ${utils.r.rUpsetplotBimFam}
-          --input ${bimStrings.mkString(" ")}
-          --type bim
+          ${utils.r.rUpsetplotVariantSample}
+          --input ${varStrings.mkString(" ")}
+          --type variant
           --out ${qcReportStores.figureData.variantsUpsetPlotPdf.get}"""
-          .in(bimIn)
+          .in(variantIn)
           .out(qcReportStores.figureData.variantsUpsetPlotPdf.get)
           .tag(s"${qcReportStores.figureData.variantsUpsetPlotPdf.get}".split("/").last)
     
@@ -246,12 +230,12 @@ object QcReport extends loamstream.LoamFile {
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportData}
         --narrays ${projectConfig.nArrays}
         ${imissRemoveCmdStrings}
-        --fam ${famStrings(0)}
+        --fam ${sampleStrings(0)}
         --geno-variants-summary-table ${qcReportStores.tablesData.rawVariantsSummary.path.toAbsolutePath()} 
         --seq-variants-summary-table ${qcReportStores.tablesData.seqVariantsSummary.path.toAbsolutePath()} 
-        --bim ${bimStrings.mkString(" ")}
+        --bim ${varStrings.mkString(" ")}
         --out ${qcReportStores.texData.data}"""
-        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).flatten.toSeq ++ bimIn :+ qcReportStores.tablesData.rawVariantsSummary :+ qcReportStores.tablesData.seqVariantsSummary)
+        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).flatten.toSeq ++ sampleIn ++ variantIn :+ qcReportStores.tablesData.rawVariantsSummary :+ qcReportStores.tablesData.seqVariantsSummary)
         .out(qcReportStores.texData.data)
         .tag(s"${qcReportStores.texData.data}".split("/").last)
     
@@ -379,13 +363,13 @@ object QcReport extends loamstream.LoamFile {
     drmWith(imageName = s"${utils.image.imgR}") {
       
       cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rUpsetplotBimFam}
-        --input ${famStrings.mkString(" ")}
+        ${utils.r.rUpsetplotVariantSample}
+        --input ${sampleStrings.mkString(" ")}
         --exclusions ${finalSampleExclusionsStrings.mkString(" ")}
-        --type fam
+        --type sample
         --ancestry ${projectStores.ancestryInferred.local.get}
         --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
-        .in(famIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryInferred.local.get)
+        .in(sampleIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryInferred.local.get)
         .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
         .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
     
@@ -434,12 +418,12 @@ object QcReport extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgR}") {
       
         cmd"""${utils.binary.binRscript} --vanilla --verbose
-          ${utils.r.rUpsetplotBimFam}
-          --input ${bimStrings.mkString(" ")}
+          ${utils.r.rUpsetplotVariantSample}
+          --input ${varStrings.mkString(" ")}
           --exclusions ${finalVariantExclusionsStrings.mkString(" ")}
-          --type bim
+          --type variant
           --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
-          .in(bimIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
+          .in(variantIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
           .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
           .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
       
@@ -464,12 +448,12 @@ object QcReport extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgPython2}") {
     
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
-          --bim ${bimStrings.mkString(" ")}
+          --bim ${varStrings.mkString(" ")}
           --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
           --variants-exclude-table ${qcReportStores.tablesData.variantsExcludeSummary.path.toAbsolutePath()}
           --postqc-variant-filters ${postQcVariantFiltersStrings.mkString(" ")}
           --out ${qcReportStores.texData.variantQc}"""
-          .in(bimIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.tablesData.variantsExcludeSummary)
+          .in(variantIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.tablesData.variantsExcludeSummary)
           .out(qcReportStores.texData.variantQc)
           .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
     

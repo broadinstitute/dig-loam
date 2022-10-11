@@ -11,6 +11,7 @@ object ProjectStores extends loamstream.LoamFile {
   )
   
   final case class ProjectStores(
+    tmpDir: Store,
     knownStores: Map[ConfigKnown, Known],
     hailUtils: MultiStore,
     geneIdMap: MultiStore,
@@ -44,6 +45,7 @@ object ProjectStores extends loamstream.LoamFile {
     }.toMap
   
     ProjectStores(
+      tmpDir = store(path(checkPath(projectConfig.tmpDir))),
       knownStores = knownStores,
       hailUtils = MultiStore(
         local = projectConfig.hailCloud match { case true => Some(store(path(checkPath(utils.python.pyHailUtils.toString()))).asInput); case false => None },

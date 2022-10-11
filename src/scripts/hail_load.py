@@ -16,7 +16,7 @@ def main(args=None):
 		import hail_utils
 
 	if not args.cloud:
-		hl.init(log = args.log, idempotent=True)
+		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
 	else:
 		hl.init(idempotent=True)
 
@@ -34,9 +34,15 @@ def main(args=None):
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
 		mt = mt.annotate_rows(qual = hl.missing(hl.tfloat64), filters = hl.missing(hl.tset(hl.tstr)), info = hl.struct(**{}))
+	elif args.mt_in:
+		print("read matrix table")
+		mt = hl.read_matrix_table(args.mt_in)
 	else:
-		print("option --vcf-in or --plink-in must be specified")
+		print("option --vcf-in, --plink-in, or --mt-in must be specified")
 		return -1
+
+	print("baseline matrix table description")
+	print(mt.describe())
 
 	print("replace any spaces in sample ids with an underscore")
 	mt = mt.annotate_cols(s_new = mt.s.replace("\s+","_"))
@@ -132,7 +138,7 @@ def main(args=None):
 
 	if 'GQ' not in gt_codes:
 		print("add GQ")
-		mt = mt.annotate_entries(GQ = hl.missing(hl.tfloat64))
+		mt = mt.annotate_entries(GQ = hl.missing(hl.tint32))
 		gt_codes = gt_codes + ['GQ']
 
 	if args.gq_threshold is not None:
@@ -158,17 +164,26 @@ def main(args=None):
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
 	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')
 
+	print("add uid (chr:pos:ref:alt) id to matrix table")
+	mt = mt.annotate_rows(uid = mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1])
+
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
 
+	print("write variant list file")
+	mt.rows().key_by().select('uid').export(args.variant_list_out, header=False, types_file=None)
+
+	print("write variant list file")
+	mt.cols().select().export(args.sample_list_out, header=False, types_file=None)
+
 	print("write matrix table to disk")
 	mt.write(args.mt_out, overwrite=True)
-
+	
 	print("write site vcf file")
 	mt_sites= mt.select_cols()
 	mt_sites = mt_sites.filter_cols(False)
-	mt_sites = mt_sites.select_rows('rsid','qual','filters','info')
-	hl.export_vcf(mt_sites,args.sites_vcf_out)
+	mt_sites_vcf = mt_sites.select_rows('rsid','qual','filters','info')
+	hl.export_vcf(mt_sites_vcf,args.sites_vcf_out)
 
 	if args.cloud:
 		hl.copy_log(args.log)
@@ -181,11 +196,13 @@ if __name__ == "__main__":
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
 	parser.add_argument('--vcf-in', help='a compressed vcf file')
+	parser.add_argument('--mt-in', help='a hail matrix table')
 	parser.add_argument('--dbsnp-ht', help='a dbsnp build vcf (ex: https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz)')
 	parser.add_argument('--plink-in', help='a plink file set base name')
 	parser.add_argument('--sex-col', help='a column name for sex in the sample file')
 	parser.add_argument('--male-code', help='a code for male')
 	parser.add_argument('--female-code', help='a code for female')
+	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--sample-in', help='a tab delimited sample file', required=True)
@@ -194,6 +211,8 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--sexcheck-out', help='an output filename for sexcheck results', required=True)
 	requiredArgs.add_argument('--sexcheck-problems-out', help='an output filename for sexcheck results that were problems', required=True)
 	requiredArgs.add_argument('--sites-vcf-out', help='an output filename for a sites only VCF file (must end in .vcf)', required=True)
+	requiredArgs.add_argument('--variant-list-out', help='an output filename for a variant ids', required=True)
+	requiredArgs.add_argument('--sample-list-out', help='an output filename for sample ids', required=True)
 	requiredArgs.add_argument('--mt-checkpoint', help='a hail mt directory name for temporary checkpoint', required=True)
 	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)
 	args = parser.parse_args()

@@ -153,11 +153,12 @@ object PrepareEpacts extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
+            --tmp-dir ${projectStores.tmpDir}
             ${maskedGroupFilesString}
             --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
             --groupfile-out ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.base.local.get}
             --log ${schemaStores((configSchema, configCohorts)).epacts.get.hailLog.base.local.get}"""
-            .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get)
+            .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, projectStores.tmpDir)
             .out(generateGroupfileOut)
             .tag(s"${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.base.base.local.get}".split("/").last)
     
@@ -314,11 +315,12 @@ object PrepareEpacts extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
+              --tmp-dir ${projectStores.tmpDir}
               ${maskedGroupFilesString}
               --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get}
               --groupfile-out ${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).base.local.get}
               --log ${schemaStores((configSchema, configCohorts)).epacts.get.hailLog.phenos(pheno).local.get}"""
-              .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get)
+              .in(schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get, projectStores.tmpDir)
               .out(generateGroupfileOut)
               .tag(s"${schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos(pheno).base.local.get}".split("/").last)
     

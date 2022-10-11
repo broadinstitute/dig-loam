@@ -4,7 +4,7 @@ import argparse
 def main(args=None):
 
 	if not args.cloud:
-		hl.init(log = args.log, idempotent=True)
+		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
 	else:
 		hl.init(idempotent=True)
 
@@ -69,6 +69,7 @@ if __name__ == "__main__":
 	parser.add_argument('--samples-extract', help='a comma separated list of files containing samples to extract')
 	parser.add_argument('--variants-remove', help='a comma separated list of files containing variants to remove')
 	parser.add_argument('--variants-extract', help='a comma separated list of files containing variants to extract')
+	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)

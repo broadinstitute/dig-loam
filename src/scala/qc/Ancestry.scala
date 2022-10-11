@@ -70,6 +70,7 @@ object Ancestry extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
   
           cmd"""${utils.binary.binPython} ${utils.python.pyHailAncestryPcaMerge1kg}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --kg-vcf-in ${projectStores.kgPurcellVcf.local.get}
@@ -77,7 +78,7 @@ object Ancestry extends loamstream.LoamFile {
             --plink-out ${arrayStores(array).ref1kgData.plink.base.local.get}
             --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples.local.get}
             --log ${arrayStores(array).ref1kgData.hailLog.local.get}"""
-            .in(arrayStores(array).refData.mt.local.get, projectStores.kgPurcellVcf.local.get, projectStores.kgSample.local.get)
+            .in(arrayStores(array).refData.mt.local.get, projectStores.kgPurcellVcf.local.get, projectStores.kgSample.local.get, projectStores.tmpDir)
             .out(arrayStores(array).ref1kgData.plink.data.local.get :+ arrayStores(array).ref1kgData.kgSamples.local.get :+ arrayStores(array).ref1kgData.hailLog.local.get)
             .tag(s"${arrayStores(array).ref1kgData.plink.base.local.get}".split("/").last)
   

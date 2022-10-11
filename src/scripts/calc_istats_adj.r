@@ -75,11 +75,13 @@ if(nrow(incomplete_obs) > 0) {
 out <- out[! out$IID %in% incomplete_obs$IID,]
 for(x in metrics) {
 	print(paste("var(",x,") = ",var(out[,x])),sep="")
-	if(var(out[,x]) != 0) {
-		g <- glm(eval(parse(text=paste(x,"~",covars_analysis,sep=""))),data=out,family="gaussian")
-		print(summary(g))
-		out$res<-g$residuals
-		names(out)[names(out) == "res"]<-paste(x,"_res",sep="")
+	if(nrow(out[! is.na(out[,x]),]) > 0) {
+		if(var(out[,x]) != 0) {
+			g <- glm(eval(parse(text=paste(x,"~",covars_analysis,sep=""))),data=out,family="gaussian")
+			print(summary(g))
+			out$res<-g$residuals
+			names(out)[names(out) == "res"]<-paste(x,"_res",sep="")
+		}
 	}
 }
 write.table(out[,c("IID",names(out)[grep("_res",names(out))])],args$out,row.names=F,col.names=T,sep="\t",quote=F,append=F)

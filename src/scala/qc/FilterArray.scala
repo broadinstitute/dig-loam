@@ -127,6 +127,7 @@ object FilterArray extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
   
           cmd"""${utils.binary.binPython} ${utils.python.pyHailFilter}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --sample-filters ${arrayStores(array).filterPostQc.sFilters.local.get}
             --variant-filters ${arrayStores(array).filterPostQc.vFilters.local.get}
@@ -137,7 +138,7 @@ object FilterArray extends loamstream.LoamFile {
             --samples-exclude-out ${arrayStores(array).filterPostQc.samplesExclude.local.get}
             --variants-stats-out ${arrayStores(array).filterPostQc.variantsStats.local.get}
             --variants-exclude-out ${arrayStores(array).filterPostQc.variantsExclude.local.get}"""
-            .in(arrayStores(array).refData.mt.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).filterPostQc.sFilters.local.get, arrayStores(array).filterPostQc.vFilters.local.get, arrayStores(array).filterQc.samplesExclude.local.get)
+            .in(arrayStores(array).refData.mt.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).filterPostQc.sFilters.local.get, arrayStores(array).filterPostQc.vFilters.local.get, arrayStores(array).filterQc.samplesExclude.local.get, projectStores.tmpDir)
             .out(arrayStores(array).filterPostQc.samplesStats.local.get, arrayStores(array).filterPostQc.samplesExclude.local.get, arrayStores(array).filterPostQc.variantsStats.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get, arrayStores(array).filterPostQc.hailLog.local.get)
             .tag(s"${arrayStores(array).filterPostQc.hailLog.local.get}.pyHailFilter".split("/").last)
   

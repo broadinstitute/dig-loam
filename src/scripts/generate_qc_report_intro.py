@@ -51,20 +51,25 @@ def main(args=None):
 			if aTech == "wgs": nWgs = nWgs+1
 			aType = a.split(",")[1]
 			aFile = a.split(",")[2]
-			if aType == "vcf":
-				print "loading vcf file " + aFile
-				try:
-					handle=pysam.Tabixfile(filename=aFile)
-				except:
-					sys.exit("failed to load vcf file " + aFile)
-				else:
-					samples = samples + [a for a in handle.header][-1].split('\t')[9:]
-			elif aType == "plink":
-				handle = pd.read_table(aFile + ".fam", header=None, sep = None)
-				handle.columns = ['fid','iid','fat','mot','sex','pheno']
-				samples = samples + handle['iid'].tolist()
-			else:
-				sys.exit("failed to load file of unsupported type " + aType)
+			#if aType == "vcf":
+			#	print "loading vcf file " + aFile
+			#	try:
+			#		handle=pysam.Tabixfile(filename=aFile)
+			#	except:
+			#		sys.exit("failed to load vcf file " + aFile)
+			#	else:
+			#		samples = samples + [a for a in handle.header][-1].split('\t')[9:]
+			#elif aType == "plink":
+			#	handle = pd.read_table(aFile + ".fam", header=None, sep = None)
+			#	handle.columns = ['fid','iid','fat','mot','sex','pheno']
+			#	samples = samples + handle['iid'].tolist()
+			#elif aType == "mt":
+			#	with open(aFile,'r') as af:
+			#		samples = samples + af.read().splitlines()
+			#else:
+			#	sys.exit("failed to load file of unsupported type " + aType)
+			with open(aFile,'r') as af:
+				samples = samples + af.read().splitlines()
 		samples = set(samples)
 		nSamples = len(samples)
 
