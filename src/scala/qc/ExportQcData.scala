@@ -105,6 +105,7 @@ object ExportQcData extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailExportQcData}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --regions-exclude ${projectStores.regionsExclude.local.get}
@@ -114,7 +115,7 @@ object ExportQcData extends loamstream.LoamFile {
             --variants-out ${arrayStores(array).filteredData.variantMetrics.local.get}
             --plink-out ${arrayStores(array).filteredData.plink.base.local.get}
             --log ${arrayStores(array).filteredData.hailLog.local.get}"""
-            .in(arrayStores(array).refData.mt.local.get, projectStores.regionsExclude.local.get, arrayStores(array).filteredData.variantFilters.local.get)
+            .in(arrayStores(array).refData.mt.local.get, projectStores.regionsExclude.local.get, arrayStores(array).filteredData.variantFilters.local.get, projectStores.tmpDir)
             .out(arrayStores(array).filteredData.plink.data.local.get :+ arrayStores(array).filteredData.variantMetrics.local.get :+ arrayStores(array).filteredData.hailLog.local.get)
             .tag(s"${arrayStores(array).filteredData.plink.base.local.get}.pyHailExportQcData".split("/").last)
         

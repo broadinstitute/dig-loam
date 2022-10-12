@@ -55,6 +55,7 @@ object AssocSingleHail extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refMt.local.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
@@ -65,7 +66,7 @@ object AssocSingleHail extends loamstream.LoamFile {
             --covars-analyzed "${configModel.finalCovars}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.local.get}"""
-              .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+              .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, projectStores.tmpDir)
               .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.local.get)
               .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}".split("/").last)
         

@@ -16,7 +16,7 @@ def main(args=None):
 		import hail_utils
 
 	if not args.cloud:
-		hl.init(log = args.log, idempotent=True)
+		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
 	else:
 		hl.init(idempotent=True)
 
@@ -180,6 +180,7 @@ if __name__ == "__main__":
 	parser.add_argument('--samples-keep-out', help='a base filename for samples to keep')
 	parser.add_argument('--variants-keep-out', help='a base filename for variants to keep')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
+	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail mt dataset name', required=True)

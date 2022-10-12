@@ -52,12 +52,13 @@ object Annotate extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
   
           cmd"""${utils.binary.binPython} ${utils.python.pyHailLoadAnnotations}
+            --tmp-dir ${projectStores.tmpDir}
             --annotations ${arrayStores(array).refData.annotations.local.get}
             --out ${arrayStores(array).refData.annotationsHt.local.get}
             ${minPartitions}
             --reference-genome ${projectConfig.referenceGenome}
             --log ${arrayStores(array).refData.annotationsHailLog.local.get}"""
-              .in(arrayStores(array).refData.annotations.local.get)
+              .in(arrayStores(array).refData.annotations.local.get, projectStores.tmpDir)
               .out(arrayStores(array).refData.annotationsHt.local.get, arrayStores(array).refData.annotationsHailLog.local.get)
               .tag(s"${arrayStores(array).refData.annotationsHt.local.get}".split("/").last)
   

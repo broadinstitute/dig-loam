@@ -24,6 +24,10 @@ object Stores extends loamstream.LoamFile {
     data: MultiStore,
     tbi: MultiStore)
 
+  final case class MultiPathMT(
+    base: MultiPath,
+    data: MultiStore)
+
   final case class MultiPathBgen(
     base: MultiPath,
     data: MultiStore,

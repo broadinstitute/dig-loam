@@ -335,6 +335,7 @@ object PrepareModel extends loamstream.LoamFile {
                 drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
                 
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
+                    --tmp-dir ${projectStores.tmpDir}
                     --mt-in ${arrayStores(array).refMt.local.get}
                     --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                     --iid-col ${array.phenoFileId}
@@ -342,7 +343,7 @@ object PrepareModel extends loamstream.LoamFile {
 	        		${binaryString}
                     --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}
                     --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get}"""
-                      .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get)
+                      .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, projectStores.tmpDir)
                       .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get)
                       .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}".split("/").last)
                 

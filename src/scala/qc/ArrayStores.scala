@@ -10,6 +10,7 @@ object ArrayStores extends loamstream.LoamFile {
   final case class RawData(
     plink: Option[Plink],
     vcf: Option[MultiPathVcf],
+    mt: Option[MultiPathMT],
     rawBase: Option[Path],
     unplaced: Option[Store],
     unique: Option[Store],
@@ -68,28 +69,14 @@ object ArrayStores extends loamstream.LoamFile {
     harmonizedVcf: MultiPathVcf,
     harmonizedBim: Store,
     harmonizedFam: Store)
-  
-  //final case class HarmonizedData(
-  //  plink: Plink,
-  //  mergeList: Store,
-  //  nonKgRemove: Store,
-  //  nonKgIgnore: Store,
-  //  nonKgMono: Store,
-  //  nonKgNomatch: Store,
-  //  nonKgFlip: Store,
-  //  nonKgForceA1: Store,
-  //  mergedKgVarIdUpdate: Store,
-  //  mergedKgVarSnpLog: Store,
-  //  forceA2: Store)
-  
+
   final case class RefData(
-    //plink: Option[MultiPathPlink],
-    //vcf: Option[MultiPathVcf],
-    vcf: Seq[MultiPathVcf],
-    bim: Seq[Store],
-    fam: Seq[Store],
-    vcfGlob: MultiPath,
+    vcf: Option[Seq[MultiPathVcf]],
+    varList: MultiStore,
+    sampleList: MultiStore,
+    vcfGlob: Option[MultiPath],
     mtCheckpoint: MultiStore,
+    rawMt: Option[MultiPathMT],
     mt: MultiStore,
     hailLog: MultiStore,
     variantMetrics: MultiStore,
@@ -224,7 +211,6 @@ object ArrayStores extends loamstream.LoamFile {
     preparedData: Option[PreparedData],
     annotatedData: Option[AnnotatedData],
     annotatedChrData: Option[Map[String, AnnotatedChrData]],
-    //harmonizedData: Option[HarmonizedData],
     refData: RefData,
     imputeData: ImputeData,
     filteredData: FilteredData,
@@ -274,7 +260,7 @@ object ArrayStores extends loamstream.LoamFile {
     val baseName = arrayCfg.filename.split("/").last
   
     val plink = (arrayCfg.technology, arrayCfg.format) match {
-      case (m,n) if inputTypesPlink.contains((m,n)) =>
+      case (m,n) if (inputTypesPlink ++ inputTypesSeqPlink).contains((m,n)) =>
         Some(Plink(
           base = path(arrayCfg.filename),
           data = Seq(store(path(checkPath(arrayCfg.filename + s".bed"))).asInput,store(path(checkPath(arrayCfg.filename + s".bim"))).asInput,store(path(checkPath(arrayCfg.filename + s".fam"))).asInput),
@@ -284,30 +270,41 @@ object ArrayStores extends loamstream.LoamFile {
           base = dirTree.base.local.get / rawBaseString,
           data = bedBimFam(path(s"${dirTree.base.local.get}" + s"/${rawBaseString}"))
         ))
-      case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
+      case (q,r) if (inputTypesSeqVcf ++ inputTypesSeqMT ++ inputTypesGwasMT).contains((q,r)) => None
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
   
     val vcf = (arrayCfg.technology, arrayCfg.format) match {
-      case (m, n) if inputTypesGwasVcf.contains((m,n)) =>
+      case (m,n) if inputTypesGwasVcf.contains((m,n)) =>
         Some(MultiPathVcf(
           base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = None),
           data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = None),
           tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = None)
         ))
-      case (o, p) if inputTypesSeqVcf.contains((o,p)) => None
+      case (o,p) if inputTypesSeqVcf.contains((o,p)) =>
         Some(MultiPathVcf(
           base = MultiPath(local = Some(path(arrayCfg.filename.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$",""))), google = projectConfig.hailCloud match { case true => Some(dirTree.dataGlobal.google.get / baseName.replaceAll(".vcf.gz$|.vcf.bgz$|.gz$|.bgz$","")); case false => None }),
           data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / baseName)); case false => None }),
           tbi = MultiStore(local = Some(store(checkPath(arrayCfg.filename + s".tbi")).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${baseName}.tbi")); case false => None })
         ))
-      case (q,r) if inputTypesPlink.contains((q,r)) => None
+      case (q,r) if (inputTypesPlink ++ inputTypesSeqMT ++ inputTypesSeqPlink ++ inputTypesGwasMT).contains((q,r)) => None
+      case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
+    }
+
+    val mt = (arrayCfg.technology, arrayCfg.format) match {
+      case (m,n) if (inputTypesSeqMT ++ inputTypesGwasMT).contains((m,n)) =>
+        Some(MultiPathMT(
+          base = MultiPath(local = Some(path(arrayCfg.filename)), google = projectConfig.hailCloud match { case true => Some(dirTree.dataGlobal.google.get / baseName); case false => None }),
+          data = MultiStore(local = Some(store(checkPath(arrayCfg.filename)).asInput), google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / baseName)); case false => None })
+        ))
+      case (o,p) if (inputTypesPlink ++ inputTypesGwasVcf ++ inputTypesSeqPlink ++ inputTypesSeqVcf).contains((o,p)) => None
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
   
     val rawData = RawData(
       plink = plink,
       vcf = vcf,
+      mt = mt,
       rawBase = gwasTech.contains(arrayCfg.technology) match { case true => Some(dirTree.dataArrayMap(arrayCfg).prepare.local.get / rawBaseString); case false => None },
       unplaced = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unplaced")); case false => None },
       unique = gwasTech.contains(arrayCfg.technology) match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).prepare.local.get / s"${rawBaseString}.unique")); case false => None },
@@ -457,112 +454,52 @@ object ArrayStores extends loamstream.LoamFile {
       case false => None
   
     }
-  
-    //val harmonizedData = gwasTech.contains(arrayCfg.technology) match {
-    //
-    //  case true =>
-    //
-    //    Some(HarmonizedData(
-    //      plink = Plink(base = dirTree.dataArrayMap(arrayCfg).harmonize.local.get / harmonizedBaseString, data = bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / harmonizedBaseString)),
-    //      mergeList = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.merge.txt"),
-    //      nonKgRemove = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.nonkg.remove"),
-    //      nonKgIgnore = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.nonkg.ignore"),
-    //      nonKgMono = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.nonkg.mono"),
-    //      nonKgNomatch = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.nonkg.nomatch"),
-    //      nonKgFlip = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.nonkg.flip"),
-    //      nonKgForceA1 = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.nonkg.force_a1"),
-    //      mergedKgVarIdUpdate = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}_idUpdates.txt"),
-    //      mergedKgVarSnpLog = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}_snpLog.log"),
-    //      forceA2 = store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${harmonizedBaseString}.force_a2.txt")))
-    //
-    //  case false => None
-    //
-    //}
 
     val refVcf = (arrayCfg.technology, arrayCfg.format) match {
-      case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(rawData.vcf.get)
+      case (m,n) if inputTypesSeqVcf.contains((m,n)) => Some(Seq(rawData.vcf.get))
       case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
-        annotatedChrData.get.values.map(e => e.harmonizedVcf).toSeq
+        Some(annotatedChrData.get.values.map(e => e.harmonizedVcf).toSeq)
+      case (q,r) if (inputTypesSeqMT ++ inputTypesGwasMT).contains((q,r)) => None
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
 
-    val bim = (arrayCfg.technology, arrayCfg.format) match {
-      case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${projectConfig.projectId}.${arrayCfg.id}.harmonized.bim"))
-      case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
-        annotatedChrData.get.values.map(e => e.harmonizedBim).toSeq
-      case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
-    }
-
-    val fam = (arrayCfg.technology, arrayCfg.format) match {
-      case (m,n) if inputTypesSeqVcf.contains((m,n)) => Seq(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${projectConfig.projectId}.${arrayCfg.id}.harmonized.fam"))
-      case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
-        annotatedChrData.get.values.map(e => e.harmonizedFam).toSeq
+    val refRawMt = (arrayCfg.technology, arrayCfg.format) match {
+      case (m,n) if (inputTypesSeqMT ++ inputTypesGwasMT).contains((m,n)) => rawData.mt
+      case (o,p) if (inputTypesSeqVcf ++ inputTypesGwasVcf ++ inputTypesPlink ++ inputTypesSeqPlink).contains((o,p)) => None
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
 
     val vcfGlob = (arrayCfg.technology, arrayCfg.format) match {
       case (m,n) if inputTypesSeqVcf.contains((m,n)) =>
-        MultiPath(
+        Some(MultiPath(
           local = Some(path(s"""${rawData.vcf.get.data.local.get.toString.split("@")(1)}""")),
           google = projectConfig.hailCloud match { case true => Some(uri(s"""${rawData.vcf.get.data.google.get.toString.split("@")(1)}""")); case false => None }
-        )
+        ))
       case (o,p) if (inputTypesGwasVcf ++ inputTypesPlink).contains((o,p)) =>
-        MultiPath(
+        Some(MultiPath(
           local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${projectConfig.projectId}.${arrayCfg.id}.chr*.harmonized.vcf.bgz"),
           google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${projectConfig.projectId}.${arrayCfg.id}.chr*.harmonized.vcf.bgz"); case false => None }
-        )
+        ))
+      case (q,r) if (inputTypesSeqMT ++ inputTypesGwasMT).contains((q,r)) => None
       case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
     }
   
-    //val refPlink = (arrayCfg.technology, arrayCfg.format) match {
-    //  case (m,n) if gwasTech.contains(m) =>
-    //    Some(MultiPathPlink(
-    //      base = MultiPath(
-    //        local = Some(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString),
-    //        google = projectConfig.hailCloud match {
-    //          case true => Some(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString)
-    //          case false => None
-    //        }
-    //      ),
-    //      data = MultiSeqStore(
-    //        local = Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / refBaseString)),
-    //        google = projectConfig.hailCloud match {
-    //          case true => Some(bedBimFam(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / refBaseString))
-    //          case false => None
-    //        }
-    //      )
-    //    ))
-    //  case (o,p) if inputTypesSeqPlink.contains((o,p)) => 
-    //    Some(MultiPathPlink(
-    //      base = MultiPath(
-    //        local = Some(rawData.plink.get.base),
-    //        google = projectConfig.hailCloud match {
-    //          case true => Some(dirTree.dataGlobal.google.get / baseName)
-    //          case false => None
-    //        }
-    //      ),
-    //      data = MultiSeqStore(
-    //        local = Some(rawData.plink.get.data),
-    //        google = projectConfig.hailCloud match {
-    //          case true => Some(bedBimFam(dirTree.dataGlobal.google.get / baseName))
-    //          case false => None
-    //        }
-    //      )
-    //    ))
-    //  case (q,r) if inputTypesSeqVcf.contains((q,r)) => None
-    //  case _ => throw new CfgException("invalid technology and format combination: " + arrayCfg.technology + ", " + arrayCfg.format)
-    //}
-  
     val refData = RefData(
-      //plink = refPlink,
       vcf = refVcf,
-      bim = bim,
-      fam = fam,
+      varList = MultiStore(
+        local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.variants.txt")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.variants.txt")); case false => None }
+      ),
+      sampleList = MultiStore(
+        local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.samples.txt")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.samples.txt")); case false => None }
+      ),
       vcfGlob = vcfGlob,
       mtCheckpoint = MultiStore(
         local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt.checkpoint")); case false => None }
       ),
+      rawMt = refRawMt,
       mt = MultiStore(
         local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt")); case true => None },
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt")); case false => None }
@@ -815,7 +752,6 @@ object ArrayStores extends loamstream.LoamFile {
       preparedData = preparedData,
       annotatedData = annotatedData,
       annotatedChrData = annotatedChrData,
-      //harmonizedData = harmonizedData,
       refData = refData,
       imputeData = imputeData,
       filteredData = filteredData,

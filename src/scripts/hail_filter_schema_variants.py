@@ -24,16 +24,17 @@ def main(args=None):
 		import hail_utils
 
 	if not args.cloud:
-		hl.init(log = args.log, idempotent=True)
+		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
 	else:
 		hl.init(idempotent=True)
 
 	print("making temporary directory for storing checkpoints")
-	if args.tmpdir:
-		tmpdir = tempfile.mkdtemp(dir = args.tmpdir)
+	if args.tmp_dir:
+		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
 		tmpdir_path = tmpdir + "/"
 	else:
-		tmpdir_path = "./"
+		tmpdir = tempfile.mkdtemp(dir = "./")
+		tmpdir_path = tmpdir + "/"
 
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
@@ -274,7 +275,7 @@ if __name__ == "__main__":
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
 	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--tmpdir', help='temporary directory path to be created and destroyed')
+	parser.add_argument('--tmp-dir', help='temporary directory path to be created and destroyed')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--full-stats-in', help='a hail table with variant stats on full sample set', required=True)

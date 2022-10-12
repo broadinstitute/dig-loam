@@ -50,8 +50,8 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			fam=pd.read_table(args.fam.split(",")[1], low_memory=False, header=None)
-			text=r"This data consisted of a single batch of data ({0:s}), from which {1:,d} remaining samples were included in our full quality control analysis.".format(args.fam.split(",")[0], fam.shape[0])
+			sample_list=pd.read_table(args.sample_list.split(",")[1], low_memory=False, header=None)
+			text=r"This data consisted of a single batch of data ({0:s}), from which {1:,d} remaining samples were included in our full quality control analysis.".format(args.sample_list.split(",")[0], sample_list.shape[0])
 			f.write("\n"); f.write(text.replace("_","\_").encode('utf-8')); f.write("\n")
 
 		f.write("\n"); f.write(r"\subsection{Variants}"); f.write("\n")
@@ -245,11 +245,11 @@ def main(args=None):
 			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 		else:
-			bim_count = 0
-			for bim in args.bim:
-				bim=pd.read_table(bim.split(",")[1], low_memory=False, header=None)
-				bim_count = bim_count + bim.shape[0]
-			text = r"The resulting data consisted of {0:,d} variants for inclusion in downstream analyses.".format(bim_count)
+			var_count = 0
+			for vlist in args.variant_list:
+				variant_list=pd.read_table(vlist.split(",")[1], low_memory=False, header=None)
+				var_count = var_count + variant_list.shape[0]
+			text = r"The resulting data consisted of {0:,d} variants for inclusion in downstream analyses.".format(var_count)
 			f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 	print "finished\n"
@@ -261,10 +261,10 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--narrays', type=int, help='an integer', required=True)
 	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples')
-	requiredArgs.add_argument('--fam', help='a fam file')
+	requiredArgs.add_argument('--sample-list', help='a sample list file')
 	requiredArgs.add_argument('--geno-variants-summary-table', help='a genotyped variant summary table', required=True)
 	requiredArgs.add_argument('--seq-variants-summary-table', help='a sequenced variant summary table', required=True)
 	requiredArgs.add_argument('--variants-upset-diagram', help='an upset diagram for harmonized variants')
-	requiredArgs.add_argument('--bim', nargs='+', help='a list of array labels and bim files, each separated by comma')
+	requiredArgs.add_argument('--variant-list', nargs='+', help='a list of array labels and variant list files, each separated by comma')
 	args = parser.parse_args()
 	main(args)

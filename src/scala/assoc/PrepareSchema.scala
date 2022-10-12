@@ -137,13 +137,14 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refMt.local.get}
             --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
             --variants-stats-out ${schemaStores((configSchema, configCohorts)).variantsStats.base.local.get}
             --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             --log ${schemaStores((configSchema, configCohorts)).variantsStatsHailLog.base.local.get}"""
-              .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+              .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get, projectStores.tmpDir)
               .out(schemaStores((configSchema, configCohorts)).variantsStats.base.local.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).variantsStatsHailLog.base.local.get)
               .tag(s"${schemaStores((configSchema, configCohorts)).variantsStats.base.local.get}".split("/").last)
         
@@ -158,6 +159,7 @@ object PrepareSchema extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
   
             cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
+              --tmp-dir ${projectStores.tmpDir}
               --reference-genome ${projectConfig.referenceGenome}
               --mt-in ${arrayStores(array).refMt.local.get}
               --pheno-in ${arrayStores(array).phenoFile.local.get}
@@ -168,7 +170,7 @@ object PrepareSchema extends loamstream.LoamFile {
               --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}
               --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}
               --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.local.get}"""
-                .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get, projectStores.tmpDir)
                 .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).base.local.get)
                 .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).base.local.get}".split("/").last)
           
@@ -258,6 +260,7 @@ object PrepareSchema extends loamstream.LoamFile {
               drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
+                    --tmp-dir ${projectStores.tmpDir}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).refMt.local.get}
                     --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
@@ -265,7 +268,7 @@ object PrepareSchema extends loamstream.LoamFile {
                     --variants-stats-out ${schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get}
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts(cohort).local.get}
                     --log ${schemaStores((configSchema, configCohorts)).variantsStatsHailLog.cohorts(cohort).local.get}"""
-                      .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                      .in(arrayStores(array).refMt.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get, projectStores.tmpDir)
                       .out(schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).variantsStatsHailLog.cohorts(cohort).local.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).variantsStats.cohorts(cohort).local.get}".split("/").last)
                 
@@ -280,6 +283,7 @@ object PrepareSchema extends loamstream.LoamFile {
                 drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
+                    --tmp-dir ${projectStores.tmpDir}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).refMt.local.get}
                     --pheno-in ${arrayStores(array).phenoFile.local.get}
@@ -290,7 +294,7 @@ object PrepareSchema extends loamstream.LoamFile {
                     --variants-stats-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}
                     --variants-stats-ht-out ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get}
                     --log ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).local.get}"""
-                      .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+                      .in(arrayStores(array).refMt.local.get, arrayStores(array).phenoFile.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get, projectStores.tmpDir)
                       .out(schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).cohorts(cohort).local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHailLog(pheno).cohorts(cohort).local.get)
                       .tag(s"${schemaStores((configSchema, configCohorts)).phenoVariantsStats(pheno).cohorts(cohort).local.get}".split("/").last)
                 
@@ -562,7 +566,7 @@ object PrepareSchema extends loamstream.LoamFile {
           }
         }
         
-        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).refAnnotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.base.local.get, schemaStores((configSchema, configCohorts)).masks.base.local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.base.local.get)
+        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).refAnnotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.base.local.get, schemaStores((configSchema, configCohorts)).masks.base.local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.base.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.base.local.get, projectStores.tmpDir)
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -579,7 +583,7 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaVariants}
-            --tmpdir ${dirTree.analysisSchemaMap(configSchema).local.get}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             ${cohortStatsInString}
@@ -761,7 +765,7 @@ object PrepareSchema extends loamstream.LoamFile {
             }
           }
           
-          var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, arrayStores(array).refAnnotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).masks.phenos(pheno).local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).local.get)
+          var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get, schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get, arrayStores(array).refAnnotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).masks.phenos(pheno).local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.phenos(pheno).local.get, projectStores.tmpDir)
           
           schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
             case n if n > 0 =>
@@ -778,7 +782,7 @@ object PrepareSchema extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaPhenoVariants}
-              --tmpdir ${dirTree.analysisSchemaMap(configSchema).local.get}
+              --tmp-dir ${projectStores.tmpDir}
               --reference-genome ${projectConfig.referenceGenome}
               --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
               --pheno-stats-in ${schemaStores((configSchema, configCohorts)).phenoVariantsStatsHt(pheno).base.local.get}

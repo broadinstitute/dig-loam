@@ -11,6 +11,7 @@ object ProjectStores extends loamstream.LoamFile {
   )
   
   final case class ProjectStores(
+    tmpDir: Store,
     kgVcf: Map[String, Store],
     kgIds: Map[String, Store],
     humanReference: Map[String, Store],
@@ -57,6 +58,7 @@ object ProjectStores extends loamstream.LoamFile {
     }.toMap
   
     ProjectStores(
+      tmpDir = store(path(checkPath(projectConfig.tmpDir))),
       kgVcf = kgVcf,
       kgIds = kgIds,
       humanReference = humanReference,

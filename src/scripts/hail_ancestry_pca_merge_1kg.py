@@ -16,7 +16,7 @@ def main(args=None):
 		import hail_utils
 
 	if not args.cloud:
-		hl.init(log = args.log, idempotent=True)
+		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
 	else:
 		hl.init(idempotent=True)
 
@@ -101,6 +101,7 @@ if __name__ == "__main__":
 	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
+	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--mt-in', help='a hail matrix table', required=True)

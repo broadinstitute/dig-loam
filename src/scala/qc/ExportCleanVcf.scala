@@ -8,6 +8,7 @@ object ExportCleanVcf extends loamstream.LoamFile {
     */
   import ProjectConfig._
   import ArrayStores._
+  import ProjectStores._
   
   final case class CfgException(s: String) extends Exception(s)
   
@@ -45,13 +46,14 @@ object ExportCleanVcf extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailExportCleanVcf}
+            --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --vcf-out ${arrayStores(array).cleanVcf.vcf.data.local.get}
             --samples-remove ${arrayStores(array).filterQc.samplesExclude.local.get},${arrayStores(array).filterPostQc.samplesExclude.local.get}
             --variants-remove ${arrayStores(array).filterPostQc.variantsExclude.local.get}
             --log ${arrayStores(array).cleanVcf.hailLog.local.get}"""
-            .in(arrayStores(array).refData.mt.local.get, arrayStores(array).filterQc.samplesExclude.local.get, arrayStores(array).filterPostQc.samplesExclude.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get)
+            .in(arrayStores(array).refData.mt.local.get, arrayStores(array).filterQc.samplesExclude.local.get, arrayStores(array).filterPostQc.samplesExclude.local.get, arrayStores(array).filterPostQc.variantsExclude.local.get, projectStores.tmpDir)
             .out(arrayStores(array).cleanVcf.vcf.data.local.get, arrayStores(array).cleanVcf.hailLog.local.get)
             .tag(s"${arrayStores(array).cleanVcf.vcf.base.local.get}.pyHailExportCleanVcf".split("/").last)
         

@@ -31,7 +31,7 @@ object Main extends loamstream.LoamFile {
   
   // Array specific QC steps up to ancestry inferrence
   for {
-    array <- projectConfig.Arrays if array.technology == "gwas"
+    array <- projectConfig.Arrays if (array.technology == "gwas") && (array.format != "mt")
   } yield {
       
     Prepare(array)
