@@ -835,7 +835,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgPlink2 = path(s"${imagesDir}/plink2_v2.3a.simg"),
         imgBgen = path(s"${imagesDir}/bgen_v1.1.4.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
-        imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
+        imgEnsemblVep = path(s"${imagesDir}/ensemblvep_r109.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
         imgImagemagick = path(s"${imagesDir}/imagemagick.simg")
       )
