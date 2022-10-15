@@ -184,14 +184,33 @@ RUN wget https://github.com/samtools/samtools/releases/download/1.16.1/samtools-
 	make install && \
 	ln -s /opt/samtools /usr/local/bin/samtools
 
-# add loftee plugin
 WORKDIR /opt
-RUN git clone https://github.com/konradjk/loftee.git && \
-	cd loftee && \
-	ln -s /opt/loftee /usr/local/bin/loftee
 
-# add loftee to perl5lib
-ENV PERL5LIB $PERL5LIB:/usr/local/bin/loftee
+# install VEP_plugins
+RUN git clone https://github.com/Ensembl/VEP_plugins.git && \
+	ln -s /opt/VEP_plugins /usr/local/bin/VEP_plugins
+
+# add VEP_plugins to perl5lib
+ENV PERL5LIB $PERL5LIB:/usr/local/bin/VEP_plugins
+
+## add loftee plugin
+#RUN wget https://github.com/konradjk/loftee/archive/refs/tags/v1.0.3.tar.gz && \
+#	tar -xvf v1.0.3.tar.gz && \
+#	ln -s /opt/loftee-1.0.3 /usr/local/bin/loftee
+
+## add loftee to perl5lib
+#ENV PERL5LIB $PERL5LIB:/usr/local/bin/loftee
+
+# add older working loftee scripts (until new version works)
+# LoF.pm and splice_module.pl
+COPY . /opt/VEP_plugins/
+
+# add UTRannotator plugin
+RUN git clone https://github.com/ImperialCardioGenetics/UTRannotator.git && \
+	ln -s /opt/UTRannotator /usr/local/bin/UTRannotator
+
+# add UTRannotator to perl5lib
+ENV PERL5LIB $PERL5LIB:/usr/local/bin/UTRannotator
 
 # Switch back to vep user
 USER vep

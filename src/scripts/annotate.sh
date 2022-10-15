@@ -4,13 +4,12 @@ sitesVcf=$1
 cpus=$2
 fasta=$3
 dirCache=$4
-dirPlugins=$5
-dbNSFP=$6
-results=$7
-warnings=$8
-header=$9
-referenceGenome=${10}
-gnomAD=${11}
+dbNSFP=$5
+results=$6
+warnings=$7
+header=$8
+referenceGenome=$9
+gnomAD=${10}
 
 # removed options
 # --af_gnomad \
@@ -24,7 +23,7 @@ vep -i $sitesVcf \
 --tab \
 --cache \
 --dir_cache $dirCache \
---dir_plugins $dirPlugins \
+--dir_plugins "/usr/local/bin/VEP_plugins" \
 --polyphen b \
 --sift b \
 --ccds \

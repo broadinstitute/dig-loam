@@ -189,7 +189,6 @@ object ProjectConfig extends loamstream.LoamFile {
     humanReferenceWild: String,
     fasta: String,
     vepCacheDir: String,
-    vepPluginsDir: String,
     dbNSFP: String,
     gnomad: String,
     sampleFile: String,
@@ -343,7 +342,6 @@ object ProjectConfig extends loamstream.LoamFile {
       val humanReferenceWild = requiredStr(config = config, field = "humanReferenceWild")
       val fasta = requiredStr(config = config, field = "fasta")
       val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")
-      val vepPluginsDir = requiredStr(config = config, field = "vepPluginsDir")
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
       val gnomad = requiredStr(config = config, field = "gnomad")
       val sampleFile = requiredStr(config = config, field = "sampleFile")
@@ -783,7 +781,6 @@ object ProjectConfig extends loamstream.LoamFile {
         humanReferenceWild = humanReferenceWild,
         fasta = fasta,
         vepCacheDir = vepCacheDir,
-        vepPluginsDir = vepPluginsDir,
         dbNSFP = dbNSFP,
         gnomad = gnomad,
         sampleFile = sampleFile,

@@ -22,7 +22,6 @@ object ProjectStores extends loamstream.LoamFile {
     kgSample: MultiStore,
     fasta: Store,
     vepCacheDir: Store,
-    vepPluginsDir: Store,
     dbNSFP: Store,
     gnomad: Store,
     sampleFile: MultiStore,
@@ -84,7 +83,6 @@ object ProjectStores extends loamstream.LoamFile {
       ),
       fasta = store(path(checkPath(projectConfig.fasta))).asInput,
       vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,
-      vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput,
       dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
       gnomad = store(path(checkPath(projectConfig.gnomad))).asInput,
       sampleFile = MultiStore(
