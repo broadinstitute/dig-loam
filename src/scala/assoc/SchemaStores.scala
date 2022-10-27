@@ -569,8 +569,8 @@ object SchemaStores extends loamstream.LoamFile {
       ),
       bgen = projectConfig.Tests.filter(e => projectConfig.Models.filter(e => e.schema == schema.id).filter(e => ! e.tests.isEmpty).map(e => e.tests.get).flatten.contains(e.id)).filter(e => e.platform != "hail").size match {
         case n if n > 0 =>
-          (schema.knockoutFilters, array.exportCleanBgen) match {
-            case (Some(_), _) | (_, false) =>
+          (schema.knockoutFilters, array.bgen) match {
+            case (Some(_), _) | (_, None) =>
               Some(MultiPathBgen(
                 base = MultiPath(
                   local = Some(local_dir / baseString),

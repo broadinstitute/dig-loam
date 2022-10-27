@@ -69,8 +69,8 @@ object AssocRegenie extends loamstream.LoamFile {
         cmd"""${utils.bash.shRegenieStep2Single}
           --regenie ${utils.binary.binRegenie}
           --bgzip ${utils.binary.binBgzip}
-          --bgen ${arrayStores(array).cleanBgen.get.data.local.get}
-          --sample ${arrayStores(array).cleanBgen.get.sample.local.get}
+          --bgen ${arrayStores(array).bgen.get.data.local.get}
+          --sample ${arrayStores(array).bgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.finalPheno}
@@ -78,7 +78,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).base}"""
-          .in(arrayStores(array).cleanBgen.get.data.local.get, arrayStores(array).cleanBgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
+          .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
           .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results)
           .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results}".split("/").last)
 
@@ -165,10 +165,9 @@ object AssocRegenie extends loamstream.LoamFile {
     //    ${projectConfig.resources.vep.cpus}
     //    ${projectStores.fasta}
     //    ${projectStores.vepCacheDir}
-    //    ${projectStores.vepPluginsDir}
     //    ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary.top1000ResultsAnnot}
     //    ${projectStores.referenceGenome}"""
-    //  .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary.top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
+    //  .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary.top1000Results, projectStores.fasta, projectStores.vepCacheDir)
     //  .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary.top1000ResultsAnnot)
     //  .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary.top1000ResultsAnnot}".split("/").last)
     //
@@ -294,8 +293,8 @@ object AssocRegenie extends loamstream.LoamFile {
         cmd"""${utils.bash.shRegenieStep2Group}
           --regenie ${utils.binary.binRegenie}
           --bgzip ${utils.binary.binBgzip}
-          --bgen ${arrayStores(array).cleanBgen.get.data.local.get}
-          --sample ${arrayStores(array).cleanBgen.get.sample.local.get}
+          --bgen ${arrayStores(array).bgen.get.data.local.get}
+          --sample ${arrayStores(array).bgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-name ${configModel.finalPheno}
@@ -307,7 +306,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --set-list ${setList}
           --mask-def ${maskDef}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).base}"""
-          .in(arrayStores(array).cleanBgen.get.data.local.get, arrayStores(array).cleanBgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
+          .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
           .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).results)
           .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).results}".split("/").last)
 

@@ -4,7 +4,7 @@ import pandas as pd
 import csv
 from pathlib import Path
 import time
-import tempfile
+#import tempfile
 import shutil
 
 def main(args=None):
@@ -28,13 +28,13 @@ def main(args=None):
 	else:
 		hl.init(idempotent=True)
 
-	print("making temporary directory for storing checkpoints")
-	if args.tmp_dir:
-		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
-		tmpdir_path = tmpdir + "/"
-	else:
-		tmpdir = tempfile.mkdtemp(dir = "./")
-		tmpdir_path = tmpdir + "/"
+	#print("making temporary directory for storing checkpoints")
+	#if args.tmp_dir:
+	#	tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
+	#	tmpdir_path = tmpdir + "/"
+	#else:
+	#	tmpdir = tempfile.mkdtemp(dir = "./")
+	tmpdir_path = args.tmp_dir + "/"
 
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
@@ -253,9 +253,9 @@ def main(args=None):
 	if args.cloud:
 		hl.copy_log(args.log)
 
-	if args.tmpdir:
-		print("removing temporary directory")
-		shutil.rmtree(tmpdir)
+	#if args.tmpdir:
+	#	print("removing temporary directory")
+	#	shutil.rmtree(tmpdir)
 	
 	global_elapsed_time = time.time() - global_start_time
 	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))

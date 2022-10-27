@@ -73,9 +73,8 @@ topResults=$2
 cpus=$3
 fasta=$4
 dirCache=$5
-dirPlugins=$6
-results=$7
-referenceGenome=$8
+results=$6
+referenceGenome=$7
 
 (tabix -H $sitesVcf; \
 (while read line; do \
@@ -102,7 +101,7 @@ vep -i ${results}.1.tmp \
 --tab \
 --cache \
 --dir_cache $dirCache \
---dir_plugins $dirPlugins \
+--dir_plugins "/usr/local/bin/VEP_plugins" \
 --canonical \
 --symbol \
 --nearest symbol \
@@ -117,6 +116,23 @@ vep -i ${results}.1.tmp \
 --output_file STDOUT \
 --warning_file ${results}.2.tmp.warnings \
 | awk -v h=${results}.2.tmp.header '/^##/{print > h; next} 1' > ${results}.2.tmp
+
+exitcodes=("${PIPESTATUS[@]}")
+
+if [ "${exitcodes[0]}" -ne "0" ]
+then
+	echo ">>> vep first piped command failed with exit code ${exitcodes[0]}"
+	exit 1
+fi
+if [ "${exitcodes[1]}" -ne "0" ]
+then
+	echo ">>> vep second piped command failed with exit code ${exitcodes[1]}"
+	exit 1
+fi
+
+if [ ! -f "$warnings" ]; then
+	touch $warnings
+fi
 
 if [ -f "${results}.2.tmp.warnings" ]; then
 	rm ${results}.2.tmp.warnings
@@ -151,3 +167,5 @@ p=`head -1 $topResults | tr '\t' '\n' | grep -n "pval" | awk -F':' '{print $1}'`
 sort -n -k${p},${p} ${results}.4.tmp > $results
 
 rm ${results}.*.tmp*
+
+exit 0

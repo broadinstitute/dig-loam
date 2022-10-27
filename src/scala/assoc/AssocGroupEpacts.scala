@@ -62,7 +62,7 @@ object AssocGroupEpacts extends loamstream.LoamFile {
     
           val vcfString = schemaStores((configSchema, configCohorts)).vcf match {
             case Some(s) => s"""--vcf ${schemaStores((configSchema, configCohorts)).vcf.get.data.local.get.toString.split("@")(1)}"""
-            case None => s"""--vcf ${arrayStores(array).cleanVcf.data.local.get.toString.split("@")(1)}"""
+            case None => s"""--vcf ${arrayStores(array).vcf.get.data.local.get.toString.split("@")(1)}"""
           }
     
           val groupFileIn = schemaStores((configSchema, configCohorts)).epacts.get.groupFile.phenos.keys.toList.contains(pheno) match {
@@ -83,7 +83,7 @@ object AssocGroupEpacts extends loamstream.LoamFile {
     
           schemaStores((configSchema, configCohorts)).vcf match {
             case Some(s) => epactsIn = epactsIn ++ Seq(schemaStores((configSchema, configCohorts)).vcf.get.data.local.get)
-            case None => epactsIn = epactsIn ++ Seq(arrayStores(array).cleanVcf.data.local.get)
+            case None => epactsIn = epactsIn ++ Seq(arrayStores(array).vcf.get.data.local.get)
           }
     
           var epactsOut = Seq[Store]()

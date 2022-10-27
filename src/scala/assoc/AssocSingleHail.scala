@@ -27,7 +27,7 @@ object AssocSingleHail extends loamstream.LoamFile {
           hail"""${utils.python.pyHailAssoc} --
             --hail-utils ${projectStores.hailUtils.google.get}
             --reference-genome ${projectConfig.referenceGenome}
-            --mt-in ${arrayStores(array).refMt.google.get}
+            --mt-in ${arrayStores(array).mt.get.google.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
             --iid-col ${array.phenoFileId}
             --pheno-analyzed ${configModel.finalPheno}
@@ -37,7 +37,7 @@ object AssocSingleHail extends loamstream.LoamFile {
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.google.get}
             --cloud
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.google.get}"""
-              .in(projectStores.hailUtils.google.get, arrayStores(array).refMt.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get)
+              .in(projectStores.hailUtils.google.get, arrayStores(array).mt.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get)
               .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.google.get)
               .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}.google".split("/").last)
         
@@ -57,7 +57,7 @@ object AssocSingleHail extends loamstream.LoamFile {
           cmd"""${utils.binary.binPython} ${utils.python.pyHailAssoc}
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
-            --mt-in ${arrayStores(array).refMt.local.get}
+            --mt-in ${arrayStores(array).mt.get.local.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --iid-col ${array.phenoFileId}
             --pheno-analyzed ${configModel.finalPheno}
@@ -66,7 +66,7 @@ object AssocSingleHail extends loamstream.LoamFile {
             --covars-analyzed "${configModel.finalCovars}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.local.get}"""
-              .in(arrayStores(array).refMt.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, projectStores.tmpDir)
+              .in(arrayStores(array).mt.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, projectStores.tmpDir)
               .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.local.get)
               .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}".split("/").last)
         
@@ -133,10 +133,9 @@ object AssocSingleHail extends loamstream.LoamFile {
         ${projectConfig.resources.vep.cpus}
         ${projectStores.fasta}
         ${projectStores.vepCacheDir}
-        ${projectStores.vepPluginsDir}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top1000ResultsAnnot}
         ${projectConfig.referenceGenome}"""
-      .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top1000Results, projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir)
+      .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top1000Results, projectStores.fasta, projectStores.vepCacheDir)
       .out(modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top1000ResultsAnnot)
       .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).summary.top1000ResultsAnnot}".split("/").last)
   
