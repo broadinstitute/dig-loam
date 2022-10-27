@@ -82,6 +82,9 @@ def main(args=None):
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
 
+	print("convert males to diploid on non-PAR X/Y chromosomes and convert genotypes to unphased")
+	mt = hail_utils.unphase_genotypes(mt = mt)
+
 	print("impute sex on appropriate variants, compare to sample file (if supplied) and add annotations")
 	if args.sex_col and args.male_code and args.female_code:
 		mt = hail_utils.annotate_sex(
@@ -112,10 +115,7 @@ def main(args=None):
 	tbl_out = tbl_out.filter(tbl_out.sexcheck == "PROBLEM", keep=True)
 	tbl_out.flatten().export(args.sexcheck_problems_out)
 
-	print("convert genotypes to unphased")
-	mt = hail_utils.unphase_genotypes(mt = mt)
-
-	print("convert males to diploid on non-PAR X/Y chromosomes and set females to missing on Y")
+	print("set females to missing on Y and males to missing if heterozygous in nonpar regions")
 	mt = hail_utils.adjust_sex_chromosomes(mt = mt, is_female = 'is_female')
 
 	gt_codes = list(mt.entry)
