@@ -230,10 +230,10 @@ object QcReport extends loamstream.LoamFile {
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportData}
         --narrays ${projectConfig.nArrays}
         ${imissRemoveCmdStrings}
-        --fam ${sampleStrings(0)}
+        --sample-list ${sampleStrings(0)}
         --geno-variants-summary-table ${qcReportStores.tablesData.rawVariantsSummary.path.toAbsolutePath()} 
         --seq-variants-summary-table ${qcReportStores.tablesData.seqVariantsSummary.path.toAbsolutePath()} 
-        --bim ${varStrings.mkString(" ")}
+        --variant-list ${varStrings.mkString(" ")}
         --out ${qcReportStores.texData.data}"""
         .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).flatten.toSeq ++ sampleIn ++ variantIn :+ qcReportStores.tablesData.rawVariantsSummary :+ qcReportStores.tablesData.seqVariantsSummary)
         .out(qcReportStores.texData.data)
