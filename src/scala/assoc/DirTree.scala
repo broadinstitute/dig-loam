@@ -23,13 +23,14 @@ object DirTree extends loamstream.LoamFile {
     analysisSchema: MultiPath,
     analysisSchemaMap: Map[ConfigSchema, MultiPath],
     analysisModel: MultiPath,
-    analysisModelGroups: MultiPath,
-    analysisModelGroupsMap: scala.collection.mutable.Map[String, MultiPath],
-    analysisModelRegions: MultiPath,
-    analysisModelRegionsMap: scala.collection.mutable.Map[String, MultiPath],
-    analysisModelChrs: MultiPath,
-    analysisModelChrsMap: scala.collection.mutable.Map[String, MultiPath],
+    //analysisModelGroups: MultiPath,
+    //analysisModelGroupsMap: scala.collection.mutable.Map[String, MultiPath],
+    //analysisModelRegions: MultiPath,
+    //analysisModelRegionsMap: scala.collection.mutable.Map[String, MultiPath],
+    //analysisModelChrs: MultiPath,
+    //analysisModelChrsMap: scala.collection.mutable.Map[String, MultiPath],
     analysisModelMap: Map[ConfigModel, MultiPath],
+    analysisModelTestMap: Map[ConfigModel, Map[ConfigTest, MultiPath]],
     report: MultiPath,
     //reportAnalysis: MultiPath,
     //reportAnalysisMap: Map[ConfigReport, MultiPath]
@@ -83,15 +84,22 @@ object DirTree extends loamstream.LoamFile {
         schema -> appendSubDir(analysisSchema, schema.id)
       }.toMap
       val analysisModel = appendSubDir(analysis, "model")
-      val analysisModelGroups = appendSubDir(analysisModel, "groups")
-      val analysisModelRegions = appendSubDir(analysisModel, "regions")
-      val analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath]()
-      val analysisModelChrs = appendSubDir(analysisModel, "chromosomes")
-      val analysisModelChrsMap = scala.collection.mutable.Map[String, MultiPath]()
+      //val analysisModelGroups = appendSubDir(analysisModel, "groups")
+      //val analysisModelRegions = appendSubDir(analysisModel, "regions")
+      //val analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath]()
+      //val analysisModelChrs = appendSubDir(analysisModel, "chromosomes")
+      //val analysisModelChrsMap = scala.collection.mutable.Map[String, MultiPath]()
       val analysisModelMap = projectConfig.Models.map { model =>
         model -> appendSubDir(analysisModel, model.id)
       }.toMap
-      
+
+      val analysisModelTestMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+        model ->
+          projectConfig.Tests.filter(e => model.tests.get.contains(e.id)).map { test =>
+            test -> appendSubDir(analysisModelMap(model), test.id)
+          }.toMap
+      }.toMap
+
       //val reportAnalysisMap = cfg.Reports.map { report =>
       //  report -> appendSubDir(reportAnalysis, report.id)
       //}.toMap
@@ -108,13 +116,14 @@ object DirTree extends loamstream.LoamFile {
         analysisSchema = analysisSchema,
         analysisSchemaMap = analysisSchemaMap,
         analysisModel = analysisModel,
-        analysisModelGroups = analysisModelGroups,
-        analysisModelGroupsMap = scala.collection.mutable.Map[String, MultiPath](),
-        analysisModelRegions = analysisModelRegions,
-        analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath](),
-        analysisModelChrs = analysisModelChrs,
-        analysisModelChrsMap = scala.collection.mutable.Map[String, MultiPath](),
+        //analysisModelGroups = analysisModelGroups,
+        //analysisModelGroupsMap = scala.collection.mutable.Map[String, MultiPath](),
+        //analysisModelRegions = analysisModelRegions,
+        //analysisModelRegionsMap = scala.collection.mutable.Map[String, MultiPath](),
+        //analysisModelChrs = analysisModelChrs,
+        //analysisModelChrsMap = scala.collection.mutable.Map[String, MultiPath](),
         analysisModelMap = analysisModelMap,
+        analysisModelTestMap = analysisModelTestMap,
         report = report
         //reportAnalysis = reportAnalysis,
         //reportAnalysisMap = reportAnalysisMap

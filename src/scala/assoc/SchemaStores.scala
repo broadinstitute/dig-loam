@@ -143,33 +143,33 @@ object SchemaStores extends loamstream.LoamFile {
       case _ => None
     }
 
-    modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
-      case n if n > 0 =>
-        try {
-          val gFile = checkPath(s"""${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
-          val l = fileToList(gFile).map(e => e.split("\t")(0))
-          for {
-            group <- l
-          } yield {
-              dirTree.analysisModelGroupsMap(group) = appendSubDir(dirTree.analysisModelGroups, group)
-          }
-        }
-        catch {
-          case x: CfgException =>
-            println(s"""skipping split assoc test by group due to missing group file: ${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
-        }
-      case _ => ()
-    }
+    //modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*epacts.*")).size match {
+    //  case n if n > 0 =>
+    //    try {
+    //      val gFile = checkPath(s"""${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
+    //      val l = fileToList(gFile).map(e => e.split("\t")(0))
+    //      for {
+    //        group <- l
+    //      } yield {
+    //          dirTree.analysisModelGroupsMap(group) = appendSubDir(dirTree.analysisModelGroups, group)
+    //      }
+    //    }
+    //    catch {
+    //      case x: CfgException =>
+    //        println(s"""skipping split assoc test by group due to missing group file: ${groupFile.get.base.base.local.get.toString.split("@")(1)}""")
+    //    }
+    //  case _ => ()
+    //}
 
-    modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*regenie.*")).size match {
-      case n if n > 0 =>
-        for {
-          chr <- projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
-        } yield {
-            dirTree.analysisModelChrsMap(chr) = appendSubDir(dirTree.analysisModelChrs, "chr" + chr)
-        }
-      case _ => ()
-    }
+    //modelCollections.filter(e => ! e.model.tests.isEmpty).map(e => e.model.tests.get).flatten.filter(e => e.matches(".*regenie.*")).size match {
+    //  case n if n > 0 =>
+    //    for {
+    //      chr <- projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
+    //    } yield {
+    //        dirTree.analysisModelChrsMap(chr) = appendSubDir(dirTree.analysisModelChrs, "chr" + chr)
+    //    }
+    //  case _ => ()
+    //}
                   
     sm -> Schema(
       sampleMap = store(local_dir / s"${baseString}.sample.map.tsv"),
