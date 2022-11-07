@@ -60,9 +60,12 @@ object Load extends loamstream.LoamFile {
 
         arrayStores(array).refData.rawMt match {
           case Some(s) =>
-		    local {
-		    	googleCopy(s.data.local.get, s.data.google.get)
-		    }
+            local {
+              cmd"""${gsutilBinaryOpt.get} -m cp -r ${s.data.local.get} ${s.data.google.get}"""
+              .in(s.data.local.get)
+              .out(s.data.google.get)
+              .tag(s"${s.data.local.get}.googleCopy".split("/").last)
+            }
           case None => ()
         }
 
@@ -78,7 +81,7 @@ object Load extends loamstream.LoamFile {
           case (Some(s), None) =>
             s"""--vcf-in "${arrayStores(array).refData.vcfGlob.get.google.get}""""
           case (None, Some(t)) =>
-            s"""--mt-in ${arrayStores(array).refData.rawMt.get.data.google.get}"""
+            s"""--mt-in ${arrayStores(array).refData.rawMt.get.data.google.get.toString.split("@")(1)}"""
           case _ => throw new CfgException("invalid input for pyHailLoad: either vcf or rawMt must be defined")
         }
 
@@ -104,7 +107,6 @@ object Load extends loamstream.LoamFile {
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.google.get}
             --variant-list-out ${arrayStores(array).refData.varList.google.get}
             --sample-list-out ${arrayStores(array).refData.sampleList.google.get}
-            --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.google.get}
             --mt-out ${arrayStores(array).refData.mt.google.get}"""
             .in(dataInString)
             .out(arrayStores(array).refData.mt.google.get, arrayStores(array).refData.hailLog.google.get, arrayStores(array).refData.variantMetrics.google.get, arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).refData.sitesVcf.google.get, arrayStores(array).refData.varList.google.get, arrayStores(array).refData.sampleList.google.get)
@@ -138,7 +140,7 @@ object Load extends loamstream.LoamFile {
           case (Some(s), None) =>
             s"""--vcf-in "${arrayStores(array).refData.vcfGlob.get.local.get}""""
           case (None, Some(t)) =>
-            s"""--mt-in ${arrayStores(array).refData.rawMt.get.data.local.get.path}"""
+            s"""--mt-in ${arrayStores(array).refData.rawMt.get.data.local.get.toString.split("@")(1)}"""
           case _ => throw new CfgException("invalid input for pyHailLoad: either vcf or rawMt must be defined")
         }
   
@@ -163,7 +165,6 @@ object Load extends loamstream.LoamFile {
             --sites-vcf-out ${arrayStores(array).refData.sitesVcf.local.get}
             --variant-list-out ${arrayStores(array).refData.varList.local.get}
             --sample-list-out ${arrayStores(array).refData.sampleList.local.get}
-            --mt-checkpoint ${arrayStores(array).refData.mtCheckpoint.local.get}
             --mt-out ${arrayStores(array).refData.mt.local.get}"""
             .in(dataInString)
             .out(arrayStores(array).refData.mt.local.get, arrayStores(array).refData.mtCheckpoint.local.get, arrayStores(array).refData.hailLog.local.get, arrayStores(array).refData.variantMetrics.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).refData.sitesVcf.local.get, arrayStores(array).refData.varList.local.get, arrayStores(array).refData.mtCheckpoint.local.get)

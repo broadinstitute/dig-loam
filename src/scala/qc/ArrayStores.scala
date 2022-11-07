@@ -75,7 +75,6 @@ object ArrayStores extends loamstream.LoamFile {
     varList: MultiStore,
     sampleList: MultiStore,
     vcfGlob: Option[MultiPath],
-    mtCheckpoint: MultiStore,
     rawMt: Option[MultiPathMT],
     mt: MultiStore,
     hailLog: MultiStore,
@@ -495,10 +494,6 @@ object ArrayStores extends loamstream.LoamFile {
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.samples.txt")); case false => None }
       ),
       vcfGlob = vcfGlob,
-      mtCheckpoint = MultiStore(
-        local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt.checkpoint")); case true => None },
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt.checkpoint")); case false => None }
-      ),
       rawMt = refRawMt,
       mt = MultiStore(
         local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt")); case true => None },

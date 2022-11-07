@@ -29,12 +29,11 @@ def main(args=None):
 		hl.init(idempotent=True)
 
 	print("making temporary directory for storing checkpoints")
-	if args.tmp_dir:
+	if args.tmp_dir and not args.cloud:
 		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
-		tmpdir_path = tmpdir + "/"
 	else:
 		tmpdir = tempfile.mkdtemp(dir = "./")
-		tmpdir_path = tmpdir + "/"
+	tmpdir_path = tmpdir + "/"
 
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
@@ -141,7 +140,7 @@ def main(args=None):
 				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.locus,ht.alleles]})
 
 	print("write ht.checkpoint1 hail table to temporary directory")
-	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint1", overwrite=True)
+	ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_pheno_variants.ht.checkpoint1", overwrite=True)
 
 	cohort_stats = {}
 	if args.cohort_stats_in:
@@ -178,7 +177,7 @@ def main(args=None):
 		fields_out = fields_out + ['ls_pheno_filters']
 
 	print("write ht.checkpoint2 hail table to temporary directory")
-	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint2", overwrite=True)
+	ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_pheno_variants.ht.checkpoint2", overwrite=True)
 
 	mask_fields = []
 	if len(masks) > 0:
@@ -190,7 +189,7 @@ def main(args=None):
 			mask_fields = mask_fields + ['ls_mask_' + m + '.exclude']
 			fields_out = fields_out + ['ls_mask_' + m]
 			print("write ht.checkpoint." + m + " hail table to temporary directory")
-			ht = ht.checkpoint(tmpdir_path + "ht.checkpoint." + m, overwrite=True)
+			ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_pheno_variants.ht.checkpoint." + m, overwrite=True)
 
 	fields_out = fields_out + ['ls_schema_global_exclude', 'ls_pheno_global_exclude']
 	ht = ht.annotate(ls_schema_global_exclude = ht.ls_global_exclude)

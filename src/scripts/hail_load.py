@@ -20,6 +20,13 @@ def main(args=None):
 	else:
 		hl.init(idempotent=True)
 
+	print("making temporary directory for storing checkpoints")
+	if args.tmp_dir and not args.cloud:
+		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
+	else:
+		tmpdir = tempfile.mkdtemp(dir = "./")
+	tmpdir_path = tmpdir + "/"
+
 	if args.vcf_in:
 		print("read vcf file")
 		if args.reference_genome == 'GRCh38':
@@ -77,7 +84,7 @@ def main(args=None):
 	mt.rows().show()
 
 	print("write checkpoint matrix table to disk")
-	mt = mt.checkpoint(args.mt_checkpoint, overwrite=True)
+	mt = mt.checkpoint(tmpdir_path + "hail_load.mt.checkpoint", overwrite=True)
 
 	print("calculate raw variant qc metrics")
 	mt = hl.variant_qc(mt, name="variant_qc_raw")
@@ -213,7 +220,6 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--sites-vcf-out', help='an output filename for a sites only VCF file (must end in .vcf)', required=True)
 	requiredArgs.add_argument('--variant-list-out', help='an output filename for a variant ids', required=True)
 	requiredArgs.add_argument('--sample-list-out', help='an output filename for sample ids', required=True)
-	requiredArgs.add_argument('--mt-checkpoint', help='a hail mt directory name for temporary checkpoint', required=True)
 	requiredArgs.add_argument('--mt-out', help='a hail mt directory name for output', required=True)
 	args = parser.parse_args()
 	main(args)

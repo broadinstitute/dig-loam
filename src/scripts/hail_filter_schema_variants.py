@@ -4,7 +4,7 @@ import pandas as pd
 import csv
 from pathlib import Path
 import time
-#import tempfile
+import tempfile
 import shutil
 
 def main(args=None):
@@ -28,13 +28,12 @@ def main(args=None):
 	else:
 		hl.init(idempotent=True)
 
-	#print("making temporary directory for storing checkpoints")
-	#if args.tmp_dir:
-	#	tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
-	#	tmpdir_path = tmpdir + "/"
-	#else:
-	#	tmpdir = tempfile.mkdtemp(dir = "./")
-	tmpdir_path = args.tmp_dir + "/"
+	print("making temporary directory for storing checkpoints")
+	if args.tmp_dir and not args.cloud:
+		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
+	else:
+		tmpdir = tempfile.mkdtemp(dir = "./")
+	tmpdir_path = tmpdir + "/"
 
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
@@ -142,7 +141,7 @@ def main(args=None):
 	
 	start_time = time.time()
 	print("write ht.checkpoint1 hail table to temporary directory")
-	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint1", overwrite=True)
+	ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_variants.ht.checkpoint1", overwrite=True)
 	elapsed_time = time.time() - start_time
 	print(time.strftime("write ht.checkpoint1 hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
 	
@@ -202,7 +201,7 @@ def main(args=None):
 	
 	start_time = time.time()
 	print("write ht.checkpoint2 hail table to temporary directory")
-	ht = ht.checkpoint(tmpdir_path + "ht.checkpoint2", overwrite=True)
+	ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_variants.ht.checkpoint2", overwrite=True)
 	elapsed_time = time.time() - start_time
 	print(time.strftime("write ht.checkpoint2 hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
 
@@ -224,7 +223,7 @@ def main(args=None):
 			print(time.strftime("add mask " + m + " to filters - %H:%M:%S", time.gmtime(elapsed_time)))
 			start_time = time.time()
 			print("write ht.checkpoint." + m + " hail table to temporary directory")
-			ht = ht.checkpoint(tmpdir_path + "ht.checkpoint." + m, overwrite=True)
+			ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_variants.ht.checkpoint." + m, overwrite=True)
 			elapsed_time = time.time() - start_time
 			print(time.strftime("write ht.checkpoint" + m + " hail table to temporary directory - %H:%M:%S", time.gmtime(elapsed_time)))
 	
