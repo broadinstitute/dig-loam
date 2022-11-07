@@ -261,15 +261,15 @@ object AssocRegenie extends loamstream.LoamFile {
 
   }
 
-  def AssocRegenieStep2Group(configTest: ConfigTest, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
+  def AssocRegenieStep2Group(configTest: ConfigTest, mask: MaskFilter, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
     val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
 
-    val annoFile = schemaStores((configSchema, configCohorts)).regenie.get.annotations.phenos.keys.toList.contains(pheno) match {
-      case true => schemaStores((configSchema, configCohorts)).regenie.get.annotations.phenos(pheno).local.get
-      case false => schemaStores((configSchema, configCohorts)).regenie.get.annotations.base.local.get
+    val annoFile = schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos.keys.toList.contains(pheno) match {
+      case true => schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get
+      case false => schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).base.local.get
     }
 
     val setList = schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos.keys.toList.contains(pheno) match {
@@ -277,20 +277,42 @@ object AssocRegenie extends loamstream.LoamFile {
       case false => schemaStores((configSchema, configCohorts)).regenie.get.setlist.base.local.get
     }
 
-    val maskDef = schemaStores((configSchema, configCohorts)).regenie.get.masks.phenos.keys.toList.contains(pheno) match {
-      case true => schemaStores((configSchema, configCohorts)).regenie.get.masks.phenos(pheno).local.get
-      case false => schemaStores((configSchema, configCohorts)).regenie.get.masks.base.local.get
+    val maskDef = schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos.keys.toList.contains(pheno) match {
+      case true => schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos(pheno).local.get
+      case false => schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).base.local.get
     }
 
     drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep2Group.cpus, mem = projectConfig.resources.regenieStep2Group.mem, maxRunTime = projectConfig.resources.regenieStep2Group.maxRunTime) {
 
-      for {
+      //for {
+	  //
+      //  chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs.keys.toList
+	  //
+      //} yield {
+	  //
+      //  cmd"""${utils.bash.shRegenieStep2Group}
+      //    --regenie ${utils.binary.binRegenie}
+      //    --bgzip ${utils.binary.binBgzip}
+      //    --bgen ${arrayStores(array).bgen.get.data.local.get}
+      //    --sample ${arrayStores(array).bgen.get.sample.local.get}
+      //    --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
+      //    --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
+      //    --pheno-name ${configModel.finalPheno}
+      //    --cli-options "${configTest.cliOpts.get}"
+      //    --group-stats
+      //    --chr ${chr}
+      //    --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
+      //    --anno-file ${annoFile}
+      //    --set-list ${setList}
+      //    --mask-def ${maskDef}
+      //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).base}"""
+      //    .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
+      //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results)
+      //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results}".split("/").last)
+	  //
+      //}
 
-        chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs.keys.toList
-
-      } yield {
-
-        cmd"""${utils.bash.shRegenieStep2Group}
+      cmd"""${utils.bash.shRegenieStep2Group}
           --regenie ${utils.binary.binRegenie}
           --bgzip ${utils.binary.binBgzip}
           --bgen ${arrayStores(array).bgen.get.data.local.get}
@@ -300,73 +322,74 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-name ${configModel.finalPheno}
           --cli-options "${configTest.cliOpts.get}"
           --group-stats
-          --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --anno-file ${annoFile}
           --set-list ${setList}
           --mask-def ${maskDef}
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).base}"""
+          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).base}"""
           .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).results)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).results}".split("/").last)
-
-      }
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results)
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}".split("/").last)
 
     }
 
-    val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(expandChrList(array.chrs).head).results.toString.split("@")(1).replace("chr" + expandChrList(array.chrs).head, "chr___CHR___")}"""
-          
-    val resultsFiles = for {
-      chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs.keys.toList
-    } yield {
-      modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).chrs(chr).results
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${utils.bash.shMergeRegenieGroupResults}
-         --results ${maskResultsFile}
-         --chrs ${expandChrList(array.chrs).mkString(",")}
-         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results}"""
-        .in(resultsFiles)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results}".split("/").last)
-    
-    }
+    //val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(expandChrList(array.chrs).head).results.toString.split("@")(1).replace("chr" + expandChrList(array.chrs).head, "chr___CHR___")}"""
+    //      
+    //val resultsFiles = for {
+    //  chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs.keys.toList
+    //} yield {
+    //  modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results
+    //}
+    //
+    //drmWith(imageName = s"${utils.image.imgTools}") {
+    //
+    //  cmd"""${utils.bash.shMergeRegenieGroupResults}
+    //     --results ${maskResultsFile}
+    //     --chrs ${expandChrList(array.chrs).mkString(",")}
+    //     --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}"""
+    //    .in(resultsFiles)
+    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results)
+    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}".split("/").last)
+    //
+    //}
+
+
+
+
 
     //drmWith(imageName = s"${utils.image.imgPython2}") {
     //  
     //  cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
-    //    --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results}
+    //    --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}
     //    --p P
-    //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.qqPlot}"""
-    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results)
-    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.qqPlot)
-    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.qqPlot}".split("/").last)
+    //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.qqPlot}"""
+    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results)
+    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.qqPlot)
+    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.qqPlot}".split("/").last)
     //  
     //  cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
-    //    --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results}
+    //    --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}
     //    --chr "#CHROM"
     //    --pos "GENPOS"
     //    --p P
-    //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.mhtPlot}"""
-    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results)
-    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.mhtPlot)
-    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.mhtPlot}".split("/").last)
+    //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.mhtPlot}"""
+    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results)
+    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.mhtPlot)
+    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.mhtPlot}".split("/").last)
     //  
     //}
     //
     //drmWith(imageName = s"${utils.image.imgPython2}") {
     //
     //  cmd"""${utils.binary.binPython} ${utils.python.pyTopRegenieGroupResults}
-    //    --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results}
+    //    --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}
     //    --group-id-map ${projectStores.geneIdMap.local.get}
     //    --n 20
     //    --p P 
-    //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.top20Results}"""
-    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).results, projectStores.geneIdMap.local.get)
-    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.top20Results)
-    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest).summary.top20Results}".split("/").last)
+    //    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.top20Results}"""
+    //    .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results, projectStores.geneIdMap.local.get)
+    //    .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.top20Results)
+    //    .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary.top20Results}".split("/").last)
     //
     //}
 

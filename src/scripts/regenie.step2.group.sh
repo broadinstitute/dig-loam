@@ -74,15 +74,6 @@ while :; do
 				exit 1
 			fi
 			;;
-		--chr)
-			if [ "$2" ]; then
-				chr=$2
-				shift
-			else
-				echo "ERROR: --chr requires a non-empty argument."
-				exit 1
-			fi
-			;;
 		--pred)
 			if [ "$2" ]; then
 				pred=$2
@@ -152,7 +143,6 @@ echo "sample: $sample"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoName: $phenoName"
-echo "chr: $chr"
 echo "pred: $pred"
 echo "annoFile: $annoFile"
 echo "setList: $setList"
@@ -170,7 +160,6 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 $cliOptions \
---chr $chr \
 --pred $pred \
 --anno-file $annoFile \
 --set-list $setList \
@@ -206,7 +195,6 @@ then
 	--covarFile $covarFile \
 	--phenoFile $phenoFile \
 	$cliOptions \
-	--chr $chr \
 	--pred $pred \
 	--anno-file $annoFile \
 	--set-list $setList \

@@ -78,7 +78,7 @@ object Load extends loamstream.LoamFile {
           case (Some(s), None) =>
             s"""--vcf-in "${arrayStores(array).refData.vcfGlob.get.google.get}""""
           case (None, Some(t)) =>
-            s"""--mt-in ${arrayStores(array).refData.rawMt.get.data.google.get.path}"""
+            s"""--mt-in ${arrayStores(array).refData.rawMt.get.data.google.get}"""
           case _ => throw new CfgException("invalid input for pyHailLoad: either vcf or rawMt must be defined")
         }
 

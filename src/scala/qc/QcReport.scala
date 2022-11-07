@@ -59,7 +59,7 @@ object QcReport extends loamstream.LoamFile {
 
       case n if n > 0 =>
 
-        val seqStatsStrings = { for { a <- projectConfig.Arrays if (e.technology != "gwas") || (e.format == "mt") } yield { Seq(a.id, s"""${arrayStores(a).refData.variantMetrics.local.get.path}""").mkString(",") } }
+        val seqStatsStrings = { for { a <- projectConfig.Arrays if (a.technology != "gwas") || (a.format == "mt") } yield { Seq(a.id, s"""${arrayStores(a).refData.variantMetrics.local.get.path}""").mkString(",") } }
 
         drmWith(imageName = s"${utils.image.imgR}") {
         

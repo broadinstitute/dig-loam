@@ -21,9 +21,9 @@ def main(args=None):
 	for field in ['DEOGEN2_score','FATHMM_score','LIST-S2_score','MPC_score','MVP_score','MetaRNN_score','MutationAssessor_score','PROVEAN_score','Polyphen2_HDIV_score','Polyphen2_HVAR_score','REVEL_score','SIFT4G_score','SIFT_score','VEST4_score']:
 		if field in ht.row_value:
 			ht = ht.annotate(**{
-				field + '_max': hl.if_else(hl.is_missing(ht[field]), hl.missing(hl.tfloat64), hl.max(ht[field].split(",").map(lambda x: hl.if_else(x != ".", hl.float(x), hl.missing(hl.tfloat64))))),
-				field + '_min': hl.if_else(hl.is_missing(ht[field]), hl.missing(hl.tfloat64), hl.min(ht[field].split(",").map(lambda x: hl.if_else(x != ".", hl.float(x), hl.missing(hl.tfloat64))))),
-				field + '_mean': hl.if_else(hl.is_missing(ht[field]), hl.missing(hl.tfloat64), hl.mean(ht[field].split(",").map(lambda x: hl.if_else(x != ".", hl.float(x), hl.missing(hl.tfloat64)))))
+				field + '_max': hl.if_else(hl.is_missing(ht[field]), hl.missing(hl.tfloat64), hl.if_else(ht[field].split(",").filter(lambda x: x != '.').length() > 0, hl.max(ht[field].split(",").map(lambda x: hl.if_else(x != ".", hl.float(x), hl.missing(hl.tfloat64)))), hl.missing(hl.tfloat64))),
+				field + '_min': hl.if_else(hl.is_missing(ht[field]), hl.missing(hl.tfloat64), hl.if_else(ht[field].split(",").filter(lambda x: x != '.').length() > 0, hl.min(ht[field].split(",").map(lambda x: hl.if_else(x != ".", hl.float(x), hl.missing(hl.tfloat64)))), hl.missing(hl.tfloat64))),
+				field + '_mean': hl.if_else(hl.is_missing(ht[field]), hl.missing(hl.tfloat64), hl.if_else(ht[field].split(",").filter(lambda x: x != '.').length() > 0, hl.mean(ht[field].split(",").map(lambda x: hl.if_else(x != ".", hl.float(x), hl.missing(hl.tfloat64)))), hl.missing(hl.tfloat64)))
 			})
     
 	print("writing hail table to disk")
