@@ -163,7 +163,7 @@ echo "cliOptions: $cliOptions"
 
 EXITCODE=0
 
-n=`awk 'NR==FNR{a[$0];next}{if($1 in a) print $2}' <(awk '{print $2}' $annoFile | sort -T . -u) $setList | wc -l`
+n=`awk -v chr=$chr 'NR==FNR{a[$0];next}{if($1 in a && $2 == chr) print $2}' <(awk '{print $2}' $annoFile | sort -T . -u) $setList | wc -l`
 
 if [ $n -gt 0 ]
 then
@@ -182,7 +182,7 @@ then
 	--out $out \
 	--gz \
 	--verbose
-	
+
 	#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA
 	
 	if [ ! -f "${out}_${phenoName}.regenie.gz" ]
@@ -263,6 +263,7 @@ then
 	
 	fi
 else
+	echo "no annotated variants found on chromosome ${chr}"
 	echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.results.tsv.bgz
 fi
 

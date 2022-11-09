@@ -86,7 +86,7 @@ object ModelStores extends loamstream.LoamFile {
     base: Path,
     results: Store,
     log: Store,
-    summary: ModelGroupSummary
+    summary: ModelGroupSummary,
     chrs: Map[String, ModelRegenieAssocGroupChr]
   )
   
@@ -474,7 +474,7 @@ object ModelStores extends loamstream.LoamFile {
                                 qqPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.qqplot.png"),
                                 mhtPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
                                 minPVal = Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.minpval.tsv"))
-                              )
+                              ),
                               chrs = expandChrList(array.chrs).map { chr =>
                                 chr ->
                                   ModelRegenieAssocGroupChr(
