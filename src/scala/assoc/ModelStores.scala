@@ -76,18 +76,18 @@ object ModelStores extends loamstream.LoamFile {
     groupFile: Store
   )
 
-  //final case class ModelRegenieAssocGroupChr(
-  //  base: Path,
-  //  log: Store,
-  //  results: Store
-  //)
+  final case class ModelRegenieAssocGroupChr(
+    base: Path,
+    log: Store,
+    results: Store
+  )
 
   final case class ModelRegenieAssocGroup(
     base: Path,
     results: Store,
     log: Store,
     summary: ModelGroupSummary
-    //chrs: Map[String, ModelRegenieAssocGroupChr]
+    chrs: Map[String, ModelRegenieAssocGroupChr]
   )
   
   final case class ModelAssocGroupBase(
@@ -475,14 +475,14 @@ object ModelStores extends loamstream.LoamFile {
                                 mhtPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
                                 minPVal = Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.minpval.tsv"))
                               )
-                              //chrs = expandChrList(array.chrs).map { chr =>
-                              //  chr ->
-                              //    ModelRegenieAssocGroupChr(
-                              //      base = dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}",
-                              //      log = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.log"),
-                              //      results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.results.tsv.bgz")
-                              //    )
-                              //}.toMap
+                              chrs = expandChrList(array.chrs).map { chr =>
+                                chr ->
+                                  ModelRegenieAssocGroupChr(
+                                    base = dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}",
+                                    log = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.log"),
+                                    results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.results.tsv.bgz")
+                                  )
+                              }.toMap
                             )
                         }.toMap
                     }.toMap
