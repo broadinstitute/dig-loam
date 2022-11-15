@@ -85,6 +85,7 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelRegenieAssocGroup(
     base: Path,
     results: Store,
+    log: Store,
     summary: ModelGroupSummary,
     chrs: Map[String, ModelRegenieAssocGroupChr]
   )
@@ -111,7 +112,7 @@ object ModelStores extends loamstream.LoamFile {
     step0: ModelRegenieStep0,
     step1: ModelRegenieStep1,
     assocSingle: Map[ConfigTest, ModelRegenieAssocSingle],
-    assocGroup: Map[ConfigTest, ModelRegenieAssocGroup]
+    assocGroup: Map[ConfigTest, Map[MaskFilter, ModelRegenieAssocGroup]]
   )
   
   final case class Model(
@@ -317,26 +318,26 @@ object ModelStores extends loamstream.LoamFile {
                   test -> 
                     ModelHailAssocSingle(
                       results = MultiStore(
-                        local = Some(store(local_dir / s"${baseString}.${test.id}.results.tsv.bgz")),
-                        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test.id}.results.tsv.bgz")); case false => None }
+                        local = Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.tsv.bgz")),
+                        google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).google.get / s"${baseString}.${test.id}.results.tsv.bgz")); case false => None }
                       ),
-                      resultsTbi = store(local_dir / s"${baseString}.${test.id}.results.tsv.bgz.tbi"),
+                      resultsTbi = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.tsv.bgz.tbi"),
                       hailLog = MultiStore(
-                        local = Some(store(local_dir / s"${baseString}.${test.id}.results.hail.log")),
-                        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.${test.id}.results.hail.log")); case false => None }
+                        local = Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.hail.log")),
+                        google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).google.get / s"${baseString}.${test.id}.results.hail.log")); case false => None }
                       ),
                       summary = ModelSingleSummary(
-                        qqPlot = store(local_dir / s"${baseString}.${test.id}.results.qqplot.png"),
-                        qqPlotLowMaf = store(local_dir / s"${baseString}.${test.id}.results.qqplot.lowmaf.png"),
-                        qqPlotMidMaf = store(local_dir / s"${baseString}.${test.id}.results.qqplot.midmaf.png"),
-                        qqPlotHighMaf = store(local_dir / s"${baseString}.${test.id}.results.qqplot.highmaf.png"),
-                        mhtPlot = store(local_dir / s"${baseString}.${test.id}.results.mhtplot.png"),
-                        top1000Results = store(local_dir / s"${baseString}.${test.id}.results.top1000.tsv"),
-                        top1000ResultsAnnot = store(local_dir / s"${baseString}.${test.id}.results.top1000.annot.tsv"),
-                        top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv"),
-                        sigRegions = store(local_dir / s"${baseString}.${test.id}.results.sig.regions.tsv"),
-                        regPlotsBase = local_dir / s"${baseString}.${test.id}.results.sig.regplots",
-                        regPlotsPdf = store(local_dir / s"${baseString}.${test.id}.results.sig.regplots.pdf")
+                        qqPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.png"),
+                        qqPlotLowMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.lowmaf.png"),
+                        qqPlotMidMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.midmaf.png"),
+                        qqPlotHighMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.highmaf.png"),
+                        mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.png"),
+                        top1000Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.tsv"),
+                        top1000ResultsAnnot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.annot.tsv"),
+                        top20AnnotAlignedRisk = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv"),
+                        sigRegions = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regions.tsv"),
+                        regPlotsBase = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots",
+                        regPlotsPdf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots.pdf")
                       )
                     )
                 }.toMap
@@ -364,17 +365,17 @@ object ModelStores extends loamstream.LoamFile {
                               val l = fileToList(gFile).map(e => e.split("\t")(0))
                               mask ->
                                 ModelAssocGroupBase(
-                                  results = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.tsv.bgz"),
+                                  results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.tsv.bgz"),
                                   summary = ModelGroupSummary(
-                                    top20Results = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.top20.tsv"),
-                                    qqPlot = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.qqplot.png"),
-                                    mhtPlot = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
+                                    top20Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.top20.tsv"),
+                                    qqPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.qqplot.png"),
+                                    mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
                                     minPVal = None 
                                   ),
                                   groups = l.map { group =>
                                     group -> ModelEpactsAssocGroup(
-                                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.results.tsv.bgz"),
-                                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.groupfile.tsv")
+                                      results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.results.tsv.bgz"),
+                                      groupFile = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.groupfile.tsv")
                                     )
                                   }.toMap
                                 )
@@ -388,18 +389,18 @@ object ModelStores extends loamstream.LoamFile {
                               val l = fileToList(gFile).map(e => e.split("\t")(0))
                               mask ->
                                 ModelAssocGroupBase(
-                                  results = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.tsv.bgz"),
+                                  results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.tsv.bgz"),
                                   summary = ModelGroupSummary(
-                                    top20Results = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.top20.tsv"),
-                                    qqPlot = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.qqplot.png"),
-                                    mhtPlot = store(local_dir / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
+                                    top20Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.top20.tsv"),
+                                    qqPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.qqplot.png"),
+                                    mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
                                     minPVal = None 
                                   
                                   ),
                                   groups = l.map { group =>
                                     group -> ModelEpactsAssocGroup(
-                                      results = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.results.tsv.bgz"),
-                                      groupFile = store(dirTree.analysisModelGroupsMap(group).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.groupfile.tsv")
+                                      results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.results.tsv.bgz"),
+                                      groupFile = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${mask.id}.${group}.groupfile.tsv")
                                     )
                                   }.toMap
                                 )
@@ -432,53 +433,61 @@ object ModelStores extends loamstream.LoamFile {
                 assocSingle = tests.filter(e => (e.grouped == false && e.platform == "regenie")).map { test => 
                   test -> 
                     ModelRegenieAssocSingle(
-                      base = local_dir / s"${baseString}.${test.id}",
-                      results = store(local_dir / s"${baseString}.${test.id}.results.tsv.bgz"),
-                      resultsTbi = store(local_dir / s"${baseString}.${test.id}.results.tsv.bgz.tbi"),
+                      base = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}",
+                      results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.tsv.bgz"),
+                      resultsTbi = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.tsv.bgz.tbi"),
                       chrs = expandChrList(array.chrs).map { chr =>
                         chr ->
                           ModelRegenieAssocSingleChr(
-                            base = dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test.id}.chr${chr}",
-                            log = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test.id}.chr${chr}.log"),
-                            results = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test.id}.chr${chr}.results.tsv.bgz")
+                            base = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.chr${chr}",
+                            log = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.chr${chr}.log"),
+                            results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.chr${chr}.results.tsv.bgz")
                           )
                       }.toMap,
                       summary = ModelSingleSummary(
-                        qqPlot = store(local_dir / s"${baseString}.${test.id}.results.qqplot.png"),
-                        qqPlotLowMaf = store(local_dir / s"${baseString}.${test.id}.results.qqplot.lowmaf.png"),
-                        qqPlotMidMaf = store(local_dir / s"${baseString}.${test.id}.results.qqplot.midmaf.png"),
-                        qqPlotHighMaf = store(local_dir / s"${baseString}.${test.id}.results.qqplot.highmaf.png"),
-                        mhtPlot = store(local_dir / s"${baseString}.${test.id}.results.mhtplot.png"),
-                        top1000Results = store(local_dir / s"${baseString}.${test.id}.results.top1000.tsv"),
-                        top1000ResultsAnnot = store(local_dir / s"${baseString}.${test.id}.results.top1000.annot.tsv"),
-                        top20AnnotAlignedRisk = store(local_dir / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv"),
-                        sigRegions = store(local_dir / s"${baseString}.${test.id}.results.sig.regions.tsv"),
-                        regPlotsBase = local_dir / s"${baseString}.${test.id}.results.sig.regplots",
-                        regPlotsPdf = store(local_dir / s"${baseString}.${test.id}.results.sig.regplots.pdf")
+                        qqPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.png"),
+                        qqPlotLowMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.lowmaf.png"),
+                        qqPlotMidMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.midmaf.png"),
+                        qqPlotHighMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.highmaf.png"),
+                        mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.png"),
+                        top1000Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.tsv"),
+                        top1000ResultsAnnot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.annot.tsv"),
+                        top20AnnotAlignedRisk = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv"),
+                        sigRegions = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regions.tsv"),
+                        regPlotsBase = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots",
+                        regPlotsPdf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots.pdf")
                       )
                     )
                 }.toMap,
-                assocGroup = tests.filter(e => (e.grouped == true && e.platform == "regenie")).map { test => 
-                  test -> 
-                    ModelRegenieAssocGroup(
-                      base = local_dir / s"${baseString}.${test.id}",
-                      results = store(local_dir / s"${baseString}.${test.id}.results.tsv.bgz"),
-                      summary = ModelGroupSummary(
-                        top20Results = store(local_dir / s"${baseString}.${test.id}.results.top20.tsv"),
-                        qqPlot = store(local_dir / s"${baseString}.${test.id}.results.qqplot.png"),
-                        mhtPlot = store(local_dir / s"${baseString}.${test.id}.results.mhtplot.png"),
-                        minPVal = Some(store(local_dir / s"${baseString}.${test.id}.results.minpval.tsv"))
-                      ),
-                      chrs = expandChrList(array.chrs).map { chr =>
-                        chr ->
-                          ModelRegenieAssocGroupChr(
-                            base = dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test.id}.chr${chr}",
-                            log = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test.id}.chr${chr}.log"),
-                            results = store(dirTree.analysisModelChrsMap(chr).local.get / s"${baseString}.${test.id}.chr${chr}.results.tsv.bgz")
-                          )
-                      }.toMap
-                    )
-                }.toMap
+                assocGroup = schema.masks match {
+                  case Some(_) =>
+                    tests.filter(e => (e.grouped == true && e.platform == "regenie")).map { test => 
+                      test ->
+                        schema.masks.get.map { mask =>
+                          mask ->
+                            ModelRegenieAssocGroup(
+                              base = dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}",
+                              results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.tsv.bgz"),
+                              log = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.log"),
+                              summary = ModelGroupSummary(
+                                top20Results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.top20.tsv"),
+                                qqPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.qqplot.png"),
+                                mhtPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.mhtplot.png"),
+                                minPVal = Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.results.minpval.tsv"))
+                              ),
+                              chrs = expandChrList(array.chrs).map { chr =>
+                                chr ->
+                                  ModelRegenieAssocGroupChr(
+                                    base = dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}",
+                                    log = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.log"),
+                                    results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.results.tsv.bgz")
+                                  )
+                              }.toMap
+                            )
+                        }.toMap
+                    }.toMap
+                  case None => Map[ConfigTest, Map[MaskFilter, ModelRegenieAssocGroup]]()
+                }
               ))
             case false => None
           }

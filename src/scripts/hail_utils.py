@@ -710,9 +710,13 @@ def ht_add_filters(ht: hl.Table, filters: hl.tarray, struct_name: hl.tstr, missi
 				if field_stats.n == 0:
 					all_miss = True
 			else:
-				print("found values " + str(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))) + " in non-numeric field " + field)
-				if len(ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))) == 1:
-					single_val = True
+				non_numeric_fields = ht.aggregate(hl.agg.collect_as_set(eval("ht." + field)))
+				if len(non_numeric_fields) > 20:
+					print("found > 20 values in non-numeric field " + field)
+				else:
+					print("found values " + str(non_numeric_fields) + " in non-numeric field " + field)
+					if len(non_numeric_fields) == 1:
+						single_val = True
 			f[2] = f[2].replace(field,"ht." + field)
 		if not absent and not zero_stddev and not all_miss and not single_val:
 			print("filter table based on configuration filter " + f[0] + " for field/s " + f[1])

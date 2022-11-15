@@ -22,6 +22,11 @@ object QcReport extends loamstream.LoamFile {
         val indelStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).rawData.indel.get.path}""").mkString(",") } }
         val multiStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).preparedData.get.multiallelic.path}""").mkString(",") } }
         val dupVarsRemoveStrings = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { Seq(a.id, s"""${arrayStores(a).rawData.dupVarsRemove.get.path}""").mkString(",") } }
+
+        val freqInclude = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { arrayStores(a).rawData.freq.get } }
+        val indelInclude = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { arrayStores(a).rawData.indel.get } }
+        val multiInclude = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { arrayStores(a).preparedData.get.multiallelic } }
+        val dupVarsRemoveInclude = { for { a <- projectConfig.Arrays if (a.technology == "gwas") && (a.format != "mt") } yield { arrayStores(a).rawData.dupVarsRemove.get } }
         
         drmWith(imageName = s"${utils.image.imgR}") {
         
@@ -32,7 +37,7 @@ object QcReport extends loamstream.LoamFile {
             --multi-in ${multiStrings.mkString(" ")}
             --dupl-in ${dupVarsRemoveStrings.mkString(" ")}
             --out ${qcReportStores.tablesData.rawVariantsSummary}"""
-            .in(arrayStores.map(e => e._2).map(e => e.rawData.freq).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.indel).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.preparedData).flatten.map(e => e.multiallelic).toSeq ++ arrayStores.map(e => e._2).map(e => e.rawData.dupVarsRemove).flatten.toSeq)
+            .in(freqInclude ++ indelInclude ++ multiInclude ++ dupVarsRemoveInclude)
             .out(qcReportStores.tablesData.rawVariantsSummary)
             .tag(s"${qcReportStores.tablesData.rawVariantsSummary}.r".split("/").last)
 
@@ -50,11 +55,11 @@ object QcReport extends loamstream.LoamFile {
 
     }
 
-    projectConfig.Arrays.filter(e => e.technology != "gwas").size match {
+    projectConfig.Arrays.filter(e => (e.technology != "gwas") || (e.format == "mt")).size match {
 
       case n if n > 0 =>
 
-        val seqStatsStrings = { for { a <- projectConfig.Arrays if a.technology != "gwas" } yield { Seq(a.id, s"""${arrayStores(a).refData.variantMetrics.local.get.path}""").mkString(",") } }
+        val seqStatsStrings = { for { a <- projectConfig.Arrays if (a.technology != "gwas") || (a.format == "mt") } yield { Seq(a.id, s"""${arrayStores(a).refData.variantMetrics.local.get.path}""").mkString(",") } }
 
         drmWith(imageName = s"${utils.image.imgR}") {
         

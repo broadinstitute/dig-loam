@@ -154,7 +154,7 @@ def main(args=None):
 
 			if rows > 0:
 
-				text=r"Table \ref{table:seqVariantsSummaryTable} gives an overview of the different variant classes and how they distributed across allele frequencies in the sequenced data. Note that the totals reflect the sum of the chromosomes only. A legend has been provided below the table for further inspection of the class definitions."
+				text=r"Table \ref{table:alignedVariantsSummaryTable} gives an overview of the different variant classes and how they distributed across allele frequencies in the data that was previously aligned to a reference. Note that the totals reflect the sum of the chromosomes only. A legend has been provided below the table for further inspection of the class definitions."
 				f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 	
 				text=[
@@ -194,7 +194,7 @@ def main(args=None):
 					r"		postproc cell content/.append style={/pgfplots/table/@cell content/.add={\fontseries{\seriesdefault}\selectfont}{}},",
 					r"		every head row/.append style={",
 					r"			before row=",
-					r"				\caption{Summary of sequenced variants by frequency and classification}\label{table:seqVariantsSummaryTable}\\",
+					r"				\caption{Summary of pre-aligned variants by frequency and classification}\label{table:alignedVariantsSummaryTable}\\",
 					r"				\insertTableNotes\\\\",
 					r"				\toprule,",
 					r"			after row=",
@@ -227,7 +227,7 @@ def main(args=None):
 						r"\end{ThreePartTable}"])
 				f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-				text = r"For sequence data, reference genome alignment is usually performed during calling, prior to aquisition. So, harmonization was skipped and the data was loaded directly into a Hail \cite{hail} matrix table for downstream use."
+				text = r"For this data, reference genome alignment was likely performed prior to aquisition. So, harmonization was skipped and the data was loaded directly into a Hail \cite{hail} matrix table for downstream use."
 				f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		if args.variants_upset_diagram is not None:

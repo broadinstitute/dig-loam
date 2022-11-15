@@ -52,7 +52,7 @@ def main(args=None):
 					x_f = " and ".join(x)
 				else:
 					x_f = ", ".join([k for k in x[0:(len(x)-1)]]) + " and " + x[len(x)-1]
-				text=r"In order to remove problematic variants, {0} filters were applied to {1} prior to generating analysis ready files. The results of each filter are summarized in Table \ref{{table:variantsExcluded}} and the final variant counts are described in Figure \ref{{fig:variantsRemaining}}.".format(str(len(x)), x_f)
+				text=r"In order to remove problematic variants, {0} filters were applied to {1} prior to generating analysis ready files. The results of each filter are summarized in Table \ref{{table:variantsExcluded}} and the final variant counts are described in Figure \ref{{fig:variantsRemaining}}.".format(str(len(x)), x_f.replace("_","\_"))
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		with open(args.variants_exclude_table) as vexcl:

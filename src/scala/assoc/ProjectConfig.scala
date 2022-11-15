@@ -167,19 +167,24 @@ object ProjectConfig extends loamstream.LoamFile {
 
   final case class ConfigArray(
     id: String,
-    qc: ConfigArrayQc,
-    qcProjectId: String,
-    qcCloudHome: Option[String],
-    qcHailCloud: Boolean,
+    vcf: Option[String],
+    bgen: Option[String],
+    mt: Option[String],
+    refSitesVcf: String,
+    filteredPlink: String,
+    prunedPlink: String,
+    ancestryMap: String,
+    kin0: String,
+    sampleQcStats: String,
+    variantsExclude: String,
+    samplesExclude: String,
     phenoFile: String,
     phenoFileId: String,
     phenoFileSex: Option[String],
     phenoFileSexMaleCode: Option[String],
     phenoFileSexFemaleCode: Option[String],
-    qcSampleFile: String,
-    qcSampleFileId: String,
-    chrs: Seq[String],
-    exportCleanBgen: Boolean) extends Debug
+    annotationsHt: String,
+    chrs: Seq[String]) extends Debug
   
   final case class ConfigCohort(
     id: String,
@@ -274,13 +279,13 @@ object ProjectConfig extends loamstream.LoamFile {
     referenceGenome: String,
     hailCloud: Boolean,
     hailVersion: String,
+    tmpDir: String,
     cloudShare: Option[URI],
     cloudHome: Option[URI],
     projectId: String,
     geneIdMap: String,
     fasta: String,
     vepCacheDir: String,
-    vepPluginsDir: String,
     dbNSFP: String,
     authors: Seq[String],
     email: String,
@@ -478,12 +483,12 @@ object ProjectConfig extends loamstream.LoamFile {
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
       val hailCloud = requiredBool(config = config, field = "hailCloud")
       val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
+      val tmpDir = requiredStr(config = config, field = "tmpDir")
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val geneIdMap = requiredStr(config = config, field = "geneIdMap")
       val fasta = requiredStr(config = config, field = "fasta")
       val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")
-      val vepPluginsDir = requiredStr(config = config, field = "vepPluginsDir")
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
       val authors = requiredStrList(config = config, field = "authors")
       val email = requiredStr(config = config, field = "email")
@@ -801,37 +806,35 @@ object ProjectConfig extends loamstream.LoamFile {
           array <- requiredObjList(config = config, field = "arrays")
         } yield {
 
-          val arrayQcCfg = requiredObj(config = array, field = "qc")
+          val vcf = optionalStr(config = array, field = "vcf")
+          val bgen = optionalStr(config = array, field = "bgen")
+          val mt = optionalStr(config = array, field = "mt")
 
-          val qcConfigFile = requiredStr(config = arrayQcCfg, field = "config")
-          val qcArrayId = requiredStr(config = arrayQcCfg, field = "arrayId")
-
-          val qcConfig = loadConfig(checkPath(qcConfigFile))
-
-          val qcConfigArrays = requiredObjList(config = qcConfig, field = "arrays")
-          val qcConfigThisArray = qcConfigArrays.filter(e => requiredStr(config = e, field = "id", regex = "^[a-zA-Z0-9_]*$") == qcArrayId).head
-
-          val exportCleanBgen = requiredBool(config = qcConfigThisArray, field = "exportCleanBgen")
+          Seq(vcf,bgen,mt).filter(_.isDefined).size == 0 match {
+            case true => throw new CfgException("Arrays: at least one of vcf, bgen, or mt must be defined")
+            case false => ()
+          }
 
           ConfigArray(
             id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$"),
-            qc = ConfigArrayQc(
-              config = qcConfigFile,
-              arrayId = qcArrayId,
-              baseDir = requiredStr(config = arrayQcCfg, field = "baseDir")
-            ),
-            qcProjectId = requiredStr(config = qcConfig, field = "projectId"),
-            qcCloudHome = optionalStr(config = qcConfig, field = "cloudHome"),
-            qcHailCloud = requiredBool(config = qcConfig, field = "hailCloud"),
+            vcf = vcf,
+            bgen = bgen,
+            mt = mt,
+            refSitesVcf = requiredStr(config = array, field = "refSitesVcf"),
+            filteredPlink = requiredStr(config = array, field = "filteredPlink"),
+            prunedPlink = requiredStr(config = array, field = "prunedPlink"),
+            ancestryMap = requiredStr(config = array, field = "ancestryMap"),
+            kin0 = requiredStr(config = array, field = "kin0"),
+            sampleQcStats = requiredStr(config = array, field = "sampleQcStats"),
+            variantsExclude = requiredStr(config = array, field = "variantsExclude"),
+            samplesExclude = requiredStr(config = array, field = "samplesExclude"),
             phenoFile = requiredStr(config = array, field = "phenoFile"),
             phenoFileId = requiredStr(config = array, field = "phenoFileId"),
             phenoFileSex = optionalStr(config = array, field = "phenoFileSex"),
             phenoFileSexMaleCode = optionalStr(config = array, field = "phenoFileSexMaleCode"),
             phenoFileSexFemaleCode = optionalStr(config = array, field = "phenoFileSexFemaleCode"),
-            qcSampleFile = requiredStr(config = qcConfig, field = "sampleFile"),
-            qcSampleFileId = requiredStr(config = qcConfig, field = "sampleFileId"),
+            annotationsHt = requiredStr(config = array, field = "annotationsHt"),
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
-            exportCleanBgen = exportCleanBgen
           )
 
         }
@@ -1221,8 +1224,8 @@ object ProjectConfig extends loamstream.LoamFile {
             case Some(_) =>
               tests.get.intersect(Tests.filter(e => e.platform == "regenie").map(e => e.id)).size match {
                 case n if n > 0 =>
-                  Arrays.filter(e => Cohorts.filter(e => Schemas.filter(e => e.id == schema).head.cohorts.contains(e.id)).map(e => e.array).contains(e.id)).filter(e => e.exportCleanBgen == false).size > 0 match {
-                    case true => throw new CfgException("models.tests: model " + id + " regenie tests require a clean bgen file, but exportCleanBgen == false for at least one array included in the model")
+                  Arrays.filter(e => Cohorts.filter(e => Schemas.filter(e => e.id == schema).head.cohorts.contains(e.id)).map(e => e.array).contains(e.id)).filter(e => e.bgen == None).size > 0 match {
+                    case true => throw new CfgException("models.tests: model " + id + " regenie tests require a clean bgen file, but bgen is not provided for at least one array included in the model")
                     case false => ()
                   }
                 case _ => ()
@@ -1380,13 +1383,13 @@ object ProjectConfig extends loamstream.LoamFile {
         projectId = projectId,
         hailCloud = hailCloud,
         hailVersion = hailVersion,
+        tmpDir = tmpDir,
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
         geneIdMap = geneIdMap,
         fasta = fasta,
         vepCacheDir = vepCacheDir,
-        vepPluginsDir = vepPluginsDir,
         dbNSFP = dbNSFP,
         authors = authors,
         email = email,
@@ -1439,7 +1442,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
-        imgEnsemblVep = path(s"${imagesDir}/ensemblvep.simg"),
+        imgEnsemblVep = path(s"${imagesDir}/ensemblvep_r107.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
         imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg"),
         imgRegenie = path(s"${imagesDir}/regenie-v3.1.2.simg")

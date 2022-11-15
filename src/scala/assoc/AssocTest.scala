@@ -182,7 +182,7 @@ object AssocTest extends loamstream.LoamFile {
         
     }
 
-    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.grouped == false && e.platform == "epacts").size match {
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.grouped == false && e.platform == "regenie").size match {
 
       case n if n > 0 =>
 
@@ -207,11 +207,12 @@ object AssocTest extends loamstream.LoamFile {
         for {
            
           test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup.keys
+          mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).keys
         
         } yield {
 
-          AssocRegenieStep2Group(test, configModel, configSchema, configCohorts, None)
-          //MinPVal(test, configModel, configSchema, configCohorts, None)
+          AssocRegenieStep2Group(test, mask, configModel, configSchema, configCohorts, None)
+          //MinPVal(test, mask, configModel, configSchema, configCohorts, None)
 
         }
 

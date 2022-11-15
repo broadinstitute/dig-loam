@@ -17,7 +17,6 @@ object ProjectStores extends loamstream.LoamFile {
     geneIdMap: MultiStore,
     fasta: Store,
     vepCacheDir: Store,
-    vepPluginsDir: Store,
     dbNSFP: Store,
     annotationStores: Map[ConfigAnnotationTable, MultiStore])
   
@@ -57,7 +56,6 @@ object ProjectStores extends loamstream.LoamFile {
       ),
       fasta = store(path(checkPath(projectConfig.fasta))).asInput,
       vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,
-      vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput,
       dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
       annotationStores = annotationStores
     )
