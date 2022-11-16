@@ -167,7 +167,7 @@ object Load extends loamstream.LoamFile {
             --sample-list-out ${arrayStores(array).refData.sampleList.local.get}
             --mt-out ${arrayStores(array).refData.mt.local.get}"""
             .in(dataInString)
-            .out(arrayStores(array).refData.mt.local.get, arrayStores(array).refData.mtCheckpoint.local.get, arrayStores(array).refData.hailLog.local.get, arrayStores(array).refData.variantMetrics.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).refData.sitesVcf.local.get, arrayStores(array).refData.varList.local.get, arrayStores(array).refData.mtCheckpoint.local.get)
+            .out(arrayStores(array).refData.mt.local.get, arrayStores(array).refData.hailLog.local.get, arrayStores(array).refData.variantMetrics.local.get, arrayStores(array).sexcheckData.sexcheck.local.get, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).refData.sitesVcf.local.get, arrayStores(array).refData.varList.local.get)
             .tag(s"${arrayStores(array).refData.mt.local.get}.pyHailLoad".split("/").last)
   
         }
