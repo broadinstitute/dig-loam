@@ -1,4 +1,5 @@
 import hail as hl
+import tempfile
 import argparse
 
 def main(args=None):
