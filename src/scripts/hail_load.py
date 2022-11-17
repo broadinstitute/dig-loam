@@ -81,7 +81,21 @@ def main(args=None):
 
 	if args.dbsnp_ht:
 		dbsnp_ht = hl.read_table(args.dbsnp_ht)
-		mt = mt.annotate_rows(rsid = hl.if_else(hl.is_defined(dbsnp_ht[mt.row_key]), dbsnp_ht[mt.row_key].rsid, hl.if_else(mt.rsid == '.', mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1], mt.rsid)))
+		mt = mt.annotate_rows(
+			rsid = hl.if_else(
+				hl.is_defined(dbsnp_ht[mt.row_key]),
+				dbsnp_ht[mt.row_key].rsid,
+				hl.if_else(
+					mt.rsid == '.',
+					mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1],
+					hl.if_else(
+						~hl.is_defined(mt.rsid),
+						mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1],
+						mt.rsid
+					)
+				)
+			)
+		)
 	mt.rows().show()
 
 	print("write checkpoint matrix table to disk")
@@ -179,9 +193,9 @@ def main(args=None):
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
 
 	print("write variant list file")
-	mt.rows().key_by().select('uid').export(args.variant_list_out, header=False, types_file=None)
+	mt.rows().key_by().select('rsid','uid').export(args.variant_list_out, header=False, types_file=None)
 
-	print("write variant list file")
+	print("write sample list file")
 	mt.cols().select().export(args.sample_list_out, header=False, types_file=None)
 
 	print("write matrix table to disk")

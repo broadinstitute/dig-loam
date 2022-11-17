@@ -38,7 +38,10 @@ def main(args=None):
 				print "processing variant list file " + x
 				with open(x.split(",")[1]) as f:
 					varlist_tmp = f.read().splitlines()
-					n = n + length(varlist_tmp[~(varlist_tmp.isin(text_dict[x.split(",")[0]]))])
+					n = n + len([x for x in varlist_tmp if not x in text_dict[x.split(",")[0]]])
+					#n = n + len(varlist_tmp[~(varlist_tmp.isin(text_dict[x.split(",")[0]]))])
+					#print(text_dict[x.split(",")[0]][0:10])
+					#return
 
 		if len(filters_dict.values()) == 0:
 			text=r"In order to allow for downstream fine tuning, no filters were applied to the data prior to generating analysis ready files, leaving {1} variants remaining for analysis.".format(str(n))

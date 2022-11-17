@@ -151,11 +151,11 @@ def main(args=None):
 	tbl.flatten().export(args.variants_stats_out, header=True)
 
 	print("write failed variants to file")
-	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select('rsid').export(args.variants_exclude_out, header=False)
+	tbl.filter(tbl.ls_filters.exclude == 1, keep=True).select('rsid','uid').export(args.variants_exclude_out, header=False)
 
 	if args.variants_keep_out is not None:
 		print("write clean variants to file")
-		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select('rsid').export(args.variants_keep_out, header=False)
+		tbl.filter(tbl.ls_filters.exclude == 0, keep=True).select('rsid','uid').export(args.variants_keep_out, header=False)
 
 	if args.cloud:
 		hl.copy_log(args.log)
