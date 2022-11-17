@@ -36,8 +36,9 @@ def main(args=None):
 		if args.variants_upset_diagram is None:
 			for x in args.variant_list:
 				print "processing variant list file " + x
-				varlist_tmp=scan(x.split(",")[1], what="character")
-				n = n + length(varlist_tmp[~(varlist_tmp[1].isin(text_dict[x.split(",")[0]]))])
+				with open(x.split(",")[1]) as f:
+					varlist_tmp = f.read().splitlines()
+					n = n + length(varlist_tmp[~(varlist_tmp.isin(text_dict[x.split(",")[0]]))])
 
 		if len(filters_dict.values()) == 0:
 			text=r"In order to allow for downstream fine tuning, no filters were applied to the data prior to generating analysis ready files, leaving {1} variants remaining for analysis.".format(str(n))
