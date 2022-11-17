@@ -453,7 +453,7 @@ object QcReport extends loamstream.LoamFile {
       drmWith(imageName = s"${utils.image.imgPython2}") {
     
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
-          --bim ${varStrings.mkString(" ")}
+          --variant-list ${varStrings.mkString(" ")}
           --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
           --variants-exclude-table ${qcReportStores.tablesData.variantsExcludeSummary.path.toAbsolutePath()}
           --postqc-variant-filters ${postQcVariantFiltersStrings.mkString(" ")}

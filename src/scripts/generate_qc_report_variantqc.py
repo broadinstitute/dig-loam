@@ -34,10 +34,10 @@ def main(args=None):
 
 		n = 0
 		if args.variants_upset_diagram is None:
-			for x in args.bim:
-				print "processing bim file " + x
-				bim_tmp=pd.read_table(x.split(",")[1], low_memory=False, header=None)
-				n = n + bim_tmp[~(bim_tmp[1].isin(text_dict[x.split(",")[0]]))].shape[0]
+			for x in args.variant_list:
+				print "processing variant list file " + x
+				varlist_tmp=scan(x.split(",")[1], what="character")
+				n = n + length(varlist_tmp[~(varlist_tmp[1].isin(text_dict[x.split(",")[0]]))])
 
 		if len(filters_dict.values()) == 0:
 			text=r"In order to allow for downstream fine tuning, no filters were applied to the data prior to generating analysis ready files, leaving {1} variants remaining for analysis.".format(str(n))
@@ -144,7 +144,7 @@ if __name__ == "__main__":
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--variants-upset-diagram', help='an upset diagram for variants remaining')
-	requiredArgs.add_argument('--bim', nargs='+', help='a list of labels and bim files, each separated by a comma')
+	requiredArgs.add_argument('--variant-list', nargs='+', help='a list of labels and variant list files, each separated by a comma')
 	requiredArgs.add_argument('--variant-exclusions', nargs='+', help='a list of labels and variant exclusion files, each separated by comma', required=True)
 	requiredArgs.add_argument('--postqc-variant-filters', nargs='+', help='a list of labels and post qc variant filter files, each separated by comma', required=True)
 	requiredArgs.add_argument('--variants-exclude-table', help='a variant exclusion summary table', required=True)
