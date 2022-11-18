@@ -20,7 +20,7 @@ def main(args=None):
 		text_dict = collections.OrderedDict()
 		for x in args.variant_exclusions:
 			with open(x.split(",")[1]) as mo:
-				failed = [l.split("\t")[2] for l in mo.read().splitlines()]
+				failed = [l.split("\t")[3] for l in mo.read().splitlines()]
 				text_dict[x.split(",")[0]] = failed
 
 		#if len(text_dict) == 1:
@@ -36,12 +36,9 @@ def main(args=None):
 		if args.variants_upset_diagram is None:
 			for x in args.variant_list:
 				print "processing variant list file " + x
-				with open(x.split(",")[1]) as f:
-					varlist_tmp = f.read().splitlines()
-					n = n + len([x for x in varlist_tmp if not x in text_dict[x.split(",")[0]]])
-					#n = n + len(varlist_tmp[~(varlist_tmp.isin(text_dict[x.split(",")[0]]))])
-					#print(text_dict[x.split(",")[0]][0:10])
-					#return
+				varlist_tmp = pd.read_table(x.split(",")[1], low_memory=False, header=None)
+				n = n + varlist_tmp[~(varlist_tmp[1].isin(text_dict[x.split(",")[0]]))].shape[0]
+				
 
 		if len(filters_dict.values()) == 0:
 			text=r"In order to allow for downstream fine tuning, no filters were applied to the data prior to generating analysis ready files, leaving {1} variants remaining for analysis.".format(str(n))

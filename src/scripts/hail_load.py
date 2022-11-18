@@ -57,7 +57,7 @@ def main(args=None):
 	mt = mt.key_cols_by('s_new')
 	mt = mt.drop('s')
 	mt = mt.rename({'s_new': 's'})
-
+	
 	print("add pheno annotations, replacing any spaces in sample ids with an underscore")
 	sample_in_types = {args.id_col: hl.tstr, args.sex_col: hl.tstr} if args.sex_col else {args.id_col: hl.tstr}
 	tbl = hl.import_table(args.sample_in, delimiter="\t", no_header=False, types=sample_in_types)
@@ -66,18 +66,21 @@ def main(args=None):
 	tbl = tbl.drop(args.id_col)
 	tbl = tbl.rename({args.id_col + '_new': args.id_col})
 	mt = mt.annotate_cols(pheno = tbl[mt.s])
-
+	
 	print("split multiallelic variants")
 	mt_multi_snp = mt.filter_rows((hl.len(mt.alleles) > 2) & ~ hl.is_indel(mt.alleles[0], mt.alleles[1]))
 	mt_multi_indel = mt.filter_rows((hl.len(mt.alleles) > 2) & hl.is_indel(mt.alleles[0], mt.alleles[1]))
 	mt_multi_snp = hl.split_multi_hts(mt_multi_snp)
 	mt_multi_indel = hl.split_multi_hts(mt_multi_indel)
 	mt_multi = mt_multi_snp.union_rows(mt_multi_indel)
-
+	
 	print("prepare biallelic variants")
 	mt_bi = mt.filter_rows(hl.len(mt.alleles) <= 2)
 	mt_bi = mt_bi.annotate_rows(a_index = 1, was_split = False)
 	mt = mt_bi.union_rows(mt_multi)
+
+	print("add uid (chr:pos:ref:alt) id to matrix table")
+	mt = mt.annotate_rows(uid = mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1])
 
 	if args.dbsnp_ht:
 		dbsnp_ht = hl.read_table(args.dbsnp_ht)
@@ -85,15 +88,14 @@ def main(args=None):
 			rsid = hl.if_else(
 				hl.is_defined(dbsnp_ht[mt.row_key]),
 				dbsnp_ht[mt.row_key].rsid,
-				hl.if_else(
-					mt.rsid == '.',
-					mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1],
-					hl.if_else(
-						~hl.is_defined(mt.rsid),
-						mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1],
-						mt.rsid
-					)
-				)
+				mt.rsid
+			)
+		)
+		mt = mt.annotate_rows(
+			rsid = hl.if_else(
+				(mt.rsid == '.') | (~hl.is_defined(mt.rsid)),
+				mt.uid,
+					mt.rsid
 			)
 		)
 	mt.rows().show()
@@ -185,9 +187,6 @@ def main(args=None):
 
 	print("calculate call_rate, AC, AN, AF, het_freq_hwe, p_value_hwe, het, avg_ab, and avg_het_ab accounting appropriately for sex chromosomes")
 	mt = hail_utils.update_variant_qc(mt = mt, is_female = 'is_female', variant_qc = 'variant_qc_raw')
-
-	print("add uid (chr:pos:ref:alt) id to matrix table")
-	mt = mt.annotate_rows(uid = mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1])
 
 	print("write variant table to file")
 	mt.rows().flatten().export(args.variant_metrics_out, types_file=None)
