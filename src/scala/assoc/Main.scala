@@ -77,15 +77,15 @@ object Main extends loamstream.LoamFile {
   
   }
 
+  // Prepare meta cohort model
+  for {
+    x <- modelMetaCollections 
+  } yield {
   
-  //// Prepare meta cohort model
-  //for {
-  //  x <- modelMetaCohorts
-  //} yield {
-  //
-  //  PrepareModel(configModel = x.model, configCohorts = x.cohorts, configMeta = Some(x.meta))
-  //
-  //}
+    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
+  
+  }
+
   //// Cohort variant association for known loci
   //for {
   //  x <- modelCohortKnowns
