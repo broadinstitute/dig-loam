@@ -216,9 +216,9 @@ def main(args=None):
 	if args.cloud:
 		hl.copy_log(args.log)
 
-	if args.tmpdir:
-		print("removing temporary directory")
-		shutil.rmtree(tmpdir)
+	#if args.tmpdir:
+	#	print("removing temporary directory")
+	#	shutil.rmtree(tmpdir)
 
 	global_elapsed_time = time.time() - global_start_time
 	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))
