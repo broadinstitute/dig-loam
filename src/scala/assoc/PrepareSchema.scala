@@ -97,10 +97,10 @@ object PrepareSchema extends loamstream.LoamFile {
   
         for {
   
-          pheno <- binaryFilterPhenos
+          pheno <- binaryFilterPhenos.filter(e => projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
   
         } yield {
-  
+
           googleWith(projectConfig.cloudResources.mtCluster) {
   
             hail"""${utils.python.pyHailSchemaVariantCaseCtrlStats} --
@@ -151,7 +151,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
         for {
   
-          pheno <- binaryFilterPhenos
+          pheno <- binaryFilterPhenos.filter(e => projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
   
         } yield {
   
@@ -220,7 +220,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
               for {
   
-                pheno <- binaryFilterPhenos
+                pheno <- binaryFilterPhenos.filter(e => projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
               
               } yield {
               
@@ -275,7 +275,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
               for {
   
-                pheno <- binaryFilterPhenos
+                pheno <- binaryFilterPhenos.filter(e => projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
               
               } yield {
               
@@ -611,7 +611,7 @@ object PrepareSchema extends loamstream.LoamFile {
   
     for {
     
-      pheno <- binaryFilterPhenos
+      pheno <- binaryFilterPhenos.filter(e => projectConfig.Models.filter(f => f.schema == configSchema.id).map(g => g.pheno).contains(e.id))
     
     } yield {
   
