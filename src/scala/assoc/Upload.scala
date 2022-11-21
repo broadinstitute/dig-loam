@@ -93,14 +93,14 @@ object Upload extends loamstream.LoamFile {
             cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).mt.get.local.get} ${mtGoogleDir}"""
               .in(arrayStores(array).mt.get.local.get)
               .out(arrayStores(array).mt.get.google.get)
-              .tag("mtLocal_to_mtGoogle")
+              .tag(s"mtLocal_to_mtGoogle.${array.id}")
           }
           
           drm {
             cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).annotationsHt.local.get} ${annotationHtGoogleDir}"""
               .in(arrayStores(array).annotationsHt.local.get)
               .out(arrayStores(array).annotationsHt.google.get)
-              .tag("annotationsHtLocal_to_annotationsHtGoogle")
+              .tag(s"annotationsHtLocal_to_annotationsHtGoogle.${array.id}")
           }
 
           googleCopy(arrayStores(array).variantsExclude.local.get, arrayStores(array).variantsExclude.google.get)
