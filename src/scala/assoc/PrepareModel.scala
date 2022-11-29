@@ -93,8 +93,8 @@ object PrepareModel extends loamstream.LoamFile {
     
     }
 
-    val trans = configModel.trans match {
-      case Some(s) => configModel.trans.get
+    val trans = pheno.trans match {
+      case Some(s) => s
       case None => "N/A"
     }
 
@@ -198,8 +198,8 @@ object PrepareModel extends loamstream.LoamFile {
           cmd"""${utils.binary.binRscript} --vanilla --verbose
             ${utils.r.rNullModelResidualPlot}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-            --pheno-col ${configModel.finalPheno}
-            --covars "${configModel.finalCovars}"
+            --pheno-col ${pheno.idAnalyzed}
+            --covars "${getCovarsAnalyzed(configModel, pheno)}"
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}"""
             .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
@@ -214,8 +214,8 @@ object PrepareModel extends loamstream.LoamFile {
 
       case Some(_) =>
 
-        val transString = configModel.trans match {
-          case Some(_) => s"--trans ${configModel.trans.get}"
+        val transString = pheno.trans match {
+          case Some(_) => s"--trans ${pheno.trans.get}"
           case None => ""
         }
 
@@ -235,11 +235,11 @@ object PrepareModel extends loamstream.LoamFile {
                 ${utils.r.rConvertPhenoToEpactsPed}
                 --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --pheno-analyzed ${configModel.finalPheno}
+                --pheno-analyzed ${pheno.idAnalyzed}
                 --iid-col ${array.phenoFileId}
                 ${sexColString}
                 ${transString}
-                --covars-analyzed "${configModel.finalCovars}"
+                --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
                 --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
                 --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
                 .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
@@ -262,10 +262,10 @@ object PrepareModel extends loamstream.LoamFile {
                 ${utils.r.rConvertPhenoToRegeniePhenoCovars}
                 --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --pheno-analyzed ${configModel.finalPheno}
+                --pheno-analyzed ${pheno.idAnalyzed}
                 --iid-col ${array.phenoFileId}
                 ${transString}
-                --covars-analyzed "${configModel.finalCovars}"
+                --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
                 --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
                 --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
                 .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
@@ -312,7 +312,7 @@ object PrepareModel extends loamstream.LoamFile {
                     --mt-in ${arrayStores(array).mt.get.google.get}
                     --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
                     --iid-col ${array.phenoFileId}
-                    --pheno-analyzed ${configModel.finalPheno}
+                    --pheno-analyzed ${pheno.idAnalyzed}
 	        		${binaryString}
                     --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.google.get}
                     --cloud
@@ -339,7 +339,7 @@ object PrepareModel extends loamstream.LoamFile {
                     --mt-in ${arrayStores(array).mt.get.local.get}
                     --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                     --iid-col ${array.phenoFileId}
-                    --pheno-analyzed ${configModel.finalPheno}
+                    --pheno-analyzed ${pheno.idAnalyzed}
 	        		${binaryString}
                     --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}
                     --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get}"""

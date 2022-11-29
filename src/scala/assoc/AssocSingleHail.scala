@@ -30,10 +30,10 @@ object AssocSingleHail extends loamstream.LoamFile {
             --mt-in ${arrayStores(array).mt.get.google.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
             --iid-col ${array.phenoFileId}
-            --pheno-analyzed ${configModel.finalPheno}
+            --pheno-analyzed ${pheno.idAnalyzed}
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.google.get}
             --test ${configTest.model.get}
-            --covars-analyzed "${configModel.finalCovars}"
+            --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.google.get}
             --cloud
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.google.get}"""
@@ -60,10 +60,10 @@ object AssocSingleHail extends loamstream.LoamFile {
             --mt-in ${arrayStores(array).mt.get.local.get}
             --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
             --iid-col ${array.phenoFileId}
-            --pheno-analyzed ${configModel.finalPheno}
+            --pheno-analyzed ${pheno.idAnalyzed}
             --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
             --test ${configTest.model.get}
-            --covars-analyzed "${configModel.finalCovars}"
+            --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
             --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).results.local.get}
             --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).hail.get.assocSingle(configTest).hailLog.local.get}"""
               .in(arrayStores(array).mt.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, projectStores.tmpDir)

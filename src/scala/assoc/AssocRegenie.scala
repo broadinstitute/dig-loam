@@ -16,6 +16,8 @@ object AssocRegenie extends loamstream.LoamFile {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
+    val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
+
     val btString = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head.binary match {
       case true => "--bt"
       case false => ""
@@ -73,7 +75,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --sample ${arrayStores(array).bgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-          --pheno-name ${configModel.finalPheno}
+          --pheno-name ${pheno.idAnalyzed}
           --cli-options "${configTest.cliOpts.get}"
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
@@ -297,7 +299,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --sample ${arrayStores(array).bgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-          --pheno-name ${configModel.finalPheno}
+          --pheno-name ${pheno.idAnalyzed}
           --cli-options "${configTest.cliOpts.get}"
           --group-stats
           --chr ${chr}
@@ -319,7 +321,7 @@ object AssocRegenie extends loamstream.LoamFile {
       //    --sample ${arrayStores(array).bgen.get.sample.local.get}
       //    --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
       //    --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-      //    --pheno-name ${configModel.finalPheno}
+      //    --pheno-name ${pheno.idAnalyzed}
       //    --cli-options "${configTest.cliOpts.get}"
       //    --group-stats
       //    --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
