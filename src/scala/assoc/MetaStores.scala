@@ -24,6 +24,10 @@ object MetaStores extends loamstream.LoamFile {
     log: Store,
     kin0: Store,
     metaCohort: Map[ConfigCohort, MetaCohort])
+
+  final case class Meta(
+    variantStats: Option[MultiStore],
+    variantStatsHailLog: Option[MultiStore])
   
   //final case class Meta(
   //  results: Store,
@@ -76,34 +80,60 @@ object MetaStores extends loamstream.LoamFile {
   
   }.toMap
   
-  //val metaStores = (
-  //    (
-  //      for {
-  //        x <- modelMetas
-  //      } yield {
-  //        (x.model, x.meta)
-  //      }
-  //    )
-  //  ).map { modelMeta =>
-  //
-  //  val model = modelMeta._1
-  //  val meta = modelMeta._2
-  //
-  //  val baseString = s"${projectConfig.projectId}.${meta.id}.${model.id}"
-  //
-  //  val local_dir = dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).local.get
-  //
-  //  val cloud_dir = projectConfig.hailCloud match { case true => Some(dirTree.analysisPhenoMap(projectConfig.Phenos.filter(e => e.id == model.pheno).head).models(model).metas(meta).google.get); case false => None }
-  //
-  //  modelMeta -> Meta(
-  //    results = store(local_dir / s"${baseString}.results.tsv.bgz"),
-  //    resultsGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.results.tsv.bgz")); case false => None },
-  //    hailLog = store(local_dir / s"${baseString}.results.hail.log"),
-  //    hailLogGoogle = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.results.hail.log")); case false => None },
-  //    tbi = store(local_dir / s"${baseString}.results.tsv.bgz.tbi")
-  //  )
-  //
-  //}.toMap
+  val metaStores = (
+      (
+        for {
+          x <- modelMetas
+        } yield {
+          (x.model, x.meta)
+        }
+      )
+    ).map { modelMeta =>
+  
+    val model = modelMeta._1
+    val meta = modelMeta._2
+
+    val baseString = s"${projectConfig.projectId}.${model.id}.${meta.id}"
+  
+    val local_dir = dirTree.analysisModelMap(model).local.get
+
+    val cloud_dir = projectConfig.hailCloud match {
+        case true => Some(dirTree.analysisModelMap(model).google.get)
+        case false => None
+    }
+
+    val variantStats = model.methods match {
+      case Some(s) =>
+        s.contains("variant.stats") match {
+          case true =>
+            Some(MultiStore(
+              local = Some(store(local_dir / s"${baseString}.variant_stats.tsv.bgz")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.tsv.bgz")); case false => None }
+            ))
+          case false => None
+        }
+      case None => None
+    }
+
+    val variantStatsHailLog = model.methods match {
+      case Some(s) =>
+        s.contains("variant.stats") match {
+          case true =>
+            Some(MultiStore(
+              local = Some(store(local_dir / s"${baseString}.variant_stats.hail.log")),
+              google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.variant_stats.hail.log")); case false => None }
+            ))
+          case false => None
+        }
+      case None => None
+    }
+
+    modelMeta -> Meta(
+      variantStats = variantStats,
+      variantStatsHailLog = variantStatsHailLog
+    )
+  
+  }.toMap
   
   //val knownMetaStores = (
   //    (
