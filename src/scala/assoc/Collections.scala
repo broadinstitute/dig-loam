@@ -278,8 +278,8 @@ object Collections extends loamstream.LoamFile {
       meta <- projectConfig.Metas.filter(e => model.metas.get.contains(e.id))
     } yield {
       ModelMeta(
-        model = projectConfig.Models.filter(e => e.id == m).head,
-        meta = projectConfig.Metas.filter(e => e.id == t).head)
+        model = projectConfig.Models.filter(e => e.id == model.id).head,
+        meta = projectConfig.Metas.filter(e => e.id == meta.id).head)
     }
   }.distinct
   
