@@ -136,6 +136,8 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
+            --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+            --executor-memory ${projectConfig.resources.matrixTableHail.mem}
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).mt.get.local.get}
@@ -158,6 +160,8 @@ object PrepareSchema extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
   
             cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
+              --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+              --executor-memory ${projectConfig.resources.matrixTableHail.mem}
               --tmp-dir ${projectStores.tmpDir}
               --reference-genome ${projectConfig.referenceGenome}
               --mt-in ${arrayStores(array).mt.get.local.get}
@@ -259,6 +263,8 @@ object PrepareSchema extends loamstream.LoamFile {
               drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
+                    --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+                    --executor-memory ${projectConfig.resources.matrixTableHail.mem}
                     --tmp-dir ${projectStores.tmpDir}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).mt.get.local.get}
@@ -282,6 +288,8 @@ object PrepareSchema extends loamstream.LoamFile {
                 drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantCaseCtrlStats}
+                    --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+                    --executor-memory ${projectConfig.resources.matrixTableHail.mem}
                     --tmp-dir ${projectStores.tmpDir}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).mt.get.local.get}
@@ -582,6 +590,8 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaVariants}
+            --driver-memory ${projectConfig.resources.tableHail.mem}
+            --executor-memory ${projectConfig.resources.tableHail.mem}
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
@@ -781,6 +791,8 @@ object PrepareSchema extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaPhenoVariants}
+              --driver-memory ${projectConfig.resources.tableHail.mem}
+              --executor-memory ${projectConfig.resources.tableHail.mem}
               --tmp-dir ${projectStores.tmpDir}
               --reference-genome ${projectConfig.referenceGenome}
               --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
@@ -842,6 +854,8 @@ object PrepareSchema extends loamstream.LoamFile {
             drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
             
               cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
+                --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+                --executor-memory ${projectConfig.resources.matrixTableHail.mem}
                 --mt-in ${arrayStores(array).mt.get.local.get}
                 --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
                 --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
