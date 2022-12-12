@@ -1,5 +1,6 @@
 import hail as hl
 import argparse
+import os
 
 def main(args=None):
 
@@ -17,6 +18,7 @@ def main(args=None):
 
 	if not args.cloud:
 		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
+		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + 'g --executor-memory ' + args.executor_memory + 'g pyspark-shell'
 	else:
 		hl.init(idempotent=True)
 
