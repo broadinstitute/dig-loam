@@ -60,6 +60,8 @@ object AssocRegenie extends loamstream.LoamFile {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
+    val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
+
     drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep2Single.cpus, mem = projectConfig.resources.regenieStep2Single.mem, maxRunTime = projectConfig.resources.regenieStep2Single.maxRunTime) {
 
       for {

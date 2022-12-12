@@ -695,18 +695,18 @@ object Fxns extends loamstream.LoamFile {
     val h = getHeader(p)
     var fp = Seq[String]()
     for {
-      x <- models.map(e => e.pheno)
+      x <- models.map(e => e.pheno).toSeq
     } yield {
-      fp = fp ++ Seq(x)
+      fp = fp ++ x
     }
     var fc = Seq[String]()
     for {
-      x <- models.map(e => e.covars)
+      x <- models.map(e => e.covars).toSeq
     } yield {
       x match {
         case Some(s) =>
           for {
-            y <- x.get.split("\\+")
+            y <- x.get.split("\\+").toSeq
           } yield {
             fc = fc ++ Seq(y.replace("[","").replace("]",""))
           }
