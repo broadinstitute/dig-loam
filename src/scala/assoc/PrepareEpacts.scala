@@ -153,6 +153,8 @@ object PrepareEpacts extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
+            --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+            --executor-memory ${projectConfig.resources.matrixTableHail.mem}
             --tmp-dir ${projectStores.tmpDir}
             ${maskedGroupFilesString}
             --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.base.local.get}
@@ -315,6 +317,8 @@ object PrepareEpacts extends loamstream.LoamFile {
           drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
           
             cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateGroupfile}
+              --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+              --executor-memory ${projectConfig.resources.matrixTableHail.mem}
               --tmp-dir ${projectStores.tmpDir}
               ${maskedGroupFilesString}
               --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.phenos(pheno).local.get}

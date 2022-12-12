@@ -1,10 +1,12 @@
 import hail as hl
 import argparse
+import os
 
 def main(args=None):
 
 	if not args.cloud:
 		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
+		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + 'g --executor-memory ' + args.executor_memory + 'g pyspark-shell'
 	else:
 		hl.init(idempotent=True)
 
@@ -69,6 +71,8 @@ if __name__ == "__main__":
 	parser.add_argument('--samples-extract', help='a comma separated list of files containing samples to extract')
 	parser.add_argument('--variants-remove', help='a comma separated list of files containing variants to remove')
 	parser.add_argument('--variants-extract', help='a comma separated list of files containing variants to extract')
+	parser.add_argument('--driver-memory', type=int, default=1, help='spark driver memory in GB (an integer)')
+	parser.add_argument('--executor-memory', type=int, default=1, help='spark executor memory in GB (an integer)')
 	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

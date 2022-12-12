@@ -1,6 +1,7 @@
 import hail as hl
 import argparse
 import pandas as pd
+import os
 
 def main(args=None):
 
@@ -18,6 +19,7 @@ def main(args=None):
 
 	if not args.cloud:
 		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
+		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + 'g --executor-memory ' + args.executor_memory + 'g pyspark-shell'
 	else:
 		hl.init(idempotent=True)
 
@@ -314,6 +316,8 @@ if __name__ == "__main__":
 	parser.add_argument('--ancestry-in', help='an inferred ancestry file')
 	parser.add_argument('--pops', help='a comma separated list of populations to include in analysis')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
+	parser.add_argument('--driver-memory', type=int, default=1, help='spark driver memory in GB (an integer)')
+	parser.add_argument('--executor-memory', type=int, default=1, help='spark executor memory in GB (an integer)')
 	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
