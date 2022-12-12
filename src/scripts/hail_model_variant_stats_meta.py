@@ -1,6 +1,7 @@
 import hail as hl
 import argparse
 import pandas as pd
+import os
 
 def main(args=None):
 
@@ -18,6 +19,7 @@ def main(args=None):
 
 	if not args.cloud:
 		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
+		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + 'g --executor-memory ' + args.executor_memory + 'g pyspark-shell'
 	else:
 		hl.init(idempotent=True)
 
@@ -235,6 +237,8 @@ if __name__ == "__main__":
 	parser.add_argument('--min-partitions', type=int, default=None, help='number of partitions')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--exclusions', help='a comma separated list of cohort ids and exclusion files each separated by 3 underscores')
+	parser.add_argument('--driver-memory', type=int, default=1, help='spark driver memory in GB (an integer)')
+	parser.add_argument('--executor-memory', type=int, default=1, help='spark executor memory in GB (an integer)')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
 	requiredArgs.add_argument('--results', help='a comma separated list of cohort ids, test codes, and results files each separated by 3 underscores', required=True)
