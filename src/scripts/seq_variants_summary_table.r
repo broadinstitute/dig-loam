@@ -31,14 +31,13 @@ for(f in args$stats_in) {
 	dfs[[x]]$freq_group<-factor(NA,levels=c("[0]","(0,0.001)","[0.001,0.005)","[0.005,0.01)","[0.01,0.03)","[0.03,0.05)","[0.05,0.10)","[0.10,0.50]"))
 	dfs[[x]]$indel_group<-factor(NA,levels=c("YES","NO"))
 	dfs[[x]]$was_split_group<-factor(NA,levels=c("YES","NO"))
-	dfs[[x]]$chr_class<-factor(NA,levels=c("Unpl","Auto","X","Y","XY","MT"))
+	dfs[[x]]$chr_class<-factor("Unpl",levels=c("Unpl","Auto","X","Y","XY","MT"))
 
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "0"]<-"Unpl"
-	dfs[[x]]$chr_class[dfs[[x]]$chr %in% as.character(seq(1,22))]<-"Auto"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "23" | dfs[[x]]$chr == "X" ]<-"X"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "24" | dfs[[x]]$chr == "Y"]<-"Y"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "25" | dfs[[x]]$chr == "XY"]<-"XY"
-	dfs[[x]]$chr_class[dfs[[x]]$chr == "26" | dfs[[x]]$chr == "MT"]<-"MT"
+	dfs[[x]]$chr_class[dfs[[x]]$chr %in% as.character(seq(1,22)) | dfs[[x]]$chr %in% paste0("chr",as.character(seq(1,22)))]<-"Auto"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "23" | dfs[[x]]$chr == "X" | dfs[[x]]$chr == "chrX"]<-"X"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "24" | dfs[[x]]$chr == "Y" | dfs[[x]]$chr == "chrY"]<-"Y"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "25" | dfs[[x]]$chr == "XY" | dfs[[x]]$chr == "chrXY"]<-"XY"
+	dfs[[x]]$chr_class[dfs[[x]]$chr == "26" | dfs[[x]]$chr == "MT" | dfs[[x]]$chr == "M" | dfs[[x]]$chr == "chrMT" | dfs[[x]]$chr == "chrM"]<-"MT"
 	
 	dfs[[x]]$freq_group[dfs[[x]]$MAF == 0]<-"[0]"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF > 0 & dfs[[x]]$MAF < 0.001]<-"(0,0.001)"

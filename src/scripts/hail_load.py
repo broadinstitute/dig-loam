@@ -23,7 +23,7 @@ def main(args=None):
 
 	print("making temporary directory for storing checkpoints")
 	if args.tmp_dir and not args.cloud:
-		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir + "/checkpoints")
+		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir)
 	else:
 		tmpdir = tempfile.mkdtemp(dir = "./")
 	tmpdir_path = tmpdir + "/"
