@@ -180,6 +180,8 @@ if __name__ == "__main__":
 	parser.add_argument('--samples-keep-out', help='a base filename for samples to keep')
 	parser.add_argument('--variants-keep-out', help='a base filename for variants to keep')
 	parser.add_argument('--hail-utils', help='a path to a python file containing hail functions')
+	parser.add_argument('--driver-memory', type=int, default=1, help='spark driver memory in GB (an integer)')
+	parser.add_argument('--executor-memory', type=int, default=1, help='spark executor memory in GB (an integer)')
 	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)

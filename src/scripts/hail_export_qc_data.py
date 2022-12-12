@@ -148,6 +148,8 @@ if __name__ == "__main__":
 	parser.add_argument('--variant-filters', help='an id, a column name, and an expression; include variants satisfying this expression')
 	parser.add_argument('--sample-n', type=int, help='an integer indicating the number of desired variants in the final QC data set (will be ignored if remaining variant count is less than this number)')
 	parser.add_argument('--sample-seed', type=int, default=1, help='an integer used as a seed to allow for reproducibility in sampling variants')
+	parser.add_argument('--driver-memory', type=int, default=1, help='spark driver memory in GB (an integer)')
+	parser.add_argument('--executor-memory', type=int, default=1, help='spark executor memory in GB (an integer)')
 	parser.add_argument('--tmp-dir', help='a temporary path')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
