@@ -1,15 +1,14 @@
 object Main extends loamstream.LoamFile {
 
-  //import AssocStores._
   import Collections._
   import CrossCohort._
-  import PrepareModel._
+  //import PrepareModel._
   import PrepareSchema._
   import ProjectConfig._
   import ProjectStores._
   import Tracking._
   import Upload._
-  import AssocTest._
+  //import AssocTest._
   
   import loamstream.conf.DataConfig
   import loamstream.googlecloud.HailSupport._
@@ -59,32 +58,32 @@ object Main extends loamstream.LoamFile {
   
   }
   
-  // Prepare model cohorts
-  for {
-    x <- modelCollections
-  } yield {
-  
-    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
-  
-  }
-
-  //Cohort variant association
-  for {
-    x <- modelCollections if ! x.model.tests.isEmpty
-  } yield {
-  
-    AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
-  
-  }
-
-  // Prepare meta cohort model
-  for {
-    x <- modelMetaCollections 
-  } yield {
-  
-    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
-  
-  }
+  //// Prepare model cohorts
+  //for {
+  //  x <- modelCollections
+  //} yield {
+  //
+  //  PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+  //
+  //}
+  //
+  ////Cohort variant association
+  //for {
+  //  x <- modelCollections if ! x.model.tests.isEmpty
+  //} yield {
+  //
+  //  AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+  //
+  //}
+  //
+  //// Prepare meta cohort model
+  //for {
+  //  x <- modelMetaCollections 
+  //} yield {
+  //
+  //  PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
+  //
+  //}
 
   //// Cohort variant association for known loci
   //for {

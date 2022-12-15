@@ -210,7 +210,8 @@ object ProjectConfig extends loamstream.LoamFile {
     binary: Boolean,
     trans: Option[String],
     idAnalyzed: String,
-    desc: String) extends Debug
+    desc: String,
+    filters: Option[Seq[String]]) extends Debug
   
   final case class ConfigKnown(
     id: String,
@@ -931,6 +932,22 @@ object ProjectConfig extends loamstream.LoamFile {
             case Some(s) => id + "_" + s
             case None => id
           }
+          val filters = optionalStrList(config = pheno, field = "filters") match {
+            case Some(s) =>
+              for {
+                f <- s
+              } yield {
+                f match {
+                  case n if numericVariantFilters.map(e => e.id) contains n => ()
+                  case o if booleanVariantFilters.map(e => e.id) contains o => ()
+                  case p if categoricalVariantFilters.map(e => e.id) contains p => ()
+                  case q if compoundVariantFilters.map(e => e.id) contains q => ()
+                  case _ => throw new CfgException("phenos.filters: pheno " + id + " variant filter '" + f + "' not found")
+                }
+              }
+              Some(s)
+            case None => None
+          }
       
           ConfigPheno(
             id = id,
@@ -938,7 +955,8 @@ object ProjectConfig extends loamstream.LoamFile {
             binary = requiredBool(config = pheno, field = "binary"),
             trans = trans,
             idAnalyzed = idAnalyzed,
-            desc = requiredStr(config = pheno, field = "desc")
+            desc = requiredStr(config = pheno, field = "desc"),
+            filters = filters
           )
       
         }
