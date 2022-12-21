@@ -7,7 +7,7 @@ parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a pre
 parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--pcs-in", dest="pcs_in", type="character", help="pca score file")
 parser$add_argument("--iid-col", dest="iid_col", type="character", help='a column name for sample ID in phenotype file')
-parser$add_argument("--trans", dest="trans", type="character", help="a comma separated list of transformation codes")
+parser$add_argument("--pheno-trans-model-type", dest="pheno_trans_model_type", type="character", help="a comma separated list of transformation codes")
 parser$add_argument("--binary", action='store_true', dest="binary", help="a flag to indicate if binary phenotype")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--min-pcs", dest="min_pcs", type="integer", help="minimum number of pcs to include in analysis")
@@ -82,10 +82,13 @@ cat("read in preliminary phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
 out_cols<-colnames(pheno)
 
-failed <- FALSE
-if(length(unique(pheno[,args$pheno_col])) == 1) {
-	cat(paste0("phenotype ",args$pheno_col," has zero variance\n"))
-	failed <- TRUE
+pheno_cols <- unlist(lapply(unlist(strsplit(pheno_trans_model_type,",")),function(a) { unlist(strsplit(a,":"))[2] }))
+for(p in pheno_cols) {
+	failed <- FALSE
+	if(length(unique(pheno[,p])) == 1) {
+		cat(paste0("phenotype ",p," has zero variance\n"))
+		failed <- TRUE
+	}
 }
 if(length(covars) > 0) {
 	covars_factors <- unlist(strsplit(args$covars,split="\\+"))
@@ -130,7 +133,7 @@ names(pcs)[1]<-args$iid_col
 out<-merge(pheno,pcs,all.y=T)
 
 cat("convert all model vars to numeric\n")
-for(cv in c(args$pheno_col,unlist(strsplit(covars_analysis,split="\\+")))) {
+for(cv in c(pheno_cols,unlist(strsplit(covars_analysis,split="\\+")))) {
 	if(cv %in% names(out)) {
 		out[,cv]<-as.numeric(as.character(out[,cv]))
 	}
@@ -142,46 +145,68 @@ if(ncol(pcs)-1 < args$max_pcs) {
 	n_pcs <- args$max_pcs
 }
 
-if(! args$binary) {
-	if(args$trans == 'invn') {
-		cat("calculating invn transformation\n")
-		if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
-			cat(paste("including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
-			mf <- summary(lm(as.formula(paste(args$pheno_col,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+pheno_trans_model_types<-unlist(strsplit(pheno_trans_model_type,","))
+
+for(p in pheno_trans_model_types) {
+	modelPheno<-unlist(strsplit(p,":"))[1]
+	modelTrans<-unlist(strsplit(p,":"))[2]
+	modelType<-unlist(strsplit(p,":"))[3]
+
+	if(modelType != "binary") {
+		if(modelTrans == 'invn') {
+			cat("calculating invn transformation\n")
+			if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
+				cat(paste("including inferred ancestry as indicator in calculation of residuals",sep=""),"\n")
+				mf <- summary(lm(as.formula(paste(modelPheno,"~factor(ANCESTRY_INFERRED)+",covars_analysis,sep="")),data=out))
+			} else {
+				mf <- summary(lm(as.formula(paste(modelPheno,"~",covars_analysis,sep="")),data=out))
+			}
+			out[,paste0(modelPheno,"_invn")]<-INVN(residuals(mf))
+			out_cols <- c(out_cols,paste0(modelPheno,"_invn"))
+		} else if(modelTrans == 'log') {
+			cat("calculating log transformation\n")
+			nzero <- nrow(out[out[,modelPheno] == 0,])
+			if(nzero > 0) {
+				cat("removing ",nzero," 0 values to allow for log transformation\n")
+				out[,modelPheno][out[,modelPheno] == 0]<-NA
+			}
+			out[,paste0(modelPheno,"_log")]<-log(out[,modelPheno])
+			out_cols <- c(out_cols,paste0(modelPheno,"_log"))
 		} else {
-			mf <- summary(lm(as.formula(paste(args$pheno_col,"~",covars_analysis,sep="")),data=out))
+			cat("no transformation will be applied\n")
 		}
-		out[,paste0(args$pheno_col,"_invn")]<-INVN(residuals(mf))
-		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_invn"), cv = "", n = n_pcs)
-		out_cols <- c(out_cols,paste0(args$pheno_col,"_invn"))
-	} else if(args$trans == 'log') {
-		cat("calculating log transformation\n")
-		nzero <- nrow(out[out[,args$pheno_col] == 0,])
-		if(nzero > 0) {
-			cat("removing ",nzero," 0 values to allow for log transformation\n")
-			out[,args$pheno_col][out[,args$pheno_col] == 0]<-NA
-		}
-		out[,paste0(args$pheno_col,"_log")]<-log(out[,args$pheno_col])
-		pcsin <- pcs_include_quant(d = out, y = paste0(args$pheno_col,"_log"), cv = covars_analysis, n = n_pcs)
-		out_cols <- c(out_cols,paste0(args$pheno_col,"_log"))
 	} else {
 		cat("no transformation will be applied\n")
-		pcsin <- pcs_include_quant(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 	}
-} else {
-	cat("no transformation will be applied\n")
-	pcsin <- pcs_include_binary(d = out, y = args$pheno_col, cv = covars_analysis, n = n_pcs)
 }
 
 pc_outliers <- c()
-for(pc in pcsin) {
-	pc_mean <- mean(out[,pc])
-	pc_sd <- sd(out[,pc])
-	lo <- pc_mean - args$n_stddevs * pc_sd
-	hi <- pc_mean + args$n_stddevs * pc_sd
-	pc_outliers <- c(pc_outliers,out[,args$iid_col][out[,pc] < lo | out[,pc] > hi])
+if(length(pheno_trans_model_types) == 1) {
+	modelPheno<-unlist(strsplit(pheno_trans_model_types,":"))[1]
+	modelTrans<-unlist(strsplit(pheno_trans_model_types,":"))[2]
+	modelType<-unlist(strsplit(pheno_trans_model_types,":"))[3]
+	cat("calculating pcs to include\n")
+	if(modelType != "binary") {
+		if(modelTrans == 'invn') {
+			pcsin <- pcs_include_quant(d = out, y = paste0(modelPheno,"_invn"), cv = "", n = n_pcs)
+		} else if(modelTrans == 'log') {
+			pcsin <- pcs_include_quant(d = out, y = paste0(modelPheno,"_log"), cv = covars_analysis, n = n_pcs)
+		} else {
+			pcsin <- pcs_include_quant(d = out, y = modelPheno, cv = covars_analysis, n = n_pcs)
+		}
+	} else {
+		pcsin <- pcs_include_binary(d = out, y = modelPheno, cv = covars_analysis, n = n_pcs)
+	}
+
+	for(pc in pcsin) {
+		pc_mean <- mean(out[,pc])
+		pc_sd <- sd(out[,pc])
+		lo <- pc_mean - args$n_stddevs * pc_sd
+		hi <- pc_mean + args$n_stddevs * pc_sd
+		pc_outliers <- c(pc_outliers,out[,args$iid_col][out[,pc] < lo | out[,pc] > hi])
+	}
+	pc_outliers <- unique(pc_outliers)
 }
-pc_outliers <- unique(pc_outliers)
 
 if(length(pc_outliers) > 0) {
 	cat(length(pc_outliers)," PC outliers were removed\n")

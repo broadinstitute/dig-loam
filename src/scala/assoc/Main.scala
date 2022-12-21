@@ -2,7 +2,7 @@ object Main extends loamstream.LoamFile {
 
   import Collections._
   import CrossCohort._
-  //import PrepareModel._
+  import PrepareModel._
   import PrepareSchema._
   import ProjectConfig._
   import ProjectStores._
@@ -58,15 +58,15 @@ object Main extends loamstream.LoamFile {
   
   }
   
-  //// Prepare model cohorts
-  //for {
-  //  x <- modelCollections
-  //} yield {
-  //
-  //  PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
-  //
-  //}
-  //
+  // Prepare model cohorts
+  for {
+    x <- modelCollections
+  } yield {
+  
+    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+  
+  }
+  
   ////Cohort variant association
   //for {
   //  x <- modelCollections if ! x.model.tests.isEmpty

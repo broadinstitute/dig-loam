@@ -6,7 +6,7 @@ parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phe
 parser$add_argument("--cohorts-map-in", dest="cohorts_map_in", type="character", help="a fam file")
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
 parser$add_argument("--cohorts", dest="cohorts", type="character", help="A comma separated list of cohorts")
-parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
+parser$add_argument("--pheno-cols", dest="pheno_cols", type="character", help="a comma separated list of column names for phenotypes")
 parser$add_argument("--sex-col", dest="sex_col", type="character", help="a column name for sex")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
 parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
@@ -42,10 +42,12 @@ pheno<-merge(pheno,ancestry,all.x=T)
 cat("limiting to cohorts in list\n")
 pheno<-pheno[pheno$COHORT %in% unlist(strsplit(args$cohorts,",")),]
 
+pheno_cols<-unlist(strsplit(args$pheno_cols,split=","))
+
 if(! is.null(args$sex_col)) {
-	cols_extract <- c(args$iid_col, args$pheno_col, args$sex_col)
+	cols_extract <- c(args$iid_col, pheno_cols, args$sex_col)
 } else {
-	cols_extract <- c(args$iid_col, args$pheno_col)
+	cols_extract <- c(args$iid_col, pheno_cols)
 }
 
 if(! is.null(args$covars)) {
@@ -76,15 +78,19 @@ if(nrow(kinship_in) > 0) {
 	sampleqc_in <- read.table(args$sampleqc_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 	sampleqc_in <- sampleqc_in[,c("IID","call_rate")]
 	names(sampleqc_in)[1] <- args$iid_col
-	sampleqc_in <- merge(sampleqc_in, pheno[,c(args$iid_col, args$pheno_col)], all.x=TRUE)
-	sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", args$pheno_col)]
+	sampleqc_in <- merge(sampleqc_in, pheno[,c(args$iid_col, pheno_cols)], all.x=TRUE)
+	sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", pheno_cols)]
 	names(sampleqc_in)[1] <- "ID1"
 	names(sampleqc_in)[2] <- "ID1_call_rate"
-	names(sampleqc_in)[3] <- "ID1_pheno"
+	for(i in 3:3+length(pheno_cols)) {
+		names(sampleqc_in)[i] <- paste0("ID1_",pheno_cols[i-2])
+	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
 	names(sampleqc_in)[1] <- "ID2"
 	names(sampleqc_in)[2] <- "ID2_call_rate"
-	names(sampleqc_in)[3] <- "ID2_pheno"
+	for(i in 3:3+length(pheno_cols)) {
+		names(sampleqc_in)[i] <- paste0("ID2_",pheno_cols[i-2])
+	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
 	kinship_in <- kinship_in[order(-kinship_in$Kinship),]
 	
@@ -95,8 +101,19 @@ if(nrow(kinship_in) > 0) {
 	if(! args$keep_related) {
 		for(i in 1:nrow(kinship_in)) {
 			if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
-				if(length(unique(pheno[,args$pheno_col])) == 2 & kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {
-					if(kinship_in$ID1_pheno[i] > kinship_in$ID2_pheno[i]) {
+				if(kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {
+					ID1_votes<-0
+					ID2_votes<-0
+					for(pheno_tmp in pheno_cols) {
+						if(length(unique(pheno[,paste0("ID1_",pheno_tmp)])) == 2 & length(unique(pheno[,paste0("ID2_",pheno_tmp)])) == 2) {
+							if(kinship_in[,paste0("ID1_",pheno_tmp)][i] > kinship_in[,paste0("ID1_",pheno_tmp)][i]) {
+								ID1_votes<-ID1_votes+1
+							} else {
+								ID2_votes<-ID2_votes+1
+							}
+						}
+					}
+					if(ID1_votes[i] > ID2_votes[i]) {
 						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
 						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
 					} else {

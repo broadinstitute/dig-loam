@@ -729,16 +729,24 @@ object Fxns extends loamstream.LoamFile {
     }
   }
 
-  def getCovarsAnalyzed(model: ConfigModel, pheno: ConfigPheno): String = {
+  def getCovarsAnalyzed(model: ConfigModel, phenos: Seq[ConfigPheno]): String = {
 
-    pheno.trans match {
-      case Some("invn") => ""
-      case _ =>
-        model.covars match {
-          case Some(s) => s
-          case None => ""
-        }
+    var covarsOut = Seq[String]()
+
+    for {
+      pheno<-phenos
+    } yield {
+      pheno.trans match {
+        case Some("invn") => ()
+        case _ =>
+          model.covars match {
+            case Some(s) => covarsOut = covarsOut ++ Seq(s)
+            case None => ()
+          }
+      }
     }
+
+    covarsOut.mkString(",")
 
   }
 

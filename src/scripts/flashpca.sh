@@ -16,18 +16,16 @@ outpve=${13}
 outmeansd=${14}
 maxiter=${15}
 preliminaryPheno=${16}
-phenotype=${17}
-iidCol=${18}
-trans=${19}
-modelType=${20}
-covars=${21}
-minPcs=${22}
-maxPcs=${23}
-nStddevs=${24}
-phenoFile=${25}
-pcsIncludeFile=${26}
-outlierFile=${27}
-mem=${28}
+iidCol=${17}
+phenoTransModelType=${18}
+covars=${19}
+minPcs=${20}
+maxPcs=${21}
+nStddevs=${22}
+phenoFile=${23}
+pcsIncludeFile=${24}
+outlierFile=${25}
+mem=${26}
 
 echo "binFlashpca: $binFlashpca"
 echo "binRscript: $binRscript"
@@ -45,10 +43,8 @@ echo "outpve: $outpve"
 echo "outmeansd: $outmeansd"
 echo "maxiter: $maxiter"
 echo "preliminaryPheno: $preliminaryPheno"
-echo "phenotype: $phenotype"
 echo "iidCol: $iidCol"
-echo "trans: $trans"
-echo "modelType: $modelType"
+echo "phenoTransModelType: $phenoTransModelType"
 echo "covars: $covars"
 echo "minPcs: $minPcs"
 echo "maxPcs: $maxPcs"
@@ -77,21 +73,13 @@ $binFlashpca \
 --outpve ${outPrefix}.tmp.1.outpve \
 --outmeansd ${outPrefix}.tmp.1.outmeansd
 
-if [ "$modelType" == "binary" ]
-then
-	modelTypeFlag="--binary"
-else
-	modelTypeFlag=""
-fi
-
 ## use r script to check for outliers and generate phenotype file
 $binRscript --vanilla --verbose $rScript \
 --pheno-in $preliminaryPheno \
 --pheno-col $phenotype \
 --pcs-in ${outPrefix}.tmp.1.outpc \
 --iid-col $iidCol \
---trans "$trans" \
-$modelTypeFlag \
+--pheno-trans-model-type "$phenoTransModelType" \
 --covars "$covars" \
 --min-pcs $minPcs \
 --max-pcs $maxPcs \
@@ -142,8 +130,7 @@ if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 		--pheno-col $phenotype \
 		--pcs-in ${outPrefix}.tmp.${i}.outpc \
 		--iid-col $iidCol \
-		--trans "$trans" \
-        $modelTypeFlag \
+		--pheno-trans-model-type "$phenoTransModelType" \
 		--covars "$covars" \
 		--min-pcs $minPcs \
 		--max-pcs $maxPcs \

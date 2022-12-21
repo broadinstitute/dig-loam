@@ -36,32 +36,32 @@ object PrepareRegenie extends loamstream.LoamFile {
     drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
-        --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}
-        --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.base.local.get}"""
-        .in(schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get)
-        .out(schemaStores((configSchema, configCohorts)).regenie.get.setlist.base.local.get)
-        .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.setlist.base.local.get}".split("/").last)
+        --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
+        --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}"""
+        .in(schemaStores((configSchema, configCohorts)).variantFilterTable.local.get)
+        .out(schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get)
+        .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}".split("/").last)
 	
     }
 
-    for {
-    
-      pheno <- binaryFilterPhenos
-    
-    } yield {
-
-      drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
-      
-        cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
-          --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
-          --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get}"""
-          .in(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get)
-          .out(schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get)
-          .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get}".split("/").last)
-      
-      }
-
-    }
+    //for {
+    //
+    //  pheno <- binaryFilterPhenos
+    //
+    //} yield {
+	//
+    //  drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
+    //  
+    //    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
+    //      --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
+    //      --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get}"""
+    //      .in(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get)
+    //      .out(schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get)
+    //      .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get}".split("/").last)
+    //  
+    //  }
+	//
+    //}
 
     configSchema.masks match {
 
@@ -77,35 +77,35 @@ object PrepareRegenie extends loamstream.LoamFile {
             
               cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
                 --mask ${mask.id}
-                --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get}
-                --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).base.local.get}
-                --masks-out ${schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).base.local.get}"""
-                .in(schemaStores((configSchema, configCohorts)).variantFilterTable.base.local.get)
-                .out(schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).base.local.get, schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).base.local.get)
-                .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).base.local.get}".split("/").last)
+                --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
+                --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}
+                --masks-out ${schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).local.get}"""
+                .in(schemaStores((configSchema, configCohorts)).variantFilterTable.local.get)
+                .out(schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get, schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).local.get)
+                .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}".split("/").last)
 	        
             }
     
-            for {
-            
-              pheno <- binaryFilterPhenos
-            
-            } yield {
-              
-              drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
-              
-                cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
-                  --mask ${mask.id}
-                  --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
-                  --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get}
-                  --masks-out ${schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos(pheno).local.get}"""
-                  .in(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get)
-                  .out(schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos(pheno).local.get)
-                  .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get}".split("/").last)
-              
-              }
-              
-            }
+            //for {
+            //
+            //  pheno <- binaryFilterPhenos
+            //
+            //} yield {
+            //  
+            //  drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
+            //  
+            //    cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
+            //      --mask ${mask.id}
+            //      --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get}
+            //      --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get}
+            //      --masks-out ${schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos(pheno).local.get}"""
+            //      .in(schemaStores((configSchema, configCohorts)).variantFilterTable.phenos(pheno).local.get)
+            //      .out(schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get, schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos(pheno).local.get)
+            //      .tag(s"${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get}".split("/").last)
+            //  
+            //  }
+            //  
+            //}
         }
 
       case None => ()

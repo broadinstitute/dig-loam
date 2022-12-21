@@ -17,7 +17,8 @@ object PrepareModel extends loamstream.LoamFile {
   def PrepareModel(configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
   
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
-    val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
+    val phenos = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id))
+    val phenos_analyzed = phenos.map(e => e.idAnalyzed).mkString(",")
   
     val metaPriorSamplesString = configMeta match {
       case Some(s) =>
@@ -75,7 +76,7 @@ object PrepareModel extends loamstream.LoamFile {
         --ancestry-in ${arrayStores(array).ancestryMap}
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
-        --pheno-col ${configModel.pheno}
+        --pheno-cols "${configModel.pheno.mkString(",")}"
         ${sexColString}
         --iid-col ${array.phenoFileId}
         --sampleqc-in ${arrayStores(array).sampleQcStats}
@@ -93,14 +94,15 @@ object PrepareModel extends loamstream.LoamFile {
     
     }
 
-    val trans = pheno.trans match {
-      case Some(s) => s
-      case None => "N/A"
-    }
-
-    val modelType = pheno.binary match {
-      case true => "binary"
-      case false => "quantitative"
+    val phenoTransModelType = for {
+      p <- phenos
+    } yield {
+      (p.trans, p.binary) match {
+        case (Some(s),true)  => s"""${p.id}:${p.trans.get}:binary"""
+        case (Some(s),false) => s"""${p.id}:${p.trans.get}:quantitative"""
+        case (None,true)     => s"""${p.id}:N/A:binary"""
+        case (None,false)     => s"""${p.id}:N/A:quantitative"""
+      }
     }
 
     val covarsStringBash = configModel.covars match {
@@ -127,10 +129,8 @@ object PrepareModel extends loamstream.LoamFile {
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd}
         ${configModel.maxPcaOutlierIterations}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}
-        ${configModel.pheno}
         ${array.phenoFileId}
-        "${trans}"
-        ${modelType}
+        "${phenoTransModelType.mkString(",")}"
         ${covarsStringBash}
         ${projectConfig.minPCs}
         ${projectConfig.maxPCs}
@@ -146,112 +146,107 @@ object PrepareModel extends loamstream.LoamFile {
     
     }
 
-    configCohorts.size match {
-    
-      case x if x > 1 =>
-    
-        drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
-        
-          cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
-            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-            --pheno-name ${configModel.pheno}
-            --iid-col ${array.phenoFileId}
-            ${covarsString}
-            --cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
-            --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
-            --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
-            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary)
-            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
-        
-        }
-    
-      case y if y == 1 =>
-    
-        drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
-        
-          cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
-            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-            --pheno-name ${configModel.pheno}
-            --iid-col ${array.phenoFileId}
-            ${covarsString}
-            --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
-            --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
-            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary)
-            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
-        
-        }
-    
-      case _ => ()
-    
-    }
-
-    pheno.binary match {
-
-      case true => ()
-
-      case false =>
-    
-        drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.standardR.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
-        
-          cmd"""${utils.binary.binRscript} --vanilla --verbose
-            ${utils.r.rNullModelResidualPlot}
-            --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-            --pheno-col ${pheno.idAnalyzed}
-            --covars "${getCovarsAnalyzed(configModel, pheno)}"
-            --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-            --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}"""
-            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.dist, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.sqrtresVsFit)
-            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}".split("/").last)
-        
-        }
-
-    }
+    //configCohorts.size match {
+    //
+    //  case x if x > 1 =>
+    //
+    //    drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
+    //    
+    //      cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
+    //        --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+    //        --pheno-name ${configModel.pheno}
+    //        --iid-col ${array.phenoFileId}
+    //        ${covarsString}
+    //        --cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
+    //        --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
+    //        --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
+    //        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+    //        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary)
+    //        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
+    //    
+    //    }
+    //
+    //  case y if y == 1 =>
+    //
+    //    drmWith(imageName = s"${utils.image.imgPython2}", cores = projectConfig.resources.standardPython.cpus, mem = projectConfig.resources.standardPython.mem, maxRunTime = projectConfig.resources.standardPython.maxRunTime) {
+    //    
+    //      cmd"""${utils.binary.binPython} ${utils.python.pyPhenoDistPlot}
+    //        --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+    //        --pheno-name ${configModel.pheno}
+    //        --iid-col ${array.phenoFileId}
+    //        ${covarsString}
+    //        --out-plot ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}
+    //        --out-vars-summary ${modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary}"""
+    //        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, schemaStores((configSchema, configCohorts)).cohortMap.local.get)
+    //        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).modelVarsSummary)
+    //        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoDistPlot}".split("/").last)
+    //    
+    //    }
+    //
+    //  case _ => ()
+    //
+    //}
+	//
+    //pheno.binary match {
+	//
+    //  case true => ()
+	//
+    //  case false =>
+    //
+    //    drmWith(imageName = s"${utils.image.imgR}", cores = projectConfig.resources.standardR.cpus, mem = projectConfig.resources.standardR.mem, maxRunTime = projectConfig.resources.standardR.maxRunTime) {
+    //    
+    //      cmd"""${utils.binary.binRscript} --vanilla --verbose
+    //        ${utils.r.rNullModelResidualPlot}
+    //        --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+    //        --pheno-col ${pheno.idAnalyzed}
+    //        --covars "${getCovarsAnalyzed(configModel, pheno)}"
+    //        --pcs-include ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+    //        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}"""
+    //        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+    //        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.dist, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsFit, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.resVsLev, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.qq, modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.sqrtresVsFit)
+    //        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).residualPlots.get.base}".split("/").last)
+    //    
+    //    }
+	//
+    //}
 
     configModel.assocPlatforms match {
 
       case Some(_) =>
 
-        val transString = pheno.trans match {
-          case Some(_) => s"--trans ${pheno.trans.get}"
-          case None => ""
-        }
-
-        val sexColString = (array.phenoFileSex, array.phenoFileSexMaleCode, array.phenoFileSexFemaleCode) match {
-          case (Some(_),Some(_),Some(_)) => s"""--sex-col ${array.phenoFileSex.get} --male-code ${array.phenoFileSexMaleCode.get} --female-code ${array.phenoFileSexFemaleCode}"""
-          case (Some(_),_,_) => throw new CfgException("options phenoFileSexMaleCode and phenoFileSexFemaleCode are required with phenoFileSex for array '" + array)
-          case (_,_,_) => ""
-        }
-	    
-        configModel.assocPlatforms.get.contains("epacts") match {
+        //val sexColString = (array.phenoFileSex, array.phenoFileSexMaleCode, array.phenoFileSexFemaleCode) match {
+        //  case (Some(_),Some(_),Some(_)) => s"""--sex-col ${array.phenoFileSex.get} --male-code ${array.phenoFileSexMaleCode.get} --female-code ${array.phenoFileSexFemaleCode}"""
+        //  case (Some(_),_,_) => throw new CfgException("options phenoFileSexMaleCode and phenoFileSexFemaleCode are required with phenoFileSex for array '" + array)
+        //  case (_,_,_) => ""
+        //}
         
-          case true =>
+        //configModel.assocPlatforms.get.contains("epacts") match {
+        //
+        //  case true =>
+        //
+        //    drmWith(imageName = s"${utils.image.imgR}") {
+        //    
+        //      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        //        ${utils.r.rConvertPhenoToEpactsPed}
+        //        --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+        //        --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+        //        --pheno-analyzed ${pheno.idAnalyzed}
+        //        --iid-col ${array.phenoFileId}
+        //        ${sexColString}
+        //        ${transString}
+        //        --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
+        //        --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
+        //        --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
+        //        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+        //        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars)
+        //        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}".split("/").last)
+        //    
+        //    }
+        //
+        //  case false => ()
+        //
+        //}
         
-            drmWith(imageName = s"${utils.image.imgR}") {
-            
-              cmd"""${utils.binary.binRscript} --vanilla --verbose
-                ${utils.r.rConvertPhenoToEpactsPed}
-                --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-                --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --pheno-analyzed ${pheno.idAnalyzed}
-                --iid-col ${array.phenoFileId}
-                ${sexColString}
-                ${transString}
-                --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
-                --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
-                --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
-                .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-                .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars)
-                .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}".split("/").last)
-            
-            }
-        
-          case false => ()
-        
-        }
-	    
         configModel.assocPlatforms.get.contains("regenie") match {
         
           case true =>
@@ -262,10 +257,9 @@ object PrepareModel extends loamstream.LoamFile {
                 ${utils.r.rConvertPhenoToRegeniePhenoCovars}
                 --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --pheno-analyzed ${pheno.idAnalyzed}
+                --phenos-analyzed ${phenos_analyzed}
                 --iid-col ${array.phenoFileId}
-                ${transString}
-                --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
+                --covars-analyzed "${getCovarsAnalyzed(configModel, phenos)}"
                 --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
                 --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
                 .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
@@ -289,70 +283,76 @@ object PrepareModel extends loamstream.LoamFile {
         s.contains("variant.stats") match {
 	    
           case true =>
-	    
-            val binaryString = pheno.binary match {
-              case true => s"--binary"
-              case false => ""
-            }
-	        
-            projectConfig.hailCloud match {
-            
-              case true =>
-	        
-                local {
-                
-                  googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
-	        
-                }
-                
-                googleWith(projectConfig.cloudResources.mtCluster) {
-                
-                  hail"""${utils.python.pyHailModelVariantStats} --
-                    --hail-utils ${projectStores.hailUtils.google.get}
-                    --mt-in ${arrayStores(array).mt.get.google.get}
-                    --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
-                    --iid-col ${array.phenoFileId}
-                    --pheno-analyzed ${pheno.idAnalyzed}
-	        		${binaryString}
-                    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.google.get}
-                    --cloud
-                    --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.google.get}"""
-                      .in(projectStores.hailUtils.google.get, arrayStores(array).mt.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
-                      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.google.get)
-                      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}.google".split("/").last)
-                
-                }
-                
-                local {
-                
-                  googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get)
-                  googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get)
-                
-                }
+
+            for {
+              pheno <- phenos
+            } yield {
+
+              val binaryString = pheno.binary match {
+                case true => s"--binary"
+                case false => ""
+              }
               
-              case false =>
+              projectConfig.hailCloud match {
               
-                drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+                case true =>
+              
+                  local {
+                  
+                    googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
+              
+                  }
+                  
+                  googleWith(projectConfig.cloudResources.mtCluster) {
+                  
+                    hail"""${utils.python.pyHailModelVariantStats} --
+                      --hail-utils ${projectStores.hailUtils.google.get}
+                      --mt-in ${arrayStores(array).mt.get.google.get}
+                      --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
+                      --iid-col ${array.phenoFileId}
+                      --pheno-analyzed ${pheno.idAnalyzed}
+                      ${binaryString}
+                      --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).google.get}
+                      --cloud
+                      --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).google.get}"""
+                        .in(projectStores.hailUtils.google.get, arrayStores(array).mt.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
+                        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).google.get)
+                        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get}.google".split("/").last)
+                  
+                  }
+                  
+                  local {
+                  
+                    googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get)
+                    googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).local.get)
+                  
+                  }
                 
-                  cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
-                    --tmp-dir ${projectStores.tmpDir}
-                    --mt-in ${arrayStores(array).mt.get.local.get}
-                    --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-                    --iid-col ${array.phenoFileId}
-                    --pheno-analyzed ${pheno.idAnalyzed}
-	        		${binaryString}
-                    --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}
-                    --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get}"""
-                      .in(arrayStores(array).mt.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, projectStores.tmpDir)
-                      .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog.get.local.get)
-                      .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats.get.local.get}".split("/").last)
+                case false =>
                 
-                }
-            
+                  drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+                  
+                    cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
+                      --tmp-dir ${projectStores.tmpDir}
+                      --mt-in ${arrayStores(array).mt.get.local.get}
+                      --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+                      --iid-col ${array.phenoFileId}
+                      --pheno-analyzed ${pheno.idAnalyzed}
+                      ${binaryString}
+                      --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get}
+                      --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).local.get}"""
+                        .in(arrayStores(array).mt.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, projectStores.tmpDir)
+                        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).local.get)
+                        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get}".split("/").last)
+                  
+                  }
+              
+              }
+
             }
-	    
+        
           case false => ()
-	    
+        
         }
 
       case None => ()
