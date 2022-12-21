@@ -257,7 +257,7 @@ object PrepareModel extends loamstream.LoamFile {
                 ${utils.r.rConvertPhenoToRegeniePhenoCovars}
                 --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --phenos-analyzed ${phenos_analyzed}
+                --phenos-analyzed "${phenos_analyzed}"
                 --iid-col ${array.phenoFileId}
                 --covars-analyzed "${getCovarsAnalyzed(configModel, phenos)}"
                 --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}

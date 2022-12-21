@@ -4,7 +4,6 @@ set.seed(1)
 
 parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a preliminary phenotype file")
-parser$add_argument("--pheno-col", dest="pheno_col", type="character", help="a column name for phenotype")
 parser$add_argument("--pcs-in", dest="pcs_in", type="character", help="pca score file")
 parser$add_argument("--iid-col", dest="iid_col", type="character", help='a column name for sample ID in phenotype file')
 parser$add_argument("--pheno-trans-model-type", dest="pheno_trans_model_type", type="character", help="a comma separated list of transformation codes")
@@ -82,7 +81,7 @@ cat("read in preliminary phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
 out_cols<-colnames(pheno)
 
-pheno_cols <- unlist(lapply(unlist(strsplit(pheno_trans_model_type,",")),function(a) { unlist(strsplit(a,":"))[2] }))
+pheno_cols <- unlist(lapply(unlist(strsplit(args$pheno_trans_model_type,",")),function(a) { unlist(strsplit(a,":"))[1] }))
 for(p in pheno_cols) {
 	failed <- FALSE
 	if(length(unique(pheno[,p])) == 1) {
@@ -145,7 +144,7 @@ if(ncol(pcs)-1 < args$max_pcs) {
 	n_pcs <- args$max_pcs
 }
 
-pheno_trans_model_types<-unlist(strsplit(pheno_trans_model_type,","))
+pheno_trans_model_types<-unlist(strsplit(args$pheno_trans_model_type,","))
 
 for(p in pheno_trans_model_types) {
 	modelPheno<-unlist(strsplit(p,":"))[1]
@@ -181,6 +180,7 @@ for(p in pheno_trans_model_types) {
 }
 
 pc_outliers <- c()
+pcsin <- c()
 if(length(pheno_trans_model_types) == 1) {
 	modelPheno<-unlist(strsplit(pheno_trans_model_types,":"))[1]
 	modelTrans<-unlist(strsplit(pheno_trans_model_types,":"))[2]

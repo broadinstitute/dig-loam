@@ -746,7 +746,7 @@ object Fxns extends loamstream.LoamFile {
       }
     }
 
-    covarsOut.mkString(",")
+    covarsOut.distinct.mkString("+")
 
   }
 

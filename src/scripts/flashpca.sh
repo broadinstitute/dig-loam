@@ -76,7 +76,6 @@ $binFlashpca \
 ## use r script to check for outliers and generate phenotype file
 $binRscript --vanilla --verbose $rScript \
 --pheno-in $preliminaryPheno \
---pheno-col $phenotype \
 --pcs-in ${outPrefix}.tmp.1.outpc \
 --iid-col $iidCol \
 --pheno-trans-model-type "$phenoTransModelType" \
@@ -127,7 +126,6 @@ if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 		# use r script to check for outliers and generate phenotype file
 		$binRscript --vanilla --verbose $rScript \
 		--pheno-in $preliminaryPheno \
-		--pheno-col $phenotype \
 		--pcs-in ${outPrefix}.tmp.${i}.outpc \
 		--iid-col $iidCol \
 		--pheno-trans-model-type "$phenoTransModelType" \

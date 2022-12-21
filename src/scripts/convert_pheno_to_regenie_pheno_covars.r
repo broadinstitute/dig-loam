@@ -35,14 +35,16 @@ for(cv in covars_analyzed) {
 }
 covars_analyzed <- c(covars_analyzed,pcs)
 
-pheno_df_out<-pheno[,c(args$iid_col, args$phenos_analyzed)]
+phenos_analyzed <- unlist(strsplit(args$phenos_analyzed,split=","))
+
+pheno_df_out<-pheno[,c(args$iid_col, phenos_analyzed)]
 if(! "FID" %in% names(pheno_df_out)) {
 	pheno_df_out$FID<-pheno_df_out[,c(args$iid_col)]
 }
 if(! "IID" %in% names(pheno_df_out)) {
 	pheno_df_out$IID<-pheno_df_out[,c(args$iid_col)]
 }
-pheno_df_out<-pheno_df_out[,c("FID","IID",args$phenos_analyzed)]
+pheno_df_out<-pheno_df_out[,c("FID","IID",phenos_analyzed)]
 
 cat("writing phenotype file","\n")
 write.table(pheno_df_out, args$pheno_out, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")
