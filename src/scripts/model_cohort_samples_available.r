@@ -82,13 +82,13 @@ if(nrow(kinship_in) > 0) {
 	sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", pheno_cols)]
 	names(sampleqc_in)[1] <- "ID1"
 	names(sampleqc_in)[2] <- "ID1_call_rate"
-	for(i in 3:(length(pheno_cols)+length(pheno_cols))) {
+	for(i in 3:(length(pheno_cols)+2)) {
 		names(sampleqc_in)[i] <- paste0("ID1_",pheno_cols[i-2])
 	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
 	names(sampleqc_in)[1] <- "ID2"
 	names(sampleqc_in)[2] <- "ID2_call_rate"
-	for(i in 3:(length(pheno_cols)+length(pheno_cols))) {
+	for(i in 3:(length(pheno_cols)+2)) {
 		names(sampleqc_in)[i] <- paste0("ID2_",pheno_cols[i-2])
 	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)

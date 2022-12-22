@@ -82,9 +82,9 @@ object DirTree extends loamstream.LoamFile {
         schema -> appendSubDir(analysisSchema, schema.id)
       }.toMap
 
-      val analysisSchemaMaskMap = projectConfig.Schemas.map { schema =>
+      val analysisSchemaMaskMap = projectConfig.Schemas.filter(e => ! e.masks.isEmpty).distinct.map { schema =>
         schema -> 
-          projectConfig.Schemas.filter(e => ! e.masks.isEmpty).head.masks.get.map { mask =>
+          schema.masks.get.map { mask =>
             mask -> appendSubDir(analysisSchemaMap(schema), mask.id)
           }.toMap
       }.toMap
@@ -115,7 +115,7 @@ object DirTree extends loamstream.LoamFile {
         model ->
           projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (e.grouped)).map { test =>
             test ->
-              projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).head.masks.get.map { mask =>
+              projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).map(e => e.masks.get).flatten.distinct.map { mask =>
                 mask -> appendSubDir(analysisModelTestMap(model)(test), mask.id)
               }.toMap
           }.toMap
