@@ -47,10 +47,10 @@ object PrepareModel extends loamstream.LoamFile {
       case None =>
         arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
     }
-    
+   
     val keepRelated = configModel.tests match {
       case Some(_) =>
-        projectConfig.Tests.filter(e => configModel.tests.contains(e.id)).filter(e => e.includeFams == true).size match {
+        projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.includeFams == true).size match {
           case n if n > 0 => "--keep-related"
           case _ => ""
         }

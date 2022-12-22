@@ -82,13 +82,13 @@ if(nrow(kinship_in) > 0) {
 	sampleqc_in <- sampleqc_in[,c(args$iid_col, "call_rate", pheno_cols)]
 	names(sampleqc_in)[1] <- "ID1"
 	names(sampleqc_in)[2] <- "ID1_call_rate"
-	for(i in 3:3+length(pheno_cols)) {
+	for(i in 3:(length(pheno_cols)+length(pheno_cols))) {
 		names(sampleqc_in)[i] <- paste0("ID1_",pheno_cols[i-2])
 	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
 	names(sampleqc_in)[1] <- "ID2"
 	names(sampleqc_in)[2] <- "ID2_call_rate"
-	for(i in 3:3+length(pheno_cols)) {
+	for(i in 3:(length(pheno_cols)+length(pheno_cols))) {
 		names(sampleqc_in)[i] <- paste0("ID2_",pheno_cols[i-2])
 	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
@@ -101,11 +101,17 @@ if(nrow(kinship_in) > 0) {
 	if(! args$keep_related) {
 		for(i in 1:nrow(kinship_in)) {
 			if(kinship_in$ID1_remove[i] == 0 & kinship_in$ID2_remove[i] == 0) {
-				if(kinship_in$ID1_pheno[i] != kinship_in$ID2_pheno[i]) {
+				pheno_mismatch<-0
+				for(pheno_tmp in pheno_cols) {
+					if(kinship_in[,paste0("ID1_",pheno_tmp)][i] != kinship_in[,paste0("ID2_",pheno_tmp)][i]) {
+						pheno_mismatch<-1
+					}
+				}
+				if(pheno_mismatch == 1) {
 					ID1_votes<-0
 					ID2_votes<-0
 					for(pheno_tmp in pheno_cols) {
-						if(length(unique(pheno[,paste0("ID1_",pheno_tmp)])) == 2 & length(unique(pheno[,paste0("ID2_",pheno_tmp)])) == 2) {
+						if(length(unique(kinship_in[,paste0("ID1_",pheno_tmp)])) == 2 & length(unique(kinship_in[,paste0("ID2_",pheno_tmp)])) == 2) {
 							if(kinship_in[,paste0("ID1_",pheno_tmp)][i] > kinship_in[,paste0("ID1_",pheno_tmp)][i]) {
 								ID1_votes<-ID1_votes+1
 							} else {
@@ -113,7 +119,7 @@ if(nrow(kinship_in) > 0) {
 							}
 						}
 					}
-					if(ID1_votes[i] > ID2_votes[i]) {
+					if(ID1_votes > ID2_votes) {
 						kinship_in$ID1_remove[which(kinship_in$ID1 == kinship_in$ID2[i])] <- 1
 						kinship_in$ID2_remove[which(kinship_in$ID2 == kinship_in$ID2[i])] <- 1
 					} else {
@@ -182,7 +188,7 @@ if(! is.null(args$cckinship)) {
 }
 
 cat("extracting only complete observations\n")
-pheno <- pheno[complete.cases(pheno),]
+pheno <- subset(pheno, rowSums(! is.na(pheno[pheno_cols])) > 1)
 id_map$removed_incomplete_obs[which((id_map$removed_kinship == 0) & (id_map$removed_cckinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
 
