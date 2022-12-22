@@ -56,12 +56,12 @@ while :; do
 				exit 1
 			fi
 			;;
-		--pheno-name)
+		--pheno-names)
 			if [ "$2" ]; then
-				phenoName=$2
+				phenoNames=$2
 				shift
 			else
-				echo "ERROR: --pheno-name requires a non-empty argument."
+				echo "ERROR: --pheno-names requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -120,7 +120,7 @@ echo "bgen: $bgen"
 echo "sample: $sample"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
-echo "phenoName: $phenoName"
+echo "phenoNames: $phenoNames"
 echo "chr: $chr"
 echo "pred: $pred"
 echo "out: $out"
@@ -142,14 +142,18 @@ $cliOptions \
 # header
 #CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P EXTRA
 
-if [ ! -f "${out}_${phenoName}.regenie.gz" ]
-then
-	EXITCODE=1
-else
-	n=`zcat ${out}_${phenoName}.regenie.gz | head -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
-	(zcat ${out}_${phenoName}.regenie.gz | head -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"P"}'; zcat ${out}_${phenoName}.regenie.gz | sed '1d' | awk -v c=$n 'BEGIN { OFS="\t" } {$1=$1; print $0,10^(-$c)}') | $bgzip -c > ${out}.results.tsv.bgz
-	rm ${out}_${phenoName}.regenie.gz
-	EXITCODE=0
-fi
+for p in `echo $phenoNames | sed 's/,/ /g'`
+do
+	if [ ! -f "${out}_${p}.regenie.gz" ]
+	then
+		EXITCODE=1
+	else
+		mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
+		n=`zcat ${out}_${p}.regenie.tmp.gz | head -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+		(zcat ${out}_${p}.regenie.tmp.gz | head -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"P"}'; zcat ${out}_${p}.regenie.tmp.gz | sed '1d' | awk -v c=$n 'BEGIN { OFS="\t" } {$1=$1; print $0,10^(-$c)}') | $bgzip -c > ${out}.${p}.results.tsv.bgz
+		rm ${out}_${p}.regenie.tmp.gz
+		EXITCODE=0
+	fi
+done
 
 exit $EXITCODE

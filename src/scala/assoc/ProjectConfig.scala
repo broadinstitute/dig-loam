@@ -252,6 +252,7 @@ object ProjectConfig extends loamstream.LoamFile {
     id: String,
     schema: String,
     pheno: Seq[String],
+    binary: Boolean,
     tests: Option[Seq[String]],
     methods: Option[Seq[String]],
     assocPlatforms: Option[Seq[String]],
@@ -1206,6 +1207,13 @@ object ProjectConfig extends loamstream.LoamFile {
             case _ => ()
           }
 
+          Phenos.filter(e => pheno.contains(e.id)).map(e => e.binary).distinct.size match {
+            case n if n > 1 => throw new CfgException("model.pheno: model " + id + " phenotypes must be either all binary or all quantitative")
+            case _ => ()
+          }
+
+          val binary = Phenos.filter(e => pheno.contains(e.id)).map(e => e.binary).head
+
           val covars = optionalStrList(config = model, field = "covars") match {
             case Some(l) => Some(l.mkString("+"))
             case None => None
@@ -1301,6 +1309,7 @@ object ProjectConfig extends loamstream.LoamFile {
             id = id,
             schema = schema,
             pheno = pheno,
+            binary = binary,
             tests = tests,
             methods = methods,
             assocPlatforms = tests match { 

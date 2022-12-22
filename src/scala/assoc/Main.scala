@@ -8,7 +8,7 @@ object Main extends loamstream.LoamFile {
   import ProjectStores._
   import Tracking._
   import Upload._
-  //import AssocTest._
+  import AssocTest._
   
   import loamstream.conf.DataConfig
   import loamstream.googlecloud.HailSupport._
@@ -67,15 +67,15 @@ object Main extends loamstream.LoamFile {
   
   }
   
-  ////Cohort variant association
-  //for {
-  //  x <- modelCollections if ! x.model.tests.isEmpty
-  //} yield {
-  //
-  //  AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
-  //
-  //}
-  //
+  //Cohort variant association
+  for {
+    x <- modelCollections if ! x.model.tests.isEmpty
+  } yield {
+  
+    AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+  
+  }
+  
   //// Prepare meta cohort model
   //for {
   //  x <- modelMetaCollections 

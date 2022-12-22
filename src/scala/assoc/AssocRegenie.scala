@@ -16,9 +16,7 @@ object AssocRegenie extends loamstream.LoamFile {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
 
-    val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
-
-    val btString = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head.binary match {
+    val btString = configModel.binary match {
       case true => "--bt"
       case false => ""
     }
@@ -59,8 +57,8 @@ object AssocRegenie extends loamstream.LoamFile {
   def AssocRegenieStep2Single(configTest: ConfigTest, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
-
-    val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
+    val phenos = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id))
+    val phenosAnalyzed = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id)).map(e => e.idAnalyzed)
 
     drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep2Single.cpus, mem = projectConfig.resources.regenieStep2Single.mem, maxRunTime = projectConfig.resources.regenieStep2Single.maxRunTime) {
 
@@ -70,6 +68,12 @@ object AssocRegenie extends loamstream.LoamFile {
 
       } yield {
 
+        val phenoResultsOut = for {
+          p <- phenos
+        } yield {
+          modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results(p)
+        }
+
         cmd"""${utils.bash.shRegenieStep2Single}
           --regenie ${utils.binary.binRegenie}
           --bgzip ${utils.binary.binBgzip}
@@ -77,46 +81,54 @@ object AssocRegenie extends loamstream.LoamFile {
           --sample ${arrayStores(array).bgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-          --pheno-name ${pheno.idAnalyzed}
+          --pheno-names "${phenosAnalyzed}"
           --cli-options "${configTest.cliOpts.get}"
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).base}"""
           .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results}".split("/").last)
+          .out(phenoResultsOut :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).log)
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).base}".split("/").last)
 
       }
 
     }
 
-    val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(expandChrList(array.chrs).head).results.toString.split("@")(1).replace("chr" + expandChrList(array.chrs).head, "chr___CHR___")}"""
-          
-    val resultsFiles = for {
-      chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs.keys.toList
-    } yield {
-      modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${utils.bash.shMergeRegenieSingleResults}
-         --results ${maskResultsFile}
-         --chrs ${expandChrList(array.chrs).mkString(",")}
-         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results}"""
-        .in(resultsFiles)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results}".split("/").last)
-    
-    }
+    for {
 
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results}"""
-        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).resultsTbi)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).resultsTbi}".split("/").last)
-    
+      pheno <- phenos
+
+    } yield {
+
+      val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(expandChrList(array.chrs).head).results(pheno).toString.split("@")(1).replace("chr" + expandChrList(array.chrs).head, "chr___CHR___")}"""
+          
+      val resultsFiles = for {
+        chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs.keys.toList
+      } yield {
+        modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).results(pheno)
+      }
+      
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""${utils.bash.shMergeRegenieSingleResults}
+           --results ${maskResultsFile}
+           --chrs ${expandChrList(array.chrs).mkString(",")}
+           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}"""
+          .in(resultsFiles)
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}".split("/").last)
+      
+      }
+	  
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""${utils.binary.binTabix} -f -b 2 -e 2 ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}"""
+          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).resultsTbi(pheno))
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).resultsTbi(pheno)}".split("/").last)
+      
+      }
+
     }
     
     //drmWith(imageName = s"${utils.image.imgPython2}") {
@@ -268,23 +280,8 @@ object AssocRegenie extends loamstream.LoamFile {
   def AssocRegenieStep2Group(configTest: ConfigTest, mask: MaskFilter, configModel: ConfigModel, configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort], configMeta: Option[ConfigMeta] = None): Unit = {
 
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
-
-    val pheno = projectConfig.Phenos.filter(e => e.id == configModel.pheno).head
-
-    val annoFile = schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos.keys.toList.contains(pheno) match {
-      case true => schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).phenos(pheno).local.get
-      case false => schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).base.local.get
-    }
-
-    val setList = schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos.keys.toList.contains(pheno) match {
-      case true => schemaStores((configSchema, configCohorts)).regenie.get.setlist.phenos(pheno).local.get
-      case false => schemaStores((configSchema, configCohorts)).regenie.get.setlist.base.local.get
-    }
-
-    val maskDef = schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos.keys.toList.contains(pheno) match {
-      case true => schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).phenos(pheno).local.get
-      case false => schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).base.local.get
-    }
+    val phenos = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id))
+    val phenosAnalyzed = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id)).map(e => e.idAnalyzed)
 
     drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep2Group.cpus, mem = projectConfig.resources.regenieStep2Group.mem, maxRunTime = projectConfig.resources.regenieStep2Group.maxRunTime) {
 
@@ -293,6 +290,12 @@ object AssocRegenie extends loamstream.LoamFile {
         chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs.keys.toList
 	  
       } yield {
+
+        val phenoResultsOut = for {
+          p <- phenos
+        } yield {
+          modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results(p)
+        }
 	  
         cmd"""${utils.bash.shRegenieStep2Group}
           --regenie ${utils.binary.binRegenie}
@@ -301,18 +304,18 @@ object AssocRegenie extends loamstream.LoamFile {
           --sample ${arrayStores(array).bgen.get.sample.local.get}
           --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-          --pheno-name ${pheno.idAnalyzed}
+          --pheno-names "${phenosAnalyzed}"
           --cli-options "${configTest.cliOpts.get}"
           --group-stats
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
-          --anno-file ${annoFile}
-          --set-list ${setList}
-          --mask-def ${maskDef}
+          --anno-file ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}
+          --set-list ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}
+          --mask-def ${schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).local.get}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).base}"""
-          .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).log, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results}".split("/").last)
+          .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList, schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get, schemaStores((configSchema, configCohorts)).regenie.get.masks(mask).local.get, schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get)
+          .out(phenoResultsOut :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).log)
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).base}".split("/").last)
 	  
       }
 
@@ -337,27 +340,33 @@ object AssocRegenie extends loamstream.LoamFile {
 
     }
 
-    val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(expandChrList(array.chrs).head).results.toString.split("@")(1).replace("chr" + expandChrList(array.chrs).head, "chr___CHR___")}"""
-          
-    val resultsFiles = for {
-      chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs.keys.toList
+    for {
+
+      pheno <- phenos
+
     } yield {
-      modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${utils.bash.shMergeRegenieGroupResults}
-         --results ${maskResultsFile}
-         --chrs ${expandChrList(array.chrs).mkString(",")}
-         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}"""
-        .in(resultsFiles)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results}".split("/").last)
-    
-    }
 
+      val maskResultsFile = s"""${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(expandChrList(array.chrs).head).results(pheno).toString.split("@")(1).replace("chr" + expandChrList(array.chrs).head, "chr___CHR___")}"""
+            
+      val resultsFiles = for {
+        chr <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs.keys.toList
+      } yield {
+        modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).chrs(chr).results(pheno)
+      }
+      
+      drmWith(imageName = s"${utils.image.imgTools}") {
+      
+        cmd"""${utils.bash.shMergeRegenieGroupResults}
+           --results ${maskResultsFile}
+           --chrs ${expandChrList(array.chrs).mkString(",")}
+           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}"""
+          .in(resultsFiles)
+          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno))
+          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}".split("/").last)
+      
+      }
 
+    }
 
 
 

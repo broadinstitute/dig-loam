@@ -26,7 +26,9 @@ object DirTree extends loamstream.LoamFile {
     analysisModel: MultiPath,
     analysisModelMap: Map[ConfigModel, MultiPath],
     analysisModelTestMap: Map[ConfigModel, Map[ConfigTest, MultiPath]],
+    //analysisModelTestPhenoMap: Map[ConfigModel, Map[ConfigTest, Map[ConfigPheno, MultiPath]]],
     analysisModelTestMaskMap: Map[ConfigModel, Map[ConfigTest, Map[MaskFilter, MultiPath]]],
+    //analysisModelTestMaskPhenoMap: Map[ConfigModel, Map[ConfigTest, Map[MaskFilter, Map[ConfigPheno, MultiPath]]]],
     report: MultiPath,
     //reportAnalysis: MultiPath,
     //reportAnalysisMap: Map[ConfigReport, MultiPath]
@@ -99,6 +101,16 @@ object DirTree extends loamstream.LoamFile {
           }.toMap
       }.toMap
 
+      //val analysisModelTestPhenoMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+      //  model ->
+      //    projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (! e.grouped)).map { test =>
+      //      test ->
+      //        projectConfig.Phenos.filter(e => model.pheno.contains(e.id)).map { pheno =>
+      //          pheno -> appendSubDir(analysisModelTestMap(model)(test), pheno.id)
+      //        }.toMap
+      //    }.toMap
+      //}.toMap
+
       val analysisModelTestMaskMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
         model ->
           projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (e.grouped)).map { test =>
@@ -108,6 +120,19 @@ object DirTree extends loamstream.LoamFile {
               }.toMap
           }.toMap
       }.toMap
+
+      //val analysisModelTestMaskPhenoMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+      //  model ->
+      //    projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (e.grouped)).map { test =>
+      //      test ->
+      //        projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).head.masks.get.map { mask =>
+      //          mask ->
+      //            projectConfig.Phenos.filter(e => model.pheno.contains(e.id)).map { pheno =>
+      //              pheno -> appendSubDir(analysisModelTestMaskMap(model)(test)(mask), pheno.id)
+      //            }.toMap
+      //        }.toMap
+      //    }.toMap
+      //}.toMap
 
       //val reportAnalysisMap = cfg.Reports.map { report =>
       //  report -> appendSubDir(reportAnalysis, report.id)
@@ -128,7 +153,9 @@ object DirTree extends loamstream.LoamFile {
         analysisModel = analysisModel,
         analysisModelMap = analysisModelMap,
         analysisModelTestMap = analysisModelTestMap,
+        //analysisModelTestPhenoMap = analysisModelTestPhenoMap,
         analysisModelTestMaskMap = analysisModelTestMaskMap,
+        //analysisModelTestMaskPhenoMap = analysisModelTestMaskPhenoMap,
         report = report
         //reportAnalysis = reportAnalysis,
         //reportAnalysisMap = reportAnalysisMap
