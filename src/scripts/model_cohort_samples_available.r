@@ -61,10 +61,12 @@ if(! is.null(args$covars)) {
 out_cols<-colnames(pheno)
 
 id_map <- data.frame(ID = pheno[,args$iid_col])
+id_map$flagged_kinship <- 0
 id_map$removed_kinship <- 0
+id_map$flagged_cckinship <- 0
 id_map$removed_cckinship <- 0
+id_map$flagged_incomplete_obs <- 0
 id_map$removed_incomplete_obs <- 0
-id_map$cohort <- NA
 
 cat("reading in kinship values for related pairs\n")
 kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
@@ -120,11 +122,20 @@ if(nrow(kinship_in) > 0) {
 		samples_excl <- kinship_in$ID1[which(kinship_in$ID1_remove == 1)]
 		samples_excl <- c(samples_excl, kinship_in$ID2[which(kinship_in$ID2_remove == 1)])
 		pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+		id_map$flagged_kinship[which(id_map$ID %in% samples_excl)] <- 1
 		id_map$removed_kinship[which(id_map$ID %in% samples_excl)] <- 1
-		cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)]))," samples due to within-array kinship"),"\n")
+		cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)])),"/",as.character(length(id_map$flagged_kinship[which(id_map$flagged_kinship == 1)]))," flagged samples due to within-array kinship"),"\n")
 	}
 } else {
 	cat(paste0("removed 0 samples due to kinship"),"\n")
+}
+
+get_id<-function(s) {
+	paste(unlist(strsplit(s,"_"))[1:(length(unlist(strsplit(s,"_")))-1)],collapse="_")
+}
+
+get_cohort<-function(s) {
+	unlist(strsplit(s,"_"))[length(unlist(strsplit(s,"_")))]
 }
 
 if(! is.null(args$cckinship)) {
@@ -142,10 +153,10 @@ if(! is.null(args$cckinship)) {
 		quit(status=1)
 	}
 	k <- read.table(args$cckinship, header=T, as.is=T, stringsAsFactors=F)
-	k$id1<-colsplit(k$ID1,"_",names=c("id1","X"))$id1
-	k$id2<-colsplit(k$ID2,"_",names=c("id2","X"))$id2
-	k$c1<-colsplit(k$ID1,"_",names=c("X","c1"))$c1
-	k$c2<-colsplit(k$ID2,"_",names=c("X","c2"))$c2
+	k$id1<-sapply(k$ID1,get_id)
+	k$id2<-sapply(k$ID2,get_id)
+	k$c1<-sapply(k$ID1,get_cohort)
+	k$c2<-sapply(k$ID2,get_cohort)
 	i <- 0
 	if(! is.null(args$meta_prior_samples)) {
 		samples_excl <- c()
@@ -153,21 +164,24 @@ if(! is.null(args$cckinship)) {
 			i <- i + 1
 			prior_samples <- scan(file=mps,what="character")
 			k <- k[which(k$c1 %in% cohorts | k$c2 %in% cohorts),]
-			k <- k[which(((k$c1 == meta[i]) && (k$id1 %in% prior_samples)) | ((k$c2 == meta[i]) && (k$id2 %in% prior_samples))),]
+			k <- k[which(((k$c1 == meta[i]) & (k$id1 %in% prior_samples)) | ((k$c2 == meta[i]) & (k$id2 %in% prior_samples))),]
 			samples_excl <- c(samples_excl, unique(c(k$id1[k$c1 %in% cohorts], k$id2[k$c2 %in% cohorts])))
 		}
 	} else {
 		cat("exiting because --cckinship and --meta-cohorts were provided, but --meta-prior-samples was not provided\n")
 		quit(status=1)
 	}
+	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+	id_map$flagged_cckinship[which(id_map$ID %in% samples_excl)] <- 1
 	id_map$removed_cckinship[which((id_map$removed_kinship == 0) & (id_map$ID %in% samples_excl))] <- 1
-	cat(paste0("removed ",as.character(length(id_map$removed_cckinship[which(id_map$removed_cckinship == 1)]))," samples due to cross cohort kinship"),"\n")
+	cat(paste0("removed ",as.character(length(id_map$removed_cckinship[which(id_map$removed_cckinship == 1)])),"/",as.character(length(id_map$flagged_cckinship[which(id_map$flagged_cckinship == 1)]))," flagged samples due to cross cohort kinship"),"\n")
 }
 
 cat("extracting only complete observations\n")
 pheno <- pheno[complete.cases(pheno),]
+id_map$flagged_incomplete_obs[which(! id_map$ID %in% pheno[,args$iid_col])] <- 1
 id_map$removed_incomplete_obs[which((id_map$removed_kinship == 0) & (id_map$removed_cckinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
-cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)]))," samples with incomplete observations"),"\n")
+cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)])),"/",as.character(length(id_map$flagged_incomplete_obs[which(id_map$flagged_incomplete_obs == 1)]))," flagged samples with incomplete observations"),"\n")
 
 cohorts_map <- cohorts_map[cohorts_map[,args$iid_col] %in% pheno[,args$iid_col],]
 
