@@ -39,24 +39,29 @@ phenos_analyzed <- unlist(strsplit(args$phenos_analyzed,split=","))
 
 pheno_df_out<-pheno[,c(args$iid_col, phenos_analyzed)]
 if(! "FID" %in% names(pheno_df_out)) {
-	pheno_df_out$FID<-pheno_df_out[,c(args$iid_col)]
+	pheno_df_out$FID<-pheno_df_out[,args$iid_col]
 }
 if(! "IID" %in% names(pheno_df_out)) {
-	pheno_df_out$IID<-pheno_df_out[,c(args$iid_col)]
+	pheno_df_out$IID<-pheno_df_out[,args$iid_col]
 }
 pheno_df_out<-pheno_df_out[,c("FID","IID",phenos_analyzed)]
 
 cat("writing phenotype file","\n")
 write.table(pheno_df_out, args$pheno_out, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")
 
-covars_df_out<-pheno[,c(args$iid_col, covars_analyzed)]
-if(! "FID" %in% names(covars_df_out)) {
-	covars_df_out$FID<-covars_df_out[,c(args$iid_col)]
-}
-if(! "IID" %in% names(covars_df_out)) {
-	covars_df_out$IID<-covars_df_out[,c(args$iid_col)]
-}
-covars_df_out<-covars_df_out[,c("FID","IID",covars_analyzed)]
+if(length(covars_analyzed) > 0) {
+	covars_df_out<-pheno[,c(args$iid_col, covars_analyzed)]
+	if(! "FID" %in% names(covars_df_out)) {
+		covars_df_out$FID<-covars_df_out[,args$iid_col]
+	}
+	if(! "IID" %in% names(covars_df_out)) {
+		covars_df_out$IID<-covars_df_out[,args$iid_col]
+	}
+	covars_df_out<-covars_df_out[,c("FID","IID",covars_analyzed)]
 
-cat("writing covariates file","\n")
-write.table(covars_df_out, args$covars_out, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")
+	cat("writing covariates file","\n")
+	write.table(covars_df_out, args$covars_out, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")
+} else {
+	write.table(pheno_df_out[,c("FID","IID")], args$covars_out, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")
+}
+
