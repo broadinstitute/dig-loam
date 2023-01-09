@@ -48,8 +48,9 @@ def main(args=None):
 		ht = ht.annotate(ls_previous_exclude = 0)
 		for variant_file in args.variants_remove.split(","):
 			try:
-				variants_remove_tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'}).key_by('f0', 'f1', 'f2')
+				variants_remove_tbl = hl.import_table(variant_file, no_header=True, types={'f0': 'locus<' + args.reference_genome + '>', 'f1': 'array<str>', 'f2': 'str'})
 				variants_remove_tbl = variants_remove_tbl.annotate(f2 = hl.if_else(hl.is_missing(variants_remove_tbl.f2), variants_remove_tbl.f0.contig + ":" + hl.str(variants_remove_tbl.f0.position) + ":" + variants_remove_tbl.f1[0] + ":" + variants_remove_tbl.f1[1], variants_remove_tbl.f2))
+				variants_remove_tbl = variants_remove_tbl.key_by('f0', 'f1', 'f2')
 			except:
 				print("skipping empty file " + variant_file)
 			else:
