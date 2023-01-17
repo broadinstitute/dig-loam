@@ -101,8 +101,7 @@ object ProjectConfig extends loamstream.LoamFile {
     includeFams: Boolean,
     platform: String,
     model: Option[String],
-    cliOpts: Option[String],
-    step1CliOpts: Option[String]) extends Debug
+    cliOpts: Option[String]) extends Debug
   
   final case class ConfigNumericFilters(
     id: String,
@@ -259,6 +258,7 @@ object ProjectConfig extends loamstream.LoamFile {
     assocPlatforms: Option[Seq[String]],
     maxPcaOutlierIterations: Int,
     covars: Option[String],
+    regenieStep1CliOpts: String,
     cohorts: Seq[String],
     metas: Option[Seq[String]],
     merges: Option[Seq[String]],
@@ -639,18 +639,13 @@ object ProjectConfig extends loamstream.LoamFile {
             case "regenie" => Some(requiredStr(config = test, field = "cliOpts"))
             case _ => None
           }
-          val step1Cli = p match {
-            case "regenie" => Some(requiredStr(config = test, field = "step1CliOpts"))
-            case _ => None
-          }
           ConfigTest(
             id = requiredStr(config = test, field = "id", regex = "^[a-zA-Z0-9_]*$"),
             grouped = requiredBool(config = test, field = "grouped"),
             includeFams = requiredBool(config = test, field = "includeFams"),
             platform = p,
             model = m,
-            cliOpts = cli,
-            step1CliOpts = step1Cli
+            cliOpts = cli
           )
         }
       }
@@ -1224,7 +1219,12 @@ object ProjectConfig extends loamstream.LoamFile {
             case Some(l) => Some(l.mkString("+"))
             case None => None
           }
-  
+
+          val regenieStep1CliOpts = optionalStr(config = model, field = "regenieStep1CliOpts") match {
+            case Some(l) => l
+            case None => ""
+          }
+
           val tests = optionalStrList(config = model, field = "tests", regex = Tests.map(e => e.id).mkString("|"))
           tests match {
             case Some(_) =>
@@ -1324,6 +1324,7 @@ object ProjectConfig extends loamstream.LoamFile {
             },
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = covars,
+            regenieStep1CliOpts = optionalStr(config = model, field = "regenieStep1CliOpts"),
             cohorts = cohorts,
             metas = (Schemas.filter(e => e.id == schema).head.design, metas) match {
               case ("full", Some(s)) => throw new CfgException("models.metas:  model " + id + " schema " + schema + " 'full' design and metas are not allowed")

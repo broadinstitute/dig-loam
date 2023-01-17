@@ -38,7 +38,7 @@ object AssocRegenie extends loamstream.LoamFile {
         --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
         --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
         --exclude ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude}
-        --cli-options "${configTest.step1CliOpts.get}"
+        --cli-options "${configModel.regenieStep1CliOpts}"
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
         --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log}"""
         .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude)
