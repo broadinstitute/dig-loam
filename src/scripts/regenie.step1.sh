@@ -47,9 +47,14 @@ while :; do
 				exit 1
 			fi
 			;;
-		--bt)
-			bt=true
-			#shift
+		--cli-options)
+			if [ "$2" ]; then
+				cliOptions=$2
+				shift
+			else
+				echo "ERROR: --cli-options requires a non-empty argument."
+				exit 1
+			fi
 			;;
 		--out)
 			if [ "$2" ]; then
@@ -87,16 +92,9 @@ echo "bed: $bed"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "exclude: $exclude"
-echo "bt: $bt"
 echo "out: $out"
 echo "log: $log"
-
-if [ $bt ]
-then
-	btString="--bt"
-else
-	btString=""
-fi
+echo "cliOptions: $cliOptions"
 
 $regenie \
 --step 1 \
@@ -104,8 +102,7 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 --exclude $exclude \
---bsize 200 \
-$btString \
+$cliOptions \
 --lowmem \
 --lowmem-prefix ${out}.tmp_rg \
 --out $out \

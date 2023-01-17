@@ -101,7 +101,8 @@ object ProjectConfig extends loamstream.LoamFile {
     includeFams: Boolean,
     platform: String,
     model: Option[String],
-    cliOpts: Option[String]) extends Debug
+    cliOpts: Option[String],
+    step1CliOpts: Option[String]) extends Debug
   
   final case class ConfigNumericFilters(
     id: String,
@@ -638,13 +639,18 @@ object ProjectConfig extends loamstream.LoamFile {
             case "regenie" => Some(requiredStr(config = test, field = "cliOpts"))
             case _ => None
           }
+          val step1Cli = p match {
+            case "regenie" => Some(requiredStr(config = test, field = "step1CliOpts"))
+            case _ => None
+          }
           ConfigTest(
             id = requiredStr(config = test, field = "id", regex = "^[a-zA-Z0-9_]*$"),
             grouped = requiredBool(config = test, field = "grouped"),
             includeFams = requiredBool(config = test, field = "includeFams"),
             platform = p,
             model = m,
-            cliOpts = cli
+            cliOpts = cli,
+            step1CliOpts = step1Cli
           )
         }
       }
