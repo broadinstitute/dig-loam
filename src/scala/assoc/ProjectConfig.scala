@@ -1324,7 +1324,7 @@ object ProjectConfig extends loamstream.LoamFile {
             },
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = covars,
-            regenieStep1CliOpts = optionalStr(config = model, field = "regenieStep1CliOpts"),
+            regenieStep1CliOpts = regenieStep1CliOpts,
             cohorts = cohorts,
             metas = (Schemas.filter(e => e.id == schema).head.design, metas) match {
               case ("full", Some(s)) => throw new CfgException("models.metas:  model " + id + " schema " + schema + " 'full' design and metas are not allowed")
