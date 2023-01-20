@@ -452,7 +452,7 @@ object ModelStores extends loamstream.LoamFile {
                             base = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.chr${chr}",
                             log = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.chr${chr}.log"),
                             results = phenos.map { pheno =>
-                              pheno -> store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.chr${chr}.results.tsv.bgz")
+                              pheno -> store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.chr${chr}.${pheno.id}.results.tsv.bgz")
                             }.toMap
                           )
                       }.toMap,
@@ -501,7 +501,7 @@ object ModelStores extends loamstream.LoamFile {
                                     base = dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}",
                                     log = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.log"),
                                     results = phenos.map { pheno =>
-                                      pheno -> store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.chr${chr}.results.tsv.bgz")
+                                      pheno -> store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.chr${chr}.${pheno.id}.results.tsv.bgz")
                                     }.toMap
                                   )
                               }.toMap
