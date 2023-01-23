@@ -37,8 +37,8 @@ def main(args=None):
 
 			df[['chr','pos']]=df.locus.str.split(":",expand=True)
 			df[['ref','alt']]=df.alleles.str.split(",",expand=True)
-			df['ref']=df.ref.str.replace("[","").replace("]","").replace("\"","")
-			df['alt']=df.ref.str.replace("[","").replace("]","").replace("\"","")
+			df['ref']=df['ref'].replace("[","").replace("]","").replace("\"","")
+			df['alt']=df['alt'].replace("[","").replace("]","").replace("\"","")
 			df['chr_num']=df['chr'].str.replace("chr","")
 			df.replace({'chr_num': {'X': '23', 'Y': '24', 'XY': '25', 'MT': '26', 'M': '26'}}, inplace=True)
 			df.chr_num=df.chr_num.astype(int)
