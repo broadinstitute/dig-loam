@@ -37,15 +37,15 @@ def main(args=None):
 
 			df[['chr','pos']]=df.locus.str.split(":",expand=True)
 			df[['ref','alt']]=df.alleles.str.split(",",expand=True)
-			df['ref']=df['ref'].replace("[","").replace("]","").replace("\"","")
-			df['alt']=df['alt'].replace("[","").replace("]","").replace("\"","")
+			df['ref']=df['ref'].str.replace("[","").str.replace("\"","")
+			df['alt']=df['alt'].str.replace("]","").str.replace("\"","")
 			df['chr_num']=df['chr'].str.replace("chr","")
 			df.replace({'chr_num': {'X': '23', 'Y': '24', 'XY': '25', 'MT': '26', 'M': '26'}}, inplace=True)
 			df.chr_num=df.chr_num.astype(int)
 			df.pos=df.pos.astype(int)
 			df.sort_values(by=['chr_num','pos'],inplace=True)
 			df.reset_index(drop=True, inplace=True)
-			df['uid'] = df.chr + ":" + str(df.pos) + ":" + df.ref + ":" + df.alt
+			df['uid'] = df['chr'] + ":" + df['pos'].astype(str) + ":" + df['ref'] + ":" + df['alt']
 			print("reduced to " + str(df.shape[0]) + " variants passing global filters")
 		
 			genes=df['annotation.Gene'].unique()

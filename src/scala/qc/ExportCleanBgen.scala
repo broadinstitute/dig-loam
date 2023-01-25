@@ -13,11 +13,19 @@ object ExportCleanBgen extends loamstream.LoamFile {
   
   def ExportCleanBgen(array: ConfigArray): Unit = {
 
+    val outChr = projectConfig.referenceGenome match {
+      case "GRCh37" => "MT"
+      case "GRCh38" => "chrM"
+    }
+
     drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
     
       cmd"""${utils.binary.binPlink2}
         --vcf ${arrayStores(array).cleanVcf.vcf.data.local.get}
-        --export bgen-1.2 'bits=8'
+        --export bgen-1.2 'bits=8' ref-first
+        --set-all-var-ids @:#:\$$r:\$$a
+        --new-id-max-allele-len 1000
+        --output-chr ${outChr}
         --out ${arrayStores(array).cleanBgen.get.base.local.get}
         --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}
         --keep-allele-order

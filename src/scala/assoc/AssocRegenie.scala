@@ -30,6 +30,11 @@ object AssocRegenie extends loamstream.LoamFile {
 
     }
 
+    val cliString = configModel.regenieStep1CliOpts match {
+      case "" => ""
+      case _ => s"""--cli-options "${configModel.regenieStep1CliOpts}""""
+    }
+
     drmWith(imageName = s"${utils.image.imgRegenie}", cores = projectConfig.resources.regenieStep1.cpus, mem = projectConfig.resources.regenieStep1.mem, maxRunTime = projectConfig.resources.regenieStep1.maxRunTime) {
 
       cmd"""${utils.bash.shRegenieStep1}
@@ -38,7 +43,7 @@ object AssocRegenie extends loamstream.LoamFile {
         --covar-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}
         --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
         --exclude ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude}
-        --cli-options "${configModel.regenieStep1CliOpts}"
+        ${cliString}
         --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.base}
         --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.log}"""
         .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno :+ modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step0.exclude)
