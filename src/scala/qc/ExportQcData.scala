@@ -124,12 +124,17 @@ object ExportQcData extends loamstream.LoamFile {
         }
     
     }
+
+    val outChr = projectConfig.referenceGenome match {
+      case "GRCh37" => "MT"
+      case "GRCh38" => "chrM"
+    }
     
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
     
       cmd"""${utils.binary.binPlink}
         --bfile ${arrayStores(array).filteredData.plink.base.local.get}
-        --allow-no-sex 
+        --allow-no-sex
         --indep-pairwise 1000kb 1 0.2
         --out ${arrayStores(array).filteredData.plink.base.local.get}
         --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}
@@ -142,6 +147,7 @@ object ExportQcData extends loamstream.LoamFile {
         --bfile ${arrayStores(array).filteredData.plink.base.local.get}
         --allow-no-sex 
         --extract ${arrayStores(array).filteredData.pruneIn}
+        --output-chr ${outChr}
         --keep-allele-order
         --make-bed
         --out ${arrayStores(array).prunedData.plink.base}
