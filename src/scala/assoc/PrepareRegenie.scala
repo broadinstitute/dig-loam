@@ -36,6 +36,7 @@ object PrepareRegenie extends loamstream.LoamFile {
     drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
+        --reference-genome ${projectConfig.referenceGenome}
         --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
         --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}"""
         .in(schemaStores((configSchema, configCohorts)).variantFilterTable.local.get)
@@ -76,6 +77,7 @@ object PrepareRegenie extends loamstream.LoamFile {
             drmWith(imageName = s"${utils.image.imgPython3}", cores = projectConfig.resources.generateRegenieGroupfiles.cpus, mem = projectConfig.resources.generateRegenieGroupfiles.mem, maxRunTime = projectConfig.resources.generateRegenieGroupfiles.maxRunTime) {
             
               cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
+                --reference-genome ${projectConfig.referenceGenome}
                 --mask ${mask.id}
                 --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
                 --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}

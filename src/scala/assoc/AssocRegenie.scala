@@ -83,7 +83,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-names "${phenosAnalyzed}"
           --cli-options "${configTest.cliOpts.get}"
-          --chr ${chrNumberToCode(chr, projectConfig.referenceGenome)}
+          --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).chrs(chr).base}"""
           .in(arrayStores(array).bgen.get.data.local.get, arrayStores(array).bgen.get.sample.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList)
@@ -307,7 +307,7 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-names "${phenosAnalyzed}"
           --cli-options "${configTest.cliOpts.get}"
           --group-stats
-          --chr ${chrNumberToCode(chr, projectConfig.referenceGenome)}
+          --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --anno-file ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}
           --set-list ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}

@@ -45,6 +45,8 @@ def main(args=None):
 			df.pos=df.pos.astype(int)
 			df.sort_values(by=['chr_num','pos'],inplace=True)
 			df.reset_index(drop=True, inplace=True)
+			if args.reference_genome == 'GRCh38':
+				df['chr'] = df['chr'].str.replace("chr","")
 			df['uid'] = df['chr'] + ":" + df['pos'].astype(str) + ":" + df['ref'] + ":" + df['alt']
 			print("reduced to " + str(df.shape[0]) + " variants passing global filters")
 		
@@ -94,6 +96,7 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--mask', help='a mask id')
 	parser.add_argument('--setlist-out', help='an output file basename for regenie setlist file')
 	parser.add_argument('--masks-out', help='an output file basename for regenie masks file')

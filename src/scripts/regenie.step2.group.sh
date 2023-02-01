@@ -271,9 +271,14 @@ then
 		done
 	fi
 else
+	if [ -f ${out}.log ]
+	then
+		rm ${out}.log
+	fi
 	for p in $phenoNames
 	do
 		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}"
+		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}" >> ${out}.log
 		echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
 	done
 fi

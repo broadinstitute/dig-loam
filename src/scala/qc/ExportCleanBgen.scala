@@ -15,7 +15,7 @@ object ExportCleanBgen extends loamstream.LoamFile {
 
     val outChr = projectConfig.referenceGenome match {
       case "GRCh37" => "MT"
-      case "GRCh38" => "chrM"
+      case "GRCh38" => "M"
     }
 
     drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
