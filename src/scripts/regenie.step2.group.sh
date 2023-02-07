@@ -189,6 +189,7 @@ then
 		echo "updating $p!"
 		if [ ! -f "${out}_${p}.regenie.gz" ]
 		then
+			echo "no successful standard tests for phenotype ${p}!"
 			EXITCODE=1
 		else
 			mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
@@ -233,6 +234,7 @@ then
 		do
 			if [ ! -f "${out}_${p}.regenie.gz" ]
 			then
+				echo "no successful htp tests for phenotype ${p}!"
 				EXITCODE=1
 			else
 				mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
@@ -279,7 +281,12 @@ else
 	do
 		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}"
 		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}" >> ${out}.log
-		echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+		if [[ $cliOptions == *"--af-cc"* ]]
+		then
+			echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tA1FREQ_CASES\tA1FREQ_CONTROLS\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+		else
+			echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+		fi
 	done
 fi
 
