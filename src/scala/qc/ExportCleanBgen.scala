@@ -19,19 +19,17 @@ object ExportCleanBgen extends loamstream.LoamFile {
     }
 
     drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
-    
+
       cmd"""${utils.binary.binPlink2}
         --vcf ${arrayStores(array).cleanVcf.vcf.data.local.get}
-        --export bgen-1.2 'bits=8' ref-first
+        --double-id
+        --export bgen-1.2 'bits=8' ref-first id-paste=iid
         --set-all-var-ids @:#:\$$r:\$$a
-        --new-id-max-allele-len 1000
+        --new-id-max-allele-len ${array.varUidMaxAlleleLen}
         --output-chr ${outChr}
         --out ${arrayStores(array).cleanBgen.get.base.local.get}
         --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}
-        --keep-allele-order
-        && mv ${arrayStores(array).cleanBgen.get.sample.local.get} ${arrayStores(array).cleanBgen.get.sample.local.get}.tmp
-        && (head -2 ${arrayStores(array).cleanBgen.get.sample.local.get}.tmp; sed '1,2d' ${arrayStores(array).cleanBgen.get.sample.local.get}.tmp | awk '{print $$2" "$$2" "$$3" "$$4}') > ${arrayStores(array).cleanBgen.get.sample.local.get}
-        && rm ${arrayStores(array).cleanBgen.get.sample.local.get}.tmp"""
+        --keep-allele-order"""
         .in(arrayStores(array).cleanVcf.vcf.data.local.get, arrayStores(array).cleanVcf.vcf.tbi.local.get)
         .out(arrayStores(array).cleanBgen.get.data.local.get, arrayStores(array).cleanBgen.get.sample.local.get)
         .tag(s"${arrayStores(array).cleanBgen.get.data.local.get}".split("/").last)
