@@ -46,20 +46,20 @@ object Tracking extends loamstream.LoamFile {
         case None => ()
       }
 
-      modelStores(ms).epacts match {
-        case Some(_) =>
-          for {
-            test <- modelStores(ms).epacts.get.assocGroup.keys
-          } yield {
-            for {
-              mask <- modelStores(ms).epacts.get.assocGroup(test).keys
-            } yield {
-              writeObject(obj = modelStores(ms).epacts.get.assocGroup(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.epacts.assocGroup.${test}.${mask.id}")
-              writeObject(obj = modelStores(ms).epacts.get.assocGroup(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.epacts.assocGroup.${test}.${mask.id}.groups.keys")
-            }
-          }
-        case None => ()
-      }
+      //modelStores(ms).epacts match {
+      //  case Some(_) =>
+      //    for {
+      //      test <- modelStores(ms).epacts.get.assocGroup.keys
+      //    } yield {
+      //      for {
+      //        mask <- modelStores(ms).epacts.get.assocGroup(test).keys
+      //      } yield {
+      //        writeObject(obj = modelStores(ms).epacts.get.assocGroup(test)(mask), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.epacts.assocGroup.${test}.${mask.id}")
+      //        writeObject(obj = modelStores(ms).epacts.get.assocGroup(test)(mask).groups.keys, filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.epacts.assocGroup.${test}.${mask.id}.groups.keys")
+      //      }
+      //    }
+      //  case None => ()
+      //}
   
     }
   

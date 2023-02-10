@@ -155,6 +155,7 @@ object ProjectConfig extends loamstream.LoamFile {
     qcVariantSampleSeed: Option[Int],
     postQcSampleFilters: Option[Seq[String]],
     postQcVariantFilters: Option[Seq[String]],
+    varUidMaxAlleleLen: Int,
     exportCleanBgen: Boolean) extends Debug
 
   //final case class ConfigSection(
@@ -713,6 +714,7 @@ object ProjectConfig extends loamstream.LoamFile {
             qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed", min = Some(0)),
             postQcSampleFilters = postQcSampleFilters,
             postQcVariantFilters = postQcVariantFilters,
+            varUidMaxAlleleLen = requiredInt(config = array, field = "varUidMaxAlleleLen", default = Some(1000), min = Some(1), max = Some(10000)),
             exportCleanBgen = requiredBool(config = array, field = "exportCleanBgen")
           )
       

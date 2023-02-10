@@ -254,6 +254,13 @@ object Fxns extends loamstream.LoamFile {
     }
     y.flatten
   }
+
+  def chrNumberToCode(chr: String, build: String): String = {
+    build match {
+      case "GRCh38" => s"chr${chr}"
+      case _ => chr
+    }
+  }
   
   def checkPlinkPath(s: String): String = {
     val bed = Files.exists(Paths.get(s + ".bed")) 
@@ -695,18 +702,18 @@ object Fxns extends loamstream.LoamFile {
     val h = getHeader(p)
     var fp = Seq[String]()
     for {
-      x <- models.map(e => e.pheno)
+      x <- models.map(e => e.pheno).toSeq
     } yield {
-      fp = fp ++ Seq(x)
+      fp = fp ++ x
     }
     var fc = Seq[String]()
     for {
-      x <- models.map(e => e.covars)
+      x <- models.map(e => e.covars).toSeq
     } yield {
       x match {
         case Some(s) =>
           for {
-            y <- x.get.split("\\+")
+            y <- x.get.split("\\+").toSeq
           } yield {
             fc = fc ++ Seq(y.replace("[","").replace("]",""))
           }
@@ -727,6 +734,27 @@ object Fxns extends loamstream.LoamFile {
         }
       case None => throw new CfgException("verifyPheno: pheno file " + phenoFile + " is empty")
     }
+  }
+
+  def getCovarsAnalyzed(model: ConfigModel, phenos: Seq[ConfigPheno]): String = {
+
+    var covarsOut = Seq[String]()
+
+    for {
+      pheno<-phenos
+    } yield {
+      pheno.trans match {
+        case Some("invn") => ()
+        case _ =>
+          model.covars match {
+            case Some(s) => covarsOut = covarsOut ++ Seq(s)
+            case None => ()
+          }
+      }
+    }
+
+    covarsOut.distinct.mkString("+")
+
   }
 
 }

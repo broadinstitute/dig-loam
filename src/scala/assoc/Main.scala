@@ -1,6 +1,5 @@
 object Main extends loamstream.LoamFile {
 
-  //import AssocStores._
   import Collections._
   import CrossCohort._
   import PrepareModel._
@@ -67,7 +66,7 @@ object Main extends loamstream.LoamFile {
     PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
   
   }
-
+  
   //Cohort variant association
   for {
     x <- modelCollections if ! x.model.tests.isEmpty
@@ -76,15 +75,15 @@ object Main extends loamstream.LoamFile {
     AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
   
   }
-
-  // Prepare meta cohort model
-  for {
-    x <- modelMetaCollections 
-  } yield {
   
-    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
-  
-  }
+  //// Prepare meta cohort model
+  //for {
+  //  x <- modelMetaCollections 
+  //} yield {
+  //
+  //  PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = Some(x.meta))
+  //
+  //}
 
   //// Cohort variant association for known loci
   //for {

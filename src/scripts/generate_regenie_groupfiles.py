@@ -36,12 +36,18 @@ def main(args=None):
 		if df.shape[0] > 0:
 
 			df[['chr','pos']]=df.locus.str.split(":",expand=True)
+			df[['ref','alt']]=df.alleles.str.split(",",expand=True)
+			df['ref']=df['ref'].str.replace("[","").str.replace("\"","")
+			df['alt']=df['alt'].str.replace("]","").str.replace("\"","")
 			df['chr_num']=df['chr'].str.replace("chr","")
 			df.replace({'chr_num': {'X': '23', 'Y': '24', 'XY': '25', 'MT': '26', 'M': '26'}}, inplace=True)
 			df.chr_num=df.chr_num.astype(int)
 			df.pos=df.pos.astype(int)
 			df.sort_values(by=['chr_num','pos'],inplace=True)
 			df.reset_index(drop=True, inplace=True)
+			if args.reference_genome == 'GRCh38':
+				df['chr'] = df['chr'].str.replace("chr","")
+			df['uid'] = df['chr'] + ":" + df['pos'].astype(str) + ":" + df['ref'] + ":" + df['alt']
 			print("reduced to " + str(df.shape[0]) + " variants passing global filters")
 		
 			genes=df['annotation.Gene'].unique()
@@ -53,17 +59,17 @@ def main(args=None):
 			if args.setlist_out:
 				with open(args.setlist_out, 'w') as setlist:
 					print("grouping variants into genes")
-					setlist_df=df[['annotation.Gene','rsid']]
+					setlist_df=df[['annotation.Gene','uid']]
 					print(setlist_df.head())
 					setlist_df=setlist_df.groupby('annotation.Gene', as_index=False, sort=False).agg(','.join)
 					print(setlist_df.head())
 					setlist_df=df_first_pos.merge(setlist_df)
 					setlist_df.sort_values(by=['chr_num','pos'],inplace=True)
-					setlist_df[['annotation.Gene','chr','pos','rsid']].to_csv(setlist, header=False, index=False, sep="\t", na_rep="NA")
+					setlist_df[['annotation.Gene','chr','pos','uid']].to_csv(setlist, header=False, index=False, sep="\t", na_rep="NA")
 		
 			if args.mask and args.masks_out and args.annotations_out:
 				print("adding annotations for mask " + args.mask)
-				mask_df=df[df['ls_mask_' + args.mask + '.exclude'] == 0][['rsid','annotation.Gene']]
+				mask_df=df[df['ls_mask_' + args.mask + '.exclude'] == 0][['uid','annotation.Gene']]
 				mask_df['mask']=args.mask
 		
 				with open(args.annotations_out, 'w') as annots:
@@ -90,6 +96,7 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--reference-genome', choices=['GRCh37','GRCh38'], default='GRCh37', help='a reference genome build code')
 	parser.add_argument('--mask', help='a mask id')
 	parser.add_argument('--setlist-out', help='an output file basename for regenie setlist file')
 	parser.add_argument('--masks-out', help='an output file basename for regenie masks file')

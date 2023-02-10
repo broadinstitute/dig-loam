@@ -208,6 +208,8 @@ object ProjectConfig extends loamstream.LoamFile {
     id: String,
     name: String,
     binary: Boolean,
+    trans: Option[String],
+    idAnalyzed: String,
     desc: String) extends Debug
   
   final case class ConfigKnown(
@@ -249,15 +251,14 @@ object ProjectConfig extends loamstream.LoamFile {
   final case class ConfigModel(
     id: String,
     schema: String,
-    pheno: String,
-    trans: Option[String],
+    pheno: Seq[String],
+    binary: Boolean,
     tests: Option[Seq[String]],
     methods: Option[Seq[String]],
     assocPlatforms: Option[Seq[String]],
     maxPcaOutlierIterations: Int,
     covars: Option[String],
-    finalPheno: String,
-    finalCovars: String,
+    regenieStep1CliOpts: String,
     cohorts: Seq[String],
     metas: Option[Seq[String]],
     merges: Option[Seq[String]],
@@ -925,11 +926,20 @@ object ProjectConfig extends loamstream.LoamFile {
         for {
           pheno <- requiredObjList(config = config, field = "phenos")
         } yield {
+
+          val id = requiredStr(config = pheno, field = "id")
+          val trans = optionalStr(config = pheno, field = "trans", regex = modelTrans.mkString("|"))
+          val idAnalyzed = trans match {
+            case Some(s) => id + "_" + s
+            case None => id
+          }
       
           ConfigPheno(
-            id = requiredStr(config = pheno, field = "id"),
+            id = id,
             name = requiredStr(config = pheno, field = "name"),
             binary = requiredBool(config = pheno, field = "binary"),
+            trans = trans,
+            idAnalyzed = idAnalyzed,
             desc = requiredStr(config = pheno, field = "desc")
           )
       
@@ -1192,33 +1202,29 @@ object ProjectConfig extends loamstream.LoamFile {
             case false => throw new CfgException("models.schema: model " + id + " schema '" + schema + "' not found")
           }
   
-          val pheno = requiredStr(config = model, field = "pheno")
-          Phenos.map(e => e.id) contains pheno match {
-            case true => ()
-            case false => throw new CfgException("models.pheno: model " + id + " pheno '" + pheno + "' not found")
+          val pheno = requiredStrList(config = model, field = "pheno")
+          (pheno diff Phenos.map(e => e.id)).size match {
+            case n if n > 0 => throw new CfgException("models.pheno: model " + id + " pheno '" + (pheno diff Phenos.map(e => e.id)).mkString(",") + "' not found")
+            case _ => ()
           }
 
-          val trans = optionalStr(config = model, field = "trans", regex = modelTrans.mkString("|"))
+          Phenos.filter(e => pheno.contains(e.id)).map(e => e.binary).distinct.size match {
+            case n if n > 1 => throw new CfgException("model.pheno: model " + id + " phenotypes must be either all binary or all quantitative")
+            case _ => ()
+          }
+
+          val binary = Phenos.filter(e => pheno.contains(e.id)).map(e => e.binary).head
 
           val covars = optionalStrList(config = model, field = "covars") match {
             case Some(l) => Some(l.mkString("+"))
             case None => None
           }
 
-          val finalPheno = trans match {
-            case Some(s) => pheno + "_" + s
-            case None => pheno
+          val regenieStep1CliOpts = optionalStr(config = model, field = "regenieStep1CliOpts") match {
+            case Some(l) => l
+            case None => ""
           }
 
-          val finalCovars = trans match {
-            case Some("invn") => ""
-            case _ =>
-              covars match {
-                case Some(s) => covars.get
-                case None => ""
-              }
-          }
-  
           val tests = optionalStrList(config = model, field = "tests", regex = Tests.map(e => e.id).mkString("|"))
           tests match {
             case Some(_) =>
@@ -1309,7 +1315,7 @@ object ProjectConfig extends loamstream.LoamFile {
             id = id,
             schema = schema,
             pheno = pheno,
-            trans = trans,
+            binary = binary,
             tests = tests,
             methods = methods,
             assocPlatforms = tests match { 
@@ -1318,8 +1324,7 @@ object ProjectConfig extends loamstream.LoamFile {
             },
             maxPcaOutlierIterations = requiredInt(config = model, field = "maxPcaOutlierIterations"),
             covars = covars,
-            finalPheno = finalPheno,
-            finalCovars = finalCovars,
+            regenieStep1CliOpts = regenieStep1CliOpts,
             cohorts = cohorts,
             metas = (Schemas.filter(e => e.id == schema).head.design, metas) match {
               case ("full", Some(s)) => throw new CfgException("models.metas:  model " + id + " schema " + schema + " 'full' design and metas are not allowed")
