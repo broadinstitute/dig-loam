@@ -10,7 +10,7 @@ possDupMissing=$7
 mem=$8
 
 
-awk 'BEGIN { FS="\t" } { if(length($2)+length($3) == 2) { c[$4]++; l[$4,c[$4]]=$0 } } END { for (i in c) { if (c[i] > 1) for (j = 1; j <= c[i]; j++) print l[i,j] } }' $uids | awk '{print $1}' > $possDupVars
+awk 'BEGIN { FS="\t" } { c[$4]++; l[$4,c[$4]]=$0 } END { for (i in c) { if (c[i] > 1) for (j = 1; j <= c[i]; j++) print l[i,j] } }' $uids | awk '{print $1}' > $possDupVars
 
 if [ -s $possDupVars ]
 then

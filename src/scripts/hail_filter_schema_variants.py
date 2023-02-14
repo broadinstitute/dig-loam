@@ -44,7 +44,7 @@ def main(args=None):
 	ht = ht.key_by('locus','alleles','rsid')
 	
 	if args.variants_remove is not None:
-		print("flag variants for removal that failed previous qc steps")
+		print("flag variants for removal based on user supplied variant lists")
 		ht = ht.annotate(ls_previous_exclude = 0)
 		for variant_file in args.variants_remove.split(","):
 			try:

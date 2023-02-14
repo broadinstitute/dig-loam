@@ -171,10 +171,12 @@ then
 	--step 2 \
 	--bgen $bgen \
 	--sample $sample \
+    --ref-first \
 	--covarFile $covarFile \
 	--phenoFile $phenoFile \
 	$cliOptions \
 	--chr $chr \
+    --build-mask sum \
 	--pred $pred \
 	--anno-file $annoFile \
 	--set-list $setList \
@@ -215,11 +217,13 @@ then
 		--step 2 \
 		--bgen $bgen \
 		--sample $sample \
+        --ref-first \
 		--covarFile $covarFile \
 		--phenoFile $phenoFile \
 		$cliOptions \
 		--pred $pred \
 		--chr $chr \
+        --build-mask sum \
 		--anno-file $annoFile \
 		--set-list $setList \
 		--mask-def $maskDef \

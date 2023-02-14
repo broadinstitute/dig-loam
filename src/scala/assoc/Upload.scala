@@ -103,8 +103,16 @@ object Upload extends loamstream.LoamFile {
               .tag(s"annotationsHtLocal_to_annotationsHtGoogle.${array.id}")
           }
 
-          googleCopy(arrayStores(array).variantsExclude.local.get, arrayStores(array).variantsExclude.google.get)
-          googleCopy(arrayStores(array).samplesExclude.local.get, arrayStores(array).samplesExclude.google.get)
+          for {
+            f <- arrayStores(array).variantsExclude
+          } yield {
+			googleCopy(f.local.get, f.google.get)
+          }
+          for {
+            f <- arrayStores(array).samplesExclude
+          } yield {
+			googleCopy(f.local.get, f.google.get)
+          }
 
         case _ => ()
 
