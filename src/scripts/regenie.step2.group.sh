@@ -176,7 +176,6 @@ then
 	--phenoFile $phenoFile \
 	$cliOptions \
 	--chr $chr \
-    --build-mask sum \
 	--pred $pred \
 	--anno-file $annoFile \
 	--set-list $setList \
@@ -223,7 +222,6 @@ then
 		$cliOptions \
 		--pred $pred \
 		--chr $chr \
-        --build-mask sum \
 		--anno-file $annoFile \
 		--set-list $setList \
 		--mask-def $maskDef \
