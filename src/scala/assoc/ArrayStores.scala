@@ -19,7 +19,7 @@ object ArrayStores extends loamstream.LoamFile {
     ancestryMap: Store,
     kin0: Store,
     sampleQcStats: Store,
-    samplesExclude: MultiStore,
+    samplesExclude: Seq[MultiStore],
     variantsExclude: Seq[MultiStore],
     annotationsHt: MultiStore)
 

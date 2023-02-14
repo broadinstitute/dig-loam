@@ -36,7 +36,7 @@ object PrepareSchema extends loamstream.LoamFile {
       }
     }
 
-    val cohortSamplesAvailableIn = Seq(arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).samplesExclude.local.get)
+    var cohortSamplesAvailableIn = arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap
 
     arrayStores(array).samplesExclude.size match {
       case n if n > 0 =>
