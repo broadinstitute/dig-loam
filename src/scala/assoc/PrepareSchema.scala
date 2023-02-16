@@ -44,7 +44,7 @@ object PrepareSchema extends loamstream.LoamFile {
           for {
             f <- arrayStores(array).samplesExclude
           } yield {
-            f.google.get
+            f.local.get
           }
         }
       case _ => ()
@@ -57,7 +57,7 @@ object PrepareSchema extends loamstream.LoamFile {
           val y = for {
             f <- arrayStores(array).samplesExclude
           } yield {
-            f.google.get
+            s"""${f.local.get.toString.split("@")(1)}"""
           }
           x + " " + y.mkString(",")
         case _ => ""
@@ -431,7 +431,7 @@ object PrepareSchema extends loamstream.LoamFile {
               val y = for {
                 f <- arrayStores(array).variantsExclude
               } yield {
-                f.google.get
+                s"""${f.google.get.toString.split("@")(1)}"""
               }
               x + " " + y.mkString(",")
             case _ => ""
@@ -518,7 +518,7 @@ object PrepareSchema extends loamstream.LoamFile {
               val y = for {
                 f <- arrayStores(array).variantsExclude
               } yield {
-                f.local.get
+                s"""${f.local.get.toString.split("@")(1)}"""
               }
               x + " " + y.mkString(",")
             case _ => ""
