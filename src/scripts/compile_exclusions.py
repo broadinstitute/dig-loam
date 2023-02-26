@@ -26,7 +26,7 @@ def main(args=None):
 	else:
 		x['ID1'] = x['ID1'].astype(str)
 		x['ID2'] = x['ID2'].astype(str)
-		x=x[x['Kinship'] >= 0.4]
+		x=x[x['KINSHIP'] >= 0.4]
 		if x.shape[0] > 0:
 			exc=x['ID1'].tolist()
 			exc.extend(x['ID2'].tolist())

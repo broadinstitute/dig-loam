@@ -49,7 +49,7 @@ def main(args=None):
 		text_dict1 = collections.OrderedDict()
 		for x in args.kin0_related:
 			df = pd.read_table(x.split(",")[1])
-			df = df[df['Kinship'] > 0.4]
+			df = df[df['KINSHIP'] > 0.4]
 			if df.shape[0] > 0:
 				text_dict1[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
 
