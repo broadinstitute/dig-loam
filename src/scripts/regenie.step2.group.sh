@@ -171,6 +171,7 @@ then
 	--step 2 \
 	--bgen $bgen \
 	--sample $sample \
+    --ref-first \
 	--covarFile $covarFile \
 	--phenoFile $phenoFile \
 	$cliOptions \
@@ -215,6 +216,7 @@ then
 		--step 2 \
 		--bgen $bgen \
 		--sample $sample \
+        --ref-first \
 		--covarFile $covarFile \
 		--phenoFile $phenoFile \
 		$cliOptions \

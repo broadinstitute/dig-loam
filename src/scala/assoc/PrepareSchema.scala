@@ -36,6 +36,34 @@ object PrepareSchema extends loamstream.LoamFile {
       }
     }
 
+    var cohortSamplesAvailableIn = arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap
+
+    arrayStores(array).samplesExclude.size match {
+      case n if n > 0 =>
+        cohortSamplesAvailableIn = cohortSamplesAvailableIn ++ {
+          for {
+            f <- arrayStores(array).samplesExclude
+          } yield {
+            f.local.get
+          }
+        }
+      case _ => ()
+    }
+
+    val samplesExcludeString = {
+      arrayStores(array).samplesExclude.size match {
+        case n if n > 0 =>
+          val x = "--samples-exclude"
+          val y = for {
+            f <- arrayStores(array).samplesExclude
+          } yield {
+            s"""${f.local.get.toString.split("@")(1)}"""
+          }
+          x + " " + y.mkString(",")
+        case _ => ""
+      }
+    }
+
     drmWith(imageName = s"${utils.image.imgR}") {
   
       cmd"""${utils.binary.binRscript} --vanilla --verbose
@@ -45,12 +73,12 @@ object PrepareSchema extends loamstream.LoamFile {
         --ancestry-in ${arrayStores(array).ancestryMap}
         ${stratStrings.mkString(" ")}
         --iid-col ${array.phenoFileId}
-        --samples-exclude ${arrayStores(array).samplesExclude.local.get}
+        ${samplesExcludeString}
         --out-id-map ${schemaStores((configSchema, configCohorts)).sampleMap}
         --out-cohorts-map ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
         --out ${schemaStores((configSchema, configCohorts)).samplesAvailable}
         > ${schemaStores((configSchema, configCohorts)).samplesAvailableLog}"""
-        .in(arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).samplesExclude.local.get)
+        .in(cohortSamplesAvailableIn)
         .out(schemaStores((configSchema, configCohorts)).sampleMap, schemaStores((configSchema, configCohorts)).cohortMap.local.get, schemaStores((configSchema, configCohorts)).samplesAvailable, schemaStores((configSchema, configCohorts)).samplesAvailableLog)
         .tag(s"${schemaStores((configSchema, configCohorts)).samplesAvailable}".split("/").last)
     
@@ -370,7 +398,7 @@ object PrepareSchema extends loamstream.LoamFile {
           }
         }
     
-        var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, arrayStores(array).annotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.google.get, schemaStores((configSchema, configCohorts)).masks.google.get, arrayStores(array).variantsExclude.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.google.get)
+        var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, arrayStores(array).annotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.google.get, schemaStores((configSchema, configCohorts)).masks.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.google.get)
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -382,6 +410,32 @@ object PrepareSchema extends loamstream.LoamFile {
               }
             }
           case _ => ()
+        }
+
+        arrayStores(array).variantsExclude.size match {
+          case n if n > 0 =>
+            cohortStatsIn = cohortStatsIn ++ {
+              for {
+                f <- arrayStores(array).variantsExclude
+              } yield {
+                f.google.get
+              }
+            }
+          case _ => ()
+        }
+
+        val variantsRemoveString = {
+          arrayStores(array).variantsExclude.size match {
+            case n if n > 0 =>
+              val x = "--variants-remove"
+              val y = for {
+                f <- arrayStores(array).variantsExclude
+              } yield {
+                s"""${f.google.get.toString.split("@")(1)}"""
+              }
+              x + " " + y.mkString(",")
+            case _ => ""
+          }
         }
   
         googleWith(projectConfig.cloudResources.variantHtCluster) {
@@ -398,7 +452,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.google.get}
             --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.google.get}
             --masks ${schemaStores((configSchema, configCohorts)).masks.google.get}
-            --variants-remove ${arrayStores(array).variantsExclude.google.get}
+            ${variantsRemoveString}
             --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.google.get}
             --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.google.get}
             --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.google.get}"""
@@ -431,7 +485,7 @@ object PrepareSchema extends loamstream.LoamFile {
           }
         }
         
-        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).annotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.local.get, schemaStores((configSchema, configCohorts)).masks.local.get, arrayStores(array).variantsExclude.local.get, schemaStores((configSchema, configCohorts)).cohortFilters.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.local.get, projectStores.tmpDir)
+        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).annotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.local.get, schemaStores((configSchema, configCohorts)).masks.local.get,schemaStores((configSchema, configCohorts)).cohortFilters.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.local.get, projectStores.tmpDir)
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -443,6 +497,32 @@ object PrepareSchema extends loamstream.LoamFile {
               }
             }
           case _ => ()
+        }
+
+        arrayStores(array).variantsExclude.size match {
+          case n if n > 0 =>
+            cohortStatsIn = cohortStatsIn ++ {
+              for {
+                f <- arrayStores(array).variantsExclude
+              } yield {
+                f.local.get
+              }
+            }
+          case _ => ()
+        }
+
+        val variantsRemoveString = {
+          arrayStores(array).variantsExclude.size match {
+            case n if n > 0 =>
+              val x = "--variants-remove"
+              val y = for {
+                f <- arrayStores(array).variantsExclude
+              } yield {
+                s"""${f.local.get.toString.split("@")(1)}"""
+              }
+              x + " " + y.mkString(",")
+            case _ => ""
+          }
         }
   
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
@@ -460,7 +540,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.local.get}
             --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.local.get}
             --masks ${schemaStores((configSchema, configCohorts)).masks.local.get}
-            --variants-remove ${arrayStores(array).variantsExclude.local.get}
+            ${variantsRemoveString}
             --variant-filters-out ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
             --variant-filters-ht-out ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.local.get}
             --log ${schemaStores((configSchema, configCohorts)).variantFilterHailLog.local.get}"""

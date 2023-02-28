@@ -19,8 +19,8 @@ object ArrayStores extends loamstream.LoamFile {
     ancestryMap: Store,
     kin0: Store,
     sampleQcStats: Store,
-    samplesExclude: MultiStore,
-    variantsExclude: MultiStore,
+    samplesExclude: Seq[MultiStore],
+    variantsExclude: Seq[MultiStore],
     annotationsHt: MultiStore)
 
   val arrayStores = projectConfig.Arrays.filter(e => usedArrays.contains(e.id)).map { arrayCfg =>
@@ -68,15 +68,23 @@ object ArrayStores extends loamstream.LoamFile {
       data = Seq(store(path(checkPath(s"${arrayCfg.prunedPlink}.bed"))).asInput,store(path(checkPath(s"${arrayCfg.prunedPlink}.bim"))).asInput,store(path(checkPath(s"${arrayCfg.prunedPlink}.fam"))).asInput)
     )
 
-    val variantsExclude = MultiStore(
-      local = Some(store(path(checkPath(arrayCfg.variantsExclude))).asInput),
-      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${arrayCfg.variantsExclude}".split("/").last)); case false => None }
-    )
+    val variantsExclude = for {
+      f <- arrayCfg.variantsExclude
+    } yield {
+      MultiStore(
+        local = Some(store(path(checkPath(f))).asInput),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${f}".split("/").last)); case false => None }
+      )
+    }
 
-    val samplesExclude = MultiStore(
-      local = Some(store(path(checkPath(arrayCfg.samplesExclude))).asInput),
-      google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${arrayCfg.samplesExclude}".split("/").last)); case false => None }
-    )
+    val samplesExclude = for {
+      f <- arrayCfg.samplesExclude
+    } yield {
+      MultiStore(
+        local = Some(store(path(checkPath(f))).asInput),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${f}".split("/").last)); case false => None }
+      )
+    }
 
     val phenoFile = MultiStore(
       local = Some(store(path(checkPath(arrayCfg.phenoFile))).asInput), // use original

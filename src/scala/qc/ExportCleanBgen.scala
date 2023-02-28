@@ -28,8 +28,7 @@ object ExportCleanBgen extends loamstream.LoamFile {
         --new-id-max-allele-len ${array.varUidMaxAlleleLen}
         --output-chr ${outChr}
         --out ${arrayStores(array).cleanBgen.get.base.local.get}
-        --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}
-        --keep-allele-order"""
+        --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
         .in(arrayStores(array).cleanVcf.vcf.data.local.get, arrayStores(array).cleanVcf.vcf.tbi.local.get)
         .out(arrayStores(array).cleanBgen.get.data.local.get, arrayStores(array).cleanBgen.get.sample.local.get)
         .tag(s"${arrayStores(array).cleanBgen.get.data.local.get}".split("/").last)

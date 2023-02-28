@@ -147,8 +147,8 @@ object Load extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
 
           cmd"""${utils.binary.binPython} ${utils.python.pyHailLoad}
-            --driver-memory ${projectConfig.resources.matrixTableHail.mem * projectConfig.resources.matrixTableHail.cpus * 0.9 * 1000}
-            --executor-memory ${projectConfig.resources.matrixTableHail.mem * projectConfig.resources.matrixTableHail.cpus * 0.9 * 1000}
+            --driver-memory ${projectConfig.resources.matrixTableHail.mem}
+            --executor-memory ${projectConfig.resources.matrixTableHail.mem}
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             ${minPartitions}
