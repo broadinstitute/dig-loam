@@ -23,6 +23,8 @@ print_usage () {
 	printf "  --images [STRING]:\n"
 	printf "      a directory containing locally compiled singularity\n"
 	printf "      images used to run dig-loam jobs\n\n"
+    printf "  --tmp-dir [STRING]:\n"
+	printf "      a directory to use for temporary files\n\n"
 	printf "  --log-level [STRING]:\n"
 	printf "      a string from [TRACE,DEBUG,INFO,WARN,ERROR]\n"
 	printf "      indicating the level of logging in loamstream\n\n"
@@ -119,6 +121,15 @@ do
 				exit 1
 			fi
 			;;
+		--tmp-dir)
+			if [ "$2" ]; then
+				tmp_dir=$2
+				shift
+			else
+				echo "\nERROR: --tmp-dir requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--log-level)
 			if [ "$2" ]; then
 				log_level=$2
@@ -180,6 +191,7 @@ echo "--dig-loam-conf $dig_loam_conf" >> $log
 echo "--backend $backend" >> $log
 echo "--module $module" >> $log
 echo "--images $images" >> $log
+echo "--tmp-dir $tmp_dir" >> $log
 echo "--log-level $log_level" >> $log
 echo "--log $log" >> $log
 
@@ -221,6 +233,7 @@ java -Xmx4G -Xss1G \
 -DscriptsDir=${dig_loam}/src/scripts \
 -DloamstreamVersion="${ls_version}" \
 -DpipelineVersion="${dig_loam_version}" \
+-DtmpDir=${tmp_dir} \
 -jar $ls_jar \
 --backend ${backend} \
 --conf ${ls_conf} \

@@ -327,7 +327,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val projectId = requiredStr(config = config, field = "projectId")
       val hailCloud = requiredBool(config = config, field = "hailCloud")
       val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
-      val tmpDir = requiredStr(config = config, field = "tmpDir")
+      val tmpDir = System.getProperty("tmpDir")
       val cloudShare = optionalStr(config = config, field = "cloudShare") match { case Some(s) => Some(uri(s)); case None => None }
       val cloudHome = optionalStr(config = config, field = "cloudHome") match { case Some(s) => Some(uri(s)); case None => None }
       val referenceGenome = requiredStr(config = config, field = "referenceGenome", regex = refGenomes.mkString("|"))
