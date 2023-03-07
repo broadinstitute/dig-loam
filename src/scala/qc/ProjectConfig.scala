@@ -322,8 +322,8 @@ object ProjectConfig extends loamstream.LoamFile {
     def parseConfig(config: loamstream.conf.DataConfig): ProjectConfig = {
   
       // required global values in conf file
-      val loamstreamVersion = requiredStr(config = config, field = "loamstreamVersion")
-      val pipelineVersion = requiredStr(config = config, field = "pipelineVersion")
+      val loamstreamVersion = System.getProperty("loamstreamVersion")
+      val pipelineVersion = System.getProperty("pipelineVersion")
       val projectId = requiredStr(config = config, field = "projectId")
       val hailCloud = requiredBool(config = config, field = "hailCloud")
       val hailVersion = requiredStr(config = config, field = "hailVersion", default = Some("latest"))
@@ -821,8 +821,8 @@ object ProjectConfig extends loamstream.LoamFile {
   
     def parseUtils(config: loamstream.conf.DataConfig): Utils = {
   
-      val imagesDir = path(checkPath(requiredStr(config = config, field = "imagesDir")))
-      val scriptsDir = path(checkPath(requiredStr(config = config, field = "scriptsDir")))
+      val imagesDir = path(checkPath(System.getProperty("imagesDir")))
+      val scriptsDir = path(checkPath(System.getProperty("scriptsDir")))
   
       val image = Image(
         imgHail = path(s"${imagesDir}/hail-${projectConfig.hailVersion}.simg"),
