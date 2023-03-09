@@ -306,7 +306,6 @@ object AssocRegenie extends loamstream.LoamFile {
           --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
           --pheno-names "${phenosAnalyzed}"
           --cli-options "${configTest.cliOpts.get}"
-          --group-stats
           --chr ${chr}
           --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.step1.predList}
           --anno-file ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}

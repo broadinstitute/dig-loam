@@ -119,10 +119,6 @@ while :; do
 				exit 1
 			fi
 			;;
-		--group-stats)
-			groupStats=true
-			#shift
-			;;
 		--out)
 			if [ "$2" ]; then
 				out=$2
@@ -157,7 +153,6 @@ echo "pred: $pred"
 echo "annoFile: $annoFile"
 echo "setList: $setList"
 echo "maskDef: $maskDef"
-echo "groupStats: $groupStats"
 echo "out: $out"
 echo "cliOptions: $cliOptions"
 
@@ -165,7 +160,7 @@ EXITCODE=0
 
 n=`awk -v chr=$chr 'NR==FNR{a[$0];next}{if($1 in a && $2 == chr) print $2}' <(awk '{print $2}' $annoFile | sort -T . -u) $setList | wc -l`
 
-if [ $n -gt 0 ]
+if [ $n -gt 10000 ]
 then
 	$regenie \
 	--step 2 \
@@ -184,96 +179,21 @@ then
 	--gz \
 	--verbose
 
-	#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA
 	for p in $phenoNames
 	do
 		echo "updating $p!"
 		if [ ! -f "${out}_${p}.regenie.gz" ]
 		then
-			echo "no successful standard tests for phenotype ${p}!"
+			echo "no successful tests for phenotype ${p}!"
 			EXITCODE=1
 		else
-			mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
-			n=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
-			test_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep TEST | awk '{print $1}'`
-			id_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ID | awk '{print $1}'`
-			(zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "UID",$0,"P"}'; zcat ${out}_${p}.regenie.tmp.gz | sed '1,2d' | awk -v c=$n -v id=$id_col -v test=$test_col 'BEGIN { OFS="\t" } {$1=$1; print $id":"$test,$0,10^(-$c)}' | sort -T . -k1,1) | $bgzip -c > ${out}.${p}.results.tsv.bgz
-			#CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ N TEST BETA SE CHISQ LOG10P EXTRA P
-			rm ${out}_${p}.regenie.tmp.gz
+			n=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+			id_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ID | awk '{print $1}'`
+			a1_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ALLELE1 | awk '{print $1}'`
+			(zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${p}.regenie.gz | sed '1,2d' | awk -v c=$n -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]=="all") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
+			rm ${out}_${p}.regenie.gz
 		fi
 	done
-		
-	if [ $groupStats ]
-	
-	then
-
-		for p in $phenoNames
-		do
-			mv  ${out}.${p}.results.tsv.bgz  ${out}.${p}.results.standard.tsv.bgz
-		done
-
-		$regenie \
-		--step 2 \
-		--bgen $bgen \
-		--sample $sample \
-        --ref-first \
-		--covarFile $covarFile \
-		--phenoFile $phenoFile \
-		$cliOptions \
-		--pred $pred \
-		--chr $chr \
-		--anno-file $annoFile \
-		--set-list $setList \
-		--mask-def $maskDef \
-		--out $out \
-		--gz \
-		--htp ALL \
-		--verbose
-	
-		#Name	Chr	Pos	Ref	Alt	Trait	Cohort	Model	Effect	LCI_Effect	UCI_Effect	Pval	AAF	Num_Cases	Cases_Ref	Cases_Het	Cases_Alt	Num_Controls	Controls_Ref	Controls_Het	Controls_Alt	Info
-	
-		for p in $phenoNames
-		do
-			if [ ! -f "${out}_${p}.regenie.gz" ]
-			then
-				echo "no successful htp tests for phenotype ${p}!"
-				EXITCODE=1
-			else
-				mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
-				if [[ $cliOptions == *"--qt"* ]]
-				then
-					id_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Name | awk '{print $1}'`
-					model_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Model | awk '{print $1}'`
-					ref_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Ref | awk '{print $1}'`
-					het_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Het | awk '{print $1}'`
-					alt_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Alt | awk '{print $1}'`
-					info_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Info | awk '{print $1}'`
-					(echo -e "UID\tModel\tnHomRef\tnHet\tnHomAlt\tMAC"; zcat ${out}_${p}.regenie.tmp.gz | sed '1,2d' | awk -v id=$id_col -v model=$model_col -v ref=$ref_col -v het=$het_col -v alt=$alt_col -v info=$info_col 'BEGIN { OFS="\t" } {$1=$1; split($info, x, ";"); mac="NA"; for(i in x){split(x[i],y,"="); if(y[1]=="MAC"){mac=y[2]}}; if($model == "ADD-WGR-ACATO" || $model == "ADD-WGR-ACATV" || $model == "ADD-WGR-BURDEN-ACAT" || $model == "ADD-WGR-BURDEN-MINP" || $model == "ADD-WGR-SKAT" || $model == "ADD-WGR-SKATO" || $model == "ADD-WGR-SKATO-ACAT") { TEST=$model; sub("-WGR-","-",TEST) } else { TEST="ADD" }; print $id":"TEST,$model,$ref,$het,$alt,mac}' | sort -T . -k1,1) | $bgzip -c > ${out}.${p}.results.htp.tsv.bgz
-					#ID	Model	nHomRef	nHet	nHomAlt	MAC
-				else
-					id_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Name | awk '{print $1}'`
-					model_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Model | awk '{print $1}'`
-					case_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Num_Cases | awk '{print $1}'`
-					ctrl_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Num_Controls | awk '{print $1}'`
-					case_ref_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Ref | awk '{print $1}'`
-					case_het_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Het | awk '{print $1}'`
-					case_alt_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Cases_Alt | awk '{print $1}'`
-					ctrl_ref_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Controls_Ref | awk '{print $1}'`
-					ctrl_het_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Controls_Het | awk '{print $1}'`
-					ctrl_alt_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Controls_Alt | awk '{print $1}'`
-					info_col=`zcat ${out}_${p}.regenie.tmp.gz | head -2 | tail -1 | tr '\t' '\n' | awk '{print NR" "$0}' | grep Info | awk '{print $1}'`
-					(echo -e "UID\tModel\tnHomRefCases\tnHetCases\tnHomAltCases\tnHomRefControls\tnHetControls\tnHomAltControls\tMAC"; zcat ${out}_${p}.regenie.tmp.gz | sed '1,2d' | awk -v id=$id_col -v model=$model_col -v case_ref=$case_ref_col -v case_het=$case_het_col -v case_alt=$case_alt_col -v ctrl_ref=$ctrl_ref_col -v ctrl_het=$ctrl_het_col -v ctrl_alt=$ctrl_alt_col -v info=$info_col 'BEGIN { OFS="\t" } {$1=$1; split($info, x, ";"); mac="NA"; for(i in x){split(x[i],y,"="); if(y[1]=="MAC"){mac=y[2]}}; if($model == "ADD-WGR-ACATO" || $model == "ADD-WGR-ACATV" || $model == "ADD-WGR-BURDEN-ACAT" || $model == "ADD-WGR-BURDEN-MINP" || $model == "ADD-WGR-SKAT" || $model == "ADD-WGR-SKATO" || $model == "ADD-WGR-SKATO-ACAT") { TEST=$model; sub("-WGR-","-",TEST) } else { TEST="ADD" }; print $id":"TEST,$model,$case_ref,$case_het,$case_alt,$ctrl_ref,$ctrl_het,$ctrl_alt,mac}' | sort -T . -k1,1) | $bgzip -c > ${out}.${p}.results.htp.tsv.bgz
-					#ID	Model	nHomRefCases	nHetCases	nHomAltCases	nHomRefControls	nHetControls	nHomAltControls	MAC
-				fi
-				rm ${out}_${p}.regenie.tmp.gz
-			fi
-			
-			(join -1 1 -2 1 -t $'\t' <(zcat ${out}.${p}.results.standard.tsv.bgz | head -1) <(zcat ${out}.${p}.results.htp.tsv.bgz | head -1); join -1 1 -2 1 -t $'\t' <(zcat ${out}.${p}.results.standard.tsv.bgz | sed '1d') <(zcat ${out}.${p}.results.htp.tsv.bgz | sed '1d')) | cut -f2- | bgzip -c > ${out}.${p}.results.tsv.bgz
-			
-			rm ${out}.${p}.results.standard.tsv.bgz
-			rm ${out}.${p}.results.htp.tsv.bgz
-		done
-	fi
 else
 	if [ -f ${out}.log ]
 	then
@@ -285,9 +205,9 @@ else
 		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}" >> ${out}.log
 		if [[ $cliOptions == *"--af-cc"* ]]
 		then
-			echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tA1FREQ_CASES\tA1FREQ_CONTROLS\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+			echo -e "CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tA1FREQ_CASES\tA1FREQ_CONTROLS\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
 		else
-			echo -e "#CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tMAF\tMAC\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+			echo -e "CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
 		fi
 	done
 fi
