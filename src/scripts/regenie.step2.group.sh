@@ -155,12 +155,16 @@ echo "setList: $setList"
 echo "maskDef: $maskDef"
 echo "out: $out"
 echo "cliOptions: $cliOptions"
+echo ""
 
 EXITCODE=0
 
-n=`awk -v chr=$chr 'NR==FNR{a[$0];next}{if($1 in a && $2 == chr) print $2}' <(awk '{print $2}' $annoFile | sort -T . -u) $setList | wc -l`
+mask=`head -1 $maskDef | awk '{print $1}'`
+echo "mask: $mask"
+nVars=`awk -v c=$chr -v m=$mask '{split($1,a,":"); if($3==m && a[1]==c) print $0}' $annoFile | wc -l`
+echo "annotated variants on chromosome ${chr}: $nVars"
 
-if [ $n -gt 10000 ]
+if [ $nVars -gt 0 ]
 then
 	$regenie \
 	--step 2 \
@@ -187,10 +191,10 @@ then
 			echo "no successful tests for phenotype ${p}!"
 			EXITCODE=1
 		else
-			n=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+			logp_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
 			id_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ID | awk '{print $1}'`
 			a1_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ALLELE1 | awk '{print $1}'`
-			(zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${p}.regenie.gz | sed '1,2d' | awk -v c=$n -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]=="all") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
+			(zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${p}.regenie.gz | sed '1,2d' | awk -v c=$logp_col -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]=="all") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
 			rm ${out}_${p}.regenie.gz
 		fi
 	done
