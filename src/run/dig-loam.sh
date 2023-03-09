@@ -53,7 +53,7 @@ do
 				ls_jar=$2
 				shift
 			else
-				echo "\nERROR: --ls-jar requires a non-empty argument."
+				printf "\nERROR: --ls-jar requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -62,7 +62,7 @@ do
 				ls_conf=$2
 				shift
 			else
-				echo "\nERROR: --ls-conf requires a non-empty argument."
+				printf "\nERROR: --ls-conf requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -71,7 +71,7 @@ do
 				dig_loam=$2
 				shift
 			else
-				echo "\nERROR: --dig-loam requires a non-empty argument."
+				printf "\nERROR: --dig-loam requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -80,7 +80,7 @@ do
 				dig_loam_conf=$2
 				shift
 			else
-				echo "\nERROR: --dig-loam-conf requires a non-empty argument."
+				printf "\nERROR: --dig-loam-conf requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -89,26 +89,26 @@ do
 				backend=$2
 				if [[ "$backend" != "uger" && "$backend" != "slurm" ]]
 				then
-					echo "\nERROR: --backend requires a non-empty argument from the following list: [uger,slurm]."
+					printf "\nERROR: --backend requires a non-empty argument from the following list: [uger,slurm]."
 					exit 1
 				fi
 				shift
 			else
-				echo "\nERROR: --backend requires a non-empty argument from the following list: [uger,slurm]."
+				printf "\nERROR: --backend requires a non-empty argument from the following list: [uger,slurm]."
 				exit 1
 			fi
 			;;
 		--module)
 			if [ "$2" ]; then
 				module=$2
-				if [[ "$module" != "qc" && "$backend" != "assoc" ]]
+				if [[ "$module" != "qc" && "$module" != "assoc" ]]
 				then
-					echo "\nERROR: --module requires a non-empty argument from the following list: [qc,assoc]."
+					printf "\nERROR: --module requires a non-empty argument from the following list: [qc,assoc]."
 					exit 1
 				fi
 				shift
 			else
-				echo "\nERROR: --module requires a non-empty argument from the following list: [qc,assoc]."
+				printf "\nERROR: --module requires a non-empty argument from the following list: [qc,assoc]."
 				exit 1
 			fi
 			;;
@@ -117,7 +117,7 @@ do
 				images=$2
 				shift
 			else
-				echo "\nERROR: --images requires a non-empty argument."
+				printf "\nERROR: --images requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -126,7 +126,7 @@ do
 				tmp_dir=$2
 				shift
 			else
-				echo "\nERROR: --tmp-dir requires a non-empty argument."
+				printf "\nERROR: --tmp-dir requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -135,12 +135,12 @@ do
 				log_level=$2
 				if [[ "$log_level" != "TRACE" && "$log_level" != "DEBUG" && "$log_level" != "INFO" && "$log_level" != "WARN" && "$log_level" != "ERROR" ]]
 				then
-					echo "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO,WARN,ERROR]."
+					printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO,WARN,ERROR]."
 					exit 1
 				fi
 				shift
 			else
-				echo "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO,WARN,ERROR]."
+				printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO,WARN,ERROR]."
 				exit 1
 			fi
 			;;
@@ -149,7 +149,7 @@ do
 				log=$2
 				shift
 			else
-				echo "\nERROR: --log requires a non-empty argument."
+				printf "\nERROR: --log requires a non-empty argument."
 				exit 1
 			fi
 			;;
