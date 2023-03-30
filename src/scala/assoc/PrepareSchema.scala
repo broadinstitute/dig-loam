@@ -253,64 +253,40 @@ object PrepareSchema extends loamstream.LoamFile {
   
     val fString = filters.size match {
     
-      case n if n > 0 => s"""echo "${filters.mkString("\n")}" > """
-      case _ => "touch "
-    
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${fString} ${schemaStores((configSchema, configCohorts)).filters.local.get}"""
-        .out(schemaStores((configSchema, configCohorts)).filters.local.get)
-        .tag(s"${schemaStores((configSchema, configCohorts)).filters.local.get}".split("/").last)
-    
-    }
-    
-    val cfString = cohortFilters.size match {
-    
-      case n if n > 0 => s"""echo "${cohortFilters.mkString("\n")}" > """
-      case _ => "touch "
-    
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${cfString} ${schemaStores((configSchema, configCohorts)).cohortFilters.local.get}"""
-        .out(schemaStores((configSchema, configCohorts)).cohortFilters.local.get)
-        .tag(s"${schemaStores((configSchema, configCohorts)).cohortFilters.local.get}".split("/").last)
-    
-    }
-    
-    val kfString = knockoutFilters.size match {
-    
-      case n if n > 0 => s"""echo "${knockoutFilters.mkString("\n")}" > """
-      case _ => "touch "
-    
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${kfString} ${schemaStores((configSchema, configCohorts)).knockoutFilters.local.get}"""
-        .out(schemaStores((configSchema, configCohorts)).knockoutFilters.local.get)
-        .tag(s"${schemaStores((configSchema, configCohorts)).knockoutFilters.local.get}".split("/").last)
-    
-    }
-  
-    val mString = masks.size match {
-    
-      case n if n > 0 => s"""echo "${masks.mkString("\n")}" > """
-      case _ => "touch "
-    
-    }
-    
-    drmWith(imageName = s"${utils.image.imgTools}") {
-    
-      cmd"""${mString} ${schemaStores((configSchema, configCohorts)).masks.local.get}"""
-        .out(schemaStores((configSchema, configCohorts)).masks.local.get)
-        .tag(s"${schemaStores((configSchema, configCohorts)).masks.local.get}".split("/").last)
+      case n if n > 0 => s"""${filters.mkString("\n")}"""
+      case _ => ""
     
     }
 
+    writeText(text = s"${fString}", filename = s"${schemaStores((configSchema, configCohorts)).filters.local.get.toString.split("@")(1)}")
+    
+    val cfString = cohortFilters.size match {
+    
+      case n if n > 0 => s"""${cohortFilters.mkString("\n")}"""
+      case _ => ""
+    
+    }
+
+    writeText(text = s"${cfString}", filename = s"${schemaStores((configSchema, configCohorts)).cohortFilters.local.get.toString.split("@")(1)}")
+    
+    val kfString = knockoutFilters.size match {
+    
+      case n if n > 0 => s"""${knockoutFilters.mkString("\n")}"""
+      case _ => ""
+    
+    }
+
+    writeText(text = s"${kfString}", filename = s"${schemaStores((configSchema, configCohorts)).knockoutFilters.local.get.toString.split("@")(1)}")
+    
+    val mString = masks.size match {
+    
+      case n if n > 0 => s"""${masks.mkString("\n")}"""
+      case _ => ""
+    
+    }
+
+    writeText(text = s"${mString}", filename = s"${schemaStores((configSchema, configCohorts)).masks.local.get.toString.split("@")(1)}")
+    
     val userAnnotationsInString = projectConfig.hailCloud match {
 
       case true =>
