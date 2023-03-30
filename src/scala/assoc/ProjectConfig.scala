@@ -722,11 +722,12 @@ object ProjectConfig extends loamstream.LoamFile {
             }
             f -> expr
           }.toMap
+
           ConfigCompoundFilters(
             id = requiredStr(config = vfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
             filter = filter,
             include = include,
-            expression = expressions.foldLeft(filter)((a,b) => a.replaceAllLiterally(b._1, b._2))
+            expression = expressions.foldLeft(filter)((a,b) => a.replaceAll("\\b" + b._1 + "\\b", b._2))
           )
         }
       }
@@ -795,7 +796,7 @@ object ProjectConfig extends loamstream.LoamFile {
             id = requiredStr(config = sfilter, field = "id", regex = "^[a-zA-Z0-9_]*$"),
             filter = filter,
             include = include,
-            expression = expressions.foldLeft(filter)((a,b) => a.replaceAllLiterally(b._1, b._2))
+            expression = expressions.foldLeft(filter)((a,b) => a.replaceAll("\\b" + b._1 + "\\b", b._2))
           )
         }
       }

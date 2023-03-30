@@ -665,7 +665,13 @@ object Fxns extends loamstream.LoamFile {
     bw.write("\n")
     bw.close()
   }
-  
+
+  def writeText(text: String, filename: String): Unit = {
+    val bw = new BufferedWriter(new FileWriter(new File(filename)))
+    bw.write(text)
+    bw.close()
+  }
+
   //def findCycles(graph: LoamGraph): Set[Seq[Tool]] = {
   //  def findCycleStartingFrom(t: Tool): Option[Seq[Tool]] = {
   //    def walkFrom(current: Tool, soFar: Seq[Tool], seen: Set[Tool]): Option[Seq[Tool]] = {
