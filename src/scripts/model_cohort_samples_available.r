@@ -94,7 +94,7 @@ if(nrow(kinship_in) > 0) {
 		names(sampleqc_in)[i] <- paste0("ID2_",pheno_cols[i-2])
 	}
 	kinship_in <- merge(kinship_in, sampleqc_in, all.x=T)
-	kinship_in <- kinship_in[order(-kinship_in$Kinship),]
+	kinship_in <- kinship_in[order(-kinship_in$KINSHIP),]
 	
 	cat("removing lower quality sample for each related pair starting with the highest kinship value pair, until no more pairs remain\n")
 	kinship_in$ID1_remove <- 0
