@@ -201,7 +201,7 @@ if(! is.null(args$cckinship)) {
 }
 
 cat("extracting only complete observations\n")
-pheno <- subset(pheno, rowSums(! is.na(pheno[pheno_cols])) > 1)
+pheno <- subset(pheno, rowSums(! is.na(pheno[pheno_cols])) > 0)
 id_map$removed_incomplete_obs[which((id_map$removed_kinship == 0) & (id_map$removed_cckinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
 cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)])),"/",as.character(length(id_map$flagged_incomplete_obs[which(id_map$flagged_incomplete_obs == 1)]))," flagged samples with incomplete observations"),"\n")
 
