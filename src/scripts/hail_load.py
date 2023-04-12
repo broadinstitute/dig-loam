@@ -206,6 +206,7 @@ def main(args=None):
 	mt_sites= mt.select_cols()
 	mt_sites = mt_sites.filter_cols(False)
 	mt_sites_vcf = mt_sites.select_rows('uid','qual','filters','info')
+	mt_sites_vcf = mt_sites_vcf.rename({'uid': 'rsid'})
 	hl.export_vcf(mt_sites_vcf,args.sites_vcf_out)
 
 	if args.cloud:
