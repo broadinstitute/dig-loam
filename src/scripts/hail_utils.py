@@ -156,6 +156,16 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				'GQ' in gt_codes,
 				hl.agg.filter(mt.GT.is_non_ref(), hl.agg.mean(mt.GQ)),
 				hl.missing(hl.tfloat64)
+			),
+			min_alt_gq = hl.if_else(
+				'GQ' in gt_codes,
+				hl.agg.filter(mt.GT.is_non_ref(), hl.agg.stats(mt.GQ).min),
+				hl.missing(hl.tfloat64)
+			),
+			stddev_alt_gq = hl.if_else(
+				'GQ' in gt_codes,
+				hl.agg.filter(mt.GT.is_non_ref(), hl.agg.stats(mt.GQ).stdev),
+				hl.missing(hl.tfloat64)
 			)
 		)}
 	)

@@ -83,14 +83,14 @@ def main(args=None):
 		else:
 
 			print("no variants with non-missing gene annotations remaining ... writing empty files")
-			if args.annotation_out: Path(args.annotations_out).touch()
+			if args.annotations_out: Path(args.annotations_out).touch()
 			if args.setlist_out: Path(args.setlist_out).touch()
 			if args.masks_out: Path(args.masks_out).touch()
 
 	else:
 
 		print("no variants remaining after standard filters ... writing empty files")
-		if args.annotation_out: Path(args.annotations_out).touch()
+		if args.annotations_out: Path(args.annotations_out).touch()
 		if args.setlist_out: Path(args.setlist_out).touch()
 		if args.masks_out: Path(args.masks_out).touch()
 
