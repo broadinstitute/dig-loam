@@ -60,20 +60,49 @@ if(args$covars != "") {
 covars_analysis<-paste(c(covars_factors,"1",paste0("PC",seq(args$n_pcs))),collapse="+")
 
 if(length(covars) > 0) {
-	incomplete_obs <- out[! complete.cases(out[,covars]),c("IID",covars)]
+	incomplete_covars <- out[! complete.cases(out[,covars]),]
 } else {
-	incomplete_obs <- data.frame()
+	incomplete_covars <- out[NULL,]
 }
 
+print(paste0("removing ",length(incomplete_covars$IID)," samples due to incomplete covariate observations"))
+out_check <- out[! out$IID %in% incomplete_covars$IID,]
+
+metrics_use<-c()
+print("excluding any metric x with var(x) == 0 or missingness(x) >= 0.02")
+for(x in metrics) {
+	metric_var = var(out_check[,x], na.rm=TRUE)
+	metric_miss = nrow(out_check[is.na(out_check[,x]),])/nrow(out_check)
+	metric_message<-paste0("var = ",metric_var,",  missingness = ",metric_miss)
+	if(metric_var == 0 | metric_miss >= 0.02) {
+		print(paste0("...excluding metric ",x,": ",metric_message))
+	} else {
+		print(paste0("...including metric ",x,": ",metric_message))
+		
+		metrics_use <- c(metrics_use,x)
+	}
+}
+
+incomplete_metrics <- out_check[! complete.cases(out_check[,metrics_use]),]
+
+print(paste0("removing ",length(incomplete_metrics$IID)," samples due to incomplete sample metric observations"))
+
+if(length(covars) > 0) {
+	cols_incl <- c(covars,metrics_use)
+} else {
+	cols_incl <- metrics_use
+}
+incomplete_obs <- out[! complete.cases(out[,cols_incl]),]
+
 if(nrow(incomplete_obs) > 0) {
-	print(paste0(nrow(incomplete_obs), " incomplete observations found!"))
 	write.table(incomplete_obs,args$incomplete_obs,row.names=F,col.names=T,quote=F,sep="\t",append=F)
 } else {
 	cat("", file = args$incomplete_obs)
 }
 
-out <- out[! out$IID %in% incomplete_obs$IID,]
-for(x in metrics) {
+out <- out[! out$IID %in% incomplete_obs,]
+
+for(x in metrics_use) {
 	print(paste("var(",x,") = ",var(out[,x])),sep="")
 	if(nrow(out[! is.na(out[,x]),]) > 0) {
 		if(var(out[,x]) != 0) {
