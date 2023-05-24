@@ -243,13 +243,14 @@ object SampleQc extends loamstream.LoamFile {
       cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
         --ancestry-inferred ${projectStores.ancestryInferred.local.get}
         --kinship-related ${arrayStores(array).kinshipData.kin0}
+        --sampleqc-stats ${arrayStores(array).sampleQcData.stats.local.get}
         --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
         --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
         --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
         --sexcheck-problems ${arrayStores(array).sexcheckData.problems.local.get}
         --restore ${arrayStores(array).filterQc.samplesRestore}
         --out ${arrayStores(array).filterQc.samplesExclude.local.get}"""
-        .in(projectStores.ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).filterQc.samplesRestore)
+        .in(projectStores.ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).filterQc.samplesRestore)
         .out(arrayStores(array).filterQc.samplesExclude.local.get)
         .tag(s"${arrayStores(array).filterQc.samplesExclude.local.get}".split("/").last)
     
