@@ -38,7 +38,6 @@ for(f in args$stats_in) {
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "24" | dfs[[x]]$chr == "Y" | dfs[[x]]$chr == "chrY"]<-"Y"
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "25" | dfs[[x]]$chr == "XY" | dfs[[x]]$chr == "chrXY"]<-"XY"
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "26" | dfs[[x]]$chr == "MT" | dfs[[x]]$chr == "M" | dfs[[x]]$chr == "chrMT" | dfs[[x]]$chr == "chrM"]<-"MT"
-	
 	dfs[[x]]$freq_group[dfs[[x]]$MAF == 0]<-"[0]"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF > 0 & dfs[[x]]$MAF < 0.001]<-"(0,0.001)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.001 & dfs[[x]]$MAF < 0.005]<-"[0.001,0.005)"
@@ -48,8 +47,8 @@ for(f in args$stats_in) {
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.03 & dfs[[x]]$MAF < 0.05]<-"[0.03,0.05)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.05 & dfs[[x]]$MAF < 0.10]<-"[0.05,0.10)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.1 & dfs[[x]]$MAF <= 0.50]<-"[0.10,0.50]"
-	dfs[[x]]$indel_group[nchar(dfs[[x]]$alleles) > 2]<-"YES"
-	dfs[[x]]$indel_group[! (nchar(dfs[[x]]$alleles) > 2)]<-"NO"
+	dfs[[x]]$indel_group[nchar(gsub(",","",gsub("\\]","",gsub("\\[","",gsub("\"","",dfs[[x]]$alleles))))) > 2]<-"YES"
+	dfs[[x]]$indel_group[! (nchar(gsub(",","",gsub("\\]","",gsub("\\[","",gsub("\"","",dfs[[x]]$alleles))))) > 2)]<-"NO"
 	dfs[[x]]$was_split_group[dfs[[x]]$was_split == "true"]<-"YES"
 	dfs[[x]]$was_split_group[dfs[[x]]$was_split == "false"]<-"NO"
 	
