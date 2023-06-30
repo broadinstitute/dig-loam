@@ -33,6 +33,7 @@ def main(args=None):
 		x['ID1'] = x['ID1'].astype(str)
 		x['ID2'] = x['ID2'].astype(str)
 		x=x[x['KINSHIP'] >= 0.4]
+		x=x[(~x['ID1'].isin(final)) & (~x['ID2'].isin(final))]
 		if x.shape[0] > 0:
 			print str(x.shape[0]) + " duplicate pairs found!"
 			x_remaining = x.copy()
@@ -48,9 +49,6 @@ def main(args=None):
 						print "... KINSHIP(" + r['ID1'] + ", " + r['ID2'] + ") = " + str(r['KINSHIP']) + ", call_rate(" + r['ID2'] + ") = " + str(id2_cr) + " <= call_rate(" + r['ID1'] + ") = " + str(id1_cr) + ", removing " + r['ID2']
 					x_remaining = x_remaining[x_remaining['ID1'] != x_remove]
 					exc.extend([x_remove])
-			#exc=x['ID1'].tolist()
-			#exc.extend(x['ID2'].tolist())
-
 			restore_temp = restore[restore['RestoreFrom'] == "duplicatesKeep"]
 			if restore_temp.shape[0] > 0:
 				print "restoring " + str(restore_temp.shape[0]) + " samples from duplicatesKeep list"
