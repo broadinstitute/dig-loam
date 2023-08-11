@@ -123,8 +123,8 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
-            --driver-memory ${projectConfig.resources.matrixTableHail.mem}
-            --executor-memory ${projectConfig.resources.matrixTableHail.mem}
+            --driver-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
+            --executor-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).mt.get.local.get}
@@ -184,8 +184,8 @@ object PrepareSchema extends loamstream.LoamFile {
               drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
               
                   cmd"""${utils.binary.binPython} ${utils.python.pyHailSchemaVariantStats}
-                    --driver-memory ${projectConfig.resources.matrixTableHail.mem}
-                    --executor-memory ${projectConfig.resources.matrixTableHail.mem}
+                    --driver-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
+                    --executor-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
                     --tmp-dir ${projectStores.tmpDir}
                     --reference-genome ${projectConfig.referenceGenome}
                     --mt-in ${arrayStores(array).mt.get.local.get}
@@ -504,8 +504,8 @@ object PrepareSchema extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailFilterSchemaVariants}
-            --driver-memory ${projectConfig.resources.tableHail.mem}
-            --executor-memory ${projectConfig.resources.tableHail.mem}
+            --driver-memory ${(projectConfig.resources.tableHail.mem*0.9*1000).toInt}m
+            --executor-memory ${(projectConfig.resources.tableHail.mem*0.9*1000).toInt}m
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
@@ -564,8 +564,8 @@ object PrepareSchema extends loamstream.LoamFile {
             drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
             
               cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
-                --driver-memory ${projectConfig.resources.matrixTableHail.mem}
-                --executor-memory ${projectConfig.resources.matrixTableHail.mem}
+                --driver-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
+                --executor-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
                 --mt-in ${arrayStores(array).mt.get.local.get}
                 --cohorts-map-in ${schemaStores((configSchema, configCohorts)).cohortMap.local.get}
                 --filter-table-in ${schemaStores((configSchema, configCohorts)).variantFilterHailTable.local.get}

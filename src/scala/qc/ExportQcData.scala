@@ -105,8 +105,8 @@ object ExportQcData extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
         
           cmd"""${utils.binary.binPython} ${utils.python.pyHailExportQcData}
-            --driver-memory ${projectConfig.resources.matrixTableHail.mem}
-            --executor-memory ${projectConfig.resources.matrixTableHail.mem}
+            --driver-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
+            --executor-memory ${(projectConfig.resources.matrixTableHail.mem*0.9*1000).toInt}m
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}

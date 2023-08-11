@@ -52,8 +52,8 @@ object Annotate extends loamstream.LoamFile {
         drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.tableHail.cpus, mem = projectConfig.resources.tableHail.mem, maxRunTime = projectConfig.resources.tableHail.maxRunTime) {
   
           cmd"""${utils.binary.binPython} ${utils.python.pyHailLoadAnnotations}
-            --driver-memory ${projectConfig.resources.tableHail.mem}
-            --executor-memory ${projectConfig.resources.tableHail.mem}
+            --driver-memory ${(projectConfig.resources.tableHail.mem*0.9*1000).toInt}m
+            --executor-memory ${(projectConfig.resources.tableHail.mem*0.9*1000).toInt}m
             --tmp-dir ${projectStores.tmpDir}
             --annotations ${arrayStores(array).refData.annotations.local.get}
             --out ${arrayStores(array).refData.annotationsHt.local.get}

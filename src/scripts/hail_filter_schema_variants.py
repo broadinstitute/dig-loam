@@ -25,8 +25,8 @@ def main(args=None):
 		import hail_utils
 
 	if not args.cloud:
+		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + ' --executor-memory ' + args.executor_memory + ' pyspark-shell'
 		hl.init(log = args.log, tmp_dir = args.tmp_dir, idempotent=True)
-		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + str(args.driver_memory) + 'g --executor-memory ' + str(args.executor_memory) + 'g pyspark-shell'
 	else:
 		hl.init(idempotent=True)
 
@@ -277,8 +277,8 @@ if __name__ == "__main__":
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
 	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
-	parser.add_argument('--driver-memory', type=int, default=1, help='spark driver memory in GB (an integer)')
-	parser.add_argument('--executor-memory', type=int, default=1, help='spark executor memory in GB (an integer)')
+	parser.add_argument('--driver-memory', default="1g", help='spark driver memory')
+	parser.add_argument('--executor-memory', default="1g", help='spark executor memory')
 	parser.add_argument('--tmp-dir', help='temporary directory path to be created and destroyed')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--log', help='a hail log filename', required=True)
