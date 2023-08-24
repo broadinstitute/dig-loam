@@ -983,6 +983,7 @@ object PrepareModel extends loamstream.LoamFile {
     //        drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.filterModelVariantsHail.cpus, mem = projectConfig.resources.filterModelVariantsHail.mem, maxRunTime = projectConfig.resources.filterModelVariantsHail.maxRunTime) {
     //        
     //          cmd"""${utils.binary.binPython} ${utils.python.pyHailGenerateModelVcf}
+    //            --tmp-dir ${projectStores.tmpDir}
     //            --mt-in ${arrayStores(array).refData.mt.get.local.get}
     //            --cohorts-map-in ${modelStores((configModel, configCohorts, configMeta)).cohortMap.local.get}
     //            --filter-table-in ${modelStores((configModel, configCohorts, configMeta)).variantFilterHailTable.local.get}
