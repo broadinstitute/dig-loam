@@ -22,7 +22,10 @@ object ProjectStores extends loamstream.LoamFile {
     kgSample: MultiStore,
     fasta: Store,
     vepCacheDir: Store,
+    vepPluginsDir: Store,
     dbNSFP: Store,
+    vepConservation: Store,
+    vepGerpBW: Option[Store],
     gnomad: Store,
     sampleFile: MultiStore,
     ancestryInferred: MultiStore,
@@ -83,7 +86,13 @@ object ProjectStores extends loamstream.LoamFile {
       ),
       fasta = store(path(checkPath(projectConfig.fasta))).asInput,
       vepCacheDir = store(path(checkPath(projectConfig.vepCacheDir))).asInput,
+      vepPluginsDir = store(path(checkPath(projectConfig.vepPluginsDir))).asInput,
       dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
+      vepConservation = store(path(checkPath(projectConfig.vepConservation))).asInput,
+      vepGerpBW = projectConfig.vepGerpBW match {
+        case Some(s) => Some(store(path(checkPath(s))).asInput)
+        case None => None
+      },
       gnomad = store(path(checkPath(projectConfig.gnomad))).asInput,
       sampleFile = MultiStore(
         local = Some(store(path(projectConfig.sampleFile)).asInput),

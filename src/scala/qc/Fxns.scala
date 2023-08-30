@@ -240,6 +240,13 @@ object Fxns extends loamstream.LoamFile {
     }
     y.flatten
   }
+
+  def chrNumberToCode(chr: String, build: String): String = {
+    build match {
+      case "GRCh38" => s"chr${chr}"
+      case _ => chr
+    }
+  }
   
   def checkPlinkPath(s: String): String = {
     val bed = Files.exists(Paths.get(s + ".bed")) 

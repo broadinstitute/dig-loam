@@ -240,7 +240,7 @@ object QcReport extends loamstream.LoamFile {
         --seq-variants-summary-table ${qcReportStores.tablesData.seqVariantsSummary.path.toAbsolutePath()} 
         --variant-list ${varStrings.mkString(" ")}
         --out ${qcReportStores.texData.data}"""
-        .in(arrayStores.map(e => e._2).map(e => e.rawData.imissRemove).flatten.toSeq ++ sampleIn ++ variantIn :+ qcReportStores.tablesData.rawVariantsSummary :+ qcReportStores.tablesData.seqVariantsSummary)
+        .in(imissRemoveFiles ++ sampleIn ++ variantIn :+ qcReportStores.tablesData.rawVariantsSummary :+ qcReportStores.tablesData.seqVariantsSummary)
         .out(qcReportStores.texData.data)
         .tag(s"${qcReportStores.texData.data}".split("/").last)
     

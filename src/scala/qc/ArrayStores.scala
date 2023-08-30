@@ -80,12 +80,14 @@ object ArrayStores extends loamstream.LoamFile {
     hailLog: MultiStore,
     variantMetrics: MultiStore,
     sitesVcf: MultiStore,
+    sitesVcfChr: Map[String, Store],
     sitesVcfTbi: Store,
-    annotations: MultiStore,
+    sitesVcfTbiChr: Map[String, Store],
+    annotations: Map[String, MultiStore],
     annotationsHt: MultiStore,
     annotationsHailLog: MultiStore,
-    annotationWarnings: Store,
-    annotationHeader: Store)
+    annotationWarnings: Map[String, Store],
+    annotationHeader: Map[String, Store])
   
   final case class ImputeData(
     data: Seq[Store],
@@ -511,11 +513,19 @@ object ArrayStores extends loamstream.LoamFile {
         local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.sites_only.vcf.bgz")); case false => None }
       ),
+      sitesVcfChr = expandChrList(arrayCfg.chrs).map { chr =>
+        chr -> store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.chr${chr}.vcf.bgz")
+      }.toMap,
       sitesVcfTbi = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.vcf.bgz.tbi"),
-      annotations = MultiStore(
-        local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.bgz")),
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.bgz")); case false => None }
-      ),
+      sitesVcfTbiChr = expandChrList(arrayCfg.chrs).map { chr =>
+        chr -> store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.sites_only.chr${chr}.vcf.bgz.tbi")
+      }.toMap,
+      annotations = expandChrList(arrayCfg.chrs).map { chr =>
+        chr -> MultiStore(
+          local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.chr${chr}.annotations.bgz")),
+          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.chr${chr}.annotations.bgz")); case false => None }
+        )
+      }.toMap,
       annotationsHt = MultiStore(
         local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.ht")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht")); case false => None }
@@ -524,9 +534,13 @@ object ArrayStores extends loamstream.LoamFile {
         local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.hail.log")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.hail.log")); case false => None }
       ),
-      annotationWarnings = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.warnings"),
-      annotationHeader = store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.header"))
-  
+      annotationWarnings = expandChrList(arrayCfg.chrs).map { chr =>
+        chr -> store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.chr${chr}.annotations.warnings")
+      }.toMap,
+      annotationHeader = expandChrList(arrayCfg.chrs).map { chr =>
+        chr -> store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.chr${chr}.annotations.header")
+      }.toMap)
+
     val imputeData = ImputeData(
       data = bedBimFam(dirTree.dataArrayMap(arrayCfg).impute.local.get / imputeBaseString),
       base = dirTree.dataArrayMap(arrayCfg).impute.local.get / imputeBaseString)
