@@ -190,7 +190,10 @@ object ProjectConfig extends loamstream.LoamFile {
     humanReferenceWild: String,
     fasta: String,
     vepCacheDir: String,
+    vepPluginsDir: String,
     dbNSFP: String,
+    vepConservation: String,
+    vepGerpBW: Option[String],
     gnomad: String,
     sampleFile: String,
     sampleFileId: String,
@@ -246,6 +249,7 @@ object ProjectConfig extends loamstream.LoamFile {
     binPlink2: Path,
     binBgenix: Path,
     binTabix: Path,
+    binBgzip: Path,
     binGhostscript: Path,
     binKlustakwik: Path,
     binPython: Path,
@@ -288,7 +292,8 @@ object ProjectConfig extends loamstream.LoamFile {
     shPlinkPrepare: Path,
     shPlinkToVcfNoHalfCalls: Path,
     shKlustakwikPca: Path,
-    shKlustakwikMetric: Path) extends Debug
+    shKlustakwikMetric: Path,
+    shTabixExtract: Path) extends Debug
   
   final case class R(
     rFindBestDuplicateVariants: Path,
@@ -343,7 +348,10 @@ object ProjectConfig extends loamstream.LoamFile {
       val humanReferenceWild = requiredStr(config = config, field = "humanReferenceWild")
       val fasta = requiredStr(config = config, field = "fasta")
       val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")
+      val vepPluginsDir = requiredStr(config = config, field = "vepPluginsDir")
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
+      val vepConservation = requiredStr(config = config, field = "vepConservation")
+      val vepGerpBW = optionalStr(config = config, field = "vepGerpBW")
       val gnomad = requiredStr(config = config, field = "gnomad")
       val sampleFile = requiredStr(config = config, field = "sampleFile")
       val sampleFileId = requiredStr(config = config, field = "sampleFileId")
@@ -361,6 +369,11 @@ object ProjectConfig extends loamstream.LoamFile {
       val organization = requiredStr(config = config, field = "organization")
       val acknowledgements = optionalStrList(config = config, field = "acknowledgements")
       val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
+
+      (referenceGenome, vepGerpBW) match {
+        case ("GRCh38", None) => throw new CfgException("projectConfig: config setting for vepGerpBW required with reference genome GRCh38")
+        case _ => ()
+      }
   
       val cloudResources = ConfigCloudResources(
         mtCluster = {
@@ -783,7 +796,10 @@ object ProjectConfig extends loamstream.LoamFile {
         humanReferenceWild = humanReferenceWild,
         fasta = fasta,
         vepCacheDir = vepCacheDir,
+        vepPluginsDir = vepPluginsDir,
         dbNSFP = dbNSFP,
+        vepConservation = vepConservation,
+        vepGerpBW = vepGerpBW,
         gnomad = gnomad,
         sampleFile = sampleFile,
         sampleFileId = sampleFileId,
@@ -834,7 +850,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgPlink2 = path(s"${imagesDir}/plink2_v2.3a.simg"),
         imgBgen = path(s"${imagesDir}/bgen_v1.1.4.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
-        imgEnsemblVep = path(s"${imagesDir}/ensemblvep_r107.simg"),
+        imgEnsemblVep = path(s"${imagesDir}/ensemblvep_r110.1.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
         imgImagemagick = path(s"${imagesDir}/imagemagick.simg")
       )
@@ -847,6 +863,7 @@ object ProjectConfig extends loamstream.LoamFile {
         binPlink2 = path("/usr/local/bin/plink2"),
         binBgenix = path("/usr/local/bin/bgenix"),
         binTabix = path("/usr/local/bin/tabix"),
+        binBgzip = path("/usr/local/bin/bgzip"),
         binGhostscript = path("/usr/local/bin/gs"),
         binKlustakwik = path("/usr/local/bin/KlustaKwik"),
         binPython = path("/usr/local/bin/python"),
@@ -891,7 +908,8 @@ object ProjectConfig extends loamstream.LoamFile {
         shPlinkPrepare = path(s"${scriptsDir}/plink_prepare.sh"),
         shPlinkToVcfNoHalfCalls = path(s"${scriptsDir}/plink_to_vcf_no_half_calls.sh"),
         shKlustakwikPca = path(s"${scriptsDir}/klustakwik_pca.sh"),
-        shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh")
+        shKlustakwikMetric = path(s"${scriptsDir}/klustakwik_metric.sh"),
+        shTabixExtract = path(s"${scriptsDir}/tabix_extract.sh")
       )
   
       val r = R(
