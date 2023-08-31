@@ -41,7 +41,7 @@ object Annotate extends loamstream.LoamFile {
           --region ${chrNumberToCode(chr, projectConfig.referenceGenome)}
           --out ${arrayStores(array).refData.sitesVcfChr(chr)}
           --reference-genome ${projectConfig.referenceGenome}"""
-        .in(arrayStores(array).refData.sitesVcf.local.get)
+        .in(arrayStores(array).refData.sitesVcf.local.get, arrayStores(array).refData.sitesVcfTbi)
         .out(arrayStores(array).refData.sitesVcfChr(chr), arrayStores(array).refData.sitesVcfTbiChr(chr))
         .tag(s"${arrayStores(array).refData.sitesVcfChr(chr)}".split("/").last)
       
