@@ -185,8 +185,8 @@ object ProjectConfig extends loamstream.LoamFile {
     kgSampleId: String,
     kgSamplePop: String,
     kgSampleGroup: String,
-    kgVcf: String,
-    kgIds: String,
+    kgVcf: Option[String],
+    kgIds: Option[String],
     humanReferenceWild: String,
     fasta: String,
     vepCacheDir: String,
@@ -343,8 +343,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val kgSampleId = requiredStr(config = config, field = "kgSampleId")
       val kgSamplePop = requiredStr(config = config, field = "kgSamplePop")
       val kgSampleGroup = requiredStr(config = config, field = "kgSampleGroup")
-      val kgVcf = requiredStr(config = config, field = "kgVcf")
-      val kgIds = requiredStr(config = config, field = "kgIds")
+      val kgVcf = optionalStr(config = config, field = "kgVcf")
+      val kgIds = optionalStr(config = config, field = "kgIds")
       val humanReferenceWild = requiredStr(config = config, field = "humanReferenceWild")
       val fasta = requiredStr(config = config, field = "fasta")
       val vepCacheDir = requiredStr(config = config, field = "vepCacheDir")

@@ -45,7 +45,7 @@ def main(args=None):
 
 	print("add 1KG sample annotations")
 	kg = kg.annotate_cols(famID = kg.s)
-	tbl = hl.import_table(args.kg_sample, delimiter=" ", impute=True)
+	tbl = hl.import_table(args.kg_sample, delimiter="\s+", impute=True)
 	tbl = tbl.select(tbl.ID, tbl.POP, tbl.GROUP)
 	tbl = tbl.key_by(tbl.ID)
 	kg = kg.annotate_cols(POP = tbl[kg.s].POP, GROUP = tbl[kg.s].GROUP)
