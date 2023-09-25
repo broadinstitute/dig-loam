@@ -35,21 +35,37 @@ object ProjectStores extends loamstream.LoamFile {
   
     val chrsAll = projectConfig.Arrays.map(e => expandChrList(e.chrs)).flatten.distinct
   
-    val kgVcf = chrsAll.map { chr =>
+    val kgVcf = projectConfig.Arrays.filter(e => (e.technology == "gwas") && (e.format != "mt")).size match {
+
+      case n if n > 0 =>
+
+        chrsAll.map { chr =>
+	    
+          val vcf = store(checkPath(projectConfig.kgVcf.get.replace("[CHROMOSOME]", s"$chr"))).asInput
+        
+          chr -> vcf
+        
+        }.toMap
+
+      case _ => Map[String, Store]()
+
+    }
     
-      val vcf = store(checkPath(projectConfig.kgVcf.replace("[CHROMOSOME]", s"$chr"))).asInput
-    
-      chr -> vcf
-    
-    }.toMap
-    
-    val kgIds = chrsAll.map { chr =>
-    
-      val ids = store(checkPath(projectConfig.kgIds.replace("[CHROMOSOME]", s"$chr"))).asInput
-    
-      chr -> ids
-    
-    }.toMap
+    val kgIds = projectConfig.Arrays.filter(e => (e.technology == "gwas") && (e.format != "mt")).size match {
+
+      case n if n > 0 =>
+
+        chrsAll.map { chr =>
+        
+          val ids = store(checkPath(projectConfig.kgIds.get.replace("[CHROMOSOME]", s"$chr"))).asInput
+        
+          chr -> ids
+        
+        }.toMap
+
+      case _ => Map[String, Store]()
+
+    }
     
     val humanReference = chrsAll.map { chr =>
     

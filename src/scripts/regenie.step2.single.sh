@@ -129,6 +129,7 @@ echo "cliOptions: $cliOptions"
 $regenie \
 --step 2 \
 --bgen $bgen \
+--ref-first \
 --sample $sample \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
