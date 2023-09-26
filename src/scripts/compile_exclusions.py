@@ -19,7 +19,7 @@ def main(args=None):
 	final=exc
 
 	print "reading sample qc stats file"
-	stats_df=pd.read_table(args.sampleqc_stats)
+	stats_df=pd.read_table(args.sampleqc_stats, dtype={'IID': 'str'})
 
 	print "reading kinship related file"
 	try:
