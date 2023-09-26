@@ -81,47 +81,64 @@ if(unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))] ==
 	stop(paste("output extension ",unlist(strsplit(args$out,"\\."))[length(unlist(strsplit(args$out,"\\.")))]," not supported",sep=""))
 }
 
-#library(VennDiagram)
-#olap<-calculate.overlap(ids)
-#print(names(olap))
-#for(idx in names(olap)) {
-#	print(length(olap[[idx]]))
-#}
+if(length(ids) == 1) {
+	library(ggplot2)
+	ids_df<-data.frame(ids)
+	ids_df$cohort<-names(ids)[1]
 
-library(UpSetR)
-# green: #16BE72
-# blue: #1F76B4
-if(length(ids) <= 2) {
-	text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 2.5)
-	point_size <- 10
-	line_size <- 5
-	mb_ratio = c(0.7, 0.3)
-	num_angles = 0
-} else if(length(ids) <= 3) { 
-	text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 1.7)
-	point_size <- 8
-	line_size <- 4
-	mb_ratio = c(0.7, 0.3)
-	num_angles = 0
-} else if(length(ids) <= 4) { 
-	text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 1.7)
-	point_size <- 6
-	line_size <- 3
-	mb_ratio = c(0.7, 0.3)
-	num_angles = -25
-} else if(length(ids) <= 5) { 
-	text_scale <- c(2, 1.5, 1, 1, 2, 1)
-	point_size <- 3.5
-	line_size <- 1.5
-	mb_ratio = c(0.65, 0.35)
-	num_angles = -35
+	ggplot(data=ids_df, aes(x=cohort)) +
+	geom_bar(fill="#1F76B4",width=0.25) +
+	geom_text(stat='count', aes(label=..count..), vjust=1.5, size=6, color="white") +
+	theme(text = element_text(size = 20),
+	axis.ticks.x=element_blank(),
+	axis.title.x=element_blank(),
+	axis.text.x=element_text(colour="black"),
+	axis.title.y=element_blank(),
+	axis.text.y=element_text(colour="black"),
+	axis.line = element_line(size = 0.25, linetype=1))
 } else {
-	text_scale <- c(2, 1.5, 1, 1, 2, 1)
-	point_size <- 3.5
-	line_size <- 1.5
-	mb_ratio = c(0.6, 0.4)
-	num_angles = -35
+	#library(VennDiagram)
+	#olap<-calculate.overlap(ids)
+	#print(names(olap))
+	#for(idx in names(olap)) {
+	#	print(length(olap[[idx]]))
+	#}
+	
+	library(UpSetR)
+	# green: #16BE72
+	# blue: #1F76B4
+	if(length(ids) <= 2) {
+		text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 2.5)
+		point_size <- 10
+		line_size <- 5
+		mb_ratio = c(0.7, 0.3)
+		num_angles = 0
+	} else if(length(ids) <= 3) { 
+		text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 1.7)
+		point_size <- 8
+		line_size <- 4
+		mb_ratio = c(0.7, 0.3)
+		num_angles = 0
+	} else if(length(ids) <= 4) { 
+		text_scale <- c(2.5, 2, 1.5, 1.5, 2.5, 1.7)
+		point_size <- 6
+		line_size <- 3
+		mb_ratio = c(0.7, 0.3)
+		num_angles = -25
+	} else if(length(ids) <= 5) { 
+		text_scale <- c(2, 1.5, 1, 1, 2, 1)
+		point_size <- 3.5
+		line_size <- 1.5
+		mb_ratio = c(0.65, 0.35)
+		num_angles = -35
+	} else {
+		text_scale <- c(2, 1.5, 1, 1, 2, 1)
+		point_size <- 3.5
+		line_size <- 1.5
+		mb_ratio = c(0.6, 0.4)
+		num_angles = -35
+	}
+	
+	upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size = line_size, number.angles = num_angles, point.size = point_size, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = text_scale, mb.ratio = mb_ratio)
 }
-
-upset(fromList(ids), nsets=length(ids), order.by = "freq", sets.bar.color="#1F76B4", line.size = line_size, number.angles = num_angles, point.size = point_size, empty.intersections = NULL, mainbar.y.label = "Intersection Size", sets.x.label = xLabel, text.scale = text_scale, mb.ratio = mb_ratio)
 dev.off()
