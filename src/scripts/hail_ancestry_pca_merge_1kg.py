@@ -82,6 +82,9 @@ def main(args=None):
 	for f in kg_remove:
 		kg = kg.drop(f)
 
+	print('extract AFR, AMR, EUR, EAS, and SAS samples from kg data')
+	kg = kg.filter_cols(hl.set(['AFR','AMR','EUR','EAS','SAS']).contains(kg.GROUP), keep=True)
+
 	print('study data: %d samples and %d variants' % (mt.count_cols(), mt.count_rows()))
 	print('kg data: %d samples and %d variants' % (kg.count_cols(), kg.count_rows()))
 
