@@ -60,7 +60,7 @@ def main(args=None):
 		ref = tbl.alleles[0],
 		alt = tbl.alleles[1]
 	)
-	tbl = tbl.select(*['chr', 'pos', 'ref', 'alt', 'rsid','variant_qc'])
+	tbl = tbl.select(*['chr', 'pos', 'ref', 'alt', 'rsid','uid','variant_qc'])
 	tbl = tbl.flatten()
 	tbl = tbl.rename(dict(zip(list(tbl.row),[x.replace('variant_qc.','') if x.startswith('variant_qc') else x for x in list(tbl.row)])))
 	tbl = tbl.key_by()

@@ -123,7 +123,7 @@ def main(args=None):
 		annotations_tbl = annotations_tbl.select(*annotation_fields)
 		annotations_tbl = annotations_tbl.annotate(Uploaded_variation = annotations_tbl.Uploaded_variation.replace("_",":").replace("/",":"))
 		annotations_tbl = annotations_tbl.key_by('Uploaded_variation')
-		ht = ht.annotate(annotation = annotations_tbl[ht.rsid])
+		ht = ht.annotate(annotation = annotations_tbl[ht.uid])
 	
 	if args.user_annotations:
 		print("read in user annotations")
