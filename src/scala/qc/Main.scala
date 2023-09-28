@@ -63,7 +63,7 @@ object Main extends loamstream.LoamFile {
     Pca(array)
     SampleQc(array)
     FilterArray(array)
-    ExportCleanVcf(array)
+    ExportFilteredVcf(array)
 
     array.exportCleanBgen match {
   
