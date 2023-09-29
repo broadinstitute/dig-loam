@@ -21,7 +21,7 @@ object DirTree extends loamstream.LoamFile {
     filter: MultiPath,
     filterQc: MultiPath,
     filterPostQc: MultiPath,
-    clean: MultiPath) extends Debug
+    results: MultiPath) extends Debug
   
   final case class DirTree(
     base: MultiPath,
@@ -82,7 +82,7 @@ object DirTree extends loamstream.LoamFile {
           filter = filter,
           filterQc = appendSubDir(filter, "qc"),
           filterPostQc = appendSubDir(filter, "postqc"),
-          clean = appendSubDir(base, "clean")
+          results = appendSubDir(base, "results")
         )
       }.toMap
   
