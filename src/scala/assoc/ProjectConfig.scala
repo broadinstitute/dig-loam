@@ -1448,7 +1448,7 @@ object ProjectConfig extends loamstream.LoamFile {
         imgR = path(s"${imagesDir}/r.simg"),
         imgTools = path(s"${imagesDir}/tools.simg"),
         imgTexLive = path(s"${imagesDir}/texlive.simg"),
-        imgEnsemblVep = path(s"${imagesDir}/ensemblvep_r107.simg"),
+        imgEnsemblVep = path(s"${imagesDir}/ensemblvep_r110.1.simg"),
         imgFlashPca = path(s"${imagesDir}/flashpca.simg"),
         imgUmichStatgen = path(s"${imagesDir}/umich_statgen.simg"),
         imgRegenie = path(s"${imagesDir}/regenie-v3.1.2.simg")

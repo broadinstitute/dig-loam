@@ -30,6 +30,7 @@ def mhtplot(df, chr, pos, p, file, gc = False, bicolor = False):
 	print "maximum -1*log10(p-value): {0:.3g}".format(np.max(df[logp]))
 	
 	print "calculating genomic positions"
+	df[chr] = df[chr].astype(str)
 	df[chr] = df[chr].str.replace("chr","")
 	df[chrInt] = df[chr].replace({'X': '23', 'Y': '24', 'MT': '25', 'M': '25'}).astype(int)
 	df.sort_values(by=[chrInt,pos], inplace=True)
@@ -151,6 +152,9 @@ def main(args=None):
 
 	df.dropna(subset=[args.p], inplace=True)
 
+	if args.eaf:
+		df['__MAF__'] = np.where(df[args.eaf] > 0.5, 1 - df[args.eaf], df[args.eaf])
+
 	if args.mac:
 		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
 			print "removing {0:d} variants with mac < 20".format(df[df[args.mac] < 20].shape[0])
@@ -158,6 +162,14 @@ def main(args=None):
 		else:
 			print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
 			df = df[df[args.mac] >= 3]
+	elif args.n and args.eaf:
+		df['__MAC__'] = np.floor(df[args.n] * df['__MAF__'])
+		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
+			print "removing {0:d} variants with mac < 20".format(df[df['__MAC__'] < 20].shape[0])
+			df = df[df['__MAC__'] >= 20]
+		else:
+			print "removing {0:d} variants with mac < 3".format(df[df['__MAC__'] < 3].shape[0])
+			df = df[df['__MAC__'] >= 3]
 
 	df.loc[df[args.p] == 0, args.p] = 1e-300
 	df.reset_index(drop=True, inplace=True)
@@ -174,6 +186,8 @@ if __name__ == "__main__":
 	parser.add_argument('--gc', action='store_true', help='flag indicates that genomic control should be applied to results before plotting')
 	parser.add_argument('--bicolor', action='store_true', help='flag indicates that plot should be bicolor')
 	parser.add_argument('--exclude', help='a variant exclusion file')
+	parser.add_argument('--eaf', help='a minor allele frequency column name in --results')
+	parser.add_argument('--n', help='a sample count column name in --results')
 	parser.add_argument('--mac', help='a minor allele count column name in --results')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)
