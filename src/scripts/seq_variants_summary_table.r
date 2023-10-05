@@ -28,7 +28,7 @@ for(f in args$stats_in) {
 	dfs[[x]]$chr<-as.character(colsplit(dfs[[x]]$locus,":",names=c("chr","pos"))$chr)
 	n_all=nrow(dfs[[x]])
 
-	dfs[[x]]$freq_group<-factor(NA,levels=c("[0]","(0,0.001)","[0.001,0.005)","[0.005,0.01)","[0.01,0.03)","[0.03,0.05)","[0.05,0.10)","[0.10,0.50]"))
+	dfs[[x]]$freq_group<-factor(NA,levels=c("NA","[0]","(0,0.001)","[0.001,0.005)","[0.005,0.01)","[0.01,0.03)","[0.03,0.05)","[0.05,0.10)","[0.10,0.50]"))
 	dfs[[x]]$indel_group<-factor(NA,levels=c("YES","NO"))
 	dfs[[x]]$was_split_group<-factor(NA,levels=c("YES","NO"))
 	dfs[[x]]$chr_class<-factor("Unpl",levels=c("Unpl","Auto","X","Y","XY","MT"))
@@ -38,11 +38,11 @@ for(f in args$stats_in) {
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "24" | dfs[[x]]$chr == "Y" | dfs[[x]]$chr == "chrY"]<-"Y"
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "25" | dfs[[x]]$chr == "XY" | dfs[[x]]$chr == "chrXY"]<-"XY"
 	dfs[[x]]$chr_class[dfs[[x]]$chr == "26" | dfs[[x]]$chr == "MT" | dfs[[x]]$chr == "M" | dfs[[x]]$chr == "chrMT" | dfs[[x]]$chr == "chrM"]<-"MT"
+	dfs[[x]]$freq_group[is.na(dfs[[x]]$MAF)]<-"NA"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF == 0]<-"[0]"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF > 0 & dfs[[x]]$MAF < 0.001]<-"(0,0.001)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.001 & dfs[[x]]$MAF < 0.005]<-"[0.001,0.005)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.005 & dfs[[x]]$MAF < 0.01]<-"[0.005,0.01)"
-	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.01 & dfs[[x]]$MAF < 0.03]<-"[0.01,0.03)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.01 & dfs[[x]]$MAF < 0.03]<-"[0.01,0.03)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.03 & dfs[[x]]$MAF < 0.05]<-"[0.03,0.05)"
 	dfs[[x]]$freq_group[dfs[[x]]$MAF >= 0.05 & dfs[[x]]$MAF < 0.10]<-"[0.05,0.10)"
@@ -63,7 +63,7 @@ for(f in args$stats_in) {
 
 	vars_df$Total<-rowSums(vars_df[,c("Unpl","Auto","X","Y","XY","MT")])
 	vars_df<-rbind(vars_df,colSums(vars_df))
-	row.names(vars_df)[9]<-"Total"
+	row.names(vars_df)[10]<-"Total"
 	vars_list[[x]]<-vars_df
 }
 
