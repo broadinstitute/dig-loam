@@ -18,6 +18,9 @@ def main(args=None):
 
 	df.dropna(subset=[args.p], inplace=True)
 
+	if args.eaf:
+		df['__MAF__'] = np.where(df[args.eaf] > 0.5, 1 - df[args.eaf], df[args.eaf])
+
 	if args.mac:
 		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
 			print "removing {0:d} variants with mac < 20".format(df[df[args.mac] < 20].shape[0])
@@ -25,20 +28,30 @@ def main(args=None):
 		else:
 			print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
 			df = df[df[args.mac] >= 3]
+	elif args.n and args.eaf:
+		df['__MAC__'] = np.floor(df[args.n] * df['__MAF__'])
+		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
+			print "removing {0:d} variants with mac < 20".format(df[df['__MAC__'] < 20].shape[0])
+			df = df[df['__MAC__'] >= 20]
+		else:
+			print "removing {0:d} variants with mac < 3".format(df[df['__MAC__'] < 3].shape[0])
+			df = df[df['__MAC__'] >= 3]
 
 	df.reset_index(drop=True, inplace=True)
 
 	print "sorting by p value"
 	df.sort_values(by=[args.p],inplace=True)
 
-	print "extracting top " + str(args.n) + " variants"
-	df = df.head(n=args.n)
+	print "extracting top " + str(args.show) + " variants"
+	df = df.head(n=args.show)
 	df.to_csv(args.out, header=True, index=False, sep="\t", na_rep="NA")
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--exclude', help='a variant exclusion file')
-	parser.add_argument('--n', type=int, default=1000, help='number of top variants to report')
+	parser.add_argument('--show', type=int, default=1000, help='number of top variants to report')
+	parser.add_argument('--eaf', help='a minor allele frequency column name in --results')
+	parser.add_argument('--n', help='a sample count column name in --results')
 	parser.add_argument('--mac', help='a minor allele count column name in --results')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--results', help='a results file name', required=True)

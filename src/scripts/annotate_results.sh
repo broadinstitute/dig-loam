@@ -76,9 +76,17 @@ dirCache=$5
 results=$6
 referenceGenome=$7
 
+echo "sitesVcf=${sitesVcf}"
+echo "topResults=${topResults}"
+echo "cpus=${cpus}"
+echo "fasta=${fasta}"
+echo "dirCache=${dirCache}"
+echo "results=${results}"
+echo "referenceGenome=${referenceGenome}"
+
 (tabix -H $sitesVcf; \
 (while read line; do \
-chr=`echo $line | awk '{print $1}'`; \
+chr=`echo $line | awk -v rg=$referenceGenome '{if(rg=="GRCh38") { c="chr" } else { c="" }; print c$1}'`; \
 pos=`echo $line | awk '{print $2}'`; \
 rsid=`echo $line | awk '{print $3}'`; \
 ref=`echo $line | awk '{print $4}'`; \
@@ -87,13 +95,23 @@ tabix $sitesVcf ${chr}:${pos}-${pos} | awk 'BEGIN { OFS="\t" } {gsub("chr","",$1
 awk 'BEGIN { OFS="\t" } {if($1 == "X") { $1 = "23" } print $0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "Y") { $1 = "24" } print $0}' | \
 awk 'BEGIN { OFS="\t" } {if($1 == "MT") { $1 = "25" } print $0}' | \
-awk -v rsid=$rsid -v ref=$ref -v alt=$alt '{if($4 == rsid && $5 == ref && $6 == alt) print $0}'; \
+awk -v rg=$referenceGenome -v rsid=$rsid -v ref=$ref -v alt=$alt '{if(rg=="GRCh38") { id="chr"rsid } else { id=rsid }; if($4 == id && $5 == ref && $6 == alt) print $0}'; \
 done < $topResults) | sort -n -k1,1 -k3,3 | cut -f2-) | bgzip -c > ${results}.1.tmp
 
 tabix -p vcf ${results}.1.tmp
 
+if [ $cpus -gt 1 ]
+then
+	fork="--fork $cpus"
+    echo $fork
+else
+	fork=""
+fi
+
 vep -i ${results}.1.tmp \
---fork $cpus \
+$fork \
+--format vcf \
+--verbose \
 --force_overwrite \
 --no_stats \
 --offline \
@@ -115,7 +133,8 @@ vep -i ${results}.1.tmp \
 --assembly $referenceGenome \
 --output_file STDOUT \
 --warning_file ${results}.2.tmp.warnings \
-| awk -v h=${results}.2.tmp.header '/^##/{print > h; next} 1' > ${results}.2.tmp
+| awk -v h=${results}.2.tmp.header '/^2023/{print > h; next} 1' \
+| awk -v h=${results}.2.tmp.header '/^##/{print >> h; next} 1' > ${results}.2.tmp
 
 exitcodes=("${PIPESTATUS[@]}")
 
@@ -130,12 +149,11 @@ then
 	exit 1
 fi
 
-if [ ! -f "$warnings" ]; then
-	touch $warnings
-fi
-
+warnings=`echo $results | sed 's/tsv/warnings/g'`
 if [ -f "${results}.2.tmp.warnings" ]; then
-	rm ${results}.2.tmp.warnings
+	mv ${results}.2.tmp.warnings $warnings
+else
+	touch $warnings
 fi
 
 rm ${results}.2.tmp.header
@@ -162,8 +180,8 @@ done < <(sed '1d' ${results}.2.tmp)
 h1=`head -1 $topResults`
 h2=`head -1 ${results}.3.tmp | cut -d$'\t' -f2-`
 
-(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sort -k1,1) | awk -F'\t' 'BEGIN { OFS="\t" } {x=$1; $1=$2; $2=$3; $3=x; print $0}') > ${results}.4.tmp
-p=`head -1 $topResults | tr '\t' '\n' | grep -n "pval" | awk -F':' '{print $1}'`
+(echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sed 's/chr//g' | sort -k1,1) | awk -F'\t' 'BEGIN { OFS="\t" } {x=$1; $1=$2; $2=$3; $3=x; print $0}') > ${results}.4.tmp
+p=`head -1 $topResults | tr '\t' '\n' | grep -w -n "P" | awk -F':' '{print $1}'`
 sort -n -k${p},${p} ${results}.4.tmp > $results
 
 rm ${results}.*.tmp*

@@ -194,7 +194,7 @@ then
 			logp_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
 			id_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ID | awk '{print $1}'`
 			a1_col=`zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ALLELE1 | awk '{print $1}'`
-			(zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${p}.regenie.gz | sed '1,2d' | awk -v c=$logp_col -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]=="all") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
+			(zcat ${out}_${p}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${p}.regenie.gz | sed '1,2d' | awk -v c=$logp_col -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]!="singleton") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
 			rm ${out}_${p}.regenie.gz
 		fi
 	done

@@ -22,7 +22,9 @@ object ModelStores extends loamstream.LoamFile {
     qqPlotLowMaf: Store,
     qqPlotMidMaf: Store,
     qqPlotHighMaf: Store,
+    qqPlotLog: Store,
     mhtPlot: Store,
+    mhtPlotLog: Store,
     top1000Results: Store,
     top1000ResultsAnnot: Store,
     top20AnnotAlignedRisk: Store,
@@ -34,7 +36,9 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelGroupSummary(
     top20Results: Store,
     qqPlot: Store,
+    qqPlotLog: Store,
     mhtPlot: Store,
+    mhtPlotLog: Store,
     minPVal: Option[Store]
   )
   
@@ -337,7 +341,9 @@ object ModelStores extends loamstream.LoamFile {
                         qqPlotLowMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.lowmaf.png"),
                         qqPlotMidMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.midmaf.png"),
                         qqPlotHighMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.highmaf.png"),
+                        qqPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.log"),
                         mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.png"),
+                        mhtPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.log"),
                         top1000Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.tsv"),
                         top1000ResultsAnnot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.annot.tsv"),
                         top20AnnotAlignedRisk = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv"),
@@ -463,7 +469,9 @@ object ModelStores extends loamstream.LoamFile {
                             qqPlotLowMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.lowmaf.png"),
                             qqPlotMidMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.midmaf.png"),
                             qqPlotHighMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.highmaf.png"),
+                            qqPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.log"),
                             mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.mhtplot.png"),
+                            mhtPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.mhtplot.log"),
                             top1000Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top1000.tsv"),
                             top1000ResultsAnnot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top1000.annot.tsv"),
                             top20AnnotAlignedRisk = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top20.annot.aligned_risk.tsv"),
@@ -491,7 +499,9 @@ object ModelStores extends loamstream.LoamFile {
                                   ModelGroupSummary(
                                     top20Results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.top20.tsv"),
                                     qqPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.png"),
+                                    qqPlotLog = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.log"),
                                     mhtPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.png"),
+                                    mhtPlotLog = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.log"),
                                     minPVal = Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.minpval.tsv"))
                                   )
                               }.toMap,

@@ -78,6 +78,9 @@ def main(args=None):
 
 	df.dropna(subset=[args.p], inplace=True)
 
+	if args.eaf:
+		df['__MAF__'] = np.where(df[args.eaf] > 0.5, 1 - df[args.eaf], df[args.eaf])
+
 	if args.mac:
 		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
 			print "removing {0:d} variants with mac < 20".format(df[df[args.mac] < 20].shape[0])
@@ -85,6 +88,14 @@ def main(args=None):
 		else:
 			print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
 			df = df[df[args.mac] >= 3]
+	elif args.n and args.eaf:
+		df['__MAC__'] = np.floor(df[args.n] * df['__MAF__'])
+		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
+			print "removing {0:d} variants with mac < 20".format(df[df['__MAC__'] < 20].shape[0])
+			df = df[df['__MAC__'] >= 20]
+		else:
+			print "removing {0:d} variants with mac < 3".format(df[df['__MAC__'] < 3].shape[0])
+			df = df[df['__MAC__'] >= 3]
 
 	df.loc[df[args.p] == 0, args.p] = 1e-300
 	df.reset_index(drop=True, inplace=True)
@@ -92,25 +103,25 @@ def main(args=None):
 	print "generating qq plot"
 	qqplot(df[args.p], args.out, gc = args.gc)
 
-	if args.maf:
+	if args.eaf:
 		if args.out_low_maf:
-			if len(df[args.p][(0.005 <= df[args.maf]) & (df[args.maf] < 0.01)]) > 0:
+			if len(df[args.p][(0.005 <= df['__MAF__']) & (df['__MAF__'] < 0.01)]) > 0:
 				print "generating low maf qq plot"
-				qqplot(df[args.p][(0.005 <= df[args.maf]) & (df[args.maf] < 0.01)], args.out_low_maf, gc = args.gc, mafstring = "[0.005, 0.01)")
+				qqplot(df[args.p][(0.005 <= df['__MAF__']) & (df['__MAF__'] < 0.01)], args.out_low_maf, gc = args.gc, mafstring = "[0.005, 0.01)")
 			else:
 				print "no low maf variants found... generating empty qq plot"
 				empty_qqplot(args.out_low_maf)
 		if args.out_mid_maf:
-			if len(df[args.p][(0.01 <= df[args.maf]) & (df[args.maf] < 0.05)]) > 0:
+			if len(df[args.p][(0.01 <= df['__MAF__']) & (df['__MAF__'] < 0.05)]) > 0:
 				print "generating mid maf qq plot"
-				qqplot(df[args.p][(0.01 <= df[args.maf]) & (df[args.maf] < 0.05)], args.out_mid_maf, gc = args.gc, mafstring = "[0.01, 0.05)")
+				qqplot(df[args.p][(0.01 <= df['__MAF__']) & (df['__MAF__'] < 0.05)], args.out_mid_maf, gc = args.gc, mafstring = "[0.01, 0.05)")
 			else:
 				print "no mid maf variants found... generating empty qq plot"
 				empty_qqplot(args.out_mid_maf)
 		if args.out_high_maf:
-			if len(df[args.p][0.05 <= df[args.maf]]) > 0:
+			if len(df[args.p][0.05 <= df['__MAF__']]) > 0:
 				print "generating high maf qq plot"
-				qqplot(df[args.p][0.05 <= df[args.maf]], args.out_high_maf, gc = args.gc, mafstring = "[0.05, 0.5]")
+				qqplot(df[args.p][0.05 <= df['__MAF__']], args.out_high_maf, gc = args.gc, mafstring = "[0.05, 0.5]")
 			else:
 				print "no high maf variants found... generating empty qq plot"
 				empty_qqplot(args.out_high_maf)
@@ -118,7 +129,8 @@ def main(args=None):
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--gc', action='store_true', help='flag indicates that genomic control should be applied to results before plotting')
-	parser.add_argument('--maf', help='a minor allele frequency column name in --results')
+	parser.add_argument('--eaf', help='a minor allele frequency column name in --results')
+	parser.add_argument('--n', help='a sample count column name in --results')
 	parser.add_argument('--out-low-maf', help='an output filename for low maf plot ending in .png or .pdf')
 	parser.add_argument('--out-mid-maf', help='an output filename for mid maf plot ending in .png or .pdf')
 	parser.add_argument('--out-high-maf', help='an output filename for high maf plot ending in .png or .pdf')
