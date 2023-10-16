@@ -203,7 +203,7 @@ object ArrayStores extends loamstream.LoamFile {
     variantsExclude: MultiStore,
     hailLog: MultiStore)
   
-  final case class CleanVcf(
+  final case class ExportedVcf(
     vcf: MultiPathVcf,
     hailLog: MultiStore)
   
@@ -233,8 +233,10 @@ object ArrayStores extends loamstream.LoamFile {
     famsizeKeep: Option[Store],
     sampleqcKeep: Option[Store],
     sexcheckKeep: Option[Store],
-    cleanVcf: CleanVcf,
-    cleanBgen: Option[MultiPathBgen])
+	unfilteredVcf: ExportedVcf,
+    filteredVcf: Option[ExportedVcf],
+	unfilteredBgen: MultiPathBgen,
+    filteredBgen: Option[MultiPathBgen])
   
   val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   
@@ -256,7 +258,7 @@ object ArrayStores extends loamstream.LoamFile {
     val sampleQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.sampleqc"
     val filterQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.qc"
     val filterPostQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.postqc"
-    val cleanBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.clean"
+    val resultsBaseString = s"${projectConfig.projectId}.${arrayCfg.id}"
   
     val baseName = arrayCfg.filename.split("/").last
   
@@ -713,49 +715,83 @@ object ArrayStores extends loamstream.LoamFile {
         local = Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.local.get / s"${filterPostQcBaseString}.hail.log")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterPostQc.google.get / s"${filterPostQcBaseString}.hail.log")); case false => None }
       ))
-  
-    val cleanVcf = CleanVcf(
+
+    val unfilteredVcf = ExportedVcf(
       vcf = MultiPathVcf(
         base = MultiPath(
-          local = Some(dirTree.dataArrayMap(arrayCfg).clean.local.get / cleanBaseString),
-          google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).clean.google.get / cleanBaseString); case false => None }
+          local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered"),
+          google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered"); case false => None }
         ),
         data = MultiStore(
-          local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz")),
-          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.vcf.bgz")); case false => None }
+          local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.vcf.bgz")),
+          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.vcf.bgz")); case false => None }
         ),
-        tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.vcf.bgz.tbi")), google = None)
+        tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.vcf.bgz.tbi")), google = None)
       ),
       hailLog = MultiStore(
-        local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.hail.log")),
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.hail.log")); case false => None }
+        local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.hail.log")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.hail.log")); case false => None }
       )
     )
-
-    val cleanBgen = arrayCfg.exportCleanBgen match {
-
+  
+    val filteredVcf = arrayCfg.exportFiltered match {
       case true =>
+        Some(ExportedVcf(
+          vcf = MultiPathVcf(
+            base = MultiPath(
+              local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered"),
+              google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered"); case false => None }
+            ),
+            data = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.vcf.bgz")),
+              google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.vcf.bgz")); case false => None }
+            ),
+            tbi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.vcf.bgz.tbi")), google = None)
+          ),
+          hailLog = MultiStore(
+            local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.hail.log")),
+            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.hail.log")); case false => None }
+          )
+        ))
+      case false => None
+    }
 
+    val unfilteredBgen = MultiPathBgen(
+      base = MultiPath(
+        local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered"),
+        google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered"); case false => None }
+      ),
+      data = MultiStore(
+        local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.bgen")); case false => None }
+      ),
+      sample = MultiStore(
+        local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.sample")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.sample")); case false => None }
+      ),
+      bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen.bgi")), google = None)
+    )
+
+    val filteredBgen = arrayCfg.exportFiltered match {
+      case true =>
         Some(MultiPathBgen(
           base = MultiPath(
-            local = Some(dirTree.dataArrayMap(arrayCfg).clean.local.get / cleanBaseString),
-            google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).clean.google.get / cleanBaseString); case false => None }
+            local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered"),
+            google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered"); case false => None }
           ),
           data = MultiStore(
-            local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.bgen")),
-            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.bgen")); case false => None }
+            local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen")),
+            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.bgen")); case false => None }
           ),
           sample = MultiStore(
-            local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.sample")),
-            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).clean.google.get / s"${cleanBaseString}.sample")); case false => None }
+            local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.sample")),
+            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.sample")); case false => None }
           ),
-          bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).clean.local.get / s"${cleanBaseString}.bgen.bgi")), google = None)
+          bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen.bgi")), google = None)
         ))
-
       case false => None
-
     }
-  
+
     arrayCfg -> Array(
       rawData = rawData,
       preparedData = preparedData,
@@ -782,8 +818,10 @@ object ArrayStores extends loamstream.LoamFile {
       famsizeKeep = arrayCfg.famsizeKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
       sampleqcKeep = arrayCfg.sampleqcKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
       sexcheckKeep = arrayCfg.sexcheckKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      cleanVcf = cleanVcf,
-      cleanBgen = cleanBgen)
+      unfilteredVcf = unfilteredVcf,
+      filteredVcf = filteredVcf,
+      unfilteredBgen = unfilteredBgen,
+      filteredBgen = filteredBgen)
   
   }.toMap
 

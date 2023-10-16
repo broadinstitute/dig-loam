@@ -156,7 +156,7 @@ object ProjectConfig extends loamstream.LoamFile {
     postQcSampleFilters: Option[Seq[String]],
     postQcVariantFilters: Option[Seq[String]],
     varUidMaxAlleleLen: Int,
-    exportCleanBgen: Boolean) extends Debug
+    exportFiltered: Boolean) extends Debug
 
   //final case class ConfigSection(
   //  id: String,
@@ -273,7 +273,7 @@ object ProjectConfig extends loamstream.LoamFile {
     pyMergeVariantLists: Path,
     pyBimToUid: Path,
     pyHailUtils: Path,
-    pyHailExportCleanVcf: Path,
+    pyHailExportVcf: Path,
     pyGenerateReportHeader: Path,
     pyGenerateQcReportIntro: Path,
     pyGenerateQcReportData: Path,
@@ -728,7 +728,7 @@ object ProjectConfig extends loamstream.LoamFile {
             postQcSampleFilters = postQcSampleFilters,
             postQcVariantFilters = postQcVariantFilters,
             varUidMaxAlleleLen = requiredInt(config = array, field = "varUidMaxAlleleLen", default = Some(1000), min = Some(1), max = Some(10000)),
-            exportCleanBgen = requiredBool(config = array, field = "exportCleanBgen")
+            exportFiltered = requiredBool(config = array, field = "exportFiltered")
           )
       
         }
@@ -888,7 +888,7 @@ object ProjectConfig extends loamstream.LoamFile {
         pyMergeVariantLists = path(s"${scriptsDir}/merge_variant_lists.py"),
         pyBimToUid = path(s"${scriptsDir}/bim_to_uid.py"),
         pyHailUtils = path(s"${scriptsDir}/hail_utils.py"),
-        pyHailExportCleanVcf = path(s"${scriptsDir}/hail_export_clean_vcf.py"),
+        pyHailExportVcf = path(s"${scriptsDir}/hail_export_vcf.py"),
         pyGenerateReportHeader = path(s"${scriptsDir}/generate_report_header.py"),
         pyGenerateQcReportIntro = path(s"${scriptsDir}/generate_qc_report_intro.py"),
         pyGenerateQcReportData = path(s"${scriptsDir}/generate_qc_report_data.py"),
