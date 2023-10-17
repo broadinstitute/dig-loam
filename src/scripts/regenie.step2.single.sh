@@ -126,6 +126,8 @@ echo "pred: $pred"
 echo "out: $out"
 echo "cliOptions: $cliOptions"
 
+EXITCODE=0
+
 $regenie \
 --step 2 \
 --bgen $bgen \
@@ -140,6 +142,12 @@ $cliOptions \
 --gz \
 --verbose
 
+if [ $? != 0 ]
+then
+	echo "regenie step 2 failed"
+	EXITCODE=1
+fi
+
 # header
 #CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P EXTRA
 
@@ -147,13 +155,13 @@ for p in `echo $phenoNames | sed 's/,/ /g'`
 do
 	if [ ! -f "${out}_${p}.regenie.gz" ]
 	then
+		echo "no successful tests for phenotype ${p}!"
 		EXITCODE=1
 	else
 		mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
 		n=`zcat ${out}_${p}.regenie.tmp.gz | head -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
 		(zcat ${out}_${p}.regenie.tmp.gz | head -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"P"}'; zcat ${out}_${p}.regenie.tmp.gz | sed '1d' | awk -v c=$n 'BEGIN { OFS="\t" } {$1=$1; print $0,10^(-$c)}') | $bgzip -c > ${out}.${p}.results.tsv.bgz
 		rm ${out}_${p}.regenie.tmp.gz
-		EXITCODE=0
 	fi
 done
 
