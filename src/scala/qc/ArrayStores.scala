@@ -148,7 +148,9 @@ object ArrayStores extends loamstream.LoamFile {
 
   final case class AncestryKnnData(
     predictions: Store,
-    plots: Store)
+    plots: Store,
+    plotsPc1Pc2Png: Store,
+    plotsPc2Pc3Png: Store)
   
   final case class PcaData(
     log: Store,
@@ -622,7 +624,9 @@ object ArrayStores extends loamstream.LoamFile {
 
     val ancestryKnnData = AncestryKnnData(
       predictions = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.predictions.tsv"),
-      plots = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pdf"))
+      plots = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pc2pc3.png"))
   
     val pcaData = PcaData(
       log = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.log"),

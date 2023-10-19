@@ -10,7 +10,7 @@ object QcReportStores extends loamstream.LoamFile {
     rawVariantsSummary: Store,
     seqVariantsSummary: Store,
     variantsExcludeSummary: Store,
-    clusters: Store,
+    clustersGmm: Store,
     ancestryGmm: Store,
     ancestryKnn: Store,
     sampleQc: Store)
@@ -47,7 +47,7 @@ object QcReportStores extends loamstream.LoamFile {
       rawVariantsSummary = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.raw_variants.summary.tbl"),
       seqVariantsSummary = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.seq_variants.summary.tbl"),
       variantsExcludeSummary = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants_exclude.summary.tbl"),
-      clusters = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.clusters.tbl"),
+      clustersGmm = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.clusters.gmm.tbl"),
       ancestryGmm = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.ancestry.gmm.tbl"),
       ancestryKnn = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.ancestry.knn.tbl"),
       sampleQc = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.sampleqc.tbl")),
