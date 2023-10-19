@@ -15,6 +15,8 @@ object DirTree extends loamstream.LoamFile {
     sampleqc: MultiPath,
     kinship: MultiPath,
     ancestry: MultiPath,
+    gmm: MultiPath,
+    knn: MultiPath,
     pca: MultiPath,
     sexcheck: MultiPath,
     metrics: MultiPath,
@@ -30,6 +32,8 @@ object DirTree extends loamstream.LoamFile {
     dataArrayMap: Map[ConfigArray, DirTreeDataArray],
     dataGlobal: MultiPath,
     dataGlobalAncestry: MultiPath,
+    dataGlobalGmm: MultiPath,
+    dataGlobalKnn: MultiPath,
     report: MultiPath,
     reportQc: MultiPath
     ) extends Debug
@@ -60,12 +64,15 @@ object DirTree extends loamstream.LoamFile {
       val dataArray = appendSubDir(data, "array")
       val dataGlobal = appendSubDir(data, "global")
       val dataGlobalAncestry = appendSubDir(dataGlobal, "ancestry")
+      val dataGlobalGmm = appendSubDir(dataGlobalAncestry, "gmm")
+      val dataGlobalKnn = appendSubDir(dataGlobalAncestry, "knn")
       val report = appendSubDir(base, "report")
       val reportQc = appendSubDir(report, "qc")
   
       val dataArrayMap = cfg.Arrays.map { array =>
         val base = appendSubDir(dataArray, array.id)
         val sampleqc = appendSubDir(base, "sampleqc")
+        val ancestry = appendSubDir(sampleqc, "ancestry")
         val filter = appendSubDir(base, "filter")
         array -> DirTreeDataArray(
           base = base,
@@ -75,7 +82,9 @@ object DirTree extends loamstream.LoamFile {
           impute = appendSubDir(base, "impute"),
           sampleqc = sampleqc,
           kinship = appendSubDir(sampleqc, "kinship"),
-          ancestry = appendSubDir(sampleqc, "ancestry"),
+          ancestry = ancestry,
+          gmm = appendSubDir(ancestry, "gmm"),
+          knn = appendSubDir(ancestry, "knn"),
           pca = appendSubDir(sampleqc, "pca"),
           sexcheck = appendSubDir(sampleqc, "sexcheck"),
           metrics = appendSubDir(sampleqc, "metrics"),
@@ -93,6 +102,8 @@ object DirTree extends loamstream.LoamFile {
         dataArrayMap = dataArrayMap,
         dataGlobal = dataGlobal,
         dataGlobalAncestry = dataGlobalAncestry,
+        dataGlobalGmm = dataGlobalGmm,
+        dataGlobalKnn = dataGlobalKnn,
         report = report,
         reportQc = reportQc
       )

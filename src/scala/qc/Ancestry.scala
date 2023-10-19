@@ -1,7 +1,7 @@
 object Ancestry extends loamstream.LoamFile {
 
   /**
-    * Ancestry PCA
+    * AncestryPca
     *  Description:
     *    Merge with reference data on 5k Purcell AIMs
     *    Calculate PCs on merged file set
@@ -12,20 +12,38 @@ object Ancestry extends loamstream.LoamFile {
     */
 
   /**
-    * Ancestry Clustering
+    * AncestryGmm
     *  Description:
-    *    Cluster with 1KG samples using Gaussian Mixture Modeling and infer ancestry
+    *    Cluster with 1KG samples using Gaussian Mixture Modeling method and infer ancestry
     *    Plot clusters and inferred ancestry
-    *  Requires: Hail, Klustakwik, R
+    *  Requires: Klustakwik, R
     *  Notes:
-    *     *.ancestry.inferred.tsv contains the final inferred ancestry for each sample, including OUTLIERS
+    *     *.ancestry.gmm.inferred.tsv contains the final inferred ancestry for each sample, including OUTLIERS
+    *     This file is array specific
+    */
+
+    /**
+    * AncestryKnn
+    *  Description:
+    *    Cluster with 1KG samples using K-nearest neighbor method and infer ancestry
+    *    Plot clusters and inferred ancestry
+    *  Requires: R
+    *  Notes:
+    *     *.ancestry.knn.inferred.tsv contains the final inferred ancestry for each sample, including OUTLIERS
     *     This file is array specific
     */
 
   /**
-    * Merge Inferred Ancestry
+    * MergeInferredAncestryGmm
     *  Description:
-    *    Merge inferred ancestry from all arrays
+    *    Merge inferred ancestry from all arrays for Gmm method
+    *  Requires: R
+    */
+
+  /**
+    * MergeInferredAncestryKnn
+    *  Description:
+    *    Merge inferred ancestry from all arrays for Knn method
     *  Requires: R
     */
 
@@ -125,23 +143,23 @@ object Ancestry extends loamstream.LoamFile {
   
   }
   
-  def AncestryCluster(array: ConfigArray): Unit = {
+  def AncestryGmm(array: ConfigArray): Unit = {
   
     drmWith(imageName = s"${utils.image.imgTools}") {
   
-      cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f3- | sed 's/\t/ /g') > ${arrayStores(array).ancestryClusterData.fet}""""
+      cmd"""bash -c "(echo 20; sed '1d' ${arrayStores(array).ancestryPcaData.scores} | cut -f3- | sed 's/\t/ /g') > ${arrayStores(array).ancestryGmmData.fet}""""
         .in(arrayStores(array).ancestryPcaData.scores)
-        .out(arrayStores(array).ancestryClusterData.fet)
-        .tag(s"${arrayStores(array).ancestryClusterData.fet}".split("/").last)
+        .out(arrayStores(array).ancestryGmmData.fet)
+        .tag(s"${arrayStores(array).ancestryGmmData.fet}".split("/").last)
   
     }
   
     drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.klustakwik.cpus, mem = projectConfig.resources.klustakwik.mem, maxRunTime = projectConfig.resources.klustakwik.maxRunTime) {
     
-      cmd"""${utils.binary.binKlustakwik} ${arrayStores(array).ancestryClusterData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryClusterData.log}"""
-        .in(arrayStores(array).ancestryClusterData.fet)
-        .out(arrayStores(array).ancestryClusterData.clu, arrayStores(array).ancestryClusterData.klg, arrayStores(array).ancestryClusterData.log)
-        .tag(s"${arrayStores(array).ancestryClusterData.base}.binKlustakwik".split("/").last)
+      cmd"""${utils.binary.binKlustakwik} ${arrayStores(array).ancestryGmmData.base} 1 -UseFeatures ${projectConfig.ancestryInferenceFeatures} -UseDistributional 0 > ${arrayStores(array).ancestryGmmData.log}"""
+        .in(arrayStores(array).ancestryGmmData.fet)
+        .out(arrayStores(array).ancestryGmmData.clu, arrayStores(array).ancestryGmmData.klg, arrayStores(array).ancestryGmmData.log)
+        .tag(s"${arrayStores(array).ancestryGmmData.base}.binKlustakwik".split("/").last)
   
     }
 
@@ -190,11 +208,11 @@ object Ancestry extends loamstream.LoamFile {
     drmWith(imageName = s"${utils.image.imgR}") {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rPlotAncestryCluster}
+        ${utils.r.rPlotAncestryGmm}
         --pca-scores ${arrayStores(array).ancestryPcaData.scores}
         --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples.local.get}
         --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples.local.get}
-        --cluster ${arrayStores(array).ancestryClusterData.clu}
+        --cluster ${arrayStores(array).ancestryGmmData.clu}
         --sample-file ${projectStores.sampleFile.local.get}
         --project-id ${projectConfig.projectId}
         --sample-id ${projectConfig.sampleFileId}
@@ -204,37 +222,41 @@ object Ancestry extends loamstream.LoamFile {
         ${eurCodes}
         ${easCodes}
         ${sasCodes}
-        --cluster-plots ${arrayStores(array).ancestryClusterData.plots}
-        --xtabs ${arrayStores(array).ancestryClusterData.xtab}
-        --plots-centers ${arrayStores(array).ancestryClusterData.centerPlots}
-        --cluster-groups ${arrayStores(array).ancestryClusterData.groups}
-        --ancestry-inferred ${arrayStores(array).ancestryData.inferred}
-        --cluster-plots-no1kg ${arrayStores(array).ancestryClusterData.no1kgPlots}"""
-        .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ref1kgData.kgSamples.local.get, arrayStores(array).ancestryClusterData.clu, projectStores.sampleFile.local.get)
-        .out(arrayStores(array).ancestryClusterData.plots, arrayStores(array).ancestryClusterData.xtab, arrayStores(array).ancestryClusterData.centerPlots, arrayStores(array).ancestryClusterData.groups, arrayStores(array).ancestryData.inferred, arrayStores(array).ancestryClusterData.no1kgPlots)
-        .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryCluster".split("/").last)
+        --cluster-plots ${arrayStores(array).ancestryGmmData.plots}
+        --xtabs ${arrayStores(array).ancestryGmmData.xtab}
+        --plots-centers ${arrayStores(array).ancestryGmmData.centerPlots}
+        --cluster-groups ${arrayStores(array).ancestryGmmData.groups}
+        --ancestry-inferred ${arrayStores(array).ancestryData.inferredGmm}
+        --cluster-plots-no1kg ${arrayStores(array).ancestryGmmData.no1kgPlots}"""
+        .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ref1kgData.kgSamples.local.get, arrayStores(array).ancestryGmmData.clu, projectStores.sampleFile.local.get)
+        .out(arrayStores(array).ancestryGmmData.plots, arrayStores(array).ancestryGmmData.xtab, arrayStores(array).ancestryGmmData.centerPlots, arrayStores(array).ancestryGmmData.groups, arrayStores(array).ancestryData.inferredGmm, arrayStores(array).ancestryGmmData.no1kgPlots)
+        .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryGmm".split("/").last)
   
     }
   
   }
 
-  def MergeInferredAncestry(): Unit = {
+  def AncestryKnn(array: ConfigArray): Unit = {}
+
+  def MergeInferredAncestryGmm(): Unit = {
   
-    val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred).map(_.path).mkString(",")
+    val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferredGmm).map(_.path).mkString(",")
   
     drmWith(imageName = s"${utils.image.imgR}") {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rAncestryClusterMerge}
         --ancestry-in $inferredList
-        --out-table ${projectStores.ancestryInferred.local.get}
-        --out-outliers ${projectStores.ancestryOutliers}"""
-        .in(projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferred))
-        .out(projectStores.ancestryInferred.local.get, projectStores.ancestryOutliers)
-        .tag(s"${projectStores.ancestryInferred.local.get}".split("/").last)
+        --out-table ${projectStores.ancestryInferredGmm.local.get}
+        --out-outliers ${projectStores.ancestryOutliersGmm}"""
+        .in(projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferredGmm))
+        .out(projectStores.ancestryInferredGmm.local.get, projectStores.ancestryOutliersGmm)
+        .tag(s"${projectStores.ancestryInferredGmm.local.get}".split("/").last)
     
     }
   
   }
+
+  def MergeInferredAncestryKnn(): Unit = {}
 
 }

@@ -11,7 +11,8 @@ object QcReportStores extends loamstream.LoamFile {
     seqVariantsSummary: Store,
     variantsExcludeSummary: Store,
     clusters: Store,
-    ancestry: Store,
+    ancestryGmm: Store,
+    ancestryKnn: Store,
     sampleQc: Store)
   
   final case class TexData(
@@ -47,7 +48,8 @@ object QcReportStores extends loamstream.LoamFile {
       seqVariantsSummary = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.seq_variants.summary.tbl"),
       variantsExcludeSummary = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants_exclude.summary.tbl"),
       clusters = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.clusters.tbl"),
-      ancestry = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.ancestry.tbl"),
+      ancestryGmm = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.ancestry.gmm.tbl"),
+      ancestryKnn = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.ancestry.knn.tbl"),
       sampleQc = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.sampleqc.tbl")),
   
     texData = TexData(

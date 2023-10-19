@@ -48,12 +48,14 @@ object Main extends loamstream.LoamFile {
     Annotate(array)
     Kinship(array)
     AncestryPca(array)
-    AncestryCluster(array)
+    AncestryGmm(array)
+    AncestryKnn(array)
   
   }
   
   // Reconcile inferred ancestry
-  MergeInferredAncestry()
+  MergeInferredAncestryGmm()
+  MergeInferredAncestryKnn()
   
   // Array specific QC steps post ancestry inference
   for {
