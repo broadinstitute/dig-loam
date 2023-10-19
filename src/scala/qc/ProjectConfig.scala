@@ -298,7 +298,8 @@ object ProjectConfig extends loamstream.LoamFile {
   
   final case class R(
     rFindBestDuplicateVariants: Path,
-    rAncestryClusterMerge: Path,
+    rAncestryGmmMerge: Path,
+    rAncestryKnnMerge: Path,
     rCalcKinshipFamSizes: Path,
     rPlotAncestryPca: Path,
     rPlotAncestryGmm: Path,
@@ -310,6 +311,7 @@ object ProjectConfig extends loamstream.LoamFile {
     rSeqVariantsSummaryTable: Path,
     rVariantsExcludeSummaryTable: Path,
     rAncestryGmmTable: Path,
+    rAncestryKnn: Path,
     rMakeOutlierTable: Path,
     rUpsetplotVariantSample: Path,
     rMakeMetricDistPlot: Path) extends Debug
@@ -912,7 +914,8 @@ object ProjectConfig extends loamstream.LoamFile {
   
       val r = R(
         rFindBestDuplicateVariants = path(s"${scriptsDir}/find_best_duplicate_variants.r"),
-        rAncestryClusterMerge = path(s"${scriptsDir}/ancestry_cluster_merge.r"),
+        rAncestryGmmMerge = path(s"${scriptsDir}/ancestry_gmm_merge.r"),
+        rAncestryKnnMerge = path(s"${scriptsDir}/ancestry_knn_merge.r"),
         rCalcKinshipFamSizes = path(s"${scriptsDir}/calc_kinship_fam_sizes.r"),
         rPlotAncestryPca = path(s"${scriptsDir}/plot_ancestry_pca.r"),
         rPlotAncestryGmm = path(s"${scriptsDir}/plot_ancestry_gmm.r"),
@@ -924,6 +927,7 @@ object ProjectConfig extends loamstream.LoamFile {
         rSeqVariantsSummaryTable = path(s"${scriptsDir}/seq_variants_summary_table.r"),
         rVariantsExcludeSummaryTable = path(s"${scriptsDir}/variants_exclude_summary_table.r"),
         rAncestryGmmTable = path(s"${scriptsDir}/ancestry_gmm_table.r"),
+        rAncestryKnn = path(s"${scriptsDir}/ancestry.knn.r"),
         rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
         rUpsetplotVariantSample = path(s"${scriptsDir}/upsetplot.variant.sample.r"),
         rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r")

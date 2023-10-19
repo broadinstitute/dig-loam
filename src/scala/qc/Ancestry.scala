@@ -236,7 +236,28 @@ object Ancestry extends loamstream.LoamFile {
   
   }
 
-  def AncestryKnn(array: ConfigArray): Unit = {}
+  def AncestryKnn(array: ConfigArray): Unit = {
+
+    drmWith(imageName = s"${utils.image.imgR}") {
+    
+      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        ${utils.r.rAncestryKnn}
+        --pca-scores ${arrayStores(array).ancestryPcaData.scores}
+        --update-pop ID POP ${arrayStores(array).ref1kgData.kgSamples.local.get}
+        --update-group ID GROUP ${arrayStores(array).ref1kgData.kgSamples.local.get}
+        --sample-file ${projectStores.sampleFile.local.get}
+        --project-id ${projectConfig.projectId}
+        --sample-id ${projectConfig.sampleFileId}
+        --out-predictions ${arrayStores(array).ancestryKnnData.predictions}
+        --out-inferred ${arrayStores(array).ancestryData.inferredKnn}
+        --out-plots ${arrayStores(array).ancestryKnnData.plots}"""
+        .in(arrayStores(array).ancestryPcaData.scores, arrayStores(array).ref1kgData.kgSamples.local.get, projectStores.sampleFile.local.get)
+        .out(arrayStores(array).ancestryKnnData.predictions, arrayStores(array).ancestryData.inferredKnn, arrayStores(array).ancestryKnnData.plots)
+        .tag(s"${arrayStores(array).ancestryPcaData.scores}.rPlotAncestryKnn".split("/").last)
+  
+    }
+
+  }
 
   def MergeInferredAncestryGmm(): Unit = {
   
@@ -245,7 +266,7 @@ object Ancestry extends loamstream.LoamFile {
     drmWith(imageName = s"${utils.image.imgR}") {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rAncestryClusterMerge}
+        ${utils.r.rAncestryGmmMerge}
         --ancestry-in $inferredList
         --out-table ${projectStores.ancestryInferredGmm.local.get}
         --out-outliers ${projectStores.ancestryOutliersGmm}"""
@@ -257,6 +278,22 @@ object Ancestry extends loamstream.LoamFile {
   
   }
 
-  def MergeInferredAncestryKnn(): Unit = {}
+  def MergeInferredAncestryKnn(): Unit = {
+
+    val inferredList = projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferredKnn).map(_.path).mkString(",")
+  
+    drmWith(imageName = s"${utils.image.imgR}") {
+    
+      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        ${utils.r.rAncestryKnnMerge}
+        --ancestry-in $inferredList
+        --out-table ${projectStores.ancestryInferredKnn.local.get}"""
+        .in(projectConfig.Arrays.map(e => arrayStores(e).ancestryData.inferredKnn))
+        .out(projectStores.ancestryInferredKnn.local.get)
+        .tag(s"${projectStores.ancestryInferredKnn.local.get}".split("/").last)
+    
+    }
+
+  }
 
 }

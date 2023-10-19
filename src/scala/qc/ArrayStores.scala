@@ -145,6 +145,10 @@ object ArrayStores extends loamstream.LoamFile {
     no1kgPlots: Store,
     xtab: Store,
     groups: Store)
+
+  final case class AncestryKnnData(
+    predictions: Store,
+    plots: Store)
   
   final case class PcaData(
     log: Store,
@@ -221,6 +225,7 @@ object ArrayStores extends loamstream.LoamFile {
     ancestryData: AncestryData,
     ancestryPcaData: AncestryPcaData,
     ancestryGmmData: AncestryGmmData,
+    ancestryKnnData: AncestryKnnData,
     pcaData: PcaData,
     sexcheckData: SexcheckData,
     sampleQcData: SampleQcData,
@@ -614,6 +619,10 @@ object ArrayStores extends loamstream.LoamFile {
       no1kgPlots = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.plots.no1kg.pdf"),
       xtab = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.xtab"),
       groups = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.groups.tsv"))
+
+    val ancestryKnnData = AncestryKnnData(
+      predictions = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.predictions.tsv"),
+      plots = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pdf"))
   
     val pcaData = PcaData(
       log = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.log"),
@@ -802,6 +811,7 @@ object ArrayStores extends loamstream.LoamFile {
       ancestryData = ancestryData,
       ancestryPcaData = ancestryPcaData,
       ancestryGmmData = ancestryGmmData,
+      ancestryKnnData = ancestryKnnData,
       pcaData = pcaData,
       sexcheckData = sexcheckData,
       sampleQcData = sampleQcData,
