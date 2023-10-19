@@ -189,50 +189,7 @@ object SampleQc extends loamstream.LoamFile {
   
     }
   
-    /**
-     * Restore Samples Step
-     * Requires: Python
-     */
-  
-    val ancestryOutliersKeep = array.ancestryOutliersKeep match {
-      case Some(s) => s"""--ancestry-outliers-keep ${s}"""
-      case None => ""
-    }
-
-    val duplicatesKeep = array.duplicatesKeep match {
-      case Some(s) => s"""--duplicates-keep ${s}"""
-      case None => ""
-    }
-
-    val famsizeKeep = array.famsizeKeep match {
-      case Some(s) => s"""--famsize-keep ${s}"""
-      case None => ""
-    }
-
-    val sampleqcKeep = array.sampleqcKeep match {
-      case Some(s) => s"""--sampleqc-keep ${s}"""
-      case None => ""
-    }
-
-    val sexcheckKeep = array.sexcheckKeep match {
-      case Some(s) => s"""--sexcheck-keep ${s}"""
-      case None => ""
-    }
-    
-    drmWith(imageName = s"${utils.image.imgPython2}") {
-    
-      cmd"""${utils.binary.binPython} ${utils.python.pyMakeSamplesRestoreTable}
-        ${ancestryOutliersKeep}
-        ${duplicatesKeep}
-        ${famsizeKeep}
-        ${sampleqcKeep}
-        ${sexcheckKeep}
-        --out ${arrayStores(array).filterQc.samplesRestore}"""
-        .out(arrayStores(array).filterQc.samplesRestore)
-        .tag(s"${arrayStores(array).filterQc.samplesRestore}".split("/").last)
-  
-    }
-    
+   
     /**
      * Compile Sample Exclusions Step
      * Requires: Python
@@ -248,9 +205,8 @@ object SampleQc extends loamstream.LoamFile {
         --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
         --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
         --sexcheck-problems ${arrayStores(array).sexcheckData.problems.local.get}
-        --restore ${arrayStores(array).filterQc.samplesRestore}
         --out ${arrayStores(array).filterQc.samplesExclude.local.get}"""
-        .in(projectStores.ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).filterQc.samplesRestore)
+        .in(projectStores.ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get)
         .out(arrayStores(array).filterQc.samplesExclude.local.get)
         .tag(s"${arrayStores(array).filterQc.samplesExclude.local.get}".split("/").last)
     

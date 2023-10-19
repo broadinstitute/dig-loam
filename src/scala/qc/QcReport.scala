@@ -281,7 +281,6 @@ object QcReport extends loamstream.LoamFile {
     val ref1kgBimStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"${arrayStores(a).ref1kgData.plink.base.local.get}.bim").mkString(",") } }
     val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryPcaData.plotsPc1Pc2Png.path.toAbsolutePath()}""", s"""${arrayStores(a).ancestryPcaData.plotsPc2Pc3Png.path.toAbsolutePath()}""").mkString(",") } }
     val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryClusterData.plotsPc1Pc2Png.path.toAbsolutePath()}""", s"""${arrayStores(a).ancestryClusterData.plotsPc2Pc3Png.path.toAbsolutePath()}""").mkString(",") } }
-    val restoreStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).filterQc.samplesRestore.path}""").mkString(",") } }
     
     drmWith(imageName = s"${utils.image.imgPython2}") {
     
@@ -292,9 +291,8 @@ object QcReport extends loamstream.LoamFile {
         --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
         --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
         --final-table ${qcReportStores.tablesData.ancestry.path.toAbsolutePath()}
-        --restore ${restoreStrings.mkString(" ")}
         --out ${qcReportStores.texData.ancestry}"""
-        .in(arrayStores.map(e => e._2).map(e => e.ref1kgData.plink.data.local.get).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesRestore).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
+        .in(arrayStores.map(e => e._2).map(e => e.ref1kgData.plink.data.local.get).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plotsPc2Pc3Png).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
         .out(qcReportStores.texData.ancestry)
         .tag(s"${qcReportStores.texData.ancestry}".split("/").last)
     
@@ -312,9 +310,8 @@ object QcReport extends loamstream.LoamFile {
         --kin0-related ${kin0Strings.mkString(" ")}
         --famsizes ${famSizesStrings.mkString(" ")}
         --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
-        --restore ${restoreStrings.mkString(" ")}
         --out ${qcReportStores.texData.ibdSexcheck}"""
-        .in(arrayStores.map(e => e._2).map(e => e.prunedData.plink.data).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesRestore).toSeq)
+        .in(arrayStores.map(e => e._2).map(e => e.prunedData.plink.data).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq)
         .out(qcReportStores.texData.ibdSexcheck)
         .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
     
@@ -407,9 +404,8 @@ object QcReport extends loamstream.LoamFile {
         --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
         --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
         --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
-        --restore ${restoreStrings.mkString(" ")}
         --out ${qcReportStores.texData.sampleQc}"""
-        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlotsPng).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesRestore).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlotsPng).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
         .out(qcReportStores.texData.sampleQc)
         .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
     

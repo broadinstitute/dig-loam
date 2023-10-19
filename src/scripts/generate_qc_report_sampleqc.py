@@ -129,23 +129,7 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
-		text_dict1 = collections.OrderedDict()
-		for x in args.restore:
-			df = pd.read_table(x.split(",")[1])
-			df = df[df['RestoreFrom'] == "sampleqcKeep"]
-			if df.shape[0] > 0:
-				text_dict1[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
-
-		if len(text_dict1) == 0:
-			text1 = "no"
-		if len(text_dict1) == 1:
-			text1 = text_dict1[text_dict1.keys()[0]]
-		if len(text_dict1) == 2:
-			text1 = " and ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:len(text_dict1.keys())]])
-		elif len(text_dict1) > 2:
-			text1 = ", ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:(len(text_dict1.keys())-1)]]) + " and " + str(text_dict1[text_dict1.keys()[len(text_dict1.keys())-1]]) + " " + text_dict1.keys()[len(text_dict1.keys())-1].replace("_","\_")
-
-		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all batches of data. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis. Upon further inspection, {0} samples were manually reinstated during this step.".format(text1)
+		text=r"Table \ref{{table:outlierSummaryTable}} contains a summary of outliers detected by each method and across all batches of data. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{{fig:samplesRemaining}} summarizes the samples remaining for analysis."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -212,6 +196,5 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--metric-outlier-plots', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
 	requiredArgs.add_argument('--sampleqc-summary-table', help='a sampleqc summary table', required=True)
 	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining', required=True)
-	requiredArgs.add_argument('--restore', nargs='+', help='a space separated list of array labels and sample restore files, each separated by comma', required=True)
 	args = parser.parse_args()
 	main(args)

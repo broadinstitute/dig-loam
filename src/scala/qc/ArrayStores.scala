@@ -191,8 +191,7 @@ object ArrayStores extends loamstream.LoamFile {
     log: Store)
   
   final case class FilterQc(
-    samplesExclude: MultiStore,
-    samplesRestore: Store)
+    samplesExclude: MultiStore)
   
   final case class FilterPostQc(
     samplesStats: MultiStore,
@@ -228,11 +227,6 @@ object ArrayStores extends loamstream.LoamFile {
     sampleQcMetricClusterData: Map[String, SampleQcMetricClusterData],
     filterQc: FilterQc,
     filterPostQc: FilterPostQc,
-    ancestryOutliersKeep: Option[Store],
-    duplicatesKeep: Option[Store],
-    famsizeKeep: Option[Store],
-    sampleqcKeep: Option[Store],
-    sexcheckKeep: Option[Store],
 	unfilteredVcf: ExportedVcf,
     filteredVcf: Option[ExportedVcf],
 	unfilteredBgen: MultiPathBgen,
@@ -683,8 +677,7 @@ object ArrayStores extends loamstream.LoamFile {
       samplesExclude = MultiStore(
         local = Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.exclude.txt")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.google.get / s"${filterQcBaseString}.samples.exclude.txt")); case false => None }
-      ),
-  	samplesRestore = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.restore.tbl"))
+      ))
   
     val filterPostQc = FilterPostQc(
       samplesStats = MultiStore(
@@ -813,11 +806,6 @@ object ArrayStores extends loamstream.LoamFile {
       sampleQcMetricClusterData = sampleQcMetricClusterData,
       filterQc = filterQc,
       filterPostQc = filterPostQc,
-      ancestryOutliersKeep = arrayCfg.ancestryOutliersKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      duplicatesKeep = arrayCfg.duplicatesKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      famsizeKeep = arrayCfg.famsizeKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      sampleqcKeep = arrayCfg.sampleqcKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      sexcheckKeep = arrayCfg.sexcheckKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
       unfilteredVcf = unfilteredVcf,
       filteredVcf = filteredVcf,
       unfilteredBgen = unfilteredBgen,

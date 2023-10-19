@@ -4,18 +4,11 @@ from pandas.io.common import EmptyDataError
 
 def main(args=None):
 
-	print "reading samples restore table"
-	restore=pd.read_table(args.restore)
-
 	print "reading ancestry inferred file"
 	x=pd.read_table(args.ancestry_inferred,header=None)
 	n_samples = x.shape[0]
 	x[0] = x[0].astype(str)
 	exc=x[0][x[1] == "OUTLIERS"].tolist()
-	restore_temp = restore[restore['RestoreFrom'] == "ancestryOutliersKeep"]
-	if restore_temp.shape[0] > 0:
-		print "restoring " + str(restore_temp.shape[0]) + " samples from ancestryOutliersKeep list"
-		exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 	final=exc
 
 	print "reading sample qc stats file"
@@ -49,10 +42,6 @@ def main(args=None):
 						print "... KINSHIP(" + r['ID1'] + ", " + r['ID2'] + ") = " + str(r['KINSHIP']) + ", call_rate(" + r['ID2'] + ") = " + str(id2_cr) + " <= call_rate(" + r['ID1'] + ") = " + str(id1_cr) + ", removing " + r['ID2']
 					x_remaining = x_remaining[x_remaining['ID1'] != x_remove]
 					exc.extend([x_remove])
-			restore_temp = restore[restore['RestoreFrom'] == "duplicatesKeep"]
-			if restore_temp.shape[0] > 0:
-				print "restoring " + str(restore_temp.shape[0]) + " samples from duplicatesKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "reading kinship famsizes file"
@@ -64,10 +53,6 @@ def main(args=None):
 		x[0] = x[0].astype(str)
 		exc=x[0][x[1] >= 0.5 * n_samples].tolist()
 		if len(exc) > 0:
-			restore_temp = restore[restore['RestoreFrom'] == "famsizeKeep"]
-			if restore_temp.shape[0] > 0:
-				print "restoring " + str(restore_temp.shape[0]) + " samples from famsizeKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "reading sampleqc outliers file"
@@ -79,10 +64,6 @@ def main(args=None):
 		x['IID'] = x['IID'].astype(str)
 		exc=x['IID'].tolist()
 		if len(exc) > 0:
-			restore_temp = restore[restore['RestoreFrom'] == "sampleqcKeep"]
-			if restore_temp.shape[0] > 0:
-				print "restoring " + str(restore_temp.shape[0]) + " samples from sampleqcKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "reading sampleqc incomplete observations file"
@@ -105,10 +86,6 @@ def main(args=None):
 		x['IID'] = x['IID'].astype(str)
 		exc=x['IID'].tolist()
 		if len(exc) > 0:
-			restore_temp = restore[restore['RestoreFrom'] == "sexcheckKeep"]
-			if restore_temp.shape[0] > 0:
-				print "restoring " + str(restore_temp.shape[0]) + " samples from sexcheckKeep list"
-				exc=[a for a in exc if a not in restore_temp['IID'].tolist()]
 			final.extend(exc)
 
 	print "writing final sample exclusions to file"
@@ -126,7 +103,6 @@ if __name__ == "__main__":
 	requiredArgs.add_argument('--sampleqc-outliers', help='file ending in .sampleqc.outliers.tsv', required=True)
 	requiredArgs.add_argument('--sampleqc-incomplete-obs', help='file ending in .sampleqc.incomplete_obs.tsv', required=True)
 	requiredArgs.add_argument('--sexcheck-problems', help='file ending in .sexcheck.problems.tsv', required=True)
-	requiredArgs.add_argument('--restore', help='a sample restore table', required=True)
 	requiredArgs.add_argument('--out', help='filename for final sample exclusions list', required=True)
 	args = parser.parse_args()
 	main(args)
