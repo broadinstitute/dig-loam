@@ -62,23 +62,7 @@ def main(args=None):
 		elif len(text_dict1) > 2:
 			text1 = ", ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:(len(text_dict1.keys())-1)]]) + " and " + str(text_dict1[text_dict1.keys()[len(text_dict1.keys())-1]]) + " " + text_dict1.keys()[len(text_dict1.keys())-1].replace("_","\_")
 
-		text_dict2 = collections.OrderedDict()
-		for x in args.restore:
-			df = pd.read_table(x.split(",")[1])
-			df = df[df['RestoreFrom'] == "duplicatesKeep"]
-			if df.shape[0] > 0:
-				text_dict2[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
-
-		if len(text_dict2) == 0:
-			text2 = "no"
-		if len(text_dict2) == 1:
-			text2 = text_dict2[text_dict2.keys()[0]]
-		if len(text_dict2) == 2:
-			text2 = " and ".join([str(text_dict2[x]) + " " + x.replace("_","\_") for x in text_dict2.keys()[0:len(text_dict2.keys())]])
-		elif len(text_dict2) > 2:
-			text2 = ", ".join([str(text_dict2[x]) + " " + x.replace("_","\_") for x in text_dict2.keys()[0:(len(text_dict2.keys())-1)]]) + " and " + str(text_dict2[text_dict2.keys()[len(text_dict2.keys())-1]]) + " " + text_dict2.keys()[len(text_dict2.keys())-1].replace("_","\_")
-
-		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the data. Upon manual inspection, If the clinical data for any of the duplicate pairs was nearly identical (same date of birth, etc.), then the sample with the higher call rate was reinstated. If the clinical data did not match or a manual inspection was not performed, both samples were removed. In this case, {1} samples were reinstated.".format(text1, text2)
+		text=r"In order to identify duplicate pairs of samples, a filter was set to $Kinship > 0.4$. There were {0} sample pairs identified as duplicate in the data. Upon manual inspection, If the clinical data for any of the duplicate pairs was nearly identical (same date of birth, etc.), then the sample with the higher call rate was reinstated. If the clinical data did not match or a manual inspection was not performed, both samples were removed.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 
@@ -103,23 +87,7 @@ def main(args=None):
 		elif len(text_dict1) > 2:
 			text1 = ", ".join([str(text_dict1[x]) + " " + x.replace("_","\_") for x in text_dict1.keys()[0:(len(text_dict1.keys())-1)]]) + " and " + str(text_dict1[text_dict1.keys()[len(text_dict1.keys())-1]]) + " " + text_dict1.keys()[len(text_dict1.keys())-1].replace("_","\_")
 
-		text_dict2 = collections.OrderedDict()
-		for x in args.restore:
-			df = pd.read_table(x.split(",")[1])
-			df = df[df['RestoreFrom'] == "famsizeKeep"]
-			if df.shape[0] > 0:
-				text_dict2[x.split(",")[0]] = "{0:,d}".format(df.shape[0])
-
-		if len(text_dict2) == 0:
-			text2 = "no"
-		if len(text_dict2) == 1:
-			text2 = text_dict2[text_dict2.keys()[0]]
-		if len(text_dict2) == 2:
-			text2 = " and ".join([str(text_dict2[x]) + " " + x.replace("_","\_") for x in text_dict2.keys()[0:len(text_dict2.keys())]])
-		elif len(text_dict2) > 2:
-			text2 = ", ".join([str(text_dict2[x]) + " " + x.replace("_","\_") for x in text_dict2.keys()[0:(len(text_dict2.keys())-1)]]) + " and " + str(text_dict2[text_dict2.keys()[len(text_dict2.keys())-1]]) + " " + text_dict2.keys()[len(text_dict2.keys())-1].replace("_","\_")
-
-		text=r"In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent. Upon further inspection, {1} samples were manually reinstated during this step.".format(text1, text2)
+		text=r"In addition to identifying duplicate samples, any single individual that exhibited kinship values indicating a 2nd degree relative or higher relationship with 10 or more others was flagged for removal. The relationship count indicated {0} samples that exhibited high levels of sharing identity by descent.".format(text1)
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		print "writing sex check section"
