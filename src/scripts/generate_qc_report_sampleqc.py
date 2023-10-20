@@ -129,7 +129,10 @@ def main(args=None):
 
 		f.write("\n"); f.write(r"\subsection{Summary of Sample Outlier Detection}"); f.write("\n")
 
-		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across all batches of data. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings. Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
+		text=r"Table \ref{table:outlierSummaryTable} contains a summary of outliers detected by each method and across all batches of data. Note that 'PCA(Metrics)' results from the clustering of the PCs of the 8 PCARM's combined, so 'Metrics + PCA(Metrics)' is the union of samples flagged by that method with samples flagged by each of the 10 individual metric clusterings."
+		if args.samples_upset_diagram:
+			text = text + r" Figure \ref{fig:samplesRemaining} summarizes the samples remaining for analysis."
+
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		text=[
@@ -174,27 +177,28 @@ def main(args=None):
 					r"\end{table}"])
 		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		text=[
-			r"\begin{figure}[H]",
-			r"	\centering",
-			r"	\includegraphics[width=0.75\linewidth,page=1]{" + args.samples_upset_diagram + r"}",
-			r"	\caption{Samples remaining for analysis}",
-			r"	\label{fig:samplesRemaining}",
-			r"\end{figure}"]
-		f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
+		if args.samples_upset_diagram:
+			text=[
+				r"\begin{figure}[H]",
+				r"	\centering",
+				r"	\includegraphics[width=0.75\linewidth,page=1]{" + args.samples_upset_diagram + r"}",
+				r"	\caption{Samples remaining for analysis}",
+				r"	\label{fig:samplesRemaining}",
+				r"\end{figure}"]
+			f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
 	print "finished\n"
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
 	requiredArgs.add_argument('--compare-dist-unadj', help='an nHet plot', required=True)
 	requiredArgs.add_argument('--compare-dist-adj', help='an nHet adjusted plot', required=True)
 	requiredArgs.add_argument('--compare-dist-label', help='an array label', required=True)
 	requiredArgs.add_argument('--compare-dist-metric', help='a metric', required=True)
-	requiredArgs.add_argument('--metric-outlier-plots', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores', required=True)
+	requiredArgs.add_argument('--metric-outlier-plots', nargs='+', help='a comma separated list of array labels and sampleqc outlier plots, each separated by 3 underscores',required=True)
 	requiredArgs.add_argument('--sampleqc-summary-table', help='a sampleqc summary table', required=True)
-	requiredArgs.add_argument('--samples-upset-diagram', help='an upset diagram for samples remaining', required=True)
 	args = parser.parse_args()
 	main(args)

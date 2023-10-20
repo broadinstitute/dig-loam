@@ -24,15 +24,15 @@ object QcReportStores extends loamstream.LoamFile {
     sampleQc: Store,
     variantQc: Store,
     bibliography: Store)
-  
+
+  //removed: samplesRemainingUpsetPlotPdf: Store,
+  //removed: variantsRemainingUpsetPlotPdf: Store
   final case class FigureData(
     samplesUpsetPlotPdf: Option[Store],
     variantsUpsetPlotPdf: Option[Store],
     metricDistUnadjPdf: Store,
-    metricDistAdjPdf: Store,
-    samplesRemainingUpsetPlotPdf: Store,
-    variantsRemainingUpsetPlotPdf: Store)
-  
+    metricDistAdjPdf: Store)
+
   final case class QcReport(
     tablesData: TablesData,
     texData: TexData,
@@ -61,14 +61,14 @@ object QcReportStores extends loamstream.LoamFile {
       sampleQc = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.sampleqc.tex"),
       variantQc = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variantqc.tex"),
       bibliography = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.bibliography.tex")),
-  
+
+    //removed: samplesRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.samples_remaining.upsetplot.pdf"),
+    //removed: variantsRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants_remaining.upsetplot.pdf")
     figureData = FigureData(
       samplesUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.samples.upsetplot.pdf")) } else { None },
       variantsUpsetPlotPdf = if (projectConfig.nArrays > 1) { Some(store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants.upsetplot.pdf")) } else { None },
       metricDistUnadjPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.metric_dist_unadj.pdf"),
-      metricDistAdjPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.metric_dist_adj.pdf"),
-      samplesRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.samples_remaining.upsetplot.pdf"),
-      variantsRemainingUpsetPlotPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.variants_remaining.upsetplot.pdf")),
+      metricDistAdjPdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.metric_dist_adj.pdf")),
   
     tex = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.tex"),
     pdf = store(dirTree.reportQc.local.get / s"${projectConfig.projectId}.qc_report.pdf")

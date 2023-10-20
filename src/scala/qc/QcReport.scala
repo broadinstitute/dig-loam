@@ -389,20 +389,20 @@ object QcReport extends loamstream.LoamFile {
     
     }
     
-    drmWith(imageName = s"${utils.image.imgR}") {
-      
-      cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rUpsetplotVariantSample}
-        --input ${sampleStrings.mkString(" ")}
-        --exclusions ${finalSampleExclusionsStrings.mkString(" ")}
-        --type sample
-        --ancestry ${projectStores.ancestryInferredGmm.local.get}
-        --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
-        .in(sampleIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryInferredGmm.local.get)
-        .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
-        .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
-    
-    }
+    //drmWith(imageName = s"${utils.image.imgR}") {
+    //  
+    //  cmd"""${utils.binary.binRscript} --vanilla --verbose
+    //    ${utils.r.rUpsetplotVariantSample}
+    //    --input ${sampleStrings.mkString(" ")}
+    //    --exclusions ${finalSampleExclusionsStrings.mkString(" ")}
+    //    --type sample
+    //    --ancestry ${projectStores.ancestryInferredGmm.local.get}
+    //    --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
+    //    .in(sampleIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryInferredGmm.local.get)
+    //    .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+    //    .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
+    //
+    //}
 
     for {
       a <- projectConfig.Arrays
@@ -422,7 +422,8 @@ object QcReport extends loamstream.LoamFile {
     val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).sampleQcData.metricPlotsPng.path.toAbsolutePath()}""").mkString(",") } }
     
     drmWith(imageName = s"${utils.image.imgPython2}") {
-    
+
+      // removed: --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportSampleqc}
         --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
         --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
@@ -430,9 +431,8 @@ object QcReport extends loamstream.LoamFile {
         --compare-dist-metric ${projectConfig.Arrays.head.sampleQcMetrics.head}
         --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
         --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
-        --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
         --out ${qcReportStores.texData.sampleQc}"""
-        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlotsPng).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlotsPng).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc)
         .out(qcReportStores.texData.sampleQc)
         .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
     
@@ -443,29 +443,29 @@ object QcReport extends loamstream.LoamFile {
       
     if (projectConfig.nArrays > 1) {
     
-      drmWith(imageName = s"${utils.image.imgR}") {
-      
-        cmd"""${utils.binary.binRscript} --vanilla --verbose
-          ${utils.r.rUpsetplotVariantSample}
-          --input ${varStrings.mkString(" ")}
-          --exclusions ${finalVariantExclusionsStrings.mkString(" ")}
-          --type variant
-          --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
-          .in(variantIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
-          .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
-          .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
-      
-      }
+      //drmWith(imageName = s"${utils.image.imgR}") {
+      //
+      //  cmd"""${utils.binary.binRscript} --vanilla --verbose
+      //    ${utils.r.rUpsetplotVariantSample}
+      //    --input ${varStrings.mkString(" ")}
+      //    --exclusions ${finalVariantExclusionsStrings.mkString(" ")}
+      //    --type variant
+      //    --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
+      //    .in(variantIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
+      //    .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+      //    .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
+      //
+      //}
     
       drmWith(imageName = s"${utils.image.imgPython2}") {
-    	  
+
+        // removed: --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
-          --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
           --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
           --variants-exclude-table ${qcReportStores.tablesData.variantsExcludeSummary.path.toAbsolutePath()}
           --postqc-variant-filters ${postQcVariantFiltersStrings.mkString(" ")}
           --out ${qcReportStores.texData.variantQc}"""
-          .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf :+ qcReportStores.tablesData.variantsExcludeSummary)
+          .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.tablesData.variantsExcludeSummary)
           .out(qcReportStores.texData.variantQc)
           .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
     
