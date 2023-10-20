@@ -96,6 +96,8 @@ echo "out: $out"
 echo "log: $log"
 echo "cliOptions: $cliOptions"
 
+EXITCODE=0
+
 $regenie \
 --step 1 \
 --bed $bed \
@@ -108,11 +110,16 @@ $cliOptions \
 --out $out \
 > $log
 
+if [ $? != 0 ]
+then
+	echo "regenie step 1 failed"
+	EXITCODE=1
+fi
+
 if [ ! -f "${out}_1.loco" ]
 then
+	echo "regenie step 1 loco output missing"
 	EXITCODE=1
-else
-	EXITCODE=0
 fi
 
 exit $EXITCODE

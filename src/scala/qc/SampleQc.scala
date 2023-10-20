@@ -17,6 +17,12 @@ object SampleQc extends loamstream.LoamFile {
   import ProjectStores._
   
   def SampleQc(array: ConfigArray): Unit = {
+
+    val ancestryInferred = projectConfig.preferredAncestryInferenceMethod match {
+      case "gmm" => projectStores.ancestryInferredGmm
+      case "knn" => projectStores.ancestryInferredKnn
+    }
+    
   
     projectConfig.hailCloud match {
   
@@ -24,7 +30,7 @@ object SampleQc extends loamstream.LoamFile {
   
         local {
         
-          googleCopy(projectStores.ancestryInferred.local.get, projectStores.ancestryInferred.google.get)
+          googleCopy(ancestryInferred.local.get, ancestryInferred.google.get)
         
         }
         
@@ -34,11 +40,11 @@ object SampleQc extends loamstream.LoamFile {
             --hail-utils ${projectStores.hailUtils.google.get}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.google.get}
-            --clusters-in ${projectStores.ancestryInferred.google.get}
+            --clusters-in ${ancestryInferred.google.get}
             --qc-out ${arrayStores(array).sampleQcData.stats.google.get}
             --cloud
             --log ${arrayStores(array).sampleQcData.hailLog.google.get}"""
-            .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, projectStores.ancestryInferred.google.get)
+            .in(projectStores.hailUtils.google.get, arrayStores(array).refData.mt.google.get, ancestryInferred.google.get)
             .out(arrayStores(array).sampleQcData.stats.google.get, arrayStores(array).sampleQcData.hailLog.google.get)
             .tag(s"${arrayStores(array).sampleQcData.stats.local.get}.google".split("/").last)
         
@@ -61,10 +67,10 @@ object SampleQc extends loamstream.LoamFile {
             --tmp-dir ${projectStores.tmpDir}
             --reference-genome ${projectConfig.referenceGenome}
             --mt-in ${arrayStores(array).refData.mt.local.get}
-            --clusters-in ${projectStores.ancestryInferred.local.get}
+            --clusters-in ${ancestryInferred.local.get}
             --qc-out ${arrayStores(array).sampleQcData.stats.local.get}
             --log ${arrayStores(array).sampleQcData.hailLog.local.get}"""
-            .in(arrayStores(array).refData.mt.local.get, projectStores.ancestryInferred.local.get, projectStores.tmpDir)
+            .in(arrayStores(array).refData.mt.local.get, ancestryInferred.local.get, projectStores.tmpDir)
             .out(arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).sampleQcData.hailLog.local.get)
             .tag(s"${arrayStores(array).sampleQcData.stats.local.get}".split("/").last)
   
@@ -189,50 +195,7 @@ object SampleQc extends loamstream.LoamFile {
   
     }
   
-    /**
-     * Restore Samples Step
-     * Requires: Python
-     */
-  
-    val ancestryOutliersKeep = array.ancestryOutliersKeep match {
-      case Some(s) => s"""--ancestry-outliers-keep ${s}"""
-      case None => ""
-    }
-
-    val duplicatesKeep = array.duplicatesKeep match {
-      case Some(s) => s"""--duplicates-keep ${s}"""
-      case None => ""
-    }
-
-    val famsizeKeep = array.famsizeKeep match {
-      case Some(s) => s"""--famsize-keep ${s}"""
-      case None => ""
-    }
-
-    val sampleqcKeep = array.sampleqcKeep match {
-      case Some(s) => s"""--sampleqc-keep ${s}"""
-      case None => ""
-    }
-
-    val sexcheckKeep = array.sexcheckKeep match {
-      case Some(s) => s"""--sexcheck-keep ${s}"""
-      case None => ""
-    }
-    
-    drmWith(imageName = s"${utils.image.imgPython2}") {
-    
-      cmd"""${utils.binary.binPython} ${utils.python.pyMakeSamplesRestoreTable}
-        ${ancestryOutliersKeep}
-        ${duplicatesKeep}
-        ${famsizeKeep}
-        ${sampleqcKeep}
-        ${sexcheckKeep}
-        --out ${arrayStores(array).filterQc.samplesRestore}"""
-        .out(arrayStores(array).filterQc.samplesRestore)
-        .tag(s"${arrayStores(array).filterQc.samplesRestore}".split("/").last)
-  
-    }
-    
+   
     /**
      * Compile Sample Exclusions Step
      * Requires: Python
@@ -241,16 +204,15 @@ object SampleQc extends loamstream.LoamFile {
     drmWith(imageName = s"${utils.image.imgPython2}") {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyCompileExclusions}
-        --ancestry-inferred ${projectStores.ancestryInferred.local.get}
+        --ancestry-inferred ${ancestryInferred.local.get}
         --kinship-related ${arrayStores(array).kinshipData.kin0}
         --sampleqc-stats ${arrayStores(array).sampleQcData.stats.local.get}
         --kinship-famsizes ${arrayStores(array).kinshipData.famSizes}
         --sampleqc-outliers ${arrayStores(array).sampleQcData.outliers}
         --sampleqc-incomplete-obs ${arrayStores(array).sampleQcData.incompleteObs}
         --sexcheck-problems ${arrayStores(array).sexcheckData.problems.local.get}
-        --restore ${arrayStores(array).filterQc.samplesRestore}
         --out ${arrayStores(array).filterQc.samplesExclude.local.get}"""
-        .in(projectStores.ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get, arrayStores(array).filterQc.samplesRestore)
+        .in(ancestryInferred.local.get, arrayStores(array).kinshipData.kin0, arrayStores(array).sampleQcData.stats.local.get, arrayStores(array).kinshipData.famSizes, arrayStores(array).sampleQcData.outliers, arrayStores(array).sampleQcData.incompleteObs, arrayStores(array).sexcheckData.problems.local.get)
         .out(arrayStores(array).filterQc.samplesExclude.local.get)
         .tag(s"${arrayStores(array).filterQc.samplesExclude.local.get}".split("/").last)
     

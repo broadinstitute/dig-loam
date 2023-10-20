@@ -183,6 +183,12 @@ then
 	--gz \
 	--verbose
 
+	if [ $? != 0 ]
+	then
+		echo "regenie step 2 failed"
+		EXITCODE=1
+	fi
+
 	for p in $phenoNames
 	do
 		echo "updating $p!"

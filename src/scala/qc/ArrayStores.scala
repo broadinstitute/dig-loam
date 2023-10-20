@@ -116,7 +116,8 @@ object ArrayStores extends loamstream.LoamFile {
     kgSamples: MultiStore)
   
   final case class AncestryData(
-    inferred: Store)
+    inferredGmm: Store,
+    inferredKnn: Store)
   
   final case class AncestryPcaData(
     base: Path,
@@ -131,7 +132,7 @@ object ArrayStores extends loamstream.LoamFile {
     plotsPc1Pc2Png: Store,
     plotsPc2Pc3Png: Store)
   
-  final case class AncestryClusterData(
+  final case class AncestryGmmData(
     base: Path,
     log: Store,
     fet: Store,
@@ -144,6 +145,12 @@ object ArrayStores extends loamstream.LoamFile {
     no1kgPlots: Store,
     xtab: Store,
     groups: Store)
+
+  final case class AncestryKnnData(
+    predictions: Store,
+    plots: Store,
+    plotsPc1Pc2Png: Store,
+    plotsPc2Pc3Png: Store)
   
   final case class PcaData(
     log: Store,
@@ -191,8 +198,7 @@ object ArrayStores extends loamstream.LoamFile {
     log: Store)
   
   final case class FilterQc(
-    samplesExclude: MultiStore,
-    samplesRestore: Store)
+    samplesExclude: MultiStore)
   
   final case class FilterPostQc(
     samplesStats: MultiStore,
@@ -220,7 +226,8 @@ object ArrayStores extends loamstream.LoamFile {
     ref1kgData: Ref1kgData,
     ancestryData: AncestryData,
     ancestryPcaData: AncestryPcaData,
-    ancestryClusterData: AncestryClusterData,
+    ancestryGmmData: AncestryGmmData,
+    ancestryKnnData: AncestryKnnData,
     pcaData: PcaData,
     sexcheckData: SexcheckData,
     sampleQcData: SampleQcData,
@@ -228,11 +235,6 @@ object ArrayStores extends loamstream.LoamFile {
     sampleQcMetricClusterData: Map[String, SampleQcMetricClusterData],
     filterQc: FilterQc,
     filterPostQc: FilterPostQc,
-    ancestryOutliersKeep: Option[Store],
-    duplicatesKeep: Option[Store],
-    famsizeKeep: Option[Store],
-    sampleqcKeep: Option[Store],
-    sexcheckKeep: Option[Store],
 	unfilteredVcf: ExportedVcf,
     filteredVcf: Option[ExportedVcf],
 	unfilteredBgen: MultiPathBgen,
@@ -253,7 +255,8 @@ object ArrayStores extends loamstream.LoamFile {
     val ref1kgBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ref1kg"
     val ancestryBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry"
     val ancestryPcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.pca"
-    val ancestryClusterBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.cluster"
+    val ancestryGmmBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.gmm"
+    val ancestryKnnBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.ancestry.knn"
     val pcaBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.pca"
     val sampleQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.sampleqc"
     val filterQcBaseString = s"${projectConfig.projectId}.${arrayCfg.id}.qc"
@@ -589,7 +592,8 @@ object ArrayStores extends loamstream.LoamFile {
       ))
   
     val ancestryData = AncestryData(
-      inferred = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryBaseString}.inferred.tsv"))
+      inferredGmm = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.inferred.tsv"),
+      inferredKnn = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.inferred.tsv"))
   
     val ancestryPcaData = AncestryPcaData(
       base = dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ancestryPcaBaseString,
@@ -604,19 +608,25 @@ object ArrayStores extends loamstream.LoamFile {
       plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pc1pc2.png"),
       plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryPcaBaseString}.plots.pc2pc3.png"))
     
-    val ancestryClusterData = AncestryClusterData(
-      base = dirTree.dataArrayMap(arrayCfg).ancestry.local.get / ancestryClusterBaseString,
-      log = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.log"),
-      fet = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.fet.1"),
-      clu = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.clu.1"),
-      klg = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.klg.1"),
-      plots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pdf"),
-      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pc1pc2.png"),
-      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.pc2pc3.png"),
-      centerPlots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.centers.pdf"),
-      no1kgPlots = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.plots.no1kg.pdf"),
-      xtab = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.xtab"),
-      groups = store(dirTree.dataArrayMap(arrayCfg).ancestry.local.get / s"${ancestryClusterBaseString}.groups.tsv"))
+    val ancestryGmmData = AncestryGmmData(
+      base = dirTree.dataArrayMap(arrayCfg).gmm.local.get / ancestryGmmBaseString,
+      log = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.log"),
+      fet = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.fet.1"),
+      clu = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.clu.1"),
+      klg = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.klg.1"),
+      plots = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.plots.pc2pc3.png"),
+      centerPlots = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.plots.centers.pdf"),
+      no1kgPlots = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.plots.no1kg.pdf"),
+      xtab = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.xtab"),
+      groups = store(dirTree.dataArrayMap(arrayCfg).gmm.local.get / s"${ancestryGmmBaseString}.groups.tsv"))
+
+    val ancestryKnnData = AncestryKnnData(
+      predictions = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.predictions.tsv"),
+      plots = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pdf"),
+      plotsPc1Pc2Png = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pc1pc2.png"),
+      plotsPc2Pc3Png = store(dirTree.dataArrayMap(arrayCfg).knn.local.get / s"${ancestryKnnBaseString}.plots.pc2pc3.png"))
   
     val pcaData = PcaData(
       log = store(dirTree.dataArrayMap(arrayCfg).pca.local.get / s"${pcaBaseString}.log"),
@@ -683,8 +693,7 @@ object ArrayStores extends loamstream.LoamFile {
       samplesExclude = MultiStore(
         local = Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.exclude.txt")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).filterQc.google.get / s"${filterQcBaseString}.samples.exclude.txt")); case false => None }
-      ),
-  	samplesRestore = store(dirTree.dataArrayMap(arrayCfg).filterQc.local.get / s"${filterQcBaseString}.samples.restore.tbl"))
+      ))
   
     val filterPostQc = FilterPostQc(
       samplesStats = MultiStore(
@@ -805,7 +814,8 @@ object ArrayStores extends loamstream.LoamFile {
       ref1kgData = ref1kgData,
       ancestryData = ancestryData,
       ancestryPcaData = ancestryPcaData,
-      ancestryClusterData = ancestryClusterData,
+      ancestryGmmData = ancestryGmmData,
+      ancestryKnnData = ancestryKnnData,
       pcaData = pcaData,
       sexcheckData = sexcheckData,
       sampleQcData = sampleQcData,
@@ -813,11 +823,6 @@ object ArrayStores extends loamstream.LoamFile {
       sampleQcMetricClusterData = sampleQcMetricClusterData,
       filterQc = filterQc,
       filterPostQc = filterPostQc,
-      ancestryOutliersKeep = arrayCfg.ancestryOutliersKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      duplicatesKeep = arrayCfg.duplicatesKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      famsizeKeep = arrayCfg.famsizeKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      sampleqcKeep = arrayCfg.sampleqcKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
-      sexcheckKeep = arrayCfg.sexcheckKeep match { case Some(s) => Some(store(path(checkPath(s))).asInput); case None => None },
       unfilteredVcf = unfilteredVcf,
       filteredVcf = filteredVcf,
       unfilteredBgen = unfilteredBgen,

@@ -58,11 +58,19 @@ echo "out: $out"
 
 sed '1d' $phenoFile | awk '{print $1" "$1}' > ${out}.tmp.keep
 
+EXITCODE=0
+
 $plink \
 --bfile $bfile \
 --keep ${out}.tmp.keep \
 --hardy \
 --out ${out}.tmp.hardy
+
+if [ $? != 0 ]
+then
+	echo "regenie step 0: plink command failed"
+	EXITCODE=1
+fi
 
 awk '{split($6,a,"/"); if(a[1]a[2] == "00" || a[1]a[3] == "00" || a[2]a[3] == "00") print $2}' ${out}.tmp.hardy.hwe > ${out}.zero_variance_exclude.txt
 
@@ -71,7 +79,6 @@ then
 	EXITCODE=1
 else
 	rm ${out}.tmp.*
-	EXITCODE=0
 fi
 
 exit $EXITCODE

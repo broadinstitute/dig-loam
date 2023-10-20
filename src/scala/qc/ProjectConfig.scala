@@ -76,6 +76,11 @@ object ProjectConfig extends loamstream.LoamFile {
     "avg_ab",
     "avg_ab50"
   )
+
+  val ancestryInferenceMethods = Seq(
+    "gmm",
+    "knn"
+  )
   
   final case class ConfigMachine(
     cpus: Int,
@@ -145,11 +150,6 @@ object ProjectConfig extends loamstream.LoamFile {
     sampleMetricCovars: Option[String],
     chrs: Seq[String],
     gqThreshold: Option[Int],
-    ancestryOutliersKeep: Option[String],
-    duplicatesKeep: Option[String],
-    famsizeKeep: Option[String],
-    sampleqcKeep: Option[String],
-    sexcheckKeep: Option[String],
     qcVariantFilters: Option[Seq[String]],
     qcVariantSampleN: Option[Int],
     qcVariantSampleSeed: Option[Int],
@@ -212,6 +212,7 @@ object ProjectConfig extends loamstream.LoamFile {
     acknowledgements: Option[Seq[String]],
     nAncestryInferenceFeatures: Int,
     ancestryInferenceFeatures: String,
+    preferredAncestryInferenceMethod: String,
     cloudResources: ConfigCloudResources,
     resources: ConfigResources,
     nArrays: Int,
@@ -297,10 +298,11 @@ object ProjectConfig extends loamstream.LoamFile {
   
   final case class R(
     rFindBestDuplicateVariants: Path,
-    rAncestryClusterMerge: Path,
+    rAncestryGmmMerge: Path,
+    rAncestryKnnMerge: Path,
     rCalcKinshipFamSizes: Path,
     rPlotAncestryPca: Path,
-    rPlotAncestryCluster: Path,
+    rPlotAncestryGmm: Path,
     rIstatsPcsGmmClusterPlot: Path,
     rIstatsAdjGmmPlotMetrics: Path,
     rCalcIstatsAdj: Path,
@@ -308,7 +310,9 @@ object ProjectConfig extends loamstream.LoamFile {
     rRawVariantsSummaryTable: Path,
     rSeqVariantsSummaryTable: Path,
     rVariantsExcludeSummaryTable: Path,
-    rAncestryClusterTable: Path,
+    rAncestryGmmTable: Path,
+    rAncestryKnnTable: Path,
+    rAncestryKnn: Path,
     rMakeOutlierTable: Path,
     rUpsetplotVariantSample: Path,
     rMakeMetricDistPlot: Path) extends Debug
@@ -369,6 +373,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val organization = requiredStr(config = config, field = "organization")
       val acknowledgements = optionalStrList(config = config, field = "acknowledgements")
       val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
+      val preferredAncestryInferenceMethod = requiredStr(config = config, field = "preferredAncestryInferenceMethod", regex = ancestryInferenceMethods.mkString("|"))
 
       (referenceGenome, vepGerpBW) match {
         case ("GRCh38", None) => throw new CfgException("projectConfig: config setting for vepGerpBW required with reference genome GRCh38")
@@ -717,11 +722,6 @@ object ProjectConfig extends loamstream.LoamFile {
             sampleMetricCovars = optionalStrList(config = array, field = "sampleMetricCovars") match { case Some(s) => Some(s.mkString("+")); case None => None },
             chrs = chrs,
             gqThreshold = optionalInt(config = array, field = "gqThreshold", min = Some(0)),
-            ancestryOutliersKeep = optionalStr(config = array, field = "ancestryOutliersKeep"),
-            duplicatesKeep = optionalStr(config = array, field = "duplicatesKeep"),
-            famsizeKeep = optionalStr(config = array, field = "famsizeKeep"),
-            sampleqcKeep = optionalStr(config = array, field = "sampleqcKeep"),
-            sexcheckKeep = optionalStr(config = array, field = "sexcheckKeep"),
             qcVariantFilters = qcVariantFilters,
             qcVariantSampleN = optionalInt(config = array, field = "qcVariantSampleN", min = Some(1000)),
             qcVariantSampleSeed = optionalInt(config = array, field = "qcVariantSampleSeed", min = Some(0)),
@@ -818,6 +818,7 @@ object ProjectConfig extends loamstream.LoamFile {
         acknowledgements = acknowledgements,
         nAncestryInferenceFeatures = nAncestryInferenceFeatures,
         ancestryInferenceFeatures = ancestryInferenceFeatures,
+        preferredAncestryInferenceMethod = preferredAncestryInferenceMethod,
         cloudResources = cloudResources,
         resources = resources,
         nArrays = nArrays,
@@ -914,10 +915,11 @@ object ProjectConfig extends loamstream.LoamFile {
   
       val r = R(
         rFindBestDuplicateVariants = path(s"${scriptsDir}/find_best_duplicate_variants.r"),
-        rAncestryClusterMerge = path(s"${scriptsDir}/ancestry_cluster_merge.r"),
+        rAncestryGmmMerge = path(s"${scriptsDir}/ancestry_gmm_merge.r"),
+        rAncestryKnnMerge = path(s"${scriptsDir}/ancestry_knn_merge.r"),
         rCalcKinshipFamSizes = path(s"${scriptsDir}/calc_kinship_fam_sizes.r"),
         rPlotAncestryPca = path(s"${scriptsDir}/plot_ancestry_pca.r"),
-        rPlotAncestryCluster = path(s"${scriptsDir}/plot_ancestry_cluster.r"),
+        rPlotAncestryGmm = path(s"${scriptsDir}/plot_ancestry_gmm.r"),
         rIstatsPcsGmmClusterPlot = path(s"${scriptsDir}/istats_pcs_gmm_cluster_plot.r"),
         rIstatsAdjGmmPlotMetrics = path(s"${scriptsDir}/istats_adj_gmm_plot_metrics.r"),
         rCalcIstatsAdj = path(s"${scriptsDir}/calc_istats_adj.r"),
@@ -925,7 +927,9 @@ object ProjectConfig extends loamstream.LoamFile {
         rRawVariantsSummaryTable = path(s"${scriptsDir}/raw_variants_summary_table.r"),
         rSeqVariantsSummaryTable = path(s"${scriptsDir}/seq_variants_summary_table.r"),
         rVariantsExcludeSummaryTable = path(s"${scriptsDir}/variants_exclude_summary_table.r"),
-        rAncestryClusterTable = path(s"${scriptsDir}/ancestry_cluster_table.r"),
+        rAncestryGmmTable = path(s"${scriptsDir}/ancestry_gmm_table.r"),
+        rAncestryKnnTable = path(s"${scriptsDir}/ancestry_knn_table.r"),
+        rAncestryKnn = path(s"${scriptsDir}/ancestry.knn.r"),
         rMakeOutlierTable = path(s"${scriptsDir}/make_outlier_table.r"),
         rUpsetplotVariantSample = path(s"${scriptsDir}/upsetplot.variant.sample.r"),
         rMakeMetricDistPlot = path(s"${scriptsDir}/make_metric_dist_plot.r")

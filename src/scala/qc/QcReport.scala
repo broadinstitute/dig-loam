@@ -99,21 +99,35 @@ object QcReport extends loamstream.LoamFile {
 
     }
 
-    val clusterGroupsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryClusterData.groups.path}""").mkString(",") } }
-    val ancestryInferredStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryData.inferred.path}""").mkString(",") } }
+    val gmmGroupsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryGmmData.groups.path}""").mkString(",") } }
+    val ancestryInferredGmmStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryData.inferredGmm.path}""").mkString(",") } }
     
     drmWith(imageName = s"${utils.image.imgR}") {
     
       cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rAncestryClusterTable}
-        --cluster-in ${clusterGroupsStrings.mkString(" ")}
-        --ancestry-in ${ancestryInferredStrings.mkString(" ")}
-        --final-in ${projectStores.ancestryInferred.local.get}
-        --cluster-out ${qcReportStores.tablesData.clusters}
-        --final-out ${qcReportStores.tablesData.ancestry}"""
-        .in(arrayStores.map(e => e._2).map(e => e.ancestryClusterData.groups).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferred).toSeq :+ projectStores.ancestryInferred.local.get)
-        .out(qcReportStores.tablesData.clusters, qcReportStores.tablesData.ancestry)
-        .tag(s"${qcReportStores.tablesData.ancestry}".split("/").last)
+        ${utils.r.rAncestryGmmTable}
+        --cluster-in ${gmmGroupsStrings.mkString(" ")}
+        --ancestry-in ${ancestryInferredGmmStrings.mkString(" ")}
+        --final-in ${projectStores.ancestryInferredGmm.local.get}
+        --cluster-out ${qcReportStores.tablesData.clustersGmm}
+        --final-out ${qcReportStores.tablesData.ancestryGmm}"""
+        .in(arrayStores.map(e => e._2).map(e => e.ancestryGmmData.groups).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferredGmm).toSeq :+ projectStores.ancestryInferredGmm.local.get)
+        .out(qcReportStores.tablesData.clustersGmm, qcReportStores.tablesData.ancestryGmm)
+        .tag(s"${qcReportStores.tablesData.ancestryGmm}".split("/").last)
+    
+    }
+
+    val ancestryInferredKnnStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryData.inferredKnn.path}""").mkString(",") } }
+    
+    drmWith(imageName = s"${utils.image.imgR}") {
+    
+      cmd"""${utils.binary.binRscript} --vanilla --verbose
+        ${utils.r.rAncestryKnnTable}
+        --inferred ${projectStores.ancestryInferredKnn.local.get}
+        --out ${qcReportStores.tablesData.ancestryKnn}"""
+        .in(projectStores.ancestryInferredKnn.local.get)
+        .out(qcReportStores.tablesData.ancestryKnn)
+        .tag(s"${qcReportStores.tablesData.ancestryKnn}".split("/").last)
     
     }
     
@@ -264,15 +278,25 @@ object QcReport extends loamstream.LoamFile {
           .out(arrayStores(a).ancestryPcaData.plotsPc2Pc3Png)
           .tag(s"${arrayStores(a).ancestryPcaData.plotsPc2Pc3Png}".split("/").last)
 
-        cmd"""${utils.binary.binConvert} -density 300 ${arrayStores(a).ancestryClusterData.plots}[0] ${arrayStores(a).ancestryClusterData.plotsPc1Pc2Png}"""
-          .in(arrayStores(a).ancestryClusterData.plots)
-          .out(arrayStores(a).ancestryClusterData.plotsPc1Pc2Png)
-          .tag(s"${arrayStores(a).ancestryClusterData.plotsPc1Pc2Png}".split("/").last)
+        cmd"""${utils.binary.binConvert} -density 300 ${arrayStores(a).ancestryGmmData.plots}[0] ${arrayStores(a).ancestryGmmData.plotsPc1Pc2Png}"""
+          .in(arrayStores(a).ancestryGmmData.plots)
+          .out(arrayStores(a).ancestryGmmData.plotsPc1Pc2Png)
+          .tag(s"${arrayStores(a).ancestryGmmData.plotsPc1Pc2Png}".split("/").last)
 
-        cmd"""${utils.binary.binConvert} -density 300 ${arrayStores(a).ancestryClusterData.plots}[1] ${arrayStores(a).ancestryClusterData.plotsPc2Pc3Png}"""
-          .in(arrayStores(a).ancestryClusterData.plots)
-          .out(arrayStores(a).ancestryClusterData.plotsPc2Pc3Png)
-          .tag(s"${arrayStores(a).ancestryClusterData.plotsPc2Pc3Png}".split("/").last)
+        cmd"""${utils.binary.binConvert} -density 300 ${arrayStores(a).ancestryGmmData.plots}[1] ${arrayStores(a).ancestryGmmData.plotsPc2Pc3Png}"""
+          .in(arrayStores(a).ancestryGmmData.plots)
+          .out(arrayStores(a).ancestryGmmData.plotsPc2Pc3Png)
+          .tag(s"${arrayStores(a).ancestryGmmData.plotsPc2Pc3Png}".split("/").last)
+
+        cmd"""${utils.binary.binConvert} -density 300 ${arrayStores(a).ancestryKnnData.plots}[0] ${arrayStores(a).ancestryKnnData.plotsPc1Pc2Png}"""
+          .in(arrayStores(a).ancestryKnnData.plots)
+          .out(arrayStores(a).ancestryKnnData.plotsPc1Pc2Png)
+          .tag(s"${arrayStores(a).ancestryKnnData.plotsPc1Pc2Png}".split("/").last)
+
+        cmd"""${utils.binary.binConvert} -density 300 ${arrayStores(a).ancestryKnnData.plots}[1] ${arrayStores(a).ancestryKnnData.plotsPc2Pc3Png}"""
+          .in(arrayStores(a).ancestryKnnData.plots)
+          .out(arrayStores(a).ancestryKnnData.plotsPc2Pc3Png)
+          .tag(s"${arrayStores(a).ancestryKnnData.plotsPc2Pc3Png}".split("/").last)
 
       }
 
@@ -280,8 +304,8 @@ object QcReport extends loamstream.LoamFile {
     
     val ref1kgBimStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"${arrayStores(a).ref1kgData.plink.base.local.get}.bim").mkString(",") } }
     val ancestryPcaPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryPcaData.plotsPc1Pc2Png.path.toAbsolutePath()}""", s"""${arrayStores(a).ancestryPcaData.plotsPc2Pc3Png.path.toAbsolutePath()}""").mkString(",") } }
-    val ancestryClusterPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryClusterData.plotsPc1Pc2Png.path.toAbsolutePath()}""", s"""${arrayStores(a).ancestryClusterData.plotsPc2Pc3Png.path.toAbsolutePath()}""").mkString(",") } }
-    val restoreStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).filterQc.samplesRestore.path}""").mkString(",") } }
+    val ancestryGmmPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryGmmData.plotsPc1Pc2Png.path.toAbsolutePath()}""", s"""${arrayStores(a).ancestryGmmData.plotsPc2Pc3Png.path.toAbsolutePath()}""").mkString(",") } }
+	val ancestryKnnPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).ancestryKnnData.plotsPc1Pc2Png.path.toAbsolutePath()}""", s"""${arrayStores(a).ancestryKnnData.plotsPc2Pc3Png.path.toAbsolutePath()}""").mkString(",") } }
     
     drmWith(imageName = s"${utils.image.imgPython2}") {
     
@@ -289,12 +313,13 @@ object QcReport extends loamstream.LoamFile {
         --kg-merged-bim ${ref1kgBimStrings.mkString(" ")}
         --features ${projectConfig.nAncestryInferenceFeatures}
         --pca-plots ${ancestryPcaPlotsStrings.mkString(" ")}
-        --cluster-plots ${ancestryClusterPlotsStrings.mkString(" ")}
-        --cluster-table ${qcReportStores.tablesData.clusters.path.toAbsolutePath()}
-        --final-table ${qcReportStores.tablesData.ancestry.path.toAbsolutePath()}
-        --restore ${restoreStrings.mkString(" ")}
+        --cluster-gmm-plots ${ancestryGmmPlotsStrings.mkString(" ")}
+        --cluster-knn-plots ${ancestryKnnPlotsStrings.mkString(" ")}
+        --cluster-gmm-table ${qcReportStores.tablesData.clustersGmm.path.toAbsolutePath()}
+        --final-gmm-table ${qcReportStores.tablesData.ancestryGmm.path.toAbsolutePath()}
+        --final-knn-table ${qcReportStores.tablesData.ancestryKnn.path.toAbsolutePath()}
         --out ${qcReportStores.texData.ancestry}"""
-        .in(arrayStores.map(e => e._2).map(e => e.ref1kgData.plink.data.local.get).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryClusterData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesRestore).toSeq :+ qcReportStores.tablesData.clusters :+ qcReportStores.tablesData.ancestry)
+        .in(arrayStores.map(e => e._2).map(e => e.ref1kgData.plink.data.local.get).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryPcaData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryGmmData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryGmmData.plotsPc2Pc3Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryKnnData.plotsPc1Pc2Png).toSeq ++ arrayStores.map(e => e._2).map(e => e.ancestryKnnData.plotsPc2Pc3Png).toSeq :+ qcReportStores.tablesData.clustersGmm :+ qcReportStores.tablesData.ancestryGmm :+ qcReportStores.tablesData.ancestryKnn)
         .out(qcReportStores.texData.ancestry)
         .tag(s"${qcReportStores.texData.ancestry}".split("/").last)
     
@@ -312,9 +337,8 @@ object QcReport extends loamstream.LoamFile {
         --kin0-related ${kin0Strings.mkString(" ")}
         --famsizes ${famSizesStrings.mkString(" ")}
         --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
-        --restore ${restoreStrings.mkString(" ")}
         --out ${qcReportStores.texData.ibdSexcheck}"""
-        .in(arrayStores.map(e => e._2).map(e => e.prunedData.plink.data).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesRestore).toSeq)
+        .in(arrayStores.map(e => e._2).map(e => e.prunedData.plink.data).flatten.toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq)
         .out(qcReportStores.texData.ibdSexcheck)
         .tag(s"${qcReportStores.texData.ibdSexcheck}".split("/").last)
     
@@ -351,7 +375,7 @@ object QcReport extends loamstream.LoamFile {
       
       cmd"""${utils.binary.binRscript} --vanilla --verbose
         ${utils.r.rMakeOutlierTable}
-        --ancestry-inferred-outliers ${ancestryInferredStrings.mkString(" ")}
+        --ancestry-inferred-outliers ${ancestryInferredGmmStrings.mkString(" ")}
         --kinship-related ${kin0Strings.mkString(" ")}
         --kinship-famsizes ${famSizesStrings.mkString(" ")}
         ${imissRemoveCmdStrings}
@@ -359,26 +383,26 @@ object QcReport extends loamstream.LoamFile {
         --sexcheck-problems ${sexcheckProblemsStrings.mkString(" ")}
         --final-exclusions ${finalSampleExclusionsStrings.mkString(" ")}
         --out ${qcReportStores.tablesData.sampleQc}"""
-        .in(imissRemoveFiles ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferred).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryOutliers)
+        .in(imissRemoveFiles ++ arrayStores.map(e => e._2).map(e => e.ancestryData.inferredGmm).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.kin0).toSeq ++ arrayStores.map(e => e._2).map(e => e.kinshipData.famSizes).toSeq ++ arrayStores.map(e => e._2).map(e => e.sampleQcData.outliers).toSeq ++ arrayStores.map(e => e._2).map(e => e.sexcheckData.problems.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryOutliersGmm)
         .out(qcReportStores.tablesData.sampleQc)
         .tag(s"${qcReportStores.tablesData.sampleQc}".split("/").last)
     
     }
     
-    drmWith(imageName = s"${utils.image.imgR}") {
-      
-      cmd"""${utils.binary.binRscript} --vanilla --verbose
-        ${utils.r.rUpsetplotVariantSample}
-        --input ${sampleStrings.mkString(" ")}
-        --exclusions ${finalSampleExclusionsStrings.mkString(" ")}
-        --type sample
-        --ancestry ${projectStores.ancestryInferred.local.get}
-        --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
-        .in(sampleIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryInferred.local.get)
-        .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
-        .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
-    
-    }
+    //drmWith(imageName = s"${utils.image.imgR}") {
+    //  
+    //  cmd"""${utils.binary.binRscript} --vanilla --verbose
+    //    ${utils.r.rUpsetplotVariantSample}
+    //    --input ${sampleStrings.mkString(" ")}
+    //    --exclusions ${finalSampleExclusionsStrings.mkString(" ")}
+    //    --type sample
+    //    --ancestry ${projectStores.ancestryInferredGmm.local.get}
+    //    --out ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}"""
+    //    .in(sampleIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesExclude.local.get).toSeq :+ projectStores.ancestryInferredGmm.local.get)
+    //    .out(qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+    //    .tag(s"${qcReportStores.figureData.samplesRemainingUpsetPlotPdf}".split("/").last)
+    //
+    //}
 
     for {
       a <- projectConfig.Arrays
@@ -398,7 +422,8 @@ object QcReport extends loamstream.LoamFile {
     val metricOutlierPlotsStrings = { for { a <- projectConfig.Arrays } yield { Seq(a.id, s"""${arrayStores(a).sampleQcData.metricPlotsPng.path.toAbsolutePath()}""").mkString(",") } }
     
     drmWith(imageName = s"${utils.image.imgPython2}") {
-    
+
+      // removed: --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportSampleqc}
         --compare-dist-unadj ${qcReportStores.figureData.metricDistUnadjPdf.path.toAbsolutePath()}
         --compare-dist-adj ${qcReportStores.figureData.metricDistAdjPdf.path.toAbsolutePath()}
@@ -406,10 +431,8 @@ object QcReport extends loamstream.LoamFile {
         --compare-dist-metric ${projectConfig.Arrays.head.sampleQcMetrics.head}
         --metric-outlier-plots ${metricOutlierPlotsStrings.mkString(" ")}
         --sampleqc-summary-table ${qcReportStores.tablesData.sampleQc.path.toAbsolutePath()}
-        --samples-upset-diagram ${qcReportStores.figureData.samplesRemainingUpsetPlotPdf.path.toAbsolutePath()}
-        --restore ${restoreStrings.mkString(" ")}
         --out ${qcReportStores.texData.sampleQc}"""
-        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlotsPng).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterQc.samplesRestore).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc :+ qcReportStores.figureData.samplesRemainingUpsetPlotPdf)
+        .in(arrayStores.map(e => e._2).map(e => e.sampleQcData.metricPlotsPng).toSeq :+ qcReportStores.figureData.metricDistUnadjPdf :+ qcReportStores.figureData.metricDistAdjPdf :+ qcReportStores.tablesData.sampleQc)
         .out(qcReportStores.texData.sampleQc)
         .tag(s"${qcReportStores.texData.sampleQc}".split("/").last)
     
@@ -420,29 +443,29 @@ object QcReport extends loamstream.LoamFile {
       
     if (projectConfig.nArrays > 1) {
     
-      drmWith(imageName = s"${utils.image.imgR}") {
-      
-        cmd"""${utils.binary.binRscript} --vanilla --verbose
-          ${utils.r.rUpsetplotVariantSample}
-          --input ${varStrings.mkString(" ")}
-          --exclusions ${finalVariantExclusionsStrings.mkString(" ")}
-          --type variant
-          --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
-          .in(variantIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
-          .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
-          .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
-      
-      }
+      //drmWith(imageName = s"${utils.image.imgR}") {
+      //
+      //  cmd"""${utils.binary.binRscript} --vanilla --verbose
+      //    ${utils.r.rUpsetplotVariantSample}
+      //    --input ${varStrings.mkString(" ")}
+      //    --exclusions ${finalVariantExclusionsStrings.mkString(" ")}
+      //    --type variant
+      //    --out ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}"""
+      //    .in(variantIn.toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq)
+      //    .out(qcReportStores.figureData.variantsRemainingUpsetPlotPdf)
+      //    .tag(s"${qcReportStores.figureData.variantsRemainingUpsetPlotPdf}".split("/").last)
+      //
+      //}
     
       drmWith(imageName = s"${utils.image.imgPython2}") {
-    	  
+
+        // removed: --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
         cmd"""${utils.binary.binPython} ${utils.python.pyGenerateQcReportVariantqc}
-          --variants-upset-diagram ${qcReportStores.figureData.variantsRemainingUpsetPlotPdf.path.toAbsolutePath()}
           --variant-exclusions ${finalVariantExclusionsStrings.mkString(" ")}
           --variants-exclude-table ${qcReportStores.tablesData.variantsExcludeSummary.path.toAbsolutePath()}
           --postqc-variant-filters ${postQcVariantFiltersStrings.mkString(" ")}
           --out ${qcReportStores.texData.variantQc}"""
-          .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.figureData.variantsRemainingUpsetPlotPdf :+ qcReportStores.tablesData.variantsExcludeSummary)
+          .in(arrayStores.map(e => e._2).map(e => e.filterPostQc.variantsExclude.local.get).toSeq ++ arrayStores.map(e => e._2).map(e => e.filterPostQc.vFilters.local.get).toSeq :+ qcReportStores.tablesData.variantsExcludeSummary)
           .out(qcReportStores.texData.variantQc)
           .tag(s"${qcReportStores.texData.variantQc}".split("/").last)
     

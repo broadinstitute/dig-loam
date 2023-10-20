@@ -28,8 +28,9 @@ object ProjectStores extends loamstream.LoamFile {
     vepGerpBW: Option[Store],
     gnomad: Store,
     sampleFile: MultiStore,
-    ancestryInferred: MultiStore,
-    ancestryOutliers: Store)
+    ancestryInferredGmm: MultiStore,
+    ancestryInferredKnn: MultiStore,
+    ancestryOutliersGmm: Store)
   
   val projectStores = {
   
@@ -114,11 +115,15 @@ object ProjectStores extends loamstream.LoamFile {
         local = Some(store(path(projectConfig.sampleFile)).asInput),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${projectConfig.sampleFile}".split("/").last)); case false => None }
       ),
-      ancestryInferred = MultiStore(
-        local = Some(store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")),
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalAncestry.google.get / s"${projectConfig.projectId}.ancestry.inferred.tsv")); case false => None }
+      ancestryInferredGmm = MultiStore(
+        local = Some(store(dirTree.dataGlobalGmm.local.get / s"${projectConfig.projectId}.ancestry.gmm.inferred.tsv")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalGmm.google.get / s"${projectConfig.projectId}.ancestry.gmm.inferred.tsv")); case false => None }
       ),
-      ancestryOutliers = store(dirTree.dataGlobalAncestry.local.get / s"${projectConfig.projectId}.ancestry.inferred.outliers.tsv")
+      ancestryInferredKnn = MultiStore(
+        local = Some(store(dirTree.dataGlobalKnn.local.get / s"${projectConfig.projectId}.ancestry.knn.inferred.tsv")),
+        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobalKnn.google.get / s"${projectConfig.projectId}.ancestry.knn.inferred.tsv")); case false => None }
+      ),
+      ancestryOutliersGmm = store(dirTree.dataGlobalGmm.local.get / s"${projectConfig.projectId}.ancestry.gmm.inferred.outliers.tsv")
     )
   
   }

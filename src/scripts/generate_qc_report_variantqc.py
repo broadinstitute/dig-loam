@@ -33,7 +33,7 @@ def main(args=None):
 		#text=r"Prior to association resulted in flagging {0} for removal.".format(text1)
 
 		n = 0
-		if args.variants_upset_diagram is None:
+		if args.variant_list:
 			for x in args.variant_list:
 				print "processing variant list file " + x
 				varlist_tmp = pd.read_table(x.split(",")[1], low_memory=False, header=None)
@@ -53,7 +53,9 @@ def main(args=None):
 					x_f = " and ".join(x)
 				else:
 					x_f = ", ".join([k for k in x[0:(len(x)-1)]]) + " and " + x[len(x)-1]
-				text=r"In order to remove problematic variants, {0} filters were applied to {1} prior to generating analysis ready files. The results of each filter are summarized in Table \ref{{table:variantsExcluded}} and the final variant counts are described in Figure \ref{{fig:variantsRemaining}}.".format(str(len(x)), x_f.replace("_","\_"))
+				text=r"In order to remove problematic variants, {0} filters were applied to {1} prior to generating analysis ready files. The results of each filter are summarized in Table \ref{{table:variantsExcluded}}.".format(str(len(x)), x_f.replace("_","\_"))
+				if args.variants_upset_diagram:
+					text = text + r" The final variant counts are described in Figure \ref{{fig:variantsRemaining}}."
 		f.write("\n"); f.write(text.encode('utf-8')); f.write("\n")
 
 		with open(args.variants_exclude_table) as vexcl:
@@ -128,7 +130,7 @@ def main(args=None):
 						r"\end{ThreePartTable}"])
 				f.write("\n"); f.write("\n".join(text).encode('utf-8')); f.write("\n")
 
-		if args.variants_upset_diagram is not None:
+		if args.variants_upset_diagram:
 			text=[
 				r"\begin{figure}[H]",
 				r"	\centering",
@@ -142,10 +144,10 @@ def main(args=None):
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()
+	parser.add_argument('--variants-upset-diagram', help='an upset diagram for variants remaining')
+	parser.add_argument('--variant-list', nargs='+', help='a list of labels and variant list files, each separated by a comma')
 	requiredArgs = parser.add_argument_group('required arguments')
 	requiredArgs.add_argument('--out', help='an output file name with extension .tex', required=True)
-	requiredArgs.add_argument('--variants-upset-diagram', help='an upset diagram for variants remaining')
-	requiredArgs.add_argument('--variant-list', nargs='+', help='a list of labels and variant list files, each separated by a comma')
 	requiredArgs.add_argument('--variant-exclusions', nargs='+', help='a list of labels and variant exclusion files, each separated by comma', required=True)
 	requiredArgs.add_argument('--postqc-variant-filters', nargs='+', help='a list of labels and post qc variant filter files, each separated by comma', required=True)
 	requiredArgs.add_argument('--variants-exclude-table', help='a variant exclusion summary table', required=True)
