@@ -39,15 +39,14 @@ object Annotate extends loamstream.LoamFile {
           --bgzip ${utils.binary.binBgzip}
           --file ${arrayStores(array).refData.sitesVcf.local.get}
           --region ${chrNumberToCode(chr, projectConfig.referenceGenome)}
-          --out ${arrayStores(array).refData.sitesVcfChr(chr)}
-          --reference-genome ${projectConfig.referenceGenome}"""
+          --out ${arrayStores(array).refData.sitesVcfChr(chr)}"""
         .in(arrayStores(array).refData.sitesVcf.local.get, arrayStores(array).refData.sitesVcfTbi)
         .out(arrayStores(array).refData.sitesVcfChr(chr), arrayStores(array).refData.sitesVcfTbiChr(chr))
         .tag(s"${arrayStores(array).refData.sitesVcfChr(chr)}".split("/").last)
       
       }
 
-      var annotationsIn = Seq(arrayStores(array).refData.sitesVcfChr(chr), arrayStores(array).refData.sitesVcfTbiChr(chr), projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP, projectStores.gnomad) ++ lofteeOptionsIn
+      //throw new CfgException(s"${arrayStores(array).refData.sitesVcfChr(chr)}, ${arrayStores(array).refData.sitesVcfTbiChr(chr)}, ${projectStores.fasta}, ${projectStores.vepCacheDir}, ${projectStores.vepPluginsDir}, ${projectStores.dbNSFP}, ${projectStores.gnomad}, ${lofteeOptionsIn}")
 
       drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
 	  
@@ -64,7 +63,7 @@ object Annotate extends loamstream.LoamFile {
           --reference-genome ${projectConfig.referenceGenome}
           --gnomad ${projectStores.gnomad}
           ${lofteeOptions}"""
-        .in(annotationsIn)
+        .in(Seq(arrayStores(array).refData.sitesVcfChr(chr), arrayStores(array).refData.sitesVcfTbiChr(chr), projectStores.fasta, projectStores.vepCacheDir, projectStores.vepPluginsDir, projectStores.dbNSFP, projectStores.gnomad) ++ lofteeOptionsIn)
         .out(arrayStores(array).refData.annotations(chr).local.get, arrayStores(array).refData.annotationWarnings(chr), arrayStores(array).refData.annotationHeader(chr))
         .tag(s"${arrayStores(array).refData.annotations(chr).local.get}".split("/").last)
 	  

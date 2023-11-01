@@ -12,7 +12,7 @@ object ExportGenotypes extends loamstream.LoamFile {
   
   final case class CfgException(s: String) extends Exception(s)
   
-  def ExportGenotypes(array: ConfigArray, filter: Boolean): Unit = {
+  def ExportGenotypes(array: ConfigArray, filter: Boolean, alignBgenMaf: Boolean): Unit = {
 
     val outChr = projectConfig.referenceGenome match {
       case "GRCh37" => "MT"
@@ -86,22 +86,79 @@ object ExportGenotypes extends loamstream.LoamFile {
             --set-all-var-ids @:#:\$$r:\$$a
             --new-id-max-allele-len ${array.varUidMaxAlleleLen}
             --output-chr ${outChr}
-            --out ${arrayStores(array).unfilteredBgen.base.local.get}
+            --out ${arrayStores(array).unfilteredBgen.bgen.base.local.get}
             --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
             .in(arrayStores(array).unfilteredVcf.vcf.data.local.get, arrayStores(array).unfilteredVcf.vcf.tbi.local.get)
-            .out(arrayStores(array).unfilteredBgen.data.local.get, arrayStores(array).unfilteredBgen.sample.local.get)
-            .tag(s"${arrayStores(array).unfilteredBgen.data.local.get}".split("/").last)
+            .out(arrayStores(array).unfilteredBgen.bgen.data.local.get, arrayStores(array).unfilteredBgen.bgen.sample.local.get)
+            .tag(s"${arrayStores(array).unfilteredBgen.bgen.data.local.get}".split("/").last)
         
         }
         
         drmWith(imageName = s"${utils.image.imgBgen}", cores = projectConfig.resources.bgenix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.bgenix.maxRunTime) {
 	    
-          cmd"""${utils.binary.binBgenix} -g ${arrayStores(array).unfilteredBgen.data.local.get} -index"""
-            .in(arrayStores(array).unfilteredBgen.data.local.get)
-            .out(arrayStores(array).unfilteredBgen.bgi.local.get)
-            .tag(s"${arrayStores(array).unfilteredBgen.bgi.local.get}".split("/").last)
+          cmd"""${utils.binary.binBgenix} -g ${arrayStores(array).unfilteredBgen.bgen.data.local.get} -index"""
+            .in(arrayStores(array).unfilteredBgen.bgen.data.local.get)
+            .out(arrayStores(array).unfilteredBgen.bgen.bgi.local.get)
+            .tag(s"${arrayStores(array).unfilteredBgen.bgen.bgi.local.get}".split("/").last)
 	    
         }
+
+        alignBgenMaf match {
+
+          case true =>
+
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+	        
+              cmd"""${utils.binary.binPlink2}
+                --bgen ${arrayStores(array).unfilteredBgen.bgen.data.local.get} ref-first
+                --lax-chrx-import
+                --freq
+                --out ${arrayStores(array).unfilteredBgen.stats.get.base}
+                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                .in(arrayStores(array).unfilteredBgen.bgen.data.local.get, arrayStores(array).unfilteredBgen.bgen.bgi.local.get)
+                .out(arrayStores(array).unfilteredBgen.stats.get.freq)
+                .tag(s"${arrayStores(array).unfilteredBgen.stats.get.freq}".split("/").last)
+            
+            }
+
+            drmWith(imageName = s"${utils.image.imgTools}") {
+            
+              cmd"""sed '1d' ${arrayStores(array).unfilteredBgen.stats.get.freq} | awk '{if($$5<=0.5) { ref=$$3 } else { ref=$$4}; print $$2"\t"ref}' > ${arrayStores(array).unfilteredBgen.stats.get.majorAlleles}"""
+                .in(arrayStores(array).unfilteredBgen.stats.get.freq)
+                .out(arrayStores(array).unfilteredBgen.stats.get.majorAlleles)
+                .tag(s"${arrayStores(array).unfilteredBgen.stats.get.majorAlleles}".split("/").last)
+            
+            }
+            
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+	        
+              cmd"""${utils.binary.binPlink2}
+                --bgen ${arrayStores(array).unfilteredBgen.bgen.data.local.get}
+                --double-id
+                --export bgen-1.2 'bits=8' ref-first id-paste=iid
+                --output-chr ${outChr}
+                --ref-allele force ${arrayStores(array).unfilteredBgen.stats.get.majorAlleles} 2 1
+                --out ${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.base.local.get}
+                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                .in(arrayStores(array).unfilteredBgen.bgen.data.local.get, arrayStores(array).unfilteredBgen.bgen.bgi.local.get, arrayStores(array).unfilteredBgen.stats.get.majorAlleles)
+                .out(arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.data.local.get, arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.sample.local.get)
+                .tag(s"${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.data.local.get}".split("/").last)
+            
+            }
+            
+            drmWith(imageName = s"${utils.image.imgBgen}", cores = projectConfig.resources.bgenix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.bgenix.maxRunTime) {
+	        
+              cmd"""${utils.binary.binBgenix} -g ${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.data.local.get} -index"""
+                .in(arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.data.local.get)
+                .out(arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.bgi.local.get)
+                .tag(s"${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.bgi.local.get}".split("/").last)
+	        
+            }
+
+          case false => ()
+
+        }
+
 
       case true =>
 
@@ -172,22 +229,79 @@ object ExportGenotypes extends loamstream.LoamFile {
             --set-all-var-ids @:#:\$$r:\$$a
             --new-id-max-allele-len ${array.varUidMaxAlleleLen}
             --output-chr ${outChr}
-            --out ${arrayStores(array).filteredBgen.get.base.local.get}
+            --out ${arrayStores(array).filteredBgen.get.bgen.base.local.get}
             --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
             .in(arrayStores(array).filteredVcf.get.vcf.data.local.get, arrayStores(array).filteredVcf.get.vcf.tbi.local.get)
-            .out(arrayStores(array).filteredBgen.get.data.local.get, arrayStores(array).filteredBgen.get.sample.local.get)
-            .tag(s"${arrayStores(array).filteredBgen.get.data.local.get}".split("/").last)
+            .out(arrayStores(array).filteredBgen.get.bgen.data.local.get, arrayStores(array).filteredBgen.get.bgen.sample.local.get)
+            .tag(s"${arrayStores(array).filteredBgen.get.bgen.data.local.get}".split("/").last)
         
         }
         
         drmWith(imageName = s"${utils.image.imgBgen}", cores = projectConfig.resources.bgenix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.bgenix.maxRunTime) {
 	    
-          cmd"""${utils.binary.binBgenix} -g ${arrayStores(array).filteredBgen.get.data.local.get} -index"""
-            .in(arrayStores(array).filteredBgen.get.data.local.get)
-            .out(arrayStores(array).filteredBgen.get.bgi.local.get)
-            .tag(s"${arrayStores(array).filteredBgen.get.bgi.local.get}".split("/").last)
+          cmd"""${utils.binary.binBgenix} -g ${arrayStores(array).filteredBgen.get.bgen.data.local.get} -index"""
+            .in(arrayStores(array).filteredBgen.get.bgen.data.local.get)
+            .out(arrayStores(array).filteredBgen.get.bgen.bgi.local.get)
+            .tag(s"${arrayStores(array).filteredBgen.get.bgen.bgi.local.get}".split("/").last)
 	    
         }
+
+        alignBgenMaf match {
+
+          case true =>
+
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+	        
+              cmd"""${utils.binary.binPlink2}
+                --bgen ${arrayStores(array).filteredBgen.get.bgen.data.local.get} ref-first
+                --lax-chrx-import
+                --freq
+                --out ${arrayStores(array).filteredBgen.get.stats.get.base}
+                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                .in(arrayStores(array).filteredBgen.get.bgen.data.local.get, arrayStores(array).filteredBgen.get.bgen.bgi.local.get)
+                .out(arrayStores(array).filteredBgen.get.stats.get.freq)
+                .tag(s"${arrayStores(array).filteredBgen.get.stats.get.freq}".split("/").last)
+            
+            }
+            
+            drmWith(imageName = s"${utils.image.imgTools}") {
+            
+              cmd"""sed '1d' ${arrayStores(array).filteredBgen.get.stats.get.freq} | awk '{if($$5<=0.5) { ref=$$3 } else { ref=$$4}; print $$2"\t"ref}' > ${arrayStores(array).filteredBgen.get.stats.get.majorAlleles}"""
+                .in(arrayStores(array).filteredBgen.get.stats.get.freq)
+                .out(arrayStores(array).filteredBgen.get.stats.get.majorAlleles)
+                .tag(s"${arrayStores(array).filteredBgen.get.stats.get.majorAlleles}".split("/").last)
+            
+            }
+            
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+	        
+              cmd"""${utils.binary.binPlink2}
+                --bgen ${arrayStores(array).filteredBgen.get.bgen.data.local.get}
+                --double-id
+                --export bgen-1.2 'bits=8' ref-first id-paste=iid
+                --output-chr ${outChr}
+                --ref-allele force ${arrayStores(array).filteredBgen.get.stats.get.majorAlleles} 2 1 
+                --out ${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.base.local.get}
+                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                .in(arrayStores(array).filteredBgen.get.bgen.data.local.get, arrayStores(array).filteredBgen.get.bgen.bgi.local.get, arrayStores(array).filteredBgen.get.stats.get.majorAlleles)
+                .out(arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.data.local.get, arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.sample.local.get)
+                .tag(s"${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.data.local.get}".split("/").last)
+            
+            }
+            
+            drmWith(imageName = s"${utils.image.imgBgen}", cores = projectConfig.resources.bgenix.cpus, mem = projectConfig.resources.tabix.mem, maxRunTime = projectConfig.resources.bgenix.maxRunTime) {
+	        
+              cmd"""${utils.binary.binBgenix} -g ${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.data.local.get} -index"""
+                .in(arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.data.local.get)
+                .out(arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.bgi.local.get)
+                .tag(s"${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.bgi.local.get}".split("/").last)
+	        
+            }
+
+          case false => ()
+
+        }
+
   
     }
 

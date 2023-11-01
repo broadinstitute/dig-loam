@@ -212,6 +212,16 @@ object ArrayStores extends loamstream.LoamFile {
   final case class ExportedVcf(
     vcf: MultiPathVcf,
     hailLog: MultiStore)
+
+  final case class ExportedStats(
+    base: Path,
+    freq: Store,
+    majorAlleles: Store)
+
+  final case class ExportedBgen(
+    bgen: MultiPathBgen,
+    bgenAlignedMaf: Option[MultiPathBgen],
+    stats: Option[ExportedStats])
   
   final case class Array(
     rawData: RawData,
@@ -237,8 +247,8 @@ object ArrayStores extends loamstream.LoamFile {
     filterPostQc: FilterPostQc,
 	unfilteredVcf: ExportedVcf,
     filteredVcf: Option[ExportedVcf],
-	unfilteredBgen: MultiPathBgen,
-    filteredBgen: Option[MultiPathBgen])
+	unfilteredBgen: ExportedBgen,
+    filteredBgen: Option[ExportedBgen])
   
   val arrayStores = projectConfig.Arrays.map { arrayCfg =>
   
@@ -765,38 +775,98 @@ object ArrayStores extends loamstream.LoamFile {
       case false => None
     }
 
-    val unfilteredBgen = MultiPathBgen(
-      base = MultiPath(
-        local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered"),
-        google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered"); case false => None }
+    val unfilteredBgen = ExportedBgen(
+      bgen = MultiPathBgen(
+        base = MultiPath(
+          local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered"),
+          google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered"); case false => None }
+        ),
+        data = MultiStore(
+          local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen")),
+          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.bgen")); case false => None }
+        ),
+        sample = MultiStore(
+          local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.sample")),
+          google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.sample")); case false => None }
+        ),
+        bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen.bgi")), google = None)
       ),
-      data = MultiStore(
-        local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen")),
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.bgen")); case false => None }
-      ),
-      sample = MultiStore(
-        local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.sample")),
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.sample")); case false => None }
-      ),
-      bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen.bgi")), google = None)
+      bgenAlignedMaf = arrayCfg.exportBgenAlignedMinor match {
+        case true =>
+          Some(MultiPathBgen(
+            base = MultiPath(
+              local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.aligned_maf"),
+              google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.aligned_maf"); case false => None }
+            ),
+            data = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.aligned_maf.bgen")),
+              google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.aligned_maf.bgen")); case false => None }
+            ),
+            sample = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.aligned_maf.sample")),
+              google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.unfiltered.aligned_maf.sample")); case false => None }
+            ),
+            bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.aligned_maf.bgen.bgi")), google = None)
+          ))
+        case false => None
+      },
+      stats = arrayCfg.exportBgenAlignedMinor match {
+        case true =>
+          Some(ExportedStats(
+            base = dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen.stats",
+            freq = store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen.stats.afreq"),
+            majorAlleles = store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.unfiltered.bgen.stats.major_alleles.tsv")
+          ))
+        case false => None
+      }
     )
 
     val filteredBgen = arrayCfg.exportFiltered match {
       case true =>
-        Some(MultiPathBgen(
-          base = MultiPath(
-            local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered"),
-            google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered"); case false => None }
+        Some(ExportedBgen(
+          bgen = MultiPathBgen(
+            base = MultiPath(
+              local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered"),
+              google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered"); case false => None }
+            ),
+            data = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen")),
+              google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.bgen")); case false => None }
+            ),
+            sample = MultiStore(
+              local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.sample")),
+              google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.sample")); case false => None }
+            ),
+            bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen.bgi")), google = None)
           ),
-          data = MultiStore(
-            local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen")),
-            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.bgen")); case false => None }
-          ),
-          sample = MultiStore(
-            local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.sample")),
-            google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.sample")); case false => None }
-          ),
-          bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen.bgi")), google = None)
+          bgenAlignedMaf = arrayCfg.exportBgenAlignedMinor match {
+            case true =>
+              Some(MultiPathBgen(
+                base = MultiPath(
+                  local = Some(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.aligned_maf"),
+                  google = projectConfig.hailCloud match { case true => Some(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.aligned_maf"); case false => None }
+                ),
+                data = MultiStore(
+                  local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.aligned_maf.bgen")),
+                  google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.aligned_maf.bgen")); case false => None }
+                ),
+                sample = MultiStore(
+                  local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.aligned_maf.sample")),
+                  google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).results.google.get / s"${resultsBaseString}.filtered.aligned_maf.sample")); case false => None }
+                ),
+                bgi = MultiStore(local = Some(store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.aligned_maf.bgen.bgi")), google = None)
+              ))
+            case false => None
+          },
+          stats = arrayCfg.exportBgenAlignedMinor match {
+            case true =>
+              Some(ExportedStats(
+                base = dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen.stats",
+                freq = store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen.stats.afreq"),
+                majorAlleles = store(dirTree.dataArrayMap(arrayCfg).results.local.get / s"${resultsBaseString}.filtered.bgen.stats.major_alleles.tsv")
+              ))
+            case false => None
+          }
         ))
       case false => None
     }

@@ -226,7 +226,7 @@ echo "dig-loam version: ${dig_loam_version}" >> $log
 echo "******************************************************" >> $log
 echo "" >> $log
 
-java -Xmx4G -Xss1G \
+java -Xmx6G -Xss1G \
 -Dloamstream-log-level=${log_level} \
 -DdataConfig=${dig_loam_conf} \
 -DimagesDir=${images} \
