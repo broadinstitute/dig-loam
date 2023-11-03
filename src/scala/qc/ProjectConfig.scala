@@ -156,7 +156,8 @@ object ProjectConfig extends loamstream.LoamFile {
     postQcSampleFilters: Option[Seq[String]],
     postQcVariantFilters: Option[Seq[String]],
     varUidMaxAlleleLen: Int,
-    exportFiltered: Boolean) extends Debug
+    exportFiltered: Boolean,
+    exportBgenAlignedMinor: Boolean) extends Debug
 
   //final case class ConfigSection(
   //  id: String,
@@ -728,7 +729,8 @@ object ProjectConfig extends loamstream.LoamFile {
             postQcSampleFilters = postQcSampleFilters,
             postQcVariantFilters = postQcVariantFilters,
             varUidMaxAlleleLen = requiredInt(config = array, field = "varUidMaxAlleleLen", default = Some(1000), min = Some(1), max = Some(10000)),
-            exportFiltered = requiredBool(config = array, field = "exportFiltered")
+            exportFiltered = requiredBool(config = array, field = "exportFiltered"),
+            exportBgenAlignedMinor = requiredBool(config = array, field = "exportBgenAlignedMinor")
           )
       
         }

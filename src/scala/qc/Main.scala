@@ -65,11 +65,11 @@ object Main extends loamstream.LoamFile {
     Pca(array)
     SampleQc(array)
     FilterArray(array)
-    ExportGenotypes(array, filter=false)
+    ExportGenotypes(array, filter=false, alignBgenMaf=array.exportBgenAlignedMinor)
 
 	array.exportFiltered match {
       case true =>
-        ExportGenotypes(array, filter=true)
+        ExportGenotypes(array, filter=true, alignBgenMaf=array.exportBgenAlignedMinor)
       case _ => ()
     }
 
