@@ -111,7 +111,6 @@ object ExportGenotypes extends loamstream.LoamFile {
 	        
               cmd"""${utils.binary.binPlink2}
                 --bgen ${arrayStores(array).unfilteredBgen.bgen.data.local.get} ref-first
-                --lax-chrx-import
                 --freq
                 --out ${arrayStores(array).unfilteredBgen.stats.get.base}
                 --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
@@ -254,7 +253,6 @@ object ExportGenotypes extends loamstream.LoamFile {
 	        
               cmd"""${utils.binary.binPlink2}
                 --bgen ${arrayStores(array).filteredBgen.get.bgen.data.local.get} ref-first
-                --lax-chrx-import
                 --freq
                 --out ${arrayStores(array).filteredBgen.get.stats.get.base}
                 --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
