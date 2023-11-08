@@ -26,7 +26,7 @@ object Main extends loamstream.LoamFile {
     meta <- projectConfig.Metas
   } yield {
   
-    CrossCohortCommonVars(configMeta = meta)
+    if (List("all","crossCohortCommonVars").contains(projectConfig.step)) CrossCohortCommonVars(configMeta = meta)
   
   }
   
@@ -36,7 +36,7 @@ object Main extends loamstream.LoamFile {
     cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
   } yield {
   
-    CrossCohortPrep(configMeta = meta, configCohort = cohort)
+    if (List("all","crossCohortPrep").contains(projectConfig.step)) CrossCohortPrep(configMeta = meta, configCohort = cohort)
   
   }
   
@@ -45,7 +45,7 @@ object Main extends loamstream.LoamFile {
     meta <- projectConfig.Metas
   } yield {
   
-    CrossCohortKinship(meta)
+    if (List("all","crossCohortKinship").contains(projectConfig.step)) CrossCohortKinship(meta)
   
   }
   
@@ -54,7 +54,7 @@ object Main extends loamstream.LoamFile {
     x <- schemaCohorts
   } yield {
   
-    PrepareSchema(configSchema = x.schema, configCohorts = x.cohorts)
+    if (List("all","prepareSchema").contains(projectConfig.step)) PrepareSchema(configSchema = x.schema, configCohorts = x.cohorts)
   
   }
   
@@ -63,7 +63,7 @@ object Main extends loamstream.LoamFile {
     x <- modelCollections
   } yield {
   
-    PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+    if (List("all","prepareModel").contains(projectConfig.step)) PrepareModel(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
   
   }
   
@@ -72,7 +72,7 @@ object Main extends loamstream.LoamFile {
     x <- modelCollections if ! x.model.tests.isEmpty
   } yield {
   
-    AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
+    if (List("all","assocTest").contains(projectConfig.step)) AssocTest(configModel = x.model, configSchema = x.schema, configCohorts = x.cohorts, configMeta = None)
   
   }
   

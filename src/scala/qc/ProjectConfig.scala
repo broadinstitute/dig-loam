@@ -332,6 +332,7 @@ object ProjectConfig extends loamstream.LoamFile {
     def parseConfig(config: loamstream.conf.DataConfig): ProjectConfig = {
   
       // required global values in conf file
+      val step = System.getProperty("step")
       val loamstreamVersion = System.getProperty("loamstreamVersion")
       val pipelineVersion = System.getProperty("pipelineVersion")
       val projectId = requiredStr(config = config, field = "projectId")

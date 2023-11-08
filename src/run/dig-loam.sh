@@ -25,6 +25,10 @@ print_usage () {
 	printf "      images used to run dig-loam jobs\n\n"
     printf "  --tmp-dir [STRING]:\n"
 	printf "      a directory to use for temporary files\n\n"
+	printf "  --step [STRING]:\n"
+	printf "      run a specific step (note: will only run step if prior required steps are complete)\n"
+	printf "        if module == qc: prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
+	printf "        if module == assoc: crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, assocTest\n\n"
 	printf "  --log-level [STRING]:\n"
 	printf "      a string from [TRACE,DEBUG,INFO,WARN,ERROR]\n"
 	printf "      indicating the level of logging in loamstream\n\n"
@@ -44,6 +48,7 @@ print_usage () {
 
 protect_files=""
 enable_hashing=0
+step="all"
 
 while [ "$1" != "" ]
 do
@@ -130,6 +135,21 @@ do
 				exit 1
 			fi
 			;;
+		--step)
+			if [ "$2" ]; then
+				step=$2
+				if [[ "$step" != "qc" && "$module" != "assoc" ]]
+				then
+					printf "\nERROR: --step requires a non-empty argument from the following lists:\n"
+					printf "         if module == qc: prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
+					printf "         if module == assoc: crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, assocTest"
+					exit 1
+				fi
+				shift
+			else
+				shift
+			fi
+			;;
 		--log-level)
 			if [ "$2" ]; then
 				log_level=$2
@@ -192,8 +212,26 @@ echo "--backend $backend" >> $log
 echo "--module $module" >> $log
 echo "--images $images" >> $log
 echo "--tmp-dir $tmp_dir" >> $log
+echo "--step $step" >> $log
 echo "--log-level $log_level" >> $log
 echo "--log $log" >> $log
+
+if [ "$module" == "qc" ]
+then
+	steps=$("all" "prepare" "harmonize" "load" "exportQc" "annotate" "kinship" "ancestry" "pca" "sampleQc" "filter" "exportFinal" "report")
+else
+	steps=$("all" "crossCohortCommonVars" "crossCohortPrep" "crossCohortKinship" "prepareSchema" "prepareModel" "assocTest")
+fi
+
+if [[ ! $(printf '%s\0' "${steps[@]}" | grep -Fxqz -- $step) ]]
+then
+	if [ "$module" == "qc" ]
+	then
+		echo "\nERROR: --step must be one of prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, or report\n"
+	else
+		echo "\nERROR: --step must be one of crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, or assocTest\n"
+	fi
+fi
 
 if [ "$protect_files" == "" ]
 then
@@ -234,6 +272,7 @@ java -Xmx6G -Xss1G \
 -DloamstreamVersion="${ls_version}" \
 -DpipelineVersion="${dig_loam_version}" \
 -DtmpDir=${tmp_dir} \
+-Dstep=${step}
 -jar $ls_jar \
 --backend ${backend} \
 --conf ${ls_conf} \
