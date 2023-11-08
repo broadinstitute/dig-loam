@@ -275,6 +275,7 @@ object ProjectConfig extends loamstream.LoamFile {
   //  sections: Seq[ConfigSection]) extends Debug
   
   final case class ProjectConfig(
+    step: String,
     loamstreamVersion: String,
     pipelineVersion: String,
     referenceGenome: String,
@@ -1384,7 +1385,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val nMetas = Metas.size
   
       new ProjectConfig(
-  
+
+        step = step,
         loamstreamVersion = loamstreamVersion,
         pipelineVersion = pipelineVersion,
         projectId = projectId,

@@ -170,6 +170,7 @@ object ProjectConfig extends loamstream.LoamFile {
   //  sections: Seq[ConfigSection]) extends Debug
 
   final case class ProjectConfig(
+    step: String,
     loamstreamVersion: String,
     pipelineVersion: String,
     hailCloud: Boolean,
@@ -777,7 +778,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val nArrays = Arrays.size
   
       new ProjectConfig(
-  
+
+        step = step,
         loamstreamVersion = loamstreamVersion,
         pipelineVersion = pipelineVersion,
         projectId = projectId,

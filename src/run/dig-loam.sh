@@ -48,7 +48,7 @@ print_usage () {
 
 protect_files=""
 enable_hashing=0
-step="all"
+moduleStep="all"
 
 while [ "$1" != "" ]
 do
@@ -137,17 +137,13 @@ do
 			;;
 		--step)
 			if [ "$2" ]; then
-				step=$2
-				if [[ "$step" != "qc" && "$module" != "assoc" ]]
-				then
-					printf "\nERROR: --step requires a non-empty argument from the following lists:\n"
-					printf "         if module == qc: prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
-					printf "         if module == assoc: crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, assocTest"
-					exit 1
-				fi
+				moduleStep=$2
 				shift
 			else
-				shift
+				printf "\nERROR: --step requires a non-empty argument from the following lists:\n"
+				printf "         if module == qc: prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
+				printf "         if module == assoc: crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, assocTest"
+				exit 1
 			fi
 			;;
 		--log-level)
@@ -202,34 +198,54 @@ do
 	shift
 done
 
-echo "******************************************************" > $log
-echo "dig-loam.sh" >> $log
-echo "--ls-jar $ls_jar" >> $log
-echo "--ls-conf $ls_conf" >> $log
-echo "--dig-loam $dig_loam" >> $log
-echo "--dig-loam-conf $dig_loam_conf" >> $log
-echo "--backend $backend" >> $log
-echo "--module $module" >> $log
-echo "--images $images" >> $log
-echo "--tmp-dir $tmp_dir" >> $log
-echo "--step $step" >> $log
-echo "--log-level $log_level" >> $log
-echo "--log $log" >> $log
+echo "******************************************************" | tee $log
+echo "dig-loam.sh" | tee -a $log
+echo "--ls-jar $ls_jar" | tee -a $log
+echo "--ls-conf $ls_conf" | tee -a $log
+echo "--dig-loam $dig_loam" | tee -a $log
+echo "--dig-loam-conf $dig_loam_conf" | tee -a $log
+echo "--backend $backend" | tee -a $log
+echo "--module $module" | tee -a $log
+echo "--images $images" | tee -a $log
+echo "--tmp-dir $tmp_dir" | tee -a $log
+echo "--step $moduleStep" | tee -a $log
+echo "--log-level $log_level" | tee -a $log
+echo "--log $log" | tee -a $log
+
+qcSteps=("all" "prepare" "harmonize" "load" "exportQc" "annotate" "kinship" "ancestry" "pca" "sampleQc" "filter" "exportFinal" "report")
+assocSteps=("all" "crossCohortCommonVars" "crossCohortPrep" "crossCohortKinship" "prepareSchema" "prepareModel" "assocTest")
 
 if [ "$module" == "qc" ]
 then
-	steps=$("all" "prepare" "harmonize" "load" "exportQc" "annotate" "kinship" "ancestry" "pca" "sampleQc" "filter" "exportFinal" "report")
-else
-	steps=$("all" "crossCohortCommonVars" "crossCohortPrep" "crossCohortKinship" "prepareSchema" "prepareModel" "assocTest")
+	found=0
+	for s in "${qcSteps[@]}"
+	do
+		if [ $s == "$moduleStep" ]
+		then
+			printf "\nrunning module qc, step %s\n\n" $moduleStep
+			found=1
+		fi
+	done
+	if [ $found -eq 0 ]
+	then
+		printf "\nERROR: for module qc --step must be one of prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, or report\n"
+	fi
 fi
 
-if [[ ! $(printf '%s\0' "${steps[@]}" | grep -Fxqz -- $step) ]]
+if [ "$module" == "assoc" ]
 then
-	if [ "$module" == "qc" ]
+	found=0
+	for s in "${assocSteps[@]}"
+	do
+		if [ $s == "$moduleStep" ]
+		then
+			printf "\nrunning module assoc, step %s\n\n" $moduleStep
+			found=1
+		fi
+	done
+	if [ $found -eq 0 ]
 	then
-		echo "\nERROR: --step must be one of prepare, harmonize, load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, or report\n"
-	else
-		echo "\nERROR: --step must be one of crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, or assocTest\n"
+		printf "\nERROR: for module assoc --step must be one of crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, or assocTest\n"
 	fi
 fi
 
@@ -238,31 +254,33 @@ then
 	protect_files_string=""
 else
 	protect_files_string="--protect-files-from ${protect_files} --run ifAnyMissingOutputs"
-	echo "--protect-files $protect_files" >> $log
+	echo "--protect-files $protect_files" | tee -a $log
 fi
 
 if [ $enable_hashing -eq 1 ]
 then
 	disable_hashing_string="--disable-hashing"
-	echo "--enable-hashing" >> $log
+	echo "--enable-hashing" | tee -a $log
 else
 	disable_hashing_string=""
 fi
 
-echo "******************************************************" >> $log
-echo $ls_jar | awk '{print "loamstream jar: "$0}' >> $log
+echo "******************************************************" | tee -a $log
+echo $ls_jar | awk '{print "loamstream jar: "$0}' | tee -a $log
 ls_version=`java -Xmx6G -Xss4m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
-echo "loamstream version: ${ls_version}" >> $log
-echo "******************************************************" >> $log
-echo $dig_loam | awk '{print "dig-loam path: "$0}' >> $log
+echo "loamstream version: ${ls_version}" | tee -a $log
+echo "******************************************************" | tee -a $log
+echo $dig_loam | awk '{print "dig-loam path: "$0}' | tee -a $log
 dig_loam_branch=`git --git-dir ${dig_loam}/.git rev-parse --abbrev-ref HEAD`
 dig_loam_commit=`git --git-dir ${dig_loam}/.git log | head -1 | cut -d' ' -f2-`
 dig_loam_author=`git --git-dir ${dig_loam}/.git log | head -2 | tail -1 | cut -d' ' -f2-`
 dig_loam_date=`git --git-dir ${dig_loam}/.git log | head -3 | tail -1 | cut -d' ' -f2-`
 dig_loam_version="dig-loam branch: ${dig_loam_branch} commit: ${dig_loam_commit} author: ${dig_loam_author} date: ${dig_loam_date}"
-echo "dig-loam version: ${dig_loam_version}" >> $log
-echo "******************************************************" >> $log
-echo "" >> $log
+echo "dig-loam version: ${dig_loam_version}" | tee -a $log
+echo "dig-loam module: ${module}" | tee -a $log
+echo "dig-loam step: ${moduleStep}" | tee -a $log
+echo "******************************************************" | tee -a $log
+echo "" | tee -a $log
 
 java -Xmx6G -Xss1G \
 -Dloamstream-log-level=${log_level} \
@@ -272,7 +290,7 @@ java -Xmx6G -Xss1G \
 -DloamstreamVersion="${ls_version}" \
 -DpipelineVersion="${dig_loam_version}" \
 -DtmpDir=${tmp_dir} \
--Dstep=${step}
+-Dstep=${step} \
 -jar $ls_jar \
 --backend ${backend} \
 --conf ${ls_conf} \
