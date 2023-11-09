@@ -5,7 +5,6 @@ import csv
 from pathlib import Path
 import time
 import tempfile
-import shutil
 import os
 
 def main(args=None):
@@ -24,19 +23,19 @@ def main(args=None):
 	else:
 		import hail_utils
 
-	if not args.cloud:
-		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + ' --executor-memory ' + args.executor_memory + ' pyspark-shell'
-		os.environ["SPARK_LOCAL_DIRS"] = args.tmp_dir
-		hl.init(log = args.log, tmp_dir = args.tmp_dir, local_tmpdir = args.tmp_dir, idempotent=True)
-	else:
-		hl.init(idempotent=True)
-
 	print("making temporary directory for storing checkpoints")
 	if args.tmp_dir and not args.cloud:
-		tmpdir = tempfile.mkdtemp(dir = args.tmp_dir)
+		tmpdir = tempfile.TemporaryDirectory(dir = args.tmp_dir)
 	else:
-		tmpdir = tempfile.mkdtemp(dir = "./")
-	tmpdir_path = tmpdir + "/"
+		tmpdir = tempfile.TemporaryDirectory(dir = "./")
+	tmpdir_path = tmpdir.name + "/"
+
+	if not args.cloud:
+		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + ' --executor-memory ' + args.executor_memory + ' pyspark-shell'
+		os.environ["SPARK_LOCAL_DIRS"] = tmpdir.name
+		hl.init(log = args.log, tmp_dir = tmpdir.name, local_tmpdir = tmpdir.name, idempotent=True)
+	else:
+		hl.init(idempotent=True)
 
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
@@ -219,9 +218,7 @@ def main(args=None):
 	if args.cloud:
 		hl.copy_log(args.log)
 
-	#if args.tmpdir:
-	#	print("removing temporary directory")
-	#	shutil.rmtree(tmpdir)
+	tmpdir.cleanup()
 
 	global_elapsed_time = time.time() - global_start_time
 	print(time.strftime("total time elapsed - %H:%M:%S", time.gmtime(global_elapsed_time)))

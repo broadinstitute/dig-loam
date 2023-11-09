@@ -1,13 +1,20 @@
 import hail as hl
 import argparse
 import os
+import tempfile
 
 def main(args=None):
 
+	print("making temporary directory for storing checkpoints")
+	if args.tmp_dir and not args.cloud:
+		tmpdir = tempfile.TemporaryDirectory(dir = args.tmp_dir)
+	else:
+		tmpdir = tempfile.TemporaryDirectory(dir = "./")
+
 	if not args.cloud:
 		os.environ["PYSPARK_SUBMIT_ARGS"] = '--driver-memory ' + args.driver_memory + ' --executor-memory ' + args.executor_memory + ' pyspark-shell'
-		os.environ["SPARK_LOCAL_DIRS"] = args.tmp_dir
-		hl.init(log = args.log, tmp_dir = args.tmp_dir, local_tmpdir = args.tmp_dir, idempotent=True)
+		os.environ["SPARK_LOCAL_DIRS"] = tmpdir.name
+		hl.init(log = args.log, tmp_dir = tmpdir.name, local_tmpdir = tmpdir.name, idempotent=True)
 	else:
 		hl.init(idempotent=True)
 
@@ -143,6 +150,8 @@ def main(args=None):
 
 	if args.cloud:
 		hl.copy_log(args.log)
+
+	tmpdir.cleanup()
 
 if __name__ == "__main__":
 	parser = argparse.ArgumentParser()

@@ -12,8 +12,6 @@ object FilterArray extends loamstream.LoamFile {
   import ProjectStores._
   import Fxns._
   
-  final case class CfgException(s: String) extends Exception(s)
-  
   def FilterArray(array: ConfigArray): Unit = {
   
     var vFilters = Seq[String]()

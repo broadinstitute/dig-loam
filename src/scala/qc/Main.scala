@@ -36,15 +36,15 @@ object Main extends loamstream.LoamFile {
     array <- projectConfig.Arrays if (array.technology == "gwas") && (array.format != "mt")
   } yield {
       
-    if (List("all","prepare").contains(projectConfig.step)) Prepare(array)
-    if (List("all","harmonize").contains(projectConfig.step)) Harmonize(array)
+    if (List("all","load").contains(projectConfig.step)) Prepare(array)
+    if (List("all","load").contains(projectConfig.step)) Harmonize(array)
   
   }
   
   for {
     array <- projectConfig.Arrays
   } yield {
-  
+
     if (List("all","load").contains(projectConfig.step)) Load(array)
     if (List("all","exportQc").contains(projectConfig.step)) ExportQcData(array)
     if (List("all","annotate").contains(projectConfig.step)) Annotate(array)
