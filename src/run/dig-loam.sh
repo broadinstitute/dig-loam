@@ -26,7 +26,7 @@ print_usage () {
     printf "  --tmp-dir [STRING]:\n"
 	printf "      a directory to use for temporary files\n\n"
 	printf "  --log-level [STRING]:\n"
-	printf "      a string from [TRACE,DEBUG,INFO,WARN,ERROR]\n"
+	printf "      a string from [TRACE,DEBUG,INFO]\n"
 	printf "      indicating the level of logging in loamstream\n\n"
 	printf "  --log [STRING]:\n"
 	printf "      filename of log for this dig-loam session\n\n"
@@ -141,14 +141,14 @@ do
 		--log-level)
 			if [ "$2" ]; then
 				log_level=$2
-				if [[ "$log_level" != "TRACE" && "$log_level" != "DEBUG" && "$log_level" != "INFO" && "$log_level" != "WARN" && "$log_level" != "ERROR" ]]
+				if [[ "$log_level" != "TRACE" && "$log_level" != "DEBUG" && "$log_level" != "INFO"]]
 				then
-					printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO,WARN,ERROR]."
+					printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO]."
 					exit 1
 				fi
 				shift
 			else
-				printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO,WARN,ERROR]."
+				printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO]."
 				exit 1
 			fi
 			;;
@@ -309,6 +309,7 @@ fi
 printf "\nrunning module: %s" $module | tee -a $log
 printf "\nstep/s: %s\n\n" "${stepsRun[*]}" | tee -a $log
 
+finalExitCode=0
 for thisStep in "${stepsRun[@]}"
 do
 	echo "******************************************************" | tee -a $log
@@ -345,6 +346,25 @@ do
 	--disable-hashing \
 	--loams ${dig_loam}/src/scala/${module}/*.scala \
 	2>&1 | tee -a $log
+
+	thisExitCode=$?
+
+	if [ $thisExitCode -ne 0 ]
+	then
+		printf "\nERROR: LoamStream returned error code ${thisExitCode} for step ${thisStep} in module ${module}\n" | tee -a $log
+		exit $thisExitCode
+	else
+		nFailed=$(grep ". jobs ran. . succeeded, . failed, . skipped, . could not start, . other." .loamstream/logs/loamStream.log | awk '{print $11}')
+		if [ $nFailed -ne 0 ]
+		then
+			printf "\nERROR: LoamStream ended successfully with ${nFailed} failed jobs for step ${thisStep} in module ${module}\n" | tee -a $log
+			exit $nFailed
+		else
+			finalExitCode=$thisExitCode
+		fi
+	fi
 	
 	sleep 10s
 done
+
+exit $finalExitCode
