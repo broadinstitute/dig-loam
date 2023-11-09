@@ -141,7 +141,7 @@ do
 		--log-level)
 			if [ "$2" ]; then
 				log_level=$2
-				if [[ "$log_level" != "TRACE" && "$log_level" != "DEBUG" && "$log_level" != "INFO"]]
+				if [[ "$log_level" != "TRACE" && "$log_level" != "DEBUG" && "$log_level" != "INFO" ]]
 				then
 					printf "\nERROR: --log-level requires a non-empty argument from the following list: [TRACE,DEBUG,INFO]."
 					exit 1
