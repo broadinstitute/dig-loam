@@ -26,7 +26,7 @@ object Main extends loamstream.LoamFile {
     meta <- projectConfig.Metas
   } yield {
   
-    if (List("all","crossCohortCommonVars").contains(projectConfig.step)) CrossCohortCommonVars(configMeta = meta)
+    if (List("all","prepareSchema").contains(projectConfig.step)) CrossCohortCommonVars(configMeta = meta)
   
   }
   
@@ -36,7 +36,7 @@ object Main extends loamstream.LoamFile {
     cohort <- projectConfig.Cohorts.filter(e => meta.cohorts.contains(e.id))
   } yield {
   
-    if (List("all","crossCohortPrep").contains(projectConfig.step)) CrossCohortPrep(configMeta = meta, configCohort = cohort)
+    if (List("all","prepareSchema").contains(projectConfig.step)) CrossCohortPrep(configMeta = meta, configCohort = cohort)
   
   }
   
@@ -45,7 +45,7 @@ object Main extends loamstream.LoamFile {
     meta <- projectConfig.Metas
   } yield {
   
-    if (List("all","crossCohortKinship").contains(projectConfig.step)) CrossCohortKinship(meta)
+    if (List("all","prepareSchema").contains(projectConfig.step)) CrossCohortKinship(meta)
   
   }
   

@@ -34,7 +34,7 @@ print_usage () {
 	printf "  --step [STRING]:\n"
 	printf "      run from a specific step (note: will only run step/s if prior required steps are complete)\n"
 	printf "        if module == qc: load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
-	printf "        if module == assoc: crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, assocTest\n\n"
+	printf "        if module == assoc: prepareSchema, prepareModel, assocTest\n\n"
 	printf "  --isolate [FLAG]:\n"
 	printf "      run only the step requested in --step (note: will only run if prior required steps are complete)\n\n"
 	printf "  --protect-files [STRING]:\n"
@@ -168,7 +168,7 @@ do
 			else
 				printf "\nERROR: --step requires a non-empty argument from the following lists:\n"
 				printf "         if module == qc: load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
-				printf "         if module == assoc: crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, assocTest"
+				printf "         if module == assoc: prepareSchema, prepareModel, assocTest"
 				exit 1
 			fi
 			;;
@@ -220,7 +220,7 @@ fi
 echo "--enable-hashing $enable_hashing" | tee -a $log
 
 qcSteps=("all" "load" "exportQc" "annotate" "kinship" "ancestry" "pca" "sampleQc" "filter" "exportFinal" "report")
-assocSteps=("all" "crossCohortCommonVars" "crossCohortPrep" "crossCohortKinship" "prepareSchema" "prepareModel" "assocTest")
+assocSteps=("all" "prepareSchema" "prepareModel" "assocTest")
 
 if [ "$module" == "qc" ]
 then
@@ -268,7 +268,7 @@ then
 	done
 	if [ $found -eq 0 ]
 	then
-		printf "\nERROR: for module assoc --step must be one of crossCohortCommonVars, crossCohortPrep, crossCohortKinship, prepareSchema, prepareModel, or assocTest\n"
+		printf "\nERROR: for module assoc --step must be one of prepareSchema, prepareModel, or assocTest\n"
 		exit 1
 	fi
 	if $isolate
