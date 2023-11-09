@@ -31,6 +31,12 @@ print_usage () {
 	printf "  --log [STRING]:\n"
 	printf "      filename of log for this dig-loam session\n\n"
 	printf "OPTIONAL:\n\n"
+	printf "  --step [STRING]:\n"
+	printf "      run from a specific step (note: will only run step/s if prior required steps are complete)\n"
+	printf "        if module == qc: load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
+	printf "        if module == assoc: prepareSchema, prepareModel, assocTest\n\n"
+	printf "  --isolate [FLAG]:\n"
+	printf "      run only the step requested in --step (note: will only run if prior required steps are complete)\n\n"
 	printf "  --protect-files [STRING]:\n"
 	printf "      a filename containing a list of files to\n"
 	printf "      protect from loamstream (any job with output\n"
@@ -43,7 +49,9 @@ print_usage () {
 }
 
 protect_files=""
-enable_hashing=0
+enable_hashing=false
+moduleStep="all"
+isolate=false
 
 while [ "$1" != "" ]
 do
@@ -153,6 +161,20 @@ do
 				exit 1
 			fi
 			;;
+		--step)
+			if [ "$2" ]; then
+				moduleStep=$2
+				shift
+			else
+				printf "\nERROR: --step requires a non-empty argument from the following lists:\n"
+				printf "         if module == qc: load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, report\n"
+				printf "         if module == assoc: prepareSchema, prepareModel, assocTest"
+				exit 1
+			fi
+			;;
+		--isolate)
+			isolate=true
+			;;
 		--protect-files)
 			if [ "$2" ]; then
 				protect_files=$2
@@ -162,12 +184,7 @@ do
 			fi
 			;;
 		--enable-hashing)
-			if [ "$2" ]; then
-				enable_hashing=1
-				shift
-			else
-				shift
-			fi
+			enable_hashing=true
 			;;
 		--help|-h)
 			print_usage
@@ -182,63 +199,152 @@ do
 	shift
 done
 
-echo "******************************************************" > $log
-echo "dig-loam.sh" >> $log
-echo "--ls-jar $ls_jar" >> $log
-echo "--ls-conf $ls_conf" >> $log
-echo "--dig-loam $dig_loam" >> $log
-echo "--dig-loam-conf $dig_loam_conf" >> $log
-echo "--backend $backend" >> $log
-echo "--module $module" >> $log
-echo "--images $images" >> $log
-echo "--tmp-dir $tmp_dir" >> $log
-echo "--log-level $log_level" >> $log
-echo "--log $log" >> $log
+echo "******************************************************" | tee $log
+echo "dig-loam.sh" | tee -a $log
+echo "--ls-jar $ls_jar" | tee -a $log
+echo "--ls-conf $ls_conf" | tee -a $log
+echo "--dig-loam $dig_loam" | tee -a $log
+echo "--dig-loam-conf $dig_loam_conf" | tee -a $log
+echo "--backend $backend" | tee -a $log
+echo "--module $module" | tee -a $log
+echo "--images $images" | tee -a $log
+echo "--tmp-dir $tmp_dir" | tee -a $log
+echo "--log-level $log_level" | tee -a $log
+echo "--log $log" | tee -a $log
+echo "--step $moduleStep" | tee -a $log
+echo "--isolate $isolate" | tee -a $log
+if [ "$protect_files" != "" ]
+then
+	echo "--protect-files $protect_files" | tee -a $log
+fi
+echo "--enable-hashing $enable_hashing" | tee -a $log
+
+qcSteps=("all" "load" "exportQc" "annotate" "kinship" "ancestry" "pca" "sampleQc" "filter" "exportFinal" "report")
+assocSteps=("all" "prepareSchema" "prepareModel" "assocTest")
+
+if [ "$module" == "qc" ]
+then
+	found=0
+	for s in "${qcSteps[@]}"
+	do
+		if [ $s == "$moduleStep" ]
+		then
+			found=1
+		fi
+	done
+	if [ $found -eq 0 ]
+	then
+		printf "\nERROR: for module qc --step must be one of load, exportQc, annotate, kinship, ancestry, pca, sampleQc, filter, exportFinal, or report\n"
+		exit 1
+	fi
+	if $isolate
+	then
+		stepsRun=($moduleStep)
+	else
+		for i in "${!qcSteps[@]}"
+		do
+			if [[ "${qcSteps[$i]}" == "${moduleStep}" ]]
+			then
+				if [ "${moduleStep}" == "all" ]
+				then
+					stepsRun=(${qcSteps[@]:${i+1}})
+				else
+					stepsRun=(${qcSteps[@]:${i}})
+				fi
+			fi
+		done
+	fi
+fi
+
+if [ "$module" == "assoc" ]
+then
+	found=0
+	for s in "${assocSteps[@]}"
+	do
+		if [ $s == "$moduleStep" ]
+		then
+			found=1
+		fi
+	done
+	if [ $found -eq 0 ]
+	then
+		printf "\nERROR: for module assoc --step must be one of prepareSchema, prepareModel, or assocTest\n"
+		exit 1
+	fi
+	if $isolate
+	then
+		stepsRun=($moduleStep)
+	else
+		for i in "${!assocSteps[@]}"
+		do
+			if [[ "${assocSteps[$i]}" == "${moduleStep}" ]]
+			then
+				if [ "${moduleStep}" == "all" ]
+				then
+					stepsRun=(${assocSteps[@]:${i+1}})
+				else
+					stepsRun=(${assocSteps[@]:${i}})
+				fi
+			fi
+		done
+	fi
+fi
 
 if [ "$protect_files" == "" ]
 then
 	protect_files_string=""
 else
 	protect_files_string="--protect-files-from ${protect_files} --run ifAnyMissingOutputs"
-	echo "--protect-files $protect_files" >> $log
+	echo "--protect-files $protect_files" | tee -a $log
 fi
 
-if [ $enable_hashing -eq 1 ]
+if $enable_hashing
 then
 	disable_hashing_string="--disable-hashing"
-	echo "--enable-hashing" >> $log
+	echo "--enable-hashing" | tee -a $log
 else
 	disable_hashing_string=""
 fi
 
-echo "******************************************************" >> $log
-echo $ls_jar | awk '{print "loamstream jar: "$0}' >> $log
-ls_version=`java -Xmx6G -Xss4m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
-echo "loamstream version: ${ls_version}" >> $log
-echo "******************************************************" >> $log
-echo $dig_loam | awk '{print "dig-loam path: "$0}' >> $log
-dig_loam_branch=`git --git-dir ${dig_loam}/.git rev-parse --abbrev-ref HEAD`
-dig_loam_commit=`git --git-dir ${dig_loam}/.git log | head -1 | cut -d' ' -f2-`
-dig_loam_author=`git --git-dir ${dig_loam}/.git log | head -2 | tail -1 | cut -d' ' -f2-`
-dig_loam_date=`git --git-dir ${dig_loam}/.git log | head -3 | tail -1 | cut -d' ' -f2-`
-dig_loam_version="dig-loam branch: ${dig_loam_branch} commit: ${dig_loam_commit} author: ${dig_loam_author} date: ${dig_loam_date}"
-echo "dig-loam version: ${dig_loam_version}" >> $log
-echo "******************************************************" >> $log
-echo "" >> $log
+printf "\nrunning module: %s" $module | tee -a $log
+printf "\nstep/s: %s\n\n" "${stepsRun[*]}" | tee -a $log
 
-java -Xmx6G -Xss1G \
--Dloamstream-log-level=${log_level} \
--DdataConfig=${dig_loam_conf} \
--DimagesDir=${images} \
--DscriptsDir=${dig_loam}/src/scripts \
--DloamstreamVersion="${ls_version}" \
--DpipelineVersion="${dig_loam_version}" \
--DtmpDir=${tmp_dir} \
--jar $ls_jar \
---backend ${backend} \
---conf ${ls_conf} \
-$protect_files_string \
-$disable_hashing_string \
---disable-hashing \
---loams ${dig_loam}/src/scala/${module}/*.scala \
-2>&1 | tee -a $log
+for thisStep in "${stepsRun[@]}"
+do
+	echo "******************************************************" | tee -a $log
+	echo $ls_jar | awk '{print "loamstream jar: "$0}' | tee -a $log
+	ls_version=`java -Xmx6G -Xss4m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
+	echo "loamstream version: ${ls_version}" | tee -a $log
+	echo "******************************************************" | tee -a $log
+	echo $dig_loam | awk '{print "dig-loam path: "$0}' | tee -a $log
+	dig_loam_branch=`git --git-dir ${dig_loam}/.git rev-parse --abbrev-ref HEAD`
+	dig_loam_commit=`git --git-dir ${dig_loam}/.git log | head -1 | cut -d' ' -f2-`
+	dig_loam_author=`git --git-dir ${dig_loam}/.git log | head -2 | tail -1 | cut -d' ' -f2-`
+	dig_loam_date=`git --git-dir ${dig_loam}/.git log | head -3 | tail -1 | cut -d' ' -f2-`
+	dig_loam_version="dig-loam branch: ${dig_loam_branch} commit: ${dig_loam_commit} author: ${dig_loam_author} date: ${dig_loam_date}"
+	echo "dig-loam version: ${dig_loam_version}" | tee -a $log
+	echo "dig-loam module: ${module}" | tee -a $log
+	echo "dig-loam step: ${thisStep}" | tee -a $log
+	echo "******************************************************" | tee -a $log
+	echo "" | tee -a $log
+	
+	java -Xmx6G -Xss1G \
+	-Dloamstream-log-level=${log_level} \
+	-DdataConfig=${dig_loam_conf} \
+	-DimagesDir=${images} \
+	-DscriptsDir=${dig_loam}/src/scripts \
+	-DloamstreamVersion="${ls_version}" \
+	-DpipelineVersion="${dig_loam_version}" \
+	-DtmpDir=${tmp_dir} \
+	-Dstep=${thisStep} \
+	-jar $ls_jar \
+	--backend ${backend} \
+	--conf ${ls_conf} \
+	$protect_files_string \
+	$disable_hashing_string \
+	--disable-hashing \
+	--loams ${dig_loam}/src/scala/${module}/*.scala \
+	2>&1 | tee -a $log
+	
+	sleep 10s
+done

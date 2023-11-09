@@ -15,8 +15,6 @@ object ExportQcData extends loamstream.LoamFile {
   import ProjectStores._
   import Fxns._
   
-  final case class CfgException(s: String) extends Exception(s)
-  
   def ExportQcData(array: ConfigArray): Unit = {
   
     var vFilters = Seq[String]()

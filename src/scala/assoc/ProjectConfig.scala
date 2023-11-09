@@ -275,6 +275,7 @@ object ProjectConfig extends loamstream.LoamFile {
   //  sections: Seq[ConfigSection]) extends Debug
   
   final case class ProjectConfig(
+    step: String,
     loamstreamVersion: String,
     pipelineVersion: String,
     referenceGenome: String,
@@ -478,6 +479,7 @@ object ProjectConfig extends loamstream.LoamFile {
     def parseConfig(config: loamstream.conf.DataConfig): ProjectConfig = {
   
       // required global values in conf file
+      val step = System.getProperty("step")
       val loamstreamVersion = System.getProperty("loamstreamVersion")
       val pipelineVersion = System.getProperty("pipelineVersion")
       val projectId = requiredStr(config = config, field = "projectId")
@@ -1383,7 +1385,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val nMetas = Metas.size
   
       new ProjectConfig(
-  
+
+        step = step,
         loamstreamVersion = loamstreamVersion,
         pipelineVersion = pipelineVersion,
         projectId = projectId,
