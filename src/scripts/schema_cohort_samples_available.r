@@ -64,9 +64,11 @@ pheno <- pheno[which(pheno[,args$iid_col] %in% iids),]
 
 cat("read in sample IDs to exclude\n")
 if(args$samples_exclude != "") {
-	samples_excl<-scan(file=args$samples_exclude,what="character")
-	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
-	id_map$removed_excluded[which((id_map$removed_nogeno == 0) & (id_map$ID %in% samples_excl))] <- 1
+	for(vr in unlist(strsplit(args$samples_exclude,","))) {
+		samples_excl<-scan(file=vr,what="character")
+		pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
+		id_map$removed_excluded[which((id_map$removed_nogeno == 0) & (id_map$ID %in% samples_excl))] <- 1
+	}
 	cat(paste0("removed ",as.character(length(id_map$removed_excluded[which(id_map$removed_excluded == 1)]))," samples that were excluded"),"\n")
 }
 

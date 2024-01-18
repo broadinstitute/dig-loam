@@ -112,6 +112,13 @@ object Annotate extends loamstream.LoamFile {
               .tag(s"${arrayStores(array).refData.annotationsHt.local.get}.google".split("/").last)
         
         }
+
+        local {
+          cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).refData.annotationsHt.google.get} ${arrayStores(array).refData.annotationsHt.local.get.path.toAbsolutePath().toString.split("/").dropRight(1).mkString("/") + "/"}"""
+          .in(arrayStores(array).refData.annotationsHt.google.get)
+          .out(arrayStores(array).refData.annotationsHt.local.get)
+          .tag(s"${arrayStores(array).refData.annotationsHt.local.get}.googleCopy".split("/").last)
+        }
   
       case false =>
 

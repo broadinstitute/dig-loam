@@ -513,7 +513,7 @@ object ArrayStores extends loamstream.LoamFile {
       vcfGlob = vcfGlob,
       rawMt = refRawMt,
       mt = MultiStore(
-        local = projectConfig.hailCloud match { case false => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt")); case true => None },
+        local = Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.local.get / s"${refBaseString}.mt")),
         google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).harmonize.google.get / s"${refBaseString}.mt")); case false => None }
       ),
       hailLog = MultiStore(
@@ -543,7 +543,7 @@ object ArrayStores extends loamstream.LoamFile {
       }.toMap,
       annotationsHt = MultiStore(
         local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.ht")),
-        google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht")); case false => None }
+        google = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.google.get / s"${refBaseString}.annotations.ht"))
       ),
       annotationsHailLog = MultiStore(
         local = Some(store(dirTree.dataArrayMap(arrayCfg).annotate.local.get / s"${refBaseString}.annotations.hail.log")),

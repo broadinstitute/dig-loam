@@ -123,6 +123,11 @@ object Load extends loamstream.LoamFile {
           googleCopy(arrayStores(array).refData.sitesVcf.google.get, arrayStores(array).refData.sitesVcf.local.get)
           googleCopy(arrayStores(array).sexcheckData.sexcheck.google.get, arrayStores(array).sexcheckData.sexcheck.local.get)
           googleCopy(arrayStores(array).sexcheckData.problems.google.get, arrayStores(array).sexcheckData.problems.local.get)
+
+          cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).refData.mt.google.get} ${arrayStores(array).refData.mt.local.get.path.toAbsolutePath().toString.split("/").dropRight(1).mkString("/") + "/"}"""
+            .in(arrayStores(array).refData.mt.google.get)
+            .out(arrayStores(array).refData.mt.local.get)
+            .tag(s"${arrayStores(array).refData.mt.local.get}.googleCopy".split("/").last)
 		
         }
 

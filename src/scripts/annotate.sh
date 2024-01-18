@@ -167,6 +167,8 @@ else
 	fork=""
 fi
 
+year=`date +%Y`
+
 vep -i $sitesVcf \
 $fork \
 --format vcf \
@@ -202,7 +204,7 @@ $fork \
 --custom ${gnomad},gnomADg,vcf,exact,0,AC,AF,AN,AC_AFR,AC_AMR,AC_ASJ,AC_EAS,AC_FIN,AC_NFE,AC_OTH,AC_SAS,AC_Male,AC_Female,AN_AFR,AN_AMR,AN_ASJ,AN_EAS,AN_FIN,AN_NFE,AN_OTH,AN_SAS,AN_Male,AN_Female,AF_AFR,AF_AMR,AF_ASJ,AF_EAS,AF_FIN,AF_NFE,AF_OTH,AF_SAS,AF_Male,AF_Female,AC_raw,AN_raw,AF_raw,POPMAX,AC_POPMAX,AN_POPMAX,AF_POPMAX \
 --output_file STDOUT \
 --warning_file $warnings \
-| awk -v h=$header '/^2023/{print > h; next} 1' \
+| awk -v h=$header "/^${year}/{print > h; next} 1" \
 | awk -v h=$header '/^##/{print >> h; next} 1' \
 | bgzip -c > $results
 

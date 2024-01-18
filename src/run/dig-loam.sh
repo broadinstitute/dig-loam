@@ -354,7 +354,13 @@ do
 		printf "\nERROR: LoamStream returned error code ${thisExitCode} for step ${thisStep} in module ${module}\n" | tee -a $log
 		exit $thisExitCode
 	else
-		nFailed=$(grep ".* jobs ran. .* succeeded, .* failed, .* skipped, .* could not start, .* other." .loamstream/logs/loamStream.log | awk '{print $11}')
+		x=$(grep ".* jobs ran. .* succeeded, .* failed, .* skipped, .* could not start, .* other." .loamstream/logs/loamStream.log)
+		if [ "$x" == "" ]
+		then
+			nFailed=1
+		else
+			nFailed=$(echo $x | tr ',' '\n' | grep failed | awk '{print $1}')
+		fi
 		if [ $nFailed -ne 0 ]
 		then
 			printf "\nERROR: LoamStream ended successfully with ${nFailed} failed jobs for step ${thisStep} in module ${module}\n" | tee -a $log
