@@ -21,7 +21,7 @@ object ArrayStores extends loamstream.LoamFile {
     sampleQcStats: Store,
     samplesExclude: Seq[MultiStore],
     variantsExclude: Seq[MultiStore],
-    annotationsHt: MultiStore)
+    annotationsHt: Option[MultiStore])
 
   val arrayStores = projectConfig.Arrays.filter(e => usedArrays.contains(e.id)).map { arrayCfg =>
 
@@ -91,13 +91,17 @@ object ArrayStores extends loamstream.LoamFile {
       google = projectConfig.hailCloud match { case true => Some(store(dirTree.dataGlobal.google.get / s"${arrayCfg.phenoFile}".split("/").last)); case false => None }
     )
 
-    val annotationsHt = MultiStore(
-      local = Some(store(checkPath(arrayCfg.annotationsHt)).asInput),
-      google = projectConfig.hailCloud match {
-        case true => Some(store(dirTree.dataGlobal.google.get / s"${arrayCfg.annotationsHt}".split("/").last))
-        case false => None
-      }
-    )
+    val annotationsHt = arrayCfg.annotationsHt match {
+      case Some(s) =>
+        MultiStore(
+          local = Some(store(checkPath(s)).asInput),
+          google = projectConfig.hailCloud match {
+            case true => Some(store(dirTree.dataGlobal.google.get / s"${s}".split("/").last))
+            case false => None
+          }
+        )
+      case None => None
+    }
 
     arrayCfg -> Array(
       vcf = vcf,

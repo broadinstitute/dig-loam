@@ -183,7 +183,7 @@ object ProjectConfig extends loamstream.LoamFile {
     phenoFileSex: Option[String],
     phenoFileSexMaleCode: Option[String],
     phenoFileSexFemaleCode: Option[String],
-    annotationsHt: String,
+    annotationsHt: Option[String],
     chrs: Seq[String]) extends Debug
   
   final case class ConfigCohort(
@@ -813,10 +813,22 @@ object ProjectConfig extends loamstream.LoamFile {
           val vcf = optionalStr(config = array, field = "vcf")
           val bgen = optionalStr(config = array, field = "bgen")
           val mt = optionalStr(config = array, field = "mt")
+          val id = requiredStr(config = array, field = "id", regex = "^[a-zA-Z0-9_]*$")
 
           Seq(vcf,bgen,mt).filter(_.isDefined).size == 0 match {
             case true => throw new CfgException("Arrays: at least one of vcf, bgen, or mt must be defined")
             case false => ()
+          }
+
+          val annotationsHt = optionalStr(config = array, field = "annotationsHt") 
+
+          annotationsHt match {
+            case Some(s) => ()
+            case None =>
+              numericVariantFilters.map(e => e.field.split("\\.")(0)) :+ booleanVariantFilters.map(e => e.field.split("\\.")(0)) :+ categoricalVariantFilters.map(e => e.field.split("\\.")(0)) contains "annotation" match {
+                case true => throw new CfgException("arrays.annotationsHt: array " + id + " annotationsHt table is required to perform user defined variant filters")
+                case false => ()
+              }
           }
 
           ConfigArray(
@@ -837,7 +849,7 @@ object ProjectConfig extends loamstream.LoamFile {
             phenoFileSex = optionalStr(config = array, field = "phenoFileSex"),
             phenoFileSexMaleCode = optionalStr(config = array, field = "phenoFileSexMaleCode"),
             phenoFileSexFemaleCode = optionalStr(config = array, field = "phenoFileSexFemaleCode"),
-            annotationsHt = requiredStr(config = array, field = "annotationsHt"),
+            annotationsHt = annotationsHt,
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
           )
 

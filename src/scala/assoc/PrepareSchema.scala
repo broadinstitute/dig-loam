@@ -360,7 +360,7 @@ object PrepareSchema extends loamstream.LoamFile {
         
         }
     
-        val cohortStatsInString = {
+        var cohortStatsInString = {
           schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
             case n if n > 0 =>
               val x = "--cohort-stats-in"
@@ -373,8 +373,17 @@ object PrepareSchema extends loamstream.LoamFile {
             case _ => ""
           }
         }
+
+        
     
-        var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, arrayStores(array).annotationsHt.google.get, schemaStores((configSchema, configCohorts)).filters.google.get, schemaStores((configSchema, configCohorts)).masks.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.google.get)
+        var cohortStatsIn = Seq(projectStores.hailUtils.google.get, schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get, schemaStores((configSchema, configCohorts)).filters.google.get, schemaStores((configSchema, configCohorts)).masks.google.get, schemaStores((configSchema, configCohorts)).cohortFilters.google.get, schemaStores((configSchema, configCohorts)).knockoutFilters.google.get)
+
+        arrayStores(array).annotationsHt match {
+          case Some(s) =>
+            cohortStatsInString = cohortStatsInString + s""" --annotation ${s.google.get}"""
+            cohortStatsIn = cohortStatsIn :+ s.google.get
+          case None => ()
+        }
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -422,7 +431,6 @@ object PrepareSchema extends loamstream.LoamFile {
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
             ${cohortStatsInString}
-            --annotation ${arrayStores(array).annotationsHt.google.get}
             ${userAnnotationsInString}
             --filters ${schemaStores((configSchema, configCohorts)).filters.google.get}
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.google.get}
@@ -461,7 +469,14 @@ object PrepareSchema extends loamstream.LoamFile {
           }
         }
         
-        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, arrayStores(array).annotationsHt.local.get, schemaStores((configSchema, configCohorts)).filters.local.get, schemaStores((configSchema, configCohorts)).masks.local.get,schemaStores((configSchema, configCohorts)).cohortFilters.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.local.get, projectStores.tmpDir)
+        var cohortStatsIn = Seq(schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get, schemaStores((configSchema, configCohorts)).filters.local.get, schemaStores((configSchema, configCohorts)).masks.local.get,schemaStores((configSchema, configCohorts)).cohortFilters.local.get, schemaStores((configSchema, configCohorts)).knockoutFilters.local.get, projectStores.tmpDir)
+
+        arrayStores(array).annotationsHt match {
+          case Some(s) =>
+            cohortStatsInString = cohortStatsInString + s""" --annotation ${s.local.get}"""
+            cohortStatsIn = cohortStatsIn :+ s.local.get
+          case None => ()
+        }
         
         schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
           case n if n > 0 =>
@@ -511,7 +526,6 @@ object PrepareSchema extends loamstream.LoamFile {
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             ${cohortStatsInString}
             ${userAnnotationsInString}
-            --annotation ${arrayStores(array).annotationsHt.local.get}
             --filters ${schemaStores((configSchema, configCohorts)).filters.local.get}
             --cohort-filters ${schemaStores((configSchema, configCohorts)).cohortFilters.local.get}
             --knockout-filters ${schemaStores((configSchema, configCohorts)).knockoutFilters.local.get}
