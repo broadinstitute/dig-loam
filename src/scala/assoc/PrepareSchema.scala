@@ -455,7 +455,7 @@ object PrepareSchema extends loamstream.LoamFile {
     
       case false =>
     
-        val cohortStatsInString = {
+        var cohortStatsInString = {
           schemaStores((configSchema, configCohorts)).variantsStatsHt.cohorts.size match {
             case n if n > 0 =>
               val x = "--cohort-stats-in"

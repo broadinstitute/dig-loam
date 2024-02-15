@@ -93,13 +93,13 @@ object ArrayStores extends loamstream.LoamFile {
 
     val annotationsHt = arrayCfg.annotationsHt match {
       case Some(s) =>
-        MultiStore(
+        Some(MultiStore(
           local = Some(store(checkPath(s)).asInput),
           google = projectConfig.hailCloud match {
             case true => Some(store(dirTree.dataGlobal.google.get / s"${s}".split("/").last))
             case false => None
           }
-        )
+        ))
       case None => None
     }
 
