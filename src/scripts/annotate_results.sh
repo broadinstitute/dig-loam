@@ -182,7 +182,7 @@ h2=`head -1 ${results}.3.tmp | cut -d$'\t' -f2-`
 
 (echo -e "${h1}\t${h2}"; join -1 3 -2 1 -t $'\t' <(sed '1d' $topResults | sort -k3,3) <( sed '1d' ${results}.3.tmp | sed 's/chr//g' | sort -k1,1) | awk -F'\t' 'BEGIN { OFS="\t" } {x=$1; $1=$2; $2=$3; $3=x; print $0}') > ${results}.4.tmp
 p=`head -1 $topResults | tr '\t' '\n' | grep -w -n "P" | awk -F':' '{print $1}'`
-sort -n -k${p},${p} ${results}.4.tmp > $results
+sort -g -k${p},${p} ${results}.4.tmp > $results
 
 rm ${results}.*.tmp*
 
