@@ -155,7 +155,9 @@ def main(args=None):
 			cohort_stats[x.split(",")[0]] = x.split(",")[1]
 	
 	exclude_any_fields = []
-	fields_out = ['rsid','annotation']
+
+	fields_out = ['rsid']
+	if args.annotation: fields_out = fields_out.append('annotation')
 	
 	# initialize max_cohort_maf
 	if len(cohorts) > 1:

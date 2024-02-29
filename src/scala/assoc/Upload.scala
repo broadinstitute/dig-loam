@@ -87,7 +87,6 @@ object Upload extends loamstream.LoamFile {
         case (true, Some(_)) =>
 
           val mtGoogleDir = s"${arrayStores(array).mt.get.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
-          val annotationHtGoogleDir = s"${arrayStores(array).annotationsHt.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
 
           drm {
             cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).mt.get.local.get} ${mtGoogleDir}"""
@@ -95,12 +94,18 @@ object Upload extends loamstream.LoamFile {
               .out(arrayStores(array).mt.get.google.get)
               .tag(s"mtLocal_to_mtGoogle.${array.id}")
           }
+
+          arrayStores(array).annotationsHt match {
+            case Some(s) =>
+              val annotationHtGoogleDir = s"${s.google.get.toString.split("@")(1)}".split("/").dropRight(1).mkString("/")
           
-          drm {
-            cmd"""${gsutilBinaryOpt.get} -m cp -r ${arrayStores(array).annotationsHt.local.get} ${annotationHtGoogleDir}"""
-              .in(arrayStores(array).annotationsHt.local.get)
-              .out(arrayStores(array).annotationsHt.google.get)
-              .tag(s"annotationsHtLocal_to_annotationsHtGoogle.${array.id}")
+              drm {
+                cmd"""${gsutilBinaryOpt.get} -m cp -r ${s.local.get} ${annotationHtGoogleDir}"""
+                  .in(s.local.get)
+                  .out(s.google.get)
+                  .tag(s"annotationsHtLocal_to_annotationsHtGoogle.${array.id}")
+              }
+            case None => ()
           }
 
           for {
