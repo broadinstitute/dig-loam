@@ -2,6 +2,7 @@ object ProjectConfig extends loamstream.LoamFile {
 
   import Fxns._
   import loamstream.googlecloud.ClusterConfig
+  import scala.io.Source
 
   val refGenomes = Seq("GRCh37","GRCh38")
   val ancestryCodes = Seq("EUR","AFR","AMR","SAS","EAS")
@@ -84,7 +85,7 @@ object ProjectConfig extends loamstream.LoamFile {
   //val singleTests = assocTests.filter(e => e.split("\\.")(0) == "single")
   //val nonHailTests = assocTests.filter(e => e.split("\\.")(1) != "hail")
   //val regenieTests = assocTests.filter(e => e.split("\\.")(1) == "regenie")
-  
+
   final case class ConfigMachine(
     cpus: Int,
     mem: Int,
@@ -318,6 +319,7 @@ object ProjectConfig extends loamstream.LoamFile {
     Metas: Seq[ConfigMeta],
     Merges: Seq[ConfigMerge],
     Knowns: Seq[ConfigKnown],
+    phenoTable: Option[String],
     Phenos: Seq[ConfigPheno],
     Schemas: Seq[ConfigSchema],
     Models: Seq[ConfigModel]
@@ -935,31 +937,70 @@ object ProjectConfig extends loamstream.LoamFile {
         }
       
       }
-  
-      val Phenos = {
-      
-        for {
-          pheno <- requiredObjList(config = config, field = "phenos")
-        } yield {
 
-          val id = requiredStr(config = pheno, field = "id")
-          val trans = optionalStr(config = pheno, field = "trans", regex = modelTrans.mkString("|"))
-          val idAnalyzed = trans match {
-            case Some(s) => id + "_" + s
-            case None => id
+      val rup = requiredUserInput(config = config, field = "phenos")
+
+      val phenoTable = rup match {
+        case InputFile(s) => Some(s)
+        case _ => None
+      }
+
+      val Phenos = rup match {
+        case InputFile(s) =>
+          for {
+            l <- Source.fromFile(checkPath(s)).getLines.drop(1).toList
+          } yield {
+            val fields = l.split("\t")
+            val id = fields(0)
+            val binary = fields(2) match {
+              case "true" => true
+              case "false" => false
+              case _ => throw new CfgException("phenos UserInputType.File: column 3 value " + fields(2) + " does not match regex format 'true|false'")
+            }
+            val trans = fields(3).matches(modelTrans.mkString("|")) match {
+              case true => Some(fields(3))
+              case false =>
+                fields(3) match {
+                  case "NA" => None
+                  case _ => throw new CfgException("phenos UserInputType.File: column 4 value " + fields(3) + " does not match regex format " + modelTrans.mkString("|"))
+                }
+            }
+            val idAnalyzed = trans match {
+              case Some(t) => id + "_" + t
+              case None => id
+            }
+            ConfigPheno(
+              id = id,
+              name = fields(1),
+              binary = binary,
+              trans = trans,
+              idAnalyzed = idAnalyzed,
+              desc = fields(4)
+            )
           }
-      
-          ConfigPheno(
-            id = id,
-            name = requiredStr(config = pheno, field = "name"),
-            binary = requiredBool(config = pheno, field = "binary"),
-            trans = trans,
-            idAnalyzed = idAnalyzed,
-            desc = requiredStr(config = pheno, field = "desc")
-          )
-      
-        }
-      
+        case InputConfig(c) =>
+          for {
+            pheno <- c
+          } yield {
+	      
+            val id = requiredStr(config = pheno, field = "id")
+            val trans = optionalStr(config = pheno, field = "trans", regex = modelTrans.mkString("|"))
+            val idAnalyzed = trans match {
+              case Some(t) => id + "_" + t
+              case None => id
+            }
+          
+            ConfigPheno(
+              id = id,
+              name = requiredStr(config = pheno, field = "name"),
+              binary = requiredBool(config = pheno, field = "binary"),
+              trans = trans,
+              idAnalyzed = idAnalyzed,
+              desc = requiredStr(config = pheno, field = "desc")
+            )
+          
+          }
+        case _ => throw new CfgException("phenos: a filename or an object list required")
       }
   
       val Knowns = {
@@ -1217,10 +1258,17 @@ object ProjectConfig extends loamstream.LoamFile {
             case false => throw new CfgException("models.schema: model " + id + " schema '" + schema + "' not found")
           }
   
-          val pheno = requiredStrList(config = model, field = "pheno")
-          (pheno diff Phenos.map(e => e.id)).size match {
-            case n if n > 0 => throw new CfgException("models.pheno: model " + id + " pheno '" + (pheno diff Phenos.map(e => e.id)).mkString(",") + "' not found")
-            case _ => ()
+          val phenoOpt = optionalStrList(config = model, field = "pheno")
+          val pheno = phenoOpt match {
+            case Some(s) =>
+              (s diff Phenos.map(e => e.id)).size match {
+                case n if n > 0 => throw new CfgException("models.pheno: model " + id + " pheno '" + (s diff Phenos.map(e => e.id)).mkString(",") + "' not found")
+                case _ => ()
+              }
+              s
+            case None =>
+              println("models.pheno: empty or missing ... using all user defined phenotypes for model " + id)
+              Phenos.map(e => e.id)
           }
 
           Phenos.filter(e => pheno.contains(e.id)).map(e => e.binary).distinct.size match {
@@ -1441,6 +1489,7 @@ object ProjectConfig extends loamstream.LoamFile {
         Metas = Metas,
         Merges = Merges,
         Knowns = Knowns,
+        phenoTable = phenoTable,
         Phenos = Phenos,
         Schemas = Schemas,
         Models = Models

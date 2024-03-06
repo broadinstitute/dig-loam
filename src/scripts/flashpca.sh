@@ -17,7 +17,7 @@ outmeansd=${14}
 maxiter=${15}
 preliminaryPheno=${16}
 iidCol=${17}
-phenoTransModelType=${18}
+phenoTable=${18}
 covars=${19}
 minPcs=${20}
 maxPcs=${21}
@@ -44,7 +44,7 @@ echo "outmeansd: $outmeansd"
 echo "maxiter: $maxiter"
 echo "preliminaryPheno: $preliminaryPheno"
 echo "iidCol: $iidCol"
-echo "phenoTransModelType: $phenoTransModelType"
+echo "phenoTable: $phenoTable"
 echo "covars: $covars"
 echo "minPcs: $minPcs"
 echo "maxPcs: $maxPcs"
@@ -78,7 +78,7 @@ $binRscript --vanilla --verbose $rScript \
 --pheno-in $preliminaryPheno \
 --pcs-in ${outPrefix}.tmp.1.outpc \
 --iid-col $iidCol \
---pheno-trans-model-type "$phenoTransModelType" \
+--pheno-table $phenoTable \
 --covars "$covars" \
 --min-pcs $minPcs \
 --max-pcs $maxPcs \
@@ -128,7 +128,7 @@ if [[ -s ${outPrefix}.tmp.1.outliers && $maxiter -gt 1 ]]; then
 		--pheno-in $preliminaryPheno \
 		--pcs-in ${outPrefix}.tmp.${i}.outpc \
 		--iid-col $iidCol \
-		--pheno-trans-model-type "$phenoTransModelType" \
+		--pheno-table $phenoTable \
 		--covars "$covars" \
 		--min-pcs $minPcs \
 		--max-pcs $maxPcs \

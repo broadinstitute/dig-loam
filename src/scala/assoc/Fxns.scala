@@ -21,6 +21,10 @@ object Fxns extends loamstream.LoamFile {
       }
     }
   }
+
+  sealed trait UserInputType
+  final case class InputFile(f: String) extends UserInputType
+  final case class InputConfig(c: Seq[loamstream.conf.DataConfig]) extends UserInputType
   
   def requiredStr(config: loamstream.conf.DataConfig, field: String, regex: String = ".*", default: Option[String] = None): String = {
     Try(config.getStr(field)) match {
@@ -211,6 +215,19 @@ object Fxns extends loamstream.LoamFile {
           case None    => throw new CfgException("requiredObjList: field '" + field + "' not found")
         }
       case Failure(_)           => throw new CfgException("requiredObjList: field '" + field + "' fatal error")
+    }
+  }
+
+  def requiredUserInput(config: loamstream.conf.DataConfig, field: String): UserInputType = {
+    Try(config.getObjList(field)) match {
+      case Success(o1)           => InputConfig(o1)
+      case Failure(NonFatal(e1)) => 
+        Try(config.getStr(field)) match {
+          case Success(o2) => InputFile(o2)
+          case Failure(NonFatal(e2)) => throw new CfgException("requiredUserInput: field '" + field + "' not correctly defined: " + e2)
+          case Failure(_)           => throw new CfgException("requiredUserInput: field '" + field + "' fatal error")
+        }
+      case Failure(_)           => throw new CfgException("requiredUserInput: field '" + field + "' fatal error")
     }
   }
   

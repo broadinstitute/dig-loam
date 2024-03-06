@@ -157,7 +157,8 @@ def main(args=None):
 	exclude_any_fields = []
 
 	fields_out = ['rsid']
-	if args.annotation: fields_out = fields_out.append('annotation')
+	if args.annotation:
+		fields_out = fields_out + ['annotation']
 	
 	# initialize max_cohort_maf
 	if len(cohorts) > 1:

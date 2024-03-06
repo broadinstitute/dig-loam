@@ -4,7 +4,7 @@ library(plyr)
 parser <- ArgumentParser()
 parser$add_argument("--pheno", dest="pheno", type="character", help="a preliminary phenotype file")
 parser$add_argument("--pcs", dest="pcs", type="character", help="a file containing list of pcs to include as covariates")
-parser$add_argument("--phenos-analyzed", dest="phenos_analyzed", type="character", help="a column name for phenotype used in analysis")
+parser$add_argument("--pheno-table", dest="pheno_table", type="character", help="a phenotype table file")
 parser$add_argument("--iid-col", dest="iid_col", type="character", help='a column name for sample ID in phenotype file')
 parser$add_argument("--covars-analyzed", dest="covars_analyzed", type="character", help="a '+' separated list of covariates used in analysis")
 parser$add_argument("--pheno-out", dest="pheno_out", type="character", help="a ped output filename")
@@ -35,16 +35,17 @@ for(cv in covars_analyzed) {
 }
 covars_analyzed <- c(covars_analyzed,pcs)
 
-phenos_analyzed <- unlist(strsplit(args$phenos_analyzed,split=","))
+cat("read in pheno table from file")
+phenoTable<-read.table(args$pheno_table,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 
-pheno_df_out<-pheno[,c(args$iid_col, phenos_analyzed)]
+pheno_df_out<-pheno[,c(args$iid_col, phenoTable$idAnalyzed)]
 if(! "FID" %in% names(pheno_df_out)) {
 	pheno_df_out$FID<-pheno_df_out[,args$iid_col]
 }
 if(! "IID" %in% names(pheno_df_out)) {
 	pheno_df_out$IID<-pheno_df_out[,args$iid_col]
 }
-pheno_df_out<-pheno_df_out[,c("FID","IID",phenos_analyzed)]
+pheno_df_out<-pheno_df_out[,c("FID","IID",phenoTable$idAnalyzed)]
 
 cat("writing phenotype file","\n")
 write.table(pheno_df_out, args$pheno_out, row.names = F,col.names = T,quote = F,sep = "\t", append = F, na = "NA")

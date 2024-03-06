@@ -122,6 +122,7 @@ object ModelStores extends loamstream.LoamFile {
   final case class Model(
     sampleMap: Store,
     cohortMap: MultiStore,
+    phenoTable: MultiStore,
     phenoPrelim: Store,
     samplesAvailable: Store,
     samplesAvailableLog: Store,
@@ -139,6 +140,7 @@ object ModelStores extends loamstream.LoamFile {
     outliers: Store, 
     pcaLog: Store,
     pheno: MultiStore,
+    phenoList: MultiStore,
     pcsInclude: MultiStore,
     //residualPlots: Option[ModelResidualPlots],
     hail: Option[ModelHail],
@@ -284,6 +286,10 @@ object ModelStores extends loamstream.LoamFile {
         local = Some(store(local_dir / s"${baseString}.cohort.map.tsv")),
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.cohort.map.tsv")); case false => None }
       ),
+      phenoTable = MultiStore(
+        local = Some(store(local_dir / s"${baseString}.pheno.table.tsv")),
+        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.table.tsv")); case false => None }
+      ),
       phenoPrelim = store(local_dir / s"${baseString}.pheno.prelim.tsv"),
       samplesAvailable = store(local_dir / s"${baseString}.samples.available.txt"),
       samplesAvailableLog = store(local_dir / s"${baseString}.samples.available.log"),
@@ -303,6 +309,10 @@ object ModelStores extends loamstream.LoamFile {
       pheno = MultiStore(
         local = Some(store(local_dir / s"${baseString}.pheno.tsv")),
         google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.pheno.tsv")); case false => None }
+      ),
+      phenoList = MultiStore(
+        local = Some(store(local_dir / s"${baseString}.phenotype_list.tsv")),
+        google = projectConfig.hailCloud match { case true => Some(store(cloud_dir.get / s"${baseString}.phenotype_list.tsv")); case false => None }
       ),
       pcsInclude = MultiStore(
         local = Some(store(local_dir / s"${baseString}.pcs.include.txt")),

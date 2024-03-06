@@ -6,7 +6,7 @@ parser <- ArgumentParser()
 parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a preliminary phenotype file")
 parser$add_argument("--pcs-in", dest="pcs_in", type="character", help="pca score file")
 parser$add_argument("--iid-col", dest="iid_col", type="character", help='a column name for sample ID in phenotype file')
-parser$add_argument("--pheno-trans-model-type", dest="pheno_trans_model_type", type="character", help="a comma separated list of transformation codes")
+parser$add_argument("--pheno-table", dest="pheno_table", type="character", help="a pheno table file")
 parser$add_argument("--binary", action='store_true', dest="binary", help="a flag to indicate if binary phenotype")
 parser$add_argument("--covars", dest="covars", type="character", help="a '+' separated list of covariates")
 parser$add_argument("--min-pcs", dest="min_pcs", type="integer", help="minimum number of pcs to include in analysis")
@@ -81,7 +81,10 @@ cat("read in preliminary phenotype file\n")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t",colClasses=c(eval(parse(text=paste0(args$iid_col,"=\"character\"")))))
 out_cols<-colnames(pheno)
 
-pheno_cols <- unlist(lapply(unlist(strsplit(args$pheno_trans_model_type,",")),function(a) { unlist(strsplit(a,":"))[1] }))
+cat("read in pheno table from file")
+phenoTable<-read.table(args$pheno_table,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+pheno_cols <- phenoTable$id
+
 for(p in pheno_cols) {
 	failed <- FALSE
 	if(length(unique(pheno[,p])) == 1) {
@@ -144,14 +147,12 @@ if(ncol(pcs)-1 < args$max_pcs) {
 	n_pcs <- args$max_pcs
 }
 
-pheno_trans_model_types<-unlist(strsplit(args$pheno_trans_model_type,","))
+for(i in 1:nrow(phenoTable)) {
+	modelPheno<-phenoTable$id[i]
+	modelTrans<-phenoTable$trans[i]
+	modelBinary<-phenoTable$binary[i]
 
-for(p in pheno_trans_model_types) {
-	modelPheno<-unlist(strsplit(p,":"))[1]
-	modelTrans<-unlist(strsplit(p,":"))[2]
-	modelType<-unlist(strsplit(p,":"))[3]
-
-	if(modelType != "binary") {
+	if(modelBinary == "false") {
 		if(modelTrans == 'invn') {
 			cat("calculating invn transformation\n")
 			if(length(unique(out$ANCESTRY_INFERRED)) > 1) {
@@ -181,12 +182,12 @@ for(p in pheno_trans_model_types) {
 
 pc_outliers <- c()
 pcsin <- c()
-if(length(pheno_trans_model_types) == 1) {
-	modelPheno<-unlist(strsplit(pheno_trans_model_types,":"))[1]
-	modelTrans<-unlist(strsplit(pheno_trans_model_types,":"))[2]
-	modelType<-unlist(strsplit(pheno_trans_model_types,":"))[3]
+if(nrow(phenoTable) == 1) {
+	modelPheno<-phenoTable$id[1]
+	modelTrans<-phenoTable$trans[1]
+	modelBinary<-phenoTable$binary[1]
 	cat("calculating pcs to include\n")
-	if(modelType != "binary") {
+	if(modelBinary == "false") {
 		if(modelTrans == 'invn') {
 			pcsin <- pcs_include_quant(d = out, y = paste0(modelPheno,"_invn"), cv = "", n = n_pcs)
 		} else if(modelTrans == 'log') {

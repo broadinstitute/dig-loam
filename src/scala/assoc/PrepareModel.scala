@@ -18,7 +18,15 @@ object PrepareModel extends loamstream.LoamFile {
   
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
     val phenos = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id))
-    val phenos_analyzed = phenos.map(e => e.idAnalyzed).mkString(",")
+
+    var pLines = Seq(Seq("id","name","binary","trans","idAnalyzed","descr").mkString("\t"))
+    for {
+      p <- phenos
+    } yield {
+      pLines = pLines ++ Seq(Seq(p.id,p.name,p.binary,p.trans,p.idAnalyzed,p.desc).mkString("\t"))
+    }
+
+    writeText(text = s"""${pLines.mkString("\n")}""", filename = s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get.toString.split("@")(1)}")
   
     val metaPriorSamplesString = configMeta match {
       case Some(s) =>
@@ -94,17 +102,6 @@ object PrepareModel extends loamstream.LoamFile {
     
     }
 
-    val phenoTransModelType = for {
-      p <- phenos
-    } yield {
-      (p.trans, p.binary) match {
-        case (Some(s),true)  => s"""${p.id}:${p.trans.get}:binary"""
-        case (Some(s),false) => s"""${p.id}:${p.trans.get}:quantitative"""
-        case (None,true)     => s"""${p.id}:N/A:binary"""
-        case (None,false)     => s"""${p.id}:N/A:quantitative"""
-      }
-    }
-
     val covarsStringBash = configModel.covars match {
       case Some(_) => s""""${configModel.covars.get}""""
       case None => "___NONE___"
@@ -130,7 +127,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${configModel.maxPcaOutlierIterations}
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim}
         ${array.phenoFileId}
-        "${phenoTransModelType.mkString(",")}"
+        ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
         ${covarsStringBash}
         ${projectConfig.minPCs}
         ${projectConfig.maxPCs}
@@ -140,7 +137,7 @@ object PrepareModel extends loamstream.LoamFile {
         ${modelStores((configModel, configSchema, configCohorts, configMeta)).outliers}
         ${projectConfig.resources.flashPca.mem * 0.9 * 1000}
         > ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog}"""
-        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim)
+        .in(arrayStores(array).prunedPlink.data :+ modelStores((configModel, configSchema, configCohorts, configMeta)).samplesAvailable :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoPrelim :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get)
         .out(modelStores((configModel, configSchema, configCohorts, configMeta)).pcaScores, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVecs, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLoadings, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaEigenVals, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaPve, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaMeansd, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).outliers, modelStores((configModel, configSchema, configCohorts, configMeta)).pcaLog)
         .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}".split("/").last)
     
@@ -257,12 +254,12 @@ object PrepareModel extends loamstream.LoamFile {
                 ${utils.r.rConvertPhenoToRegeniePhenoCovars}
                 --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --phenos-analyzed "${phenos_analyzed}"
+                --pheno-table "${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
                 --iid-col ${array.phenoFileId}
                 --covars-analyzed "${getCovarsAnalyzed(configModel, phenos)}"
                 --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
                 --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
-                .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+                .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get)
                 .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars)
                 .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}".split("/").last)
             
