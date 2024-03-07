@@ -57,7 +57,7 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelRegenieStep1(
     base: Path,
     log: Store,
-    loco: Store,
+    loco: Seq[Store],
     predList: Store
   )
 
@@ -449,7 +449,11 @@ object ModelStores extends loamstream.LoamFile {
                 step1 = ModelRegenieStep1(
                   base = local_dir / s"${baseString}.regenie.step1",
                   log = store(local_dir / s"${baseString}.regenie.step1.log"),
-                  loco = store(local_dir / s"${baseString}.regenie.step1_1.loco"),
+                  loco = for {
+                    i <- 1 to phenos.size
+                  } yield {
+                    store(local_dir / s"${baseString}.regenie.step1_${i}.loco")
+                  },
                   predList = store(local_dir / s"${baseString}.regenie.step1_pred.list")
                 ),
                 assocSingle = tests.filter(e => (e.grouped == false && e.platform == "regenie")).map { test => 
