@@ -256,6 +256,7 @@ object ProjectConfig extends loamstream.LoamFile {
     binary: Boolean,
     tests: Option[Seq[String]],
     methods: Option[Seq[String]],
+    summarize: Boolean,
     assocPlatforms: Option[Seq[String]],
     maxPcaOutlierIterations: Int,
     covars: Option[String],
@@ -1381,6 +1382,7 @@ object ProjectConfig extends loamstream.LoamFile {
             binary = binary,
             tests = tests,
             methods = methods,
+            summarize = requiredBool(config = model, field = "summarize", default = Some(true)),
             assocPlatforms = tests match { 
               case Some(s) => Some(Tests.filter(e => s.contains(e.id)).map(e => e.platform).distinct)
               case None => None

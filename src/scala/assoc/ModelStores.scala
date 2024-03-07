@@ -18,27 +18,27 @@ object ModelStores extends loamstream.LoamFile {
   //)
 
   final case class ModelSingleSummary(
-    qqPlot: Store,
-    qqPlotLowMaf: Store,
-    qqPlotMidMaf: Store,
-    qqPlotHighMaf: Store,
-    qqPlotLog: Store,
-    mhtPlot: Store,
-    mhtPlotLog: Store,
-    top1000Results: Store,
-    top1000ResultsAnnot: Store,
-    top20AnnotAlignedRisk: Store,
-    sigRegions: Store,
-    regPlotsBase: Path,
-    regPlotsPdf: Store
+    qqPlot: Option[Store],
+    qqPlotLowMaf: Option[Store],
+    qqPlotMidMaf: Option[Store],
+    qqPlotHighMaf: Option[Store],
+    qqPlotLog: Option[Store],
+    mhtPlot: Option[Store],
+    mhtPlotLog: Option[Store],
+    top1000Results: Option[Store],
+    top1000ResultsAnnot: Option[Store],
+    top20AnnotAlignedRisk: Option[Store],
+    sigRegions: Option[Store],
+    regPlotsBase: Option[Path],
+    regPlotsPdf: Option[Store]
   )
 
   final case class ModelGroupSummary(
-    top20Results: Store,
-    qqPlot: Store,
-    qqPlotLog: Store,
-    mhtPlot: Store,
-    mhtPlotLog: Store,
+    top20Results: Option[Store],
+    qqPlot: Option[Store],
+    qqPlotLog: Option[Store],
+    mhtPlot: Option[Store],
+    mhtPlotLog: Option[Store],
     minPVal: Option[Store]
   )
   
@@ -347,19 +347,19 @@ object ModelStores extends loamstream.LoamFile {
                         google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).google.get / s"${baseString}.${test.id}.results.hail.log")); case false => None }
                       ),
                       summary = ModelSingleSummary(
-                        qqPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.png"),
-                        qqPlotLowMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.lowmaf.png"),
-                        qqPlotMidMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.midmaf.png"),
-                        qqPlotHighMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.highmaf.png"),
-                        qqPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.log"),
-                        mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.png"),
-                        mhtPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.log"),
-                        top1000Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.tsv"),
-                        top1000ResultsAnnot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.annot.tsv"),
-                        top20AnnotAlignedRisk = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv"),
-                        sigRegions = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regions.tsv"),
-                        regPlotsBase = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots",
-                        regPlotsPdf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots.pdf")
+                        qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.png")); case false => None },
+                        qqPlotLowMaf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.lowmaf.png")); case false => None },
+                        qqPlotMidMaf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.midmaf.png")); case false => None },
+                        qqPlotHighMaf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.highmaf.png")); case false => None },
+                        qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.qqplot.log")); case false => None },
+                        mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.png")); case false => None },
+                        mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.mhtplot.log")); case false => None },
+                        top1000Results = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.tsv")); case false => None },
+                        top1000ResultsAnnot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top1000.annot.tsv")); case false => None },
+                        top20AnnotAlignedRisk = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.top20.annot.aligned_risk.tsv")); case false => None },
+                        sigRegions = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regions.tsv")); case false => None },
+                        regPlotsBase = model.summarize match { case true => Some(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots"); case false => None },
+                        regPlotsPdf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.results.sig.regplots.pdf")); case false => None }
                       )
                     )
                 }.toMap
@@ -475,19 +475,19 @@ object ModelStores extends loamstream.LoamFile {
                       summary = phenos.map { pheno =>
                         pheno ->
                           ModelSingleSummary(
-                            qqPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.png"),
-                            qqPlotLowMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.lowmaf.png"),
-                            qqPlotMidMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.midmaf.png"),
-                            qqPlotHighMaf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.highmaf.png"),
-                            qqPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.log"),
-                            mhtPlot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.mhtplot.png"),
-                            mhtPlotLog = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.mhtplot.log"),
-                            top1000Results = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top1000.tsv"),
-                            top1000ResultsAnnot = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top1000.annot.tsv"),
-                            top20AnnotAlignedRisk = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top20.annot.aligned_risk.tsv"),
-                            sigRegions = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.sig.regions.tsv"),
-                            regPlotsBase = dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.sig.regplots",
-                            regPlotsPdf = store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.sig.regplots.pdf")
+                            qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.png")); case false => None },
+                            qqPlotLowMaf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.lowmaf.png")); case false => None },
+                            qqPlotMidMaf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.midmaf.png")); case false => None },
+                            qqPlotHighMaf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.highmaf.png")); case false => None },
+                            qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.qqplot.log")); case false => None },
+                            mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.mhtplot.png")); case false => None },
+                            mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.mhtplot.log")); case false => None },
+                            top1000Results = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top1000.tsv")); case false => None },
+                            top1000ResultsAnnot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top1000.annot.tsv")); case false => None },
+                            top20AnnotAlignedRisk = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.top20.annot.aligned_risk.tsv")); case false => None },
+                            sigRegions = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.sig.regions.tsv")); case false => None },
+                            regPlotsBase = model.summarize match { case true => Some(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.sig.regplots"); case false => None },
+                            regPlotsPdf = model.summarize match { case true => Some(store(dirTree.analysisModelTestMap(model)(test).local.get / s"${baseString}.${test.id}.${pheno.id}.results.sig.regplots.pdf")); case false => None }
                           )
                       }.toMap
                     )
@@ -507,12 +507,12 @@ object ModelStores extends loamstream.LoamFile {
                               summary = phenos.map { pheno =>
                                 pheno ->
                                   ModelGroupSummary(
-                                    top20Results = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.top20.tsv"),
-                                    qqPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.png"),
-                                    qqPlotLog = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.log"),
-                                    mhtPlot = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.png"),
-                                    mhtPlotLog = store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.log"),
-                                    minPVal = Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.minpval.tsv"))
+                                    top20Results = model.summarize match { case true => Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.top20.tsv")); case false => None },
+                                    qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.png")); case false => None },
+                                    qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.log")); case false => None },
+                                    mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.png")); case false => None },
+                                    mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.log")); case false => None },
+                                    minPVal = model.summarize match { case true => Some(store(dirTree.analysisModelTestMaskMap(model)(test)(mask).local.get / s"${baseString}.${test.id}.${mask.id}.${pheno.id}.results.minpval.tsv")); case false => None }
                                   )
                               }.toMap,
                               chrs = expandChrList(array.chrs).map { chr =>

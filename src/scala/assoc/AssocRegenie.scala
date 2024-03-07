@@ -127,67 +127,75 @@ object AssocRegenie extends loamstream.LoamFile {
           .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).resultsTbi(pheno)}".split("/").last)
       
       }
-    
-      drmWith(imageName = s"${utils.image.imgPython2}") {
-      
-        cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}
-          --p P
-          --eaf A1FREQ
-          --n N
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlot}
-          --out-low-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLowMaf}
-          --out-mid-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotMidMaf}
-          --out-high-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotHighMaf}
-          > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLog}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLowMaf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotMidMaf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotHighMaf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLog)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlot}".split("/").last)
-        
-        cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}
-          --chr "#CHROM"
-          --pos GENPOS
-          --p P
-          --eaf A1FREQ
-          --n N
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlot}
-          > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlotLog}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlotLog)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlot}".split("/").last)
-      
-      }
-    
-      drmWith(imageName = s"${utils.image.imgPython2}") {
-      
-        cmd"""${utils.binary.binPython} ${utils.python.pyTopResults}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}
-          --show 1000
-          --p P
-          --eaf A1FREQ
-          --n N
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results}".split("/").last)
-      
-      }
 
-      drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
-      
-        cmd"""${utils.bash.shAnnotateResults}
-          ${arrayStores(array).refSitesVcf}
-          ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results}
-          ${projectConfig.resources.vep.cpus}
-          ${projectStores.fasta}
-          ${projectStores.vepCacheDir}
-          ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000ResultsAnnot}
-          ${projectConfig.referenceGenome}"""
-        .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results, projectStores.fasta, projectStores.vepCacheDir)
-        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000ResultsAnnot)
-        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000ResultsAnnot}".split("/").last)
-      
+      configModel.summarize match {
+
+        case true =>
+    
+          drmWith(imageName = s"${utils.image.imgPython2}") {
+          
+            cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}
+              --p P
+              --eaf A1FREQ
+              --n N
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlot.get}
+              --out-low-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLowMaf.get}
+              --out-mid-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotMidMaf.get}
+              --out-high-maf ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotHighMaf.get}
+              > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLog.get}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlot.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLowMaf.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotMidMaf.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotHighMaf.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlotLog.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).qqPlot.get}".split("/").last)
+            
+            cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}
+              --chr "#CHROM"
+              --pos GENPOS
+              --p P
+              --eaf A1FREQ
+              --n N
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlot.get}
+              > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlotLog.get}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlot.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlotLog.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).mhtPlot.get}".split("/").last)
+          
+          }
+	      
+          drmWith(imageName = s"${utils.image.imgPython2}") {
+          
+            cmd"""${utils.binary.binPython} ${utils.python.pyTopResults}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno)}
+              --show 1000
+              --p P
+              --eaf A1FREQ
+              --n N
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results.get}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).results(pheno))
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results.get}".split("/").last)
+          
+          }
+	      
+          drmWith(imageName = s"${utils.image.imgEnsemblVep}", cores = projectConfig.resources.vep.cpus, mem = projectConfig.resources.vep.mem, maxRunTime = projectConfig.resources.vep.maxRunTime) {
+          
+            cmd"""${utils.bash.shAnnotateResults}
+              ${arrayStores(array).refSitesVcf}
+              ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results.get}
+              ${projectConfig.resources.vep.cpus}
+              ${projectStores.fasta}
+              ${projectStores.vepCacheDir}
+              ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000ResultsAnnot.get}
+              ${projectConfig.referenceGenome}"""
+            .in(arrayStores(array).refSitesVcf, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000Results.get, projectStores.fasta, projectStores.vepCacheDir)
+            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000ResultsAnnot.get)
+            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle(configTest).summary(pheno).top1000ResultsAnnot.get}".split("/").last)
+          
+          }
+
+        case false => ()
+
       }
 
     }
@@ -369,42 +377,50 @@ object AssocRegenie extends loamstream.LoamFile {
       
       }
 
-      drmWith(imageName = s"${utils.image.imgPython2}") {
-        
-        cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}
-          --p P
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlot}
-          > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlotLog}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno))
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlotLog)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlot}".split("/").last)
-        
-        cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}
-          --chr "CHROM"
-          --pos "GENPOS"
-          --p P
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlot}
-          > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlotLog}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno))
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlot, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlotLog)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlot}".split("/").last)
-        
-      }
-      
-      drmWith(imageName = s"${utils.image.imgPython2}") {
-      
-        cmd"""${utils.binary.binPython} ${utils.python.pyTopRegenieGroupResults}
-          --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}
-          --group-id-map ${projectStores.geneIdMap.local.get}
-          --n 20
-          --p P 
-          --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).top20Results}"""
-          .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno), projectStores.geneIdMap.local.get)
-          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).top20Results)
-          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).top20Results}".split("/").last)
-      
+      configModel.summarize match {
+
+        case true =>
+
+          drmWith(imageName = s"${utils.image.imgPython2}") {
+            
+            cmd"""${utils.binary.binPython} ${utils.python.pyQqPlot}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}
+              --p P
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlot.get}
+              > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlotLog.get}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno))
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlot.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlotLog.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).qqPlot.get}".split("/").last)
+            
+            cmd"""${utils.binary.binPython} ${utils.python.pyMhtPlot}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}
+              --chr "CHROM"
+              --pos "GENPOS"
+              --p P
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlot.get}
+              > ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlotLog.get}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno))
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlot.get, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlotLog.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).mhtPlot.get}".split("/").last)
+            
+          }
+          
+          drmWith(imageName = s"${utils.image.imgPython2}") {
+          
+            cmd"""${utils.binary.binPython} ${utils.python.pyTopRegenieGroupResults}
+              --results ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno)}
+              --group-id-map ${projectStores.geneIdMap.local.get}
+              --n 20
+              --p P 
+              --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).top20Results.get}"""
+              .in(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).results(pheno), projectStores.geneIdMap.local.get)
+              .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).top20Results.get)
+              .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(configTest)(mask).summary(pheno).top20Results.get}".split("/").last)
+          
+          }
+
+        case false => ()
+
       }
 
     }
