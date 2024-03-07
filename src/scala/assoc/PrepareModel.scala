@@ -23,10 +23,14 @@ object PrepareModel extends loamstream.LoamFile {
     for {
       p <- phenos
     } yield {
-      pLines = pLines ++ Seq(Seq(p.id,p.name,p.binary,p.trans,p.idAnalyzed,p.desc).mkString("\t"))
+	  val pTrans = p.trans match {
+        case Some(s) => s
+        case None => "NA"
+      }
+      pLines = pLines ++ Seq(Seq(p.id,p.name,p.binary,pTrans,p.idAnalyzed,p.desc).mkString("\t"))
     }
 
-    writeText(text = s"""${pLines.mkString("\n")}""", filename = s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get.toString.split("@")(1)}")
+    writeText(text = s"""${pLines.mkString("\n")}\n""", filename = s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get.toString.split("@")(1)}")
   
     val metaPriorSamplesString = configMeta match {
       case Some(s) =>
@@ -254,7 +258,7 @@ object PrepareModel extends loamstream.LoamFile {
                 ${utils.r.rConvertPhenoToRegeniePhenoCovars}
                 --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
                 --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --pheno-table "${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
+                --pheno-table ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
                 --iid-col ${array.phenoFileId}
                 --covars-analyzed "${getCovarsAnalyzed(configModel, phenos)}"
                 --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}

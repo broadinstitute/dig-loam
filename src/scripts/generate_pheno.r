@@ -182,7 +182,7 @@ for(i in 1:nrow(phenoTable)) {
 
 pc_outliers <- c()
 pcsin <- c()
-if(nrow(phenoTable) == 1) {
+if(nrow(phenoTable) == 1 & n_pcs > 0) {
 	modelPheno<-phenoTable$id[1]
 	modelTrans<-phenoTable$trans[1]
 	modelBinary<-phenoTable$binary[1]
@@ -229,7 +229,9 @@ if(length(pcsin) > 0) {
 
 write.table(pcsin,args$out_pcs_include,row.names=F,col.names=F,quote=F,sep="\t",append=F)
 
-out_cols <- c(out_cols,paste("PC",seq(1,n_pcs,1),sep=""))
+if(n_pcs > 0) {
+	out_cols <- c(out_cols,paste("PC",seq(1,n_pcs,1),sep=""))
+}
 
 cat("writing phenotype file","\n")
 write.table(out[,out_cols],args$out_pheno,row.names=F,col.names=T,quote=F,sep="\t",append=F, na="NA")
