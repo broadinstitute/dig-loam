@@ -272,6 +272,13 @@ object Fxns extends loamstream.LoamFile {
     y.flatten
   }
 
+  def getBatches(elements: Int, size: Int): Seq[Int] = {
+    (elements + 1) / size match {
+      case n if n > 0 => Seq.range(1, ((elements + size - 1) / size) + 1, 1)
+      case _ => Seq(1)
+    }
+  }
+
   def chrNumberToCode(chr: String, build: String): String = {
     build match {
       case "GRCh38" => s"chr${chr}"

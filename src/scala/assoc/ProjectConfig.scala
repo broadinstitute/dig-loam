@@ -257,6 +257,9 @@ object ProjectConfig extends loamstream.LoamFile {
     tests: Option[Seq[String]],
     methods: Option[Seq[String]],
     summarize: Boolean,
+    batchSize: Int,
+    batchList: Seq[Int],
+    splitChr: Boolean,
     assocPlatforms: Option[Seq[String]],
     maxPcaOutlierIterations: Int,
     covars: Option[String],
@@ -1374,6 +1377,8 @@ object ProjectConfig extends loamstream.LoamFile {
               Some(s)
             case None => None
           }
+
+          val batchSize = requiredInt(config = model, field = "batchSize", default = Some(100))
   
           ConfigModel(
             id = id,
@@ -1383,6 +1388,9 @@ object ProjectConfig extends loamstream.LoamFile {
             tests = tests,
             methods = methods,
             summarize = requiredBool(config = model, field = "summarize", default = Some(true)),
+            batchSize = batchSize,
+            batchList = getBatches(pheno.size, batchSize),
+            splitChr = requiredBool(config = model, field = "splitChr", default = Some(false)),
             assocPlatforms = tests match { 
               case Some(s) => Some(Tests.filter(e => s.contains(e.id)).map(e => e.platform).distinct)
               case None => None

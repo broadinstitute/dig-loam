@@ -11,6 +11,7 @@ object PrepareModel extends loamstream.LoamFile {
   import SchemaStores._
   import ModelStores._
   import Fxns._
+  import Collections._
   
   final case class CfgException(s: String) extends Exception(s)
   
@@ -18,19 +19,6 @@ object PrepareModel extends loamstream.LoamFile {
   
     val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
     val phenos = projectConfig.Phenos.filter(e => configModel.pheno.contains(e.id))
-
-    var pLines = Seq(Seq("id","name","binary","trans","idAnalyzed","descr").mkString("\t"))
-    for {
-      p <- phenos
-    } yield {
-	  val pTrans = p.trans match {
-        case Some(s) => s
-        case None => "NA"
-      }
-      pLines = pLines ++ Seq(Seq(p.id,p.name,p.binary,pTrans,p.idAnalyzed,p.desc).mkString("\t"))
-    }
-
-    writeText(text = s"""${pLines.mkString("\n")}\n""", filename = s"${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get.toString.split("@")(1)}")
   
     val metaPriorSamplesString = configMeta match {
       case Some(s) =>
@@ -211,71 +199,71 @@ object PrepareModel extends loamstream.LoamFile {
 	//
     //}
 
-    configModel.assocPlatforms match {
-
-      case Some(_) =>
-
-        //val sexColString = (array.phenoFileSex, array.phenoFileSexMaleCode, array.phenoFileSexFemaleCode) match {
-        //  case (Some(_),Some(_),Some(_)) => s"""--sex-col ${array.phenoFileSex.get} --male-code ${array.phenoFileSexMaleCode.get} --female-code ${array.phenoFileSexFemaleCode}"""
-        //  case (Some(_),_,_) => throw new CfgException("options phenoFileSexMaleCode and phenoFileSexFemaleCode are required with phenoFileSex for array '" + array)
-        //  case (_,_,_) => ""
-        //}
-        
-        //configModel.assocPlatforms.get.contains("epacts") match {
-        //
-        //  case true =>
-        //
-        //    drmWith(imageName = s"${utils.image.imgR}") {
-        //    
-        //      cmd"""${utils.binary.binRscript} --vanilla --verbose
-        //        ${utils.r.rConvertPhenoToEpactsPed}
-        //        --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-        //        --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-        //        --pheno-analyzed ${pheno.idAnalyzed}
-        //        --iid-col ${array.phenoFileId}
-        //        ${sexColString}
-        //        ${transString}
-        //        --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
-        //        --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
-        //        --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
-        //        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
-        //        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars)
-        //        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}".split("/").last)
-        //    
-        //    }
-        //
-        //  case false => ()
-        //
-        //}
-        
-        configModel.assocPlatforms.get.contains("regenie") match {
-        
-          case true =>
-        
-            drmWith(imageName = s"${utils.image.imgR}") {
-            
-              cmd"""${utils.binary.binRscript} --vanilla --verbose
-                ${utils.r.rConvertPhenoToRegeniePhenoCovars}
-                --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-                --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
-                --pheno-table ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
-                --iid-col ${array.phenoFileId}
-                --covars-analyzed "${getCovarsAnalyzed(configModel, phenos)}"
-                --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
-                --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
-                .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get)
-                .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars)
-                .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}".split("/").last)
-            
-            }
-        
-          case false => ()
-        
-        }
-
-      case None => ()
-
-    }
+    //configModel.assocPlatforms match {
+	//
+    //  case Some(_) =>
+	//
+    //    //val sexColString = (array.phenoFileSex, array.phenoFileSexMaleCode, array.phenoFileSexFemaleCode) match {
+    //    //  case (Some(_),Some(_),Some(_)) => s"""--sex-col ${array.phenoFileSex.get} --male-code ${array.phenoFileSexMaleCode.get} --female-code ${array.phenoFileSexFemaleCode}"""
+    //    //  case (Some(_),_,_) => throw new CfgException("options phenoFileSexMaleCode and phenoFileSexFemaleCode are required with phenoFileSex for array '" + array)
+    //    //  case (_,_,_) => ""
+    //    //}
+    //    
+    //    //configModel.assocPlatforms.get.contains("epacts") match {
+    //    //
+    //    //  case true =>
+    //    //
+    //    //    drmWith(imageName = s"${utils.image.imgR}") {
+    //    //    
+    //    //      cmd"""${utils.binary.binRscript} --vanilla --verbose
+    //    //        ${utils.r.rConvertPhenoToEpactsPed}
+    //    //        --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+    //    //        --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+    //    //        --pheno-analyzed ${pheno.idAnalyzed}
+    //    //        --iid-col ${array.phenoFileId}
+    //    //        ${sexColString}
+    //    //        ${transString}
+    //    //        --covars-analyzed "${getCovarsAnalyzed(configModel, pheno)}"
+    //    //        --model-vars ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars}
+    //    //        --ped ${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}"""
+    //    //        .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get)
+    //    //        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped, modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.modelVars)
+    //    //        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).epacts.get.ped}".split("/").last)
+    //    //    
+    //    //    }
+    //    //
+    //    //  case false => ()
+    //    //
+    //    //}
+    //    
+    //    configModel.assocPlatforms.get.contains("regenie") match {
+    //    
+    //      case true =>
+    //    
+    //        drmWith(imageName = s"${utils.image.imgR}") {
+    //        
+    //          cmd"""${utils.binary.binRscript} --vanilla --verbose
+    //            ${utils.r.rConvertPhenoToRegeniePhenoCovars}
+    //            --pheno ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+    //            --pcs ${modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get}
+    //            --pheno-table ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
+    //            --iid-col ${array.phenoFileId}
+    //            --covars-analyzed "${getCovarsAnalyzed(configModel, phenos)}"
+    //            --pheno-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}
+    //            --covars-out ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars}"""
+    //            .in(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pcsInclude.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get)
+    //            .out(modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno, modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.covars)
+    //            .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.pheno}".split("/").last)
+    //        
+    //        }
+    //    
+    //      case false => ()
+    //    
+    //    }
+	//
+    //  case None => ()
+	//
+    //}
 
     configModel.methods match {
 
@@ -286,68 +274,76 @@ object PrepareModel extends loamstream.LoamFile {
           case true =>
 
             for {
-              pheno <- phenos
+            
+              i <- configModel.batchList
+            
             } yield {
 
-              val binaryString = pheno.binary match {
-                case true => s"--binary"
-                case false => ""
-              }
-              
-              projectConfig.hailCloud match {
-              
-                case true =>
-              
-                  local {
-                  
-                    googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
-              
-                  }
-                  
-                  googleWith(projectConfig.cloudResources.mtCluster) {
-                  
-                    hail"""${utils.python.pyHailModelVariantStats} --
-                      --hail-utils ${projectStores.hailUtils.google.get}
-                      --mt-in ${arrayStores(array).mt.get.google.get}
-                      --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
-                      --iid-col ${array.phenoFileId}
-                      --pheno-analyzed ${pheno.idAnalyzed}
-                      ${binaryString}
-                      --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).google.get}
-                      --cloud
-                      --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).google.get}"""
-                        .in(projectStores.hailUtils.google.get, arrayStores(array).mt.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
-                        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).google.get)
-                        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get}.google".split("/").last)
-                  
-                  }
-                  
-                  local {
-                  
-                    googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get)
-                    googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).local.get)
-                  
-                  }
+              for {
+                pheno <- modelBatchPhenos.filter(e => (e.model == configModel) && (e.batch == i)).map(e => e.pheno)
+              } yield {
+			  
+                val binaryString = pheno.binary match {
+                  case true => s"--binary"
+                  case false => ""
+                }
                 
-                case false =>
+                projectConfig.hailCloud match {
                 
-                  drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+                  case true =>
+                
+                    local {
+                    
+                      googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
+                
+                    }
+                    
+                    googleWith(projectConfig.cloudResources.mtCluster) {
+                    
+                      hail"""${utils.python.pyHailModelVariantStats} --
+                        --hail-utils ${projectStores.hailUtils.google.get}
+                        --mt-in ${arrayStores(array).mt.get.google.get}
+                        --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get}
+                        --iid-col ${array.phenoFileId}
+                        --pheno-analyzed ${pheno.idAnalyzed}
+                        ${binaryString}
+                        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).google.get}
+                        --cloud
+                        --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(i)(pheno).google.get}"""
+                          .in(projectStores.hailUtils.google.get, arrayStores(array).mt.get.google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.google.get)
+                          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(i)(pheno).google.get)
+                          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).local.get}.google".split("/").last)
+                    
+                    }
+                    
+                    local {
+                    
+                      googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).local.get)
+                      googleCopy(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(i)(pheno).google.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(i)(pheno).local.get)
+                    
+                    }
                   
-                    cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
-                      --tmp-dir ${projectStores.tmpDir}
-                      --mt-in ${arrayStores(array).mt.get.local.get}
-                      --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
-                      --iid-col ${array.phenoFileId}
-                      --pheno-analyzed ${pheno.idAnalyzed}
-                      ${binaryString}
-                      --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get}
-                      --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).local.get}"""
-                        .in(arrayStores(array).mt.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, projectStores.tmpDir)
-                        .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(pheno).local.get)
-                        .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(pheno).local.get}".split("/").last)
+                  case false =>
                   
-                  }
-              
+                    drmWith(imageName = s"${utils.image.imgHail}", cores = projectConfig.resources.matrixTableHail.cpus, mem = projectConfig.resources.matrixTableHail.mem, maxRunTime = projectConfig.resources.matrixTableHail.maxRunTime) {
+                    
+                      cmd"""${utils.binary.binPython} ${utils.python.pyHailModelVariantStats}
+                        --tmp-dir ${projectStores.tmpDir}
+                        --mt-in ${arrayStores(array).mt.get.local.get}
+                        --pheno-in ${modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get}
+                        --iid-col ${array.phenoFileId}
+                        --pheno-analyzed ${pheno.idAnalyzed}
+                        ${binaryString}
+                        --out ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).local.get}
+                        --log ${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(i)(pheno).local.get}"""
+                          .in(arrayStores(array).mt.get.local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).pheno.local.get, projectStores.tmpDir)
+                          .out(modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).local.get, modelStores((configModel, configSchema, configCohorts, configMeta)).variantStatsHailLog(i)(pheno).local.get)
+                          .tag(s"${modelStores((configModel, configSchema, configCohorts, configMeta)).variantStats(i)(pheno).local.get}".split("/").last)
+                    
+                    }
+                
+                }
+			  
               }
 
             }

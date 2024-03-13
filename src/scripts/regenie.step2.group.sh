@@ -1,5 +1,7 @@
 #!/bin/bash
 
+chr="NA"
+
 while :; do
 	case $1 in
 		--regenie)
@@ -71,6 +73,15 @@ while :; do
 				shift
 			else
 				echo "ERROR: --cli-options requires a non-empty argument."
+				exit 1
+			fi
+			;;
+		--batch)
+			if [ "$2" ]; then
+				batch=$2
+				shift
+			else
+				echo "ERROR: --batch requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -149,6 +160,7 @@ echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoTable: $phenoTable"
 echo "chr: $chr"
+echo "batch: $batch"
 echo "pred: $pred"
 echo "annoFile: $annoFile"
 echo "setList: $setList"
@@ -161,20 +173,81 @@ EXITCODE=0
 
 mask=`head -1 $maskDef | awk '{print $1}'`
 echo "mask: $mask"
-nVars=`awk -v c=$chr -v m=$mask '{split($1,a,":"); if($3==m && a[1]==c) print $0}' $annoFile | wc -l`
-echo "annotated variants on chromosome ${chr}: $nVars"
 
-if [ $nVars -gt 0 ]
+if [ "$chr" != "NA" ]
 then
+	nVars=`awk -v c=$chr -v m=$mask '{split($1,a,":"); if($3==m && a[1]==c) print $0}' $annoFile | wc -l`
+	echo "annotated variants on chromosome ${chr}: $nVars"
+
+	if [ $nVars -gt 0 ]
+	then
+		$regenie \
+		--step 2 \
+		--bgen $bgen \
+		--sample $sample \
+		--ref-first \
+		--covarFile $covarFile \
+		--phenoFile $phenoFile \
+		$cliOptions \
+		--chr $chr \
+		--pred $pred \
+		--anno-file $annoFile \
+		--set-list $setList \
+		--mask-def $maskDef \
+		--out $out \
+		--gz \
+		--verbose
+	
+		if [ $? != 0 ]
+		then
+			echo "regenie step 2 failed"
+			EXITCODE=1
+		fi
+	
+		while read line
+		do
+			p=`echo "${line}" | awk -F'\t' '{print $1}'`
+			pAnalyzed=`echo "${line}" | awk -F'\t' '{print $5}'`
+			echo "updating $p!"
+			if [ ! -f "${out}_${pAnalyzed}.regenie.gz" ]
+			then
+				echo "no successful tests for phenotype ${p}!"
+				EXITCODE=1
+			else
+				logp_col=`zcat ${out}_${pAnalyzed}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+				id_col=`zcat ${out}_${pAnalyzed}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ID | awk '{print $1}'`
+				a1_col=`zcat ${out}_${pAnalyzed}.regenie.gz | head -2 | tail -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep ALLELE1 | awk '{print $1}'`
+				(zcat ${out}_${pAnalyzed}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${pAnalyzed}.regenie.gz | sed '1,2d' | awk -v c=$logp_col -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]!="singleton") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
+				rm ${out}_${pAnalyzed}.regenie.gz
+			fi
+		done < <(sed '1d' $phenoTable | awk -v batch=$batch -F'\t' '{if($7 == batch) print $0}')
+	else
+		if [ -f ${out}.log ]
+		then
+			rm ${out}.log
+		fi
+		while read line
+		do
+			p=`echo "${line}" | awk -F'\t' '{print $1}'`
+			echo "no annotated variants found on chromosome ${chr} for phenotype ${p}"
+			echo "no annotated variants found on chromosome ${chr} for phenotype ${p}" >> ${out}.log
+			if [[ $cliOptions == *"--af-cc"* ]]
+			then
+				echo -e "CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tA1FREQ_CASES\tA1FREQ_CONTROLS\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+			else
+				echo -e "CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
+			fi
+		done < <(sed '1d' $phenoTable | awk -v batch=$batch -F'\t' '{if($7 == batch) print $0}')
+	fi
+else
 	$regenie \
 	--step 2 \
 	--bgen $bgen \
 	--sample $sample \
-    --ref-first \
+	--ref-first \
 	--covarFile $covarFile \
 	--phenoFile $phenoFile \
 	$cliOptions \
-	--chr $chr \
 	--pred $pred \
 	--anno-file $annoFile \
 	--set-list $setList \
@@ -188,7 +261,7 @@ then
 		echo "regenie step 2 failed"
 		EXITCODE=1
 	fi
-
+	
 	while read line
 	do
 		p=`echo "${line}" | awk -F'\t' '{print $1}'`
@@ -205,24 +278,7 @@ then
 			(zcat ${out}_${pAnalyzed}.regenie.gz | head -2 | tail -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print $0,"P"}'; zcat ${out}_${pAnalyzed}.regenie.gz | sed '1,2d' | awk -v c=$logp_col -v id=$id_col -v a1col=$a1_col 'BEGIN { OFS="\t" } {split($id,a,"."); $id=a[1]; $a1col=a[2]; if(a[3]!="singleton") { print $0,10^(-$c) }}' | sort -T . -k1,1n -k2,2n) | $bgzip -c > ${out}.${p}.results.tsv.bgz
 			rm ${out}_${pAnalyzed}.regenie.gz
 		fi
-	done < <(sed '1d' $phenoTable)
-else
-	if [ -f ${out}.log ]
-	then
-		rm ${out}.log
-	fi
-	while read line
-	do
-		p=`echo "${line}" | awk -F'\t' '{print $1}'`
-		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}"
-		echo "no annotated variants found on chromosome ${chr} for phenotype ${p}" >> ${out}.log
-		if [[ $cliOptions == *"--af-cc"* ]]
-		then
-			echo -e "CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tA1FREQ_CASES\tA1FREQ_CONTROLS\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
-		else
-			echo -e "CHROM\tGENPOS\tID\tALLELE0\tALLELE1\tA1FREQ\tN\tTEST\tBETA\tSE\tCHISQ\tLOG10P\tEXTRA\tP" | bgzip -c > ${out}.${p}.results.tsv.bgz
-		fi
-	done < <(sed '1d' $phenoTable)
+	done < <(sed '1d' $phenoTable | awk -v batch=$batch -F'\t' '{if($7 == batch) print $0}')
 fi
 
 exit $EXITCODE

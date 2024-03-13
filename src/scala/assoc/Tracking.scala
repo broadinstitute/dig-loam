@@ -36,15 +36,19 @@ object Tracking extends loamstream.LoamFile {
         case None => "none"
       }
 
-      modelStores(ms).hail match {
-        case Some(_) =>
-          for {
-            test <- modelStores(ms).hail.get.assocSingle.keys
-          } yield {
-            writeObject(obj = modelStores(ms).hail.get.assocSingle(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.hail.assocSingle.${test}")
-          }
-        case None => ()
-      }
+      //modelStores(ms).hail match {
+      //  case Some(_) =>
+      //    for {
+      //      i <- modelStores(ms).hail.get.batch.keys
+      //    } yield {
+      //      for {
+      //        test <- modelStores(ms).hail.get.batch(i).assocSingle.keys
+      //      } yield {
+      //        writeObject(obj = modelStores(ms).hail.get.batch(i).assocSingle(test), filename = s"${dirTree.base.local.get}/cfg.modelStores.${model}.${schema}.${cohorts}.${meta}.hail.batch${i}.assocSingle.${test}")
+      //      }
+      //    }
+      //  case None => ()
+      //}
 
       //modelStores(ms).epacts match {
       //  case Some(_) =>
