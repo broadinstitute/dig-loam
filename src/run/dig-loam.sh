@@ -45,6 +45,10 @@ print_usage () {
 	printf "      a flag that enables hash checks by loamstream\n"
 	printf "      (this may result in very long runtimes for\n"
 	printf "      larger files)\n\n"
+	printf "  --java-xmx [INT]:\n"
+	printf "      an integer indicating the java heap memory setting (xmx)\n\n"
+	printf "  --java-xss [INT]:\n"
+	printf "      an integer indicating the java heap memory setting (xss)\n\n"
 	printf "******************************************************\n\n"
 }
 
@@ -52,6 +56,8 @@ protect_files=""
 enable_hashing=false
 moduleStep="all"
 isolate=false
+javaXmx=6
+javaXss=1
 
 while [ "$1" != "" ]
 do
@@ -183,6 +189,22 @@ do
 				shift
 			fi
 			;;
+		--java-xmx)
+			if [ "$2" ]; then
+				javaXmx=$2
+				shift
+			else
+				shift
+			fi
+			;;
+		--java-xss)
+			if [ "$2" ]; then
+				javaXss=$2
+				shift
+			else
+				shift
+			fi
+			;;
 		--enable-hashing)
 			enable_hashing=true
 			;;
@@ -213,6 +235,8 @@ echo "--log-level $log_level" | tee -a $log
 echo "--log $log" | tee -a $log
 echo "--step $moduleStep" | tee -a $log
 echo "--isolate $isolate" | tee -a $log
+echo "--java-xmx $javaXmx" | tee -a $log
+echo "--java-xss $javaXss" | tee -a $log
 if [ "$protect_files" != "" ]
 then
 	echo "--protect-files $protect_files" | tee -a $log
@@ -314,7 +338,7 @@ for thisStep in "${stepsRun[@]}"
 do
 	echo "******************************************************" | tee -a $log
 	echo $ls_jar | awk '{print "loamstream jar: "$0}' | tee -a $log
-	ls_version=`java -Xmx6G -Xss4m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
+	ls_version=`java -Xmx${javaXmx}G -Xss${javaXss}m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
 	echo "loamstream version: ${ls_version}" | tee -a $log
 	echo "******************************************************" | tee -a $log
 	echo $dig_loam | awk '{print "dig-loam path: "$0}' | tee -a $log
@@ -329,7 +353,7 @@ do
 	echo "******************************************************" | tee -a $log
 	echo "" | tee -a $log
 	
-	java -Xmx6G -Xss1G \
+	java -Xmx${javaXmx}G -Xss${javaXss}G \
 	-Dloamstream-log-level=${log_level} \
 	-DdataConfig=${dig_loam_conf} \
 	-DimagesDir=${images} \

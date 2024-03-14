@@ -176,7 +176,25 @@ object AssocTest extends loamstream.LoamFile {
 
       case n if n > 0 =>
         
-        AssocRegenieStep1(configModel, configSchema, configCohorts, None)
+        AssocRegenieStep0(configModel, configSchema, configCohorts, None)
+
+      case _ => ()
+        
+    }
+
+    projectConfig.Tests.filter(e => configModel.tests.get.contains(e.id)).filter(e => e.platform == "regenie").size match {
+
+      case n if n > 0 =>
+
+        for {
+
+          i <- configModel.batchList
+
+        } yield {
+        
+          AssocRegenieStep1(i, configModel, configSchema, configCohorts, None)
+
+        }
 
       case _ => ()
         
@@ -187,12 +205,20 @@ object AssocTest extends loamstream.LoamFile {
       case n if n > 0 =>
 
         for {
-           
-          test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocSingle.keys
-        
+
+          i <- configModel.batchList
+
         } yield {
 
-          AssocRegenieStep2Single(test, configModel, configSchema, configCohorts, None)
+          for {
+             
+            test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.batch(i).assocSingle.keys
+          
+          } yield {
+
+            AssocRegenieStep2Single(i, test, configModel, configSchema, configCohorts, None)
+
+          }
 
         }
 
@@ -205,14 +231,22 @@ object AssocTest extends loamstream.LoamFile {
       case n if n > 0 =>
 
         for {
-           
-          test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup.keys
-          mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.assocGroup(test).keys
-        
+
+          i <- configModel.batchList
+
         } yield {
 
-          AssocRegenieStep2Group(test, mask, configModel, configSchema, configCohorts, None)
-          //MinPVal(test, mask, configModel, configSchema, configCohorts, None)
+          for {
+             
+            test <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.batch(i).assocGroup.keys
+            mask <- modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.batch(i).assocGroup(test).keys
+          
+          } yield {
+		  
+            AssocRegenieStep2Group(i, test, mask, configModel, configSchema, configCohorts, None)
+            //MinPVal(test, mask, configModel, configSchema, configCohorts, None)
+		  
+          }
 
         }
 
@@ -223,3 +257,4 @@ object AssocTest extends loamstream.LoamFile {
   }
 
 }
+

@@ -21,6 +21,10 @@ object Fxns extends loamstream.LoamFile {
       }
     }
   }
+
+  sealed trait UserInputType
+  final case class InputFile(f: String) extends UserInputType
+  final case class InputConfig(c: Seq[loamstream.conf.DataConfig]) extends UserInputType
   
   def requiredStr(config: loamstream.conf.DataConfig, field: String, regex: String = ".*", default: Option[String] = None): String = {
     Try(config.getStr(field)) match {
@@ -213,6 +217,19 @@ object Fxns extends loamstream.LoamFile {
       case Failure(_)           => throw new CfgException("requiredObjList: field '" + field + "' fatal error")
     }
   }
+
+  def requiredUserInput(config: loamstream.conf.DataConfig, field: String): UserInputType = {
+    Try(config.getObjList(field)) match {
+      case Success(o1)           => InputConfig(o1)
+      case Failure(NonFatal(e1)) => 
+        Try(config.getStr(field)) match {
+          case Success(o2) => InputFile(o2)
+          case Failure(NonFatal(e2)) => throw new CfgException("requiredUserInput: field '" + field + "' not correctly defined: " + e2)
+          case Failure(_)           => throw new CfgException("requiredUserInput: field '" + field + "' fatal error")
+        }
+      case Failure(_)           => throw new CfgException("requiredUserInput: field '" + field + "' fatal error")
+    }
+  }
   
   def optionalObjList(config: loamstream.conf.DataConfig, field: String): Option[Seq[loamstream.conf.DataConfig]] = {
     Try(config.getObjList(field)) match {
@@ -253,6 +270,13 @@ object Fxns extends loamstream.LoamFile {
       }
     }
     y.flatten
+  }
+
+  def getBatches(elements: Int, size: Int): Seq[Int] = {
+    (elements + 1) / size match {
+      case n if n > 0 => Seq.range(1, ((elements + size - 1) / size) + 1, 1)
+      case _ => Seq(1)
+    }
   }
 
   def chrNumberToCode(chr: String, build: String): String = {

@@ -118,6 +118,25 @@ object Collections extends loamstream.LoamFile {
     }
   }
 
+  final case class ModelBatchPheno(
+      model: ConfigModel,
+      batch: Int,
+      pheno: ConfigPheno) {
+    def canEqual(a: Any) = a.isInstanceOf[ModelBatchPheno]
+    override def equals(that: Any): Boolean = that match {
+      case that: ModelBatchPheno => that.canEqual(this) && this.hashCode == that.hashCode
+      case _ => false
+    }
+    override def hashCode: Int = {
+        val prime = 31
+        var result = 1
+        result = prime * result + model.id.hashCode
+        result = prime * result + batch
+        result = prime * result + pheno.id.hashCode
+        result
+    }
+  }
+
   val usedArrays: Seq[String] = {
     for {
       schema <- projectConfig.Schemas
@@ -280,6 +299,18 @@ object Collections extends loamstream.LoamFile {
       ModelMeta(
         model = projectConfig.Models.filter(e => e.id == model.id).head,
         meta = projectConfig.Metas.filter(e => e.id == meta.id).head)
+    }
+  }.distinct
+
+  val modelBatchPhenos: Seq[ModelBatchPheno] = {
+    for {
+      model <- projectConfig.Models
+      (p, i) <- projectConfig.Phenos.filter(e => model.pheno.contains(e.id)).zipWithIndex
+    } yield {
+      ModelBatchPheno(
+        model = model,
+        batch = (i / model.batchSize) + 1,
+        pheno = p)
     }
   }.distinct
   

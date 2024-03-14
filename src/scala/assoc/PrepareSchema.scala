@@ -380,7 +380,7 @@ object PrepareSchema extends loamstream.LoamFile {
 
         arrayStores(array).annotationsHt match {
           case Some(s) =>
-            cohortStatsInString = cohortStatsInString + s""" --annotation ${s.google.get}"""
+            cohortStatsInString = cohortStatsInString + s""" --annotation ${s.google.get.toString.split("@")(1)}"""
             cohortStatsIn = cohortStatsIn :+ s.google.get
           case None => ()
         }
@@ -473,7 +473,7 @@ object PrepareSchema extends loamstream.LoamFile {
 
         arrayStores(array).annotationsHt match {
           case Some(s) =>
-            cohortStatsInString = cohortStatsInString + s""" --annotation ${s.local.get}"""
+            cohortStatsInString = cohortStatsInString + s""" --annotation ${s.local.get.toString.split("@")(1)}"""
             cohortStatsIn = cohortStatsIn :+ s.local.get
           case None => ()
         }

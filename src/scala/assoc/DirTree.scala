@@ -25,10 +25,12 @@ object DirTree extends loamstream.LoamFile {
     analysisSchemaMaskMap: Map[ConfigSchema, Map[MaskFilter, MultiPath]],
     analysisModel: MultiPath,
     analysisModelMap: Map[ConfigModel, MultiPath],
-    analysisModelTestMap: Map[ConfigModel, Map[ConfigTest, MultiPath]],
-    //analysisModelTestPhenoMap: Map[ConfigModel, Map[ConfigTest, Map[ConfigPheno, MultiPath]]],
-    analysisModelTestMaskMap: Map[ConfigModel, Map[ConfigTest, Map[MaskFilter, MultiPath]]],
-    //analysisModelTestMaskPhenoMap: Map[ConfigModel, Map[ConfigTest, Map[MaskFilter, Map[ConfigPheno, MultiPath]]]],
+    analysisModelBatchMap: Map[ConfigModel, Map[Int, MultiPath]],
+    analysisModelBatchTestMap: Map[ConfigModel, Map[Int, Map[ConfigTest, MultiPath]]],
+    analysisModelBatchTestMaskMap: Map[ConfigModel, Map[Int, Map[ConfigTest, Map[String, MultiPath]]]],
+    analysisModelBatchTestChrMap: Map[ConfigModel, Map[Int, Map[ConfigTest, Map[String, MultiPath]]]],
+    //analysisModelTestMaskMap: Map[ConfigModel, Map[ConfigTest, Map[MaskFilter, MultiPath]]],
+    analysisModelBatchTestMaskChrMap: Map[ConfigModel, Map[Int, Map[ConfigTest, Map[String, Map[String, MultiPath]]]]],
     report: MultiPath,
     //reportAnalysis: MultiPath,
     //reportAnalysisMap: Map[ConfigReport, MultiPath]
@@ -94,42 +96,71 @@ object DirTree extends loamstream.LoamFile {
         model -> appendSubDir(analysisModel, model.id)
       }.toMap
 
-      val analysisModelTestMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+      val analysisModelBatchMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
         model ->
-          projectConfig.Tests.filter(e => model.tests.get.contains(e.id)).map { test =>
-            test -> appendSubDir(analysisModelMap(model), test.id)
+          model.batchList.map { i =>
+            i -> appendSubDir(analysisModelMap(model), "batch_" + i)
           }.toMap
       }.toMap
 
-      //val analysisModelTestPhenoMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
-      //  model ->
-      //    projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (! e.grouped)).map { test =>
-      //      test ->
-      //        projectConfig.Phenos.filter(e => model.pheno.contains(e.id)).map { pheno =>
-      //          pheno -> appendSubDir(analysisModelTestMap(model)(test), pheno.id)
-      //        }.toMap
-      //    }.toMap
-      //}.toMap
-
-      val analysisModelTestMaskMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+      val analysisModelBatchTestMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
         model ->
-          projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (e.grouped)).map { test =>
-            test ->
-              projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).map(e => e.masks.get).flatten.distinct.map { mask =>
-                mask -> appendSubDir(analysisModelTestMap(model)(test), mask.id)
+          model.batchList.map { i =>
+            i -> 
+              projectConfig.Tests.filter(e => model.tests.get.contains(e.id)).map { test =>
+                test -> appendSubDir(analysisModelBatchMap(model)(i), test.id)
               }.toMap
           }.toMap
       }.toMap
 
-      //val analysisModelTestMaskPhenoMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+      val analysisModelBatchTestChrMap = projectConfig.Models.filter(e => ! e.tests.isEmpty && e.splitChr).map { model =>
+        model ->
+          model.batchList.map { i =>
+            i -> 
+              projectConfig.Tests.filter(e => model.tests.get.contains(e.id)).map { test =>
+                test -> 
+                  expandChrList(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(e => projectConfig.Schemas.filter(e => e.id == model.schema).head.cohorts.contains(e.id)).head.array).head.chrs).map { chr =>
+                    chr -> appendSubDir(analysisModelBatchTestMap(model)(i)(test), "chr" + chr)
+                  }.toMap
+              }.toMap
+          }.toMap
+      }.toMap
+
+      val analysisModelBatchTestMaskMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
+        model ->
+          model.batchList.map { i =>
+            i -> 
+              projectConfig.Tests.filter(e => model.tests.get.contains(e.id) && (e.grouped)).map { test =>
+                test -> 
+                  projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).map(e => e.masks.get).flatten.distinct.map { mask =>
+                    mask.id -> appendSubDir(analysisModelBatchTestMap(model)(i)(test), mask.id)
+                  }.toMap
+              }.toMap
+          }.toMap
+      }.toMap
+
+      val analysisModelBatchTestMaskChrMap = projectConfig.Models.filter(e => ! e.tests.isEmpty && e.splitChr).map { model =>
+        model ->
+          model.batchList.map { i =>
+            i -> 
+              projectConfig.Tests.filter(e => model.tests.get.contains(e.id) && (e.grouped)).map { test =>
+                test ->
+                  projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).map(e => e.masks.get).flatten.distinct.map { mask =>
+                    mask.id ->
+                      expandChrList(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(e => projectConfig.Schemas.filter(e => e.id == model.schema).head.cohorts.contains(e.id)).head.array).head.chrs).map { chr =>
+                        chr -> appendSubDir(analysisModelBatchTestMaskMap(model)(i)(test)(mask.id), "chr" + chr)
+                      }.toMap
+                  }.toMap
+              }.toMap
+          }.toMap
+      }.toMap
+
+      //val analysisModelTestMaskMap = projectConfig.Models.filter(e => ! e.tests.isEmpty).map { model =>
       //  model ->
       //    projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (e.grouped)).map { test =>
       //      test ->
-      //        projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).head.masks.get.map { mask =>
-      //          mask ->
-      //            projectConfig.Phenos.filter(e => model.pheno.contains(e.id)).map { pheno =>
-      //              pheno -> appendSubDir(analysisModelTestMaskMap(model)(test)(mask), pheno.id)
-      //            }.toMap
+      //        projectConfig.Schemas.filter(e => (e.id == model.schema) && (! e.masks.isEmpty)).map(e => e.masks.get).flatten.distinct.map { mask =>
+      //          mask -> appendSubDir(analysisModelTestMap(model)(test), mask.id)
       //        }.toMap
       //    }.toMap
       //}.toMap
@@ -152,10 +183,11 @@ object DirTree extends loamstream.LoamFile {
         analysisSchemaMaskMap = analysisSchemaMaskMap,
         analysisModel = analysisModel,
         analysisModelMap = analysisModelMap,
-        analysisModelTestMap = analysisModelTestMap,
-        //analysisModelTestPhenoMap = analysisModelTestPhenoMap,
-        analysisModelTestMaskMap = analysisModelTestMaskMap,
-        //analysisModelTestMaskPhenoMap = analysisModelTestMaskPhenoMap,
+        analysisModelBatchMap = analysisModelBatchMap,
+        analysisModelBatchTestMap = analysisModelBatchTestMap,
+        analysisModelBatchTestMaskMap = analysisModelBatchTestMaskMap,
+        analysisModelBatchTestChrMap = analysisModelBatchTestChrMap,
+        analysisModelBatchTestMaskChrMap = analysisModelBatchTestMaskChrMap,
         report = report
         //reportAnalysis = reportAnalysis,
         //reportAnalysisMap = reportAnalysisMap

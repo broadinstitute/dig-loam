@@ -1,5 +1,7 @@
 #!/bin/bash
 
+chr="NA"
+
 while :; do
 	case $1 in
 		--regenie)
@@ -56,12 +58,12 @@ while :; do
 				exit 1
 			fi
 			;;
-		--pheno-names)
+		--pheno-table)
 			if [ "$2" ]; then
-				phenoNames=$2
+				phenoTable=$2
 				shift
 			else
-				echo "ERROR: --pheno-names requires a non-empty argument."
+				echo "ERROR: --pheno-table requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -80,6 +82,15 @@ while :; do
 				shift
 			else
 				echo "ERROR: --chr requires a non-empty argument."
+				exit 1
+			fi
+			;;
+		--batch)
+			if [ "$2" ]; then
+				batch=$2
+				shift
+			else
+				echo "ERROR: --batch requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -120,13 +131,21 @@ echo "bgen: $bgen"
 echo "sample: $sample"
 echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
-echo "phenoNames: $phenoNames"
+echo "phenoTable: $phenoTable"
 echo "chr: $chr"
+echo "batch: $batch"
 echo "pred: $pred"
 echo "out: $out"
 echo "cliOptions: $cliOptions"
 
 EXITCODE=0
+
+if [ "$chr" == "NA" ]
+then
+	chrString=""
+else
+	chrString="--chr $chr"
+fi
 
 $regenie \
 --step 2 \
@@ -136,7 +155,7 @@ $regenie \
 --covarFile $covarFile \
 --phenoFile $phenoFile \
 $cliOptions \
---chr $chr \
+$chrString \
 --pred $pred \
 --out $out \
 --gz \
@@ -151,18 +170,20 @@ fi
 # header
 #CHROM GENPOS ID ALLELE0 ALLELE1 A1FREQ INFO N TEST BETA SE CHISQ LOG10P EXTRA
 
-for p in `echo $phenoNames | sed 's/,/ /g'`
+while read line
 do
-	if [ ! -f "${out}_${p}.regenie.gz" ]
+	p=`echo "${line}" | awk -F'\t' '{print $1}'`
+	pAnalyzed=`echo "${line}" | awk -F'\t' '{print $5}'`
+	if [ ! -f "${out}_${pAnalyzed}.regenie.gz" ]
 	then
 		echo "no successful tests for phenotype ${p}!"
 		EXITCODE=1
 	else
-		mv ${out}_${p}.regenie.gz ${out}_${p}.regenie.tmp.gz
-		n=`zcat ${out}_${p}.regenie.tmp.gz | head -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
-		(zcat ${out}_${p}.regenie.tmp.gz | head -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"P"}'; zcat ${out}_${p}.regenie.tmp.gz | sed '1d' | awk -v c=$n 'BEGIN { OFS="\t" } {$1=$1; print $0,10^(-$c)}') | $bgzip -c > ${out}.${p}.results.tsv.bgz
-		rm ${out}_${p}.regenie.tmp.gz
+		mv ${out}_${pAnalyzed}.regenie.gz ${out}_${pAnalyzed}.regenie.tmp.gz
+		n=`zcat ${out}_${pAnalyzed}.regenie.tmp.gz | head -1 | tr ' ' '\n' | awk '{print NR" "$0}' | grep LOG10P | awk '{print $1}'`
+		(zcat ${out}_${pAnalyzed}.regenie.tmp.gz | head -1 | awk 'BEGIN { OFS="\t" } {$1=$1; print "#"$0,"P"}'; zcat ${out}_${pAnalyzed}.regenie.tmp.gz | sed '1d' | awk -v c=$n 'BEGIN { OFS="\t" } {$1=$1; print $0,10^(-$c)}') | $bgzip -c > ${out}.${p}.results.tsv.bgz
+		rm ${out}_${pAnalyzed}.regenie.tmp.gz
 	fi
-done
+done < <(sed '1d' $phenoTable | awk -v batch=$batch -F'\t' '{if($7 == batch) print $0}')
 
 exit $EXITCODE
