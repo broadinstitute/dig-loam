@@ -404,6 +404,7 @@ object AssocRegenie extends loamstream.LoamFile {
               --pheno-table ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
               --cli-options "${configTest.cliOpts.get}"
               --chr ${chr}
+              --batch ${batch}
               --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.batch(batch).step1.predList}
               --anno-file ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}
               --set-list ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}
@@ -432,6 +433,7 @@ object AssocRegenie extends loamstream.LoamFile {
             --pheno-file ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.batch(batch).pheno}
             --pheno-table ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
             --cli-options "${configTest.cliOpts.get}"
+            --batch ${batch}
             --pred ${modelStores((configModel, configSchema, configCohorts, configMeta)).regenie.get.batch(batch).step1.predList}
             --anno-file ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}
             --set-list ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}
