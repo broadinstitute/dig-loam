@@ -260,6 +260,7 @@ object ProjectConfig extends loamstream.LoamFile {
     batchSize: Int,
     batchList: Seq[Int],
     splitChr: Boolean,
+    splitPhenoResults: Boolean,
     assocPlatforms: Option[Seq[String]],
     maxPcaOutlierIterations: Int,
     covars: Option[String],
@@ -1379,6 +1380,15 @@ object ProjectConfig extends loamstream.LoamFile {
           }
 
           val batchSize = requiredInt(config = model, field = "batchSize", default = Some(100))
+
+          val splitPhenoResults = requiredBool(config = model, field = "splitChr", default = Some(false))
+
+          val summarize = requiredBool(config = model, field = "summarize", default = Some(true))
+
+          (splitPhenoResults, summarize) match {
+            case (true, true) => throw new CfgException("models.splitPhenoResults/summarize: not yet able to summarize pooled phenotype results, set one of splitPhenoResults or summarize to false")
+            case _ => ()
+          }
   
           ConfigModel(
             id = id,
@@ -1387,10 +1397,11 @@ object ProjectConfig extends loamstream.LoamFile {
             binary = binary,
             tests = tests,
             methods = methods,
-            summarize = requiredBool(config = model, field = "summarize", default = Some(true)),
+            summarize = summarize,
             batchSize = batchSize,
             batchList = getBatches(pheno.size, batchSize),
             splitChr = requiredBool(config = model, field = "splitChr", default = Some(false)),
+            splitPhenoResults = splitPhenoResults,
             assocPlatforms = tests match { 
               case Some(s) => Some(Tests.filter(e => s.contains(e.id)).map(e => e.platform).distinct)
               case None => None

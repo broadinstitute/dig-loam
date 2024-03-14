@@ -122,4 +122,6 @@ then
 	EXITCODE=1
 fi
 
+echo "EXIT 0" >> $log
+
 exit $EXITCODE
