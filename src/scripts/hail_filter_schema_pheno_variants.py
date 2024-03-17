@@ -135,11 +135,12 @@ def main(args=None):
 				user_annotation_fields = user_annotation_fields + [x for x in variant_qc_cohort_fields[c] if x.startswith("file_" + user_annot_id + ".")]
 			user_annotation_fields = list(set(user_annotation_fields))
 			user_annot_tbl = hl.read_table(user_annot_ht)
+			user_annot_tbl = user_annot_tbl.key_by('Uploaded_variation')
 			user_annot_tbl = user_annot_tbl.select(*user_annotation_fields)
 			if user_annot_incl_gene == "true":
-				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.locus,ht.alleles,ht.annotation.Gene]})
+				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.uid,ht.annotation.Gene]})
 			else:
-				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.locus,ht.alleles]})
+				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.uid]})
 
 	print("write ht.checkpoint1 hail table to temporary directory")
 	ht = ht.checkpoint(tmpdir_path + "hail_filter_schema_pheno_variants.ht.checkpoint1", overwrite=True)

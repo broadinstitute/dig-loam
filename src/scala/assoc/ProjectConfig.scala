@@ -740,7 +740,7 @@ object ProjectConfig extends loamstream.LoamFile {
           )
         }
       }
-  
+
       val numericSampleFilters = {
         for {
           sfilter <- requiredObjList(config = config, field = "numericSampleFilters")
@@ -1381,12 +1381,12 @@ object ProjectConfig extends loamstream.LoamFile {
 
           val batchSize = requiredInt(config = model, field = "batchSize", default = Some(100))
 
-          val splitPhenoResults = requiredBool(config = model, field = "splitChr", default = Some(false))
+          val splitPhenoResults = requiredBool(config = model, field = "splitPhenoResults", default = Some(true))
 
           val summarize = requiredBool(config = model, field = "summarize", default = Some(true))
 
           (splitPhenoResults, summarize) match {
-            case (true, true) => throw new CfgException("models.splitPhenoResults/summarize: not yet able to summarize pooled phenotype results, set one of splitPhenoResults or summarize to false")
+            case (false, true) => throw new CfgException("models.splitPhenoResults/summarize: not yet able to summarize pooled phenotype results, set splitPhenoResults to true or summarize to false")
             case _ => ()
           }
   
