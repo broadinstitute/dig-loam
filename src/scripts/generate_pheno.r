@@ -83,6 +83,7 @@ out_cols<-colnames(pheno)
 
 cat("read in pheno table from file")
 phenoTable<-read.table(args$pheno_table,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+phenoTable[is.na(phenoTable)]<-"NA"
 pheno_cols <- phenoTable$id
 
 for(p in pheno_cols) {
