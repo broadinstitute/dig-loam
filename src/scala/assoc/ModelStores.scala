@@ -64,12 +64,15 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelRegenieAssocSingleChr(
     base: Path,
     log: Store,
+    resultsPooled: Option[Store],
     results: Map[ConfigPheno, Store]
   )
 
   final case class ModelRegenieAssocSingle(
     base: Path,
     log: Option[Store],
+    resultsPooled: Option[Store],
+	resultsPooledTbi: Option[Store],
     results: Map[ConfigPheno, Store],
     resultsTbi: Map[ConfigPheno, Store],
     chrs: Map[String, ModelRegenieAssocSingleChr],
@@ -84,11 +87,13 @@ object ModelStores extends loamstream.LoamFile {
   final case class ModelRegenieAssocGroupChr(
     base: Path,
     log: Store,
+    resultsPooled: Option[Store],
     results: Map[ConfigPheno, Store]
   )
 
   final case class ModelRegenieAssocGroup(
     base: Path,
+	resultsPooled: Option[Store],
     results: Map[ConfigPheno, Store],
     log: Option[Store],
     summary: Map[ConfigPheno, ModelGroupSummary],
@@ -268,8 +273,8 @@ object ModelStores extends loamstream.LoamFile {
                 modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
                  pheno ->
 			       MultiStore(
-                     local = Some(store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.${pheno.id}.variant_stats.tsv.bgz")),
-                     google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchMap(model)(i).google.get / s"${baseString}.batch${i}.${pheno.id}.variant_stats.tsv.bgz")); case false => None }
+                     local = Some(store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.${pheno.id}.variant_stats.tsv.bgz")),
+                     google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchMap(model)(i).google.get / s"${baseString}.batch_${i}.${pheno.id}.variant_stats.tsv.bgz")); case false => None }
                    )
                 }.toMap
             }.toMap
@@ -287,8 +292,8 @@ object ModelStores extends loamstream.LoamFile {
                 modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
                   pheno ->
 			        MultiStore(
-                      local = Some(store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.${pheno.id}.variant_stats.hail.log")),
-                      google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchMap(model)(i).google.get / s"${baseString}.batch${i}.${pheno.id}.variant_stats.hail.log")); case false => None }
+                      local = Some(store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.${pheno.id}.variant_stats.hail.log")),
+                      google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchMap(model)(i).google.get / s"${baseString}.batch_${i}.${pheno.id}.variant_stats.hail.log")); case false => None }
                     )
                 }.toMap
             }.toMap
@@ -373,28 +378,28 @@ object ModelStores extends loamstream.LoamFile {
                         test -> 
                           ModelHailAssocSingle(
                             results = MultiStore(
-                              local = Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.tsv.bgz")),
-                              google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).google.get / s"${baseString}.batch${i}.${test.id}.results.tsv.bgz")); case false => None }
+                              local = Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.tsv.bgz")),
+                              google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).google.get / s"${baseString}.batch_${i}.${test.id}.results.tsv.bgz")); case false => None }
                             ),
-                            resultsTbi = store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.tsv.bgz.tbi"),
+                            resultsTbi = store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.tsv.bgz.tbi"),
                             hailLog = MultiStore(
-                              local = Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.hail.log")),
-                              google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).google.get / s"${baseString}.batch${i}.${test.id}.results.hail.log")); case false => None }
+                              local = Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.hail.log")),
+                              google = projectConfig.hailCloud match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).google.get / s"${baseString}.batch_${i}.${test.id}.results.hail.log")); case false => None }
                             ),
                             summary = ModelSingleSummary(
-                              qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.qqplot.png")); case false => None },
-                              qqPlotLowMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.qqplot.lowmaf.png")); case false => None },
-                              qqPlotMidMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.qqplot.midmaf.png")); case false => None },
-                              qqPlotHighMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.qqplot.highmaf.png")); case false => None },
-                              qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.qqplot.log")); case false => None },
-                              mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.mhtplot.png")); case false => None },
-                              mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.mhtplot.log")); case false => None },
-                              top1000Results = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.top1000.tsv")); case false => None },
-                              top1000ResultsAnnot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.top1000.annot.tsv")); case false => None },
-                              top20AnnotAlignedRisk = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.top20.annot.aligned_risk.tsv")); case false => None },
-                              sigRegions = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.sig.regions.tsv")); case false => None },
-                              regPlotsBase = model.summarize match { case true => Some(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.sig.regplots"); case false => None },
-                              regPlotsPdf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.results.sig.regplots.pdf")); case false => None }
+                              qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.qqplot.png")); case false => None },
+                              qqPlotLowMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.qqplot.lowmaf.png")); case false => None },
+                              qqPlotMidMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.qqplot.midmaf.png")); case false => None },
+                              qqPlotHighMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.qqplot.highmaf.png")); case false => None },
+                              qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.qqplot.log")); case false => None },
+                              mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.mhtplot.png")); case false => None },
+                              mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.mhtplot.log")); case false => None },
+                              top1000Results = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.top1000.tsv")); case false => None },
+                              top1000ResultsAnnot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.top1000.annot.tsv")); case false => None },
+                              top20AnnotAlignedRisk = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.top20.annot.aligned_risk.tsv")); case false => None },
+                              sigRegions = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.sig.regions.tsv")); case false => None },
+                              regPlotsBase = model.summarize match { case true => Some(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.sig.regplots"); case false => None },
+                              regPlotsPdf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.sig.regplots.pdf")); case false => None }
                             )
                           )
                       }.toMap
@@ -484,35 +489,59 @@ object ModelStores extends loamstream.LoamFile {
                 batch = model.batchList.map { i =>
                   i ->
                     ModelRegenieBatch(
-                      pheno = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.regenie.pheno.tsv"),
-                      covars = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.regenie.covars.tsv"),
+                      pheno = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.regenie.pheno.tsv"),
+                      covars = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.regenie.covars.tsv"),
                       step1 = ModelRegenieStep1(
-                        base = dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.regenie.step1",
-                        log = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.regenie.step1.log"),
-                        loco = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.regenie.step1_1.loco"),
-                        predList = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch${i}.regenie.step1_pred.list")
+                        base = dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.regenie.step1",
+                        log = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.regenie.step1.log"),
+                        loco = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.regenie.step1_1.loco"),
+                        predList = store(dirTree.analysisModelBatchMap(model)(i).local.get / s"${baseString}.batch_${i}.regenie.step1_pred.list")
                       ),
                       assocSingle = tests.filter(e => (e.grouped == false && e.platform == "regenie")).map { test => 
                         test -> 
                           ModelRegenieAssocSingle(
-                            base = dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}",
-                            log = model.splitChr match { case false => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.log")); case true => None },
-                            results = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
-                              pheno -> store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.tsv.bgz")
-                            }.toMap,
-                            resultsTbi = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
-                              pheno -> store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.tsv.bgz.tbi")
-                            }.toMap,
+                            base = dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}",
+                            log = model.splitChr match { case false => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.log")); case true => None },
+                            resultsPooled = model.splitPhenoResults match {
+                              case true => None
+                              case false => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.tsv.bgz"))
+                            },
+                            resultsPooledTbi = model.splitPhenoResults match {
+                              case true => None
+                              case false => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.results.tsv.bgz.tbi"))
+                            },
+                            results = model.splitPhenoResults match {
+                              case true =>
+                                modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
+                                  pheno -> store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.tsv.bgz")
+                                }.toMap
+                              case false => Map[ConfigPheno, Store]()
+                            },
+                            resultsTbi = model.splitPhenoResults match {
+                              case true =>
+                                modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
+                                  pheno -> store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.tsv.bgz.tbi")
+                                }.toMap
+                              case false => Map[ConfigPheno, Store]()
+                            },
                             chrs = model.splitChr match {
                               case true =>
                                 expandChrList(array.chrs).map { chr =>
                                   chr ->
                                     ModelRegenieAssocSingleChr(
-                                      base = dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch${i}.${test.id}.chr${chr}",
-                                      log = store(dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch${i}.${test.id}.chr${chr}.log"),
-                                      results = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
-                                        pheno -> store(dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch${i}.${test.id}.chr${chr}.${pheno.id}.results.tsv.bgz")
-                                      }.toMap
+                                      base = dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.chr${chr}",
+                                      log = store(dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.chr${chr}.log"),
+                                      resultsPooled = model.splitPhenoResults match {
+                                        case true => None
+                                        case false => Some(store(dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.chr${chr}.results.tsv.bgz"))
+                                      },
+                                      results = model.splitPhenoResults match {
+                                        case true =>
+                                          modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
+                                            pheno -> store(dirTree.analysisModelBatchTestChrMap(model)(i)(test)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.chr${chr}.${pheno.id}.results.tsv.bgz")
+                                          }.toMap
+                                        case false => Map[ConfigPheno, Store]()
+                                      }
                                     )
                                 }.toMap
                               case false => Map[String, ModelRegenieAssocSingleChr]()
@@ -520,19 +549,19 @@ object ModelStores extends loamstream.LoamFile {
                             summary = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
                               pheno ->
                                 ModelSingleSummary(
-                                  qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.qqplot.png")); case false => None },
-                                  qqPlotLowMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.qqplot.lowmaf.png")); case false => None },
-                                  qqPlotMidMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.qqplot.midmaf.png")); case false => None },
-                                  qqPlotHighMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.qqplot.highmaf.png")); case false => None },
-                                  qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.qqplot.log")); case false => None },
-                                  mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.mhtplot.png")); case false => None },
-                                  mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.mhtplot.log")); case false => None },
-                                  top1000Results = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.top1000.tsv")); case false => None },
-                                  top1000ResultsAnnot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.top1000.annot.tsv")); case false => None },
-                                  top20AnnotAlignedRisk = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.top20.annot.aligned_risk.tsv")); case false => None },
-                                  sigRegions = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.sig.regions.tsv")); case false => None },
-                                  regPlotsBase = model.summarize match { case true => Some(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.sig.regplots"); case false => None },
-                                  regPlotsPdf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch${i}.${test.id}.${pheno.id}.results.sig.regplots.pdf")); case false => None }
+                                  qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.qqplot.png")); case false => None },
+                                  qqPlotLowMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.qqplot.lowmaf.png")); case false => None },
+                                  qqPlotMidMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.qqplot.midmaf.png")); case false => None },
+                                  qqPlotHighMaf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.qqplot.highmaf.png")); case false => None },
+                                  qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.qqplot.log")); case false => None },
+                                  mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.mhtplot.png")); case false => None },
+                                  mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.mhtplot.log")); case false => None },
+                                  top1000Results = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.top1000.tsv")); case false => None },
+                                  top1000ResultsAnnot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.top1000.annot.tsv")); case false => None },
+                                  top20AnnotAlignedRisk = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.top20.annot.aligned_risk.tsv")); case false => None },
+                                  sigRegions = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.sig.regions.tsv")); case false => None },
+                                  regPlotsBase = model.summarize match { case true => Some(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.sig.regplots"); case false => None },
+                                  regPlotsPdf = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMap(model)(i)(test).local.get / s"${baseString}.batch_${i}.${test.id}.${pheno.id}.results.sig.regplots.pdf")); case false => None }
                                 )
                             }.toMap
                           )
@@ -544,20 +573,28 @@ object ModelStores extends loamstream.LoamFile {
                               schema.masks.get.map { mask =>
                                 mask ->
                                   ModelRegenieAssocGroup(
-                                    base = dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}",
-                                    results = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
-                                      pheno -> store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.tsv.bgz")
-                                    }.toMap,
-                                    log = model.splitChr match { case false => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.log")); case true => None },
+                                    base = dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}",
+                                    resultsPooled = model.splitPhenoResults match {
+                                      case true => None
+                                      case false => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.results.tsv.bgz"))
+                                    },
+                                    results = model.splitPhenoResults match {
+                                      case true =>
+                                        modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
+                                          pheno -> store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.tsv.bgz")
+                                        }.toMap
+                                      case false => Map[ConfigPheno, Store]()
+                                    },
+                                    log = model.splitChr match { case false => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.log")); case true => None },
                                     summary = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
                                       pheno ->
                                         ModelGroupSummary(
-                                          top20Results = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.top20.tsv")); case false => None },
-                                          qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.png")); case false => None },
-                                          qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.log")); case false => None },
-                                          mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.png")); case false => None },
-                                          mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.log")); case false => None },
-                                          minPVal = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.${pheno.id}.results.minpval.tsv")); case false => None }
+                                          top20Results = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.top20.tsv")); case false => None },
+                                          qqPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.png")); case false => None },
+                                          qqPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.qqplot.log")); case false => None },
+                                          mhtPlot = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.png")); case false => None },
+                                          mhtPlotLog = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.mhtplot.log")); case false => None },
+                                          minPVal = model.summarize match { case true => Some(store(dirTree.analysisModelBatchTestMaskMap(model)(i)(test)(mask.id).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.${pheno.id}.results.minpval.tsv")); case false => None }
                                         )
                                     }.toMap,
                                     chrs = model.splitChr match {
@@ -565,11 +602,19 @@ object ModelStores extends loamstream.LoamFile {
                                         expandChrList(array.chrs).map { chr =>
                                           chr ->
                                             ModelRegenieAssocGroupChr(
-                                              base = dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.chr${chr}",
-                                              log = store(dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.chr${chr}.log"),
-                                              results = modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
-                                                pheno -> store(dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch${i}.${test.id}.${mask.id}.chr${chr}.${pheno.id}.results.tsv.bgz")
-                                              }.toMap
+                                              base = dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.chr${chr}",
+                                              log = store(dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.chr${chr}.log"),
+                                              resultsPooled = model.splitPhenoResults match {
+                                                case true => None
+                                                case false => Some(store(dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.chr${chr}.results.tsv.bgz"))
+                                              },
+                                              results = model.splitPhenoResults match {
+                                                case true =>
+                                                  modelBatchPhenos.filter(e => (e.model == model) && (e.batch == i)).map(e => e.pheno).map { pheno =>
+                                                    pheno -> store(dirTree.analysisModelBatchTestMaskChrMap(model)(i)(test)(mask.id)(chr).local.get / s"${baseString}.batch_${i}.${test.id}.${mask.id}.chr${chr}.${pheno.id}.results.tsv.bgz")
+                                                  }.toMap
+                                                case false => Map[ConfigPheno, Store]()
+                                              }
                                             )
                                         }.toMap
                                       case false => Map[String, ModelRegenieAssocGroupChr]()
