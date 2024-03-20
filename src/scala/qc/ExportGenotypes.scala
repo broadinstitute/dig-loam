@@ -77,7 +77,7 @@ object ExportGenotypes extends loamstream.LoamFile {
 	    
         }
 	    
-        drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+        drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
 	    
           cmd"""${utils.binary.binPlink2}
             --vcf ${arrayStores(array).unfilteredVcf.vcf.data.local.get}
@@ -87,7 +87,7 @@ object ExportGenotypes extends loamstream.LoamFile {
             --new-id-max-allele-len ${array.varUidMaxAlleleLen}
             --output-chr ${outChr}
             --out ${arrayStores(array).unfilteredBgen.bgen.base.local.get}
-            --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+            --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
             .in(arrayStores(array).unfilteredVcf.vcf.data.local.get, arrayStores(array).unfilteredVcf.vcf.tbi.local.get)
             .out(arrayStores(array).unfilteredBgen.bgen.data.local.get, arrayStores(array).unfilteredBgen.bgen.sample.local.get)
             .tag(s"${arrayStores(array).unfilteredBgen.bgen.data.local.get}".split("/").last)
@@ -107,13 +107,13 @@ object ExportGenotypes extends loamstream.LoamFile {
 
           case true =>
 
-            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
 	        
               cmd"""${utils.binary.binPlink2}
                 --bgen ${arrayStores(array).unfilteredBgen.bgen.data.local.get} ref-first
                 --freq
                 --out ${arrayStores(array).unfilteredBgen.stats.get.base}
-                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
                 .in(arrayStores(array).unfilteredBgen.bgen.data.local.get, arrayStores(array).unfilteredBgen.bgen.bgi.local.get)
                 .out(arrayStores(array).unfilteredBgen.stats.get.freq)
                 .tag(s"${arrayStores(array).unfilteredBgen.stats.get.freq}".split("/").last)
@@ -129,7 +129,7 @@ object ExportGenotypes extends loamstream.LoamFile {
             
             }
             
-            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
 	        
               cmd"""${utils.binary.binPlink2}
                 --bgen ${arrayStores(array).unfilteredBgen.bgen.data.local.get}
@@ -138,7 +138,7 @@ object ExportGenotypes extends loamstream.LoamFile {
                 --output-chr ${outChr}
                 --ref-allele force ${arrayStores(array).unfilteredBgen.stats.get.majorAlleles} 2 1
                 --out ${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.base.local.get}
-                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
                 .in(arrayStores(array).unfilteredBgen.bgen.data.local.get, arrayStores(array).unfilteredBgen.bgen.bgi.local.get, arrayStores(array).unfilteredBgen.stats.get.majorAlleles)
                 .out(arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.data.local.get, arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.sample.local.get)
                 .tag(s"${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.data.local.get}".split("/").last)
@@ -219,7 +219,7 @@ object ExportGenotypes extends loamstream.LoamFile {
 	    
         }
 
-        drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+        drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
 	    
           cmd"""${utils.binary.binPlink2}
             --vcf ${arrayStores(array).filteredVcf.get.vcf.data.local.get}
@@ -229,7 +229,7 @@ object ExportGenotypes extends loamstream.LoamFile {
             --new-id-max-allele-len ${array.varUidMaxAlleleLen}
             --output-chr ${outChr}
             --out ${arrayStores(array).filteredBgen.get.bgen.base.local.get}
-            --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+            --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
             .in(arrayStores(array).filteredVcf.get.vcf.data.local.get, arrayStores(array).filteredVcf.get.vcf.tbi.local.get)
             .out(arrayStores(array).filteredBgen.get.bgen.data.local.get, arrayStores(array).filteredBgen.get.bgen.sample.local.get)
             .tag(s"${arrayStores(array).filteredBgen.get.bgen.data.local.get}".split("/").last)
@@ -249,13 +249,13 @@ object ExportGenotypes extends loamstream.LoamFile {
 
           case true =>
 
-            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
 	        
               cmd"""${utils.binary.binPlink2}
                 --bgen ${arrayStores(array).filteredBgen.get.bgen.data.local.get} ref-first
                 --freq
                 --out ${arrayStores(array).filteredBgen.get.stats.get.base}
-                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
                 .in(arrayStores(array).filteredBgen.get.bgen.data.local.get, arrayStores(array).filteredBgen.get.bgen.bgi.local.get)
                 .out(arrayStores(array).filteredBgen.get.stats.get.freq)
                 .tag(s"${arrayStores(array).filteredBgen.get.stats.get.freq}".split("/").last)
@@ -271,7 +271,7 @@ object ExportGenotypes extends loamstream.LoamFile {
             
             }
             
-            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.standardPlinkMultiCpu.cpus, mem = projectConfig.resources.standardPlinkMultiCpu.mem, maxRunTime = projectConfig.resources.standardPlinkMultiCpu.maxRunTime) {
+            drmWith(imageName = s"${utils.image.imgPlink2}", cores = projectConfig.resources.highMemPlink.cpus, mem = projectConfig.resources.highMemPlink.mem, maxRunTime = projectConfig.resources.highMemPlink.maxRunTime) {
 	        
               cmd"""${utils.binary.binPlink2}
                 --bgen ${arrayStores(array).filteredBgen.get.bgen.data.local.get}
@@ -280,7 +280,7 @@ object ExportGenotypes extends loamstream.LoamFile {
                 --output-chr ${outChr}
                 --ref-allele force ${arrayStores(array).filteredBgen.get.stats.get.majorAlleles} 2 1 
                 --out ${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.base.local.get}
-                --memory ${projectConfig.resources.standardPlinkMultiCpu.mem * projectConfig.resources.standardPlinkMultiCpu.cpus * 0.9 * 1000}"""
+                --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
                 .in(arrayStores(array).filteredBgen.get.bgen.data.local.get, arrayStores(array).filteredBgen.get.bgen.bgi.local.get, arrayStores(array).filteredBgen.get.stats.get.majorAlleles)
                 .out(arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.data.local.get, arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.sample.local.get)
                 .tag(s"${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.data.local.get}".split("/").last)
