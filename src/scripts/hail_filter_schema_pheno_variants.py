@@ -40,6 +40,10 @@ def main(args=None):
 	print("read hail table")
 	ht = hl.read_table(args.full_stats_in)
 
+	if 'uid' not in ht.row_value:
+		print("add uid (chr:pos:ref:alt) id to matrix table")
+		ht = ht.annotate(uid = ht.locus.contig + ":" + hl.str(ht.locus.position) + ":" + ht.alleles[0] + ":" + ht.alleles[1])
+
 	print("key rows by locus, alleles and rsid")
 	ht = ht.key_by('locus','alleles','rsid')
 
