@@ -38,7 +38,12 @@ def main(args=None):
 
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
-	mt = mt.annotate_rows(rsid = hl.if_else(hl.is_missing(mt.rsid), mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1], mt.rsid))
+
+	if 'uid' not in mt.row_value:
+		print("add uid (chr:pos:ref:alt) id to matrix table")
+		mt = mt.annotate_rows(uid = mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1])
+
+	mt = mt.annotate_rows(rsid = hl.if_else(hl.is_missing(mt.rsid), mt.uid, mt.rsid))
 
 	print("add cohort annotation")
 	tbl = hl.import_table(

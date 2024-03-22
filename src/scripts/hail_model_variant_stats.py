@@ -34,6 +34,10 @@ def main(args=None):
 	print("read matrix table")
 	mt = hl.read_matrix_table(args.mt_in)
 
+	if 'uid' not in mt.row_value:
+		print("add uid (chr:pos:ref:alt) id to matrix table")
+		mt = mt.annotate_rows(uid = mt.locus.contig + ":" + hl.str(mt.locus.position) + ":" + mt.alleles[0] + ":" + mt.alleles[1])
+
 	print("annotate samples with phenotype file")
 	tbl = hl.import_table(
 		args.pheno_in,
