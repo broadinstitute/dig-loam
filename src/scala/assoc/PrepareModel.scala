@@ -43,9 +43,9 @@ object PrepareModel extends loamstream.LoamFile {
         } yield {
           modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
         }
-        (x.toSeq ++ arrayStores(array).filteredPlink.data) :+ arrayStores(array).phenoFile.local.get :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0 :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get
+        (x.toSeq ++ arrayStores(array).filteredPlink.data) :+ arrayStores(array).phenoFile.local.get :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0 :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get :+ schemaStores((configSchema, configCohorts)).cohortMap.local.get
       case None =>
-        arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0 :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get
+        arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0 :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get :+ schemaStores((configSchema, configCohorts)).cohortMap.local.get
     }
    
     val keepRelated = configModel.tests match {
