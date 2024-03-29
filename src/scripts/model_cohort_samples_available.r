@@ -6,7 +6,8 @@ parser$add_argument("--pheno-in", dest="pheno_in", type="character", help="a phe
 parser$add_argument("--cohorts-map-in", dest="cohorts_map_in", type="character", help="a fam file")
 parser$add_argument("--ancestry-in", dest="ancestry_in", type="character", help="an ancestry file")
 parser$add_argument("--cohorts", dest="cohorts", type="character", help="A comma separated list of cohorts")
-parser$add_argument("--pheno-cols", dest="pheno_cols", type="character", help="a comma separated list of column names for phenotypes")
+#parser$add_argument("--pheno-cols", dest="pheno_cols", type="character", help="a comma separated list of column names for phenotypes")
+parser$add_argument("--pheno-table", dest="pheno_table", type="character", help="a pheno table file")
 parser$add_argument("--sex-col", dest="sex_col", type="character", help="a column name for sex")
 parser$add_argument("--iid-col", dest="iid_col", help='a column name for sample ID in phenotype file')
 parser$add_argument("--sampleqc-in", dest="sampleqc_in", type="character", help="a sampleqc file")
@@ -42,7 +43,12 @@ pheno<-merge(pheno,ancestry,all.x=T)
 cat("limiting to cohorts in list\n")
 pheno<-pheno[pheno$COHORT %in% unlist(strsplit(args$cohorts,",")),]
 
-pheno_cols<-unlist(strsplit(args$pheno_cols,split=","))
+cat("read in pheno table from file")
+phenoTable<-read.table(args$pheno_table,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+phenoTable[is.na(phenoTable)]<-"NA"
+pheno_cols <- phenoTable$id
+
+#pheno_cols<-unlist(strsplit(args$pheno_cols,split=","))
 
 if(! is.null(args$sex_col)) {
 	cols_extract <- c(args$iid_col, pheno_cols, args$sex_col)

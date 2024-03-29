@@ -43,9 +43,9 @@ object PrepareModel extends loamstream.LoamFile {
         } yield {
           modelStores((configModel, configSchema, Seq(projectConfig.Cohorts.filter(e => e.id == c).head), configMeta)).samplesAvailable
         }
-        (x.toSeq ++ arrayStores(array).filteredPlink.data) :+ arrayStores(array).phenoFile.local.get :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
+        (x.toSeq ++ arrayStores(array).filteredPlink.data) :+ arrayStores(array).phenoFile.local.get :+ metaKinshipStores(configMeta.get).kin0 :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0 :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get
       case None =>
-        arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0
+        arrayStores(array).filteredPlink.data :+ arrayStores(array).phenoFile.local.get :+ arrayStores(array).ancestryMap :+ arrayStores(array).sampleQcStats :+ arrayStores(array).kin0 :+ modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get
     }
    
     val keepRelated = configModel.tests match {
@@ -76,7 +76,7 @@ object PrepareModel extends loamstream.LoamFile {
         --ancestry-in ${arrayStores(array).ancestryMap}
         --cohorts "${configModel.cohorts.mkString(",")}"
         ${metaPriorSamplesString}
-        --pheno-cols "${configModel.pheno.mkString(",")}"
+        --pheno-table ${modelStores((configModel, configSchema, configCohorts, configMeta)).phenoTable.local.get}
         ${sexColString}
         --iid-col ${array.phenoFileId}
         --sampleqc-in ${arrayStores(array).sampleQcStats}
