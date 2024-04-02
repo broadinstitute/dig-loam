@@ -429,6 +429,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --cloud
             --hail-utils ${projectStores.hailUtils.google.get}
             --reference-genome ${projectConfig.referenceGenome}
+            --var-id-key ${array.varIdKey}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.google.get}
             ${cohortStatsInString}
             ${userAnnotationsInString}
@@ -522,6 +523,7 @@ object PrepareSchema extends loamstream.LoamFile {
             --driver-memory ${(projectConfig.resources.tableHail.mem*0.9*1000).toInt}m
             --executor-memory ${(projectConfig.resources.tableHail.mem*0.9*1000).toInt}m
             --tmp-dir ${projectStores.tmpDir}
+            --var-id-key ${array.varIdKey}
             --reference-genome ${projectConfig.referenceGenome}
             --full-stats-in ${schemaStores((configSchema, configCohorts)).variantsStatsHt.base.local.get}
             ${cohortStatsInString}

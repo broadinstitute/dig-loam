@@ -17,6 +17,8 @@ object PrepareRegenie extends loamstream.LoamFile {
   
   def PrepareRegenie(configSchema: ConfigSchema, configCohorts: Seq[ConfigCohort]): Unit = {
 
+    val array = projectConfig.Arrays.filter(e => e.id == configCohorts.head.array).head
+
     //val masksString = configSchema.masks match {
     //  case Some(_) =>
     //    configSchema.masks.get.size match {
@@ -37,6 +39,7 @@ object PrepareRegenie extends loamstream.LoamFile {
     
       cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
         --reference-genome ${projectConfig.referenceGenome}
+        --var-id-key ${array.varIdKey}
         --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
         --setlist-out ${schemaStores((configSchema, configCohorts)).regenie.get.setlist.local.get}"""
         .in(schemaStores((configSchema, configCohorts)).variantFilterTable.local.get)
@@ -78,6 +81,7 @@ object PrepareRegenie extends loamstream.LoamFile {
             
               cmd"""${utils.binary.binPython} ${utils.python.pyGenerateRegenieGroupfiles}
                 --reference-genome ${projectConfig.referenceGenome}
+                --var-id-key ${array.varIdKey}
                 --mask ${mask.id}
                 --filters ${schemaStores((configSchema, configCohorts)).variantFilterTable.local.get}
                 --annotations-out ${schemaStores((configSchema, configCohorts)).regenie.get.annotations(mask).local.get}

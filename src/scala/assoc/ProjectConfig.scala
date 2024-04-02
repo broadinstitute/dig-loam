@@ -185,7 +185,8 @@ object ProjectConfig extends loamstream.LoamFile {
     phenoFileSexMaleCode: Option[String],
     phenoFileSexFemaleCode: Option[String],
     annotationsHt: Option[String],
-    chrs: Seq[String]) extends Debug
+    chrs: Seq[String],
+    varIdKey: String) extends Debug
   
   final case class ConfigCohort(
     id: String,
@@ -858,6 +859,7 @@ object ProjectConfig extends loamstream.LoamFile {
             phenoFileSexFemaleCode = optionalStr(config = array, field = "phenoFileSexFemaleCode"),
             annotationsHt = annotationsHt,
             chrs = requiredStrList(config = array, field = "chrs", regex = "(([1-9]|1[0-9]|2[0-1])-([2-9]|1[0-9]|2[0-2]))|[1-9]|1[0-9]|2[0-2]|X|Y|MT"),
+            varIdKey = requiredStr(config = array, field = "varIdKey", default = Some("uid"), regex = "uid|rsid")
           )
 
         }

@@ -128,7 +128,7 @@ def main(args=None):
 		annotation_tbl = annotation_tbl.select(*annotation_fields)
 		annotation_tbl = annotation_tbl.annotate(Uploaded_variation = annotation_tbl.Uploaded_variation.replace("_",":").replace("/",":"))
 		annotation_tbl = annotation_tbl.key_by('Uploaded_variation')
-		ht = ht.annotate(annotation = annotation_tbl[ht.uid])
+		ht = ht.annotate(annotation = annotation_tbl[ht[args.var_id_key]])
 
 	if args.user_annotations:
 		print("read in user annotations")
@@ -144,9 +144,9 @@ def main(args=None):
 			user_annot_tbl = user_annot_tbl.key_by('Uploaded_variation')
 			user_annot_tbl = user_annot_tbl.select(*user_annotation_fields)
 			if user_annot_incl_gene == "true":
-				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.uid,ht.annotation.Gene]})
+				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht[args.var_id_key],ht.annotation.Gene]})
 			else:
-				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht.uid]})
+				ht = ht.annotate(**{'file_' + user_annot_id: user_annot_tbl[ht[args.var_id_key]]})
 	
 	start_time = time.time()
 	print("write ht.checkpoint1 hail table to temporary directory")
@@ -283,6 +283,7 @@ if __name__ == "__main__":
 	parser.add_argument('--masks', help='mask id, column name, expression, groupfile; exclude variants satisfying this expression')
 	parser.add_argument('--variant-filters-out', help='a filename for variant filters')
 	parser.add_argument('--cohort-stats-in', nargs='+', help='a list of cohort ids and hail tables with variant stats for each cohort, each separated by commas')
+	parser.add_argument('--var-id-key', default='uid', choices=['rsid','uid'], help='variant unique identifier')
 	parser.add_argument('--cloud', action='store_true', default=False, help='flag indicates that the log file will be a cloud uri rather than regular file path')
 	parser.add_argument('--driver-memory', default="1g", help='spark driver memory')
 	parser.add_argument('--executor-memory', default="1g", help='spark executor memory')
