@@ -117,7 +117,7 @@ object DirTree extends loamstream.LoamFile {
         model ->
           model.batchList.map { i =>
             i -> 
-              projectConfig.Tests.filter(e => model.tests.get.contains(e.id)).map { test =>
+              projectConfig.Tests.filter(e => (model.tests.get.contains(e.id)) && (e.grouped == false)).map { test =>
                 test -> 
                   expandChrList(projectConfig.Arrays.filter(e => e.id == projectConfig.Cohorts.filter(e => projectConfig.Schemas.filter(e => e.id == model.schema).head.cohorts.contains(e.id)).head.array).head.chrs).map { chr =>
                     chr -> appendSubDir(analysisModelBatchTestMap(model)(i)(test), "chr" + chr)
