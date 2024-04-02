@@ -331,27 +331,31 @@ else
 fi
 
 printf "\nrunning module: %s" $module | tee -a $log
-printf "\nstep/s: %s\n\n" "${stepsRun[*]}" | tee -a $log
+printf "\nstep/s: %s" "${stepsRun[*]}" | tee -a $log
 
 finalExitCode=0
 for thisStep in "${stepsRun[@]}"
 do
-	echo "******************************************************" | tee -a $log
-	echo $ls_jar | awk '{print "loamstream jar: "$0}' | tee -a $log
+	printf "\nrunning step: %s" $thisStep | tee -a $log
+	stepLogPre=`echo $log | awk -F'.' 'BEGIN { OFS="." } {NF--; print $0}'`
+	stepLogPost=`echo $log | awk -F'.' 'BEGIN { OFS="." } {print $NF}'`
+	stepLog="${stepLogPre}.${thisStep}.${stepLogPost}"
+	echo "******************************************************" | tee -a $stepLog
+	echo $ls_jar | awk '{print "loamstream jar: "$0}' | tee -a $stepLog
 	ls_version=`java -Xmx${javaXmx}G -Xss${javaXss}m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
-	echo "loamstream version: ${ls_version}" | tee -a $log
-	echo "******************************************************" | tee -a $log
-	echo $dig_loam | awk '{print "dig-loam path: "$0}' | tee -a $log
+	echo "loamstream version: ${ls_version}" | tee -a $stepLog
+	echo "******************************************************" | tee -a $stepLog
+	echo $dig_loam | awk '{print "dig-loam path: "$0}' | tee -a $stepLog
 	dig_loam_branch=`git --git-dir ${dig_loam}/.git rev-parse --abbrev-ref HEAD`
 	dig_loam_commit=`git --git-dir ${dig_loam}/.git log | head -1 | cut -d' ' -f2-`
 	dig_loam_author=`git --git-dir ${dig_loam}/.git log | head -2 | tail -1 | cut -d' ' -f2-`
 	dig_loam_date=`git --git-dir ${dig_loam}/.git log | head -3 | tail -1 | cut -d' ' -f2-`
 	dig_loam_version="dig-loam branch: ${dig_loam_branch} commit: ${dig_loam_commit} author: ${dig_loam_author} date: ${dig_loam_date}"
-	echo "dig-loam version: ${dig_loam_version}" | tee -a $log
-	echo "dig-loam module: ${module}" | tee -a $log
-	echo "dig-loam step: ${thisStep}" | tee -a $log
-	echo "******************************************************" | tee -a $log
-	echo "" | tee -a $log
+	echo "dig-loam version: ${dig_loam_version}" | tee -a $stepLog
+	echo "dig-loam module: ${module}" | tee -a $stepLog
+	echo "dig-loam step: ${thisStep}" | tee -a $stepLog
+	echo "******************************************************" | tee -a $stepLog
+	echo "" | tee -a $stepLog
 	
 	java -Xmx${javaXmx}G -Xss${javaXss}G \
 	-Dloamstream-log-level=${log_level} \
@@ -369,13 +373,13 @@ do
 	$disable_hashing_string \
 	--disable-hashing \
 	--loams ${dig_loam}/src/scala/${module}/*.scala \
-	2>&1 | tee -a $log
+	2>&1 | tee -a $stepLog
 
 	thisExitCode=$?
 
 	if [ $thisExitCode -ne 0 ]
 	then
-		printf "\nERROR: LoamStream returned error code ${thisExitCode} for step ${thisStep} in module ${module}\n" | tee -a $log
+		printf "\nERROR: LoamStream returned error code ${thisExitCode} for step ${thisStep} in module ${module}\n" | tee -a $stepLog
 		exit $thisExitCode
 	else
 		x=$(grep ".* jobs ran. .* succeeded, .* failed, .* skipped, .* could not start, .* other." .loamstream/logs/loamStream.log)
@@ -387,7 +391,7 @@ do
 		fi
 		if [ $nFailed -ne 0 ]
 		then
-			printf "\nERROR: LoamStream ended successfully with ${nFailed} failed jobs for step ${thisStep} in module ${module}\n" | tee -a $log
+			printf "\nERROR: LoamStream ended successfully with ${nFailed} failed jobs for step ${thisStep} in module ${module}\n" | tee -a $stepLog
 			exit $nFailed
 		else
 			finalExitCode=$thisExitCode
@@ -396,5 +400,12 @@ do
 	
 	sleep 10s
 done
+
+if [ $finalExitCode -ne 0 ]
+then
+	printf "\nERROR: LoamStream returned error code ${finalExitCode} in module ${module} / step ${thisStep}\n" | tee -a $log
+else
+	printf "\nLoamStream returned with no error from module ${module}\n" | tee -a $log
+fi
 
 exit $finalExitCode
