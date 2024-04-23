@@ -196,6 +196,8 @@ object ProjectConfig extends loamstream.LoamFile {
     dbNSFP: String,
     vepConservation: String,
     vepGerpBW: Option[String],
+    vepGerpFile: Option[String],
+    vepBufferSize: Int,
     gnomad: String,
     sampleFile: String,
     sampleFileId: String,
@@ -359,6 +361,8 @@ object ProjectConfig extends loamstream.LoamFile {
       val dbNSFP = requiredStr(config = config, field = "dbNSFP")
       val vepConservation = requiredStr(config = config, field = "vepConservation")
       val vepGerpBW = optionalStr(config = config, field = "vepGerpBW")
+      val vepGerpFile = optionalStr(config = config, field = "vepGerpFile")
+      val vepBufferSize = optionalInt(config = config, field = "vepBufferSize", default = 5000)
       val gnomad = requiredStr(config = config, field = "gnomad")
       val sampleFile = requiredStr(config = config, field = "sampleFile")
       val sampleFileId = requiredStr(config = config, field = "sampleFileId")
@@ -380,6 +384,11 @@ object ProjectConfig extends loamstream.LoamFile {
 
       (referenceGenome, vepGerpBW) match {
         case ("GRCh38", None) => throw new CfgException("projectConfig: config setting for vepGerpBW required with reference genome GRCh38")
+        case _ => ()
+      }
+
+      (referenceGenome, vepGerpFile) match {
+        case ("GRCh37", None) => throw new CfgException("projectConfig: config setting for vepGerpFile required with reference genome GRCh37")
         case _ => ()
       }
   

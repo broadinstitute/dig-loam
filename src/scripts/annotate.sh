@@ -1,5 +1,7 @@
 #!/bin/bash
 
+bufferSize=5000
+
 while :; do
 	case $1 in
         --sites-vcf)
@@ -110,12 +112,30 @@ while :; do
 				exit 1
 			fi
 			;;
+		--gerp-file)
+			if [ "$2" ]; then
+				gerpFile=$2
+				shift
+			else
+				echo "ERROR: --gerp-file requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--conservation)
 			if [ "$2" ]; then
 				conservation=$2
 				shift
 			else
 				echo "ERROR: --conservation requires a non-empty argument."
+				exit 1
+			fi
+			;;
+		--buffer-size)
+			if [ "$2" ]; then
+				bufferSize=$2
+				shift
+			else
+				echo "ERROR: --buffer-size requires a non-empty argument."
 				exit 1
 			fi
 			;;
@@ -144,7 +164,9 @@ echo "--header $header"
 echo "--reference-genome $referenceGenome"
 echo "--gnomad $gnomad"
 echo "--gerpbw $gerpbw"
+echo "--gerp-file $gerpFile"
 echo "--conservation $conservation"
+echo "--buffer-size $bufferSize"
 
 # check loftee requirements
 if [ "$referenceGenome" == "GRCh38" ]
@@ -152,16 +174,18 @@ then
 	lofteeOptions="loftee_path:${dirPlugins},gerp_bigwig:${gerpbw},conservation_file:${conservation},human_ancestor_fa:${fasta}"
 elif [ "$referenceGenome" == "GRCh37" ]
 then
-	lofteeOptions="loftee_path:${dirPlugins},conservation_file:${conservation},human_ancestor_fa:${fasta}"
+	lofteeOptions="loftee_path:${dirPlugins},gerp_file:${gerpFile},conservation_file:${conservation},human_ancestor_fa:${fasta}"
 else
 	echo "...reference genome $referenceGenome not currently supported!"
 	exit 1
 fi
 echo "lofteeOptions: $lofteeOptions"
 
-if [ $cpus -gt 1 ]
+forks=$((cpus-1))
+
+if [ $forks -gt 1 ]
 then
-	fork="--fork $cpus"
+	fork="--fork $forks"
     echo $fork
 else
 	fork=""
@@ -171,6 +195,7 @@ year=`date +%Y`
 
 vep -i $sitesVcf \
 $fork \
+--buffer_size $bufferSize \
 --format vcf \
 --verbose \
 --force_overwrite \
