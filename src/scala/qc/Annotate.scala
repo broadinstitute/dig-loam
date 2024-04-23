@@ -15,13 +15,13 @@ object Annotate extends loamstream.LoamFile {
   def Annotate(array: ConfigArray): Unit = {
 
     val lofteeOptions = projectConfig.referenceGenome match {
-      case "GRCh37" => s"--conservation ${projectStores.vepConservation.toString.split("@")(1)}"
+      case "GRCh37" => s"--conservation ${projectStores.vepConservation.toString.split("@")(1)} --gerp-file ${projectStores.vepGerpFile.get.toString.split("@")(1)}"
       case "GRCh38" => s"--conservation ${projectStores.vepConservation.toString.split("@")(1)} --gerpbw ${projectStores.vepGerpBW.get.toString.split("@")(1)}"
       case s => throw new CfgException("Annotate.lofteeOptions: reference genome " + s + " not supported")
     }
 
     val lofteeOptionsIn = projectConfig.referenceGenome match {
-      case "GRCh37" => Seq(projectStores.vepConservation)
+      case "GRCh37" => Seq(projectStores.vepConservation, projectStores.vepGerpFile.get)
       case "GRCh38" => Seq(projectStores.vepConservation, projectStores.vepGerpBW.get)
       case s => throw new CfgException("Annotate.lofteeOptions: reference genome " + s + " not supported")
     }
@@ -53,6 +53,7 @@ object Annotate extends loamstream.LoamFile {
         cmd"""${utils.bash.shAnnotate}
           --sites-vcf ${arrayStores(array).refData.sitesVcfChr(chr)}
           --cpus ${projectConfig.resources.vep.cpus}
+          --buffer-size ${projectConfig.vepBufferSize}
           --fasta ${projectStores.fasta}
           --dir-cache ${projectStores.vepCacheDir}
           --dir-plugins ${projectStores.vepPluginsDir}

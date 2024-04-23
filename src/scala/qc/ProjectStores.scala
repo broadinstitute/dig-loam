@@ -26,6 +26,7 @@ object ProjectStores extends loamstream.LoamFile {
     dbNSFP: Store,
     vepConservation: Store,
     vepGerpBW: Option[Store],
+    vepGerpFile: Option[Store],
     gnomad: Store,
     sampleFile: MultiStore,
     ancestryInferredGmm: MultiStore,
@@ -107,6 +108,10 @@ object ProjectStores extends loamstream.LoamFile {
       dbNSFP = store(path(checkPath(projectConfig.dbNSFP))).asInput,
       vepConservation = store(path(checkPath(projectConfig.vepConservation))).asInput,
       vepGerpBW = projectConfig.vepGerpBW match {
+        case Some(s) => Some(store(path(checkPath(s))).asInput)
+        case None => None
+      },
+      vepGerpFile = projectConfig.vepGerpFile match {
         case Some(s) => Some(store(path(checkPath(s))).asInput)
         case None => None
       },
