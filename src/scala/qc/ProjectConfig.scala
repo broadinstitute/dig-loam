@@ -362,7 +362,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val vepConservation = requiredStr(config = config, field = "vepConservation")
       val vepGerpBW = optionalStr(config = config, field = "vepGerpBW")
       val vepGerpFile = optionalStr(config = config, field = "vepGerpFile")
-      val vepBufferSize = optionalInt(config = config, field = "vepBufferSize", default = 5000)
+      val vepBufferSize = requiredInt(config = config, field = "vepBufferSize", default = Some(5000))
       val gnomad = requiredStr(config = config, field = "gnomad")
       val sampleFile = requiredStr(config = config, field = "sampleFile")
       val sampleFileId = requiredStr(config = config, field = "sampleFileId")
@@ -814,6 +814,8 @@ object ProjectConfig extends loamstream.LoamFile {
         dbNSFP = dbNSFP,
         vepConservation = vepConservation,
         vepGerpBW = vepGerpBW,
+        vepGerpFile = vepGerpFile,
+        vepBufferSize = vepBufferSize,
         gnomad = gnomad,
         sampleFile = sampleFile,
         sampleFileId = sampleFileId,
