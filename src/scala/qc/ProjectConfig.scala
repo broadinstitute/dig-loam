@@ -289,6 +289,7 @@ object ProjectConfig extends loamstream.LoamFile {
   final case class Bash(
     shFindPossibleDuplicateVariants: Path,
     shExtractIndels: Path,
+    shMergeSnpsOther: Path,
     shAnnotate: Path,
     shAnnotateResults: Path,
     shKing: Path,
@@ -908,6 +909,7 @@ object ProjectConfig extends loamstream.LoamFile {
       val bash = Bash(
         shFindPossibleDuplicateVariants = path(s"${scriptsDir}/find_possible_duplicate_variants.sh"),
         shExtractIndels = path(s"${scriptsDir}/extract_indels.sh"),
+        shMergeSnpsOther = path(s"${scriptsDir}/merge_snps_other.sh"),
         shAnnotate = path(s"${scriptsDir}/annotate.sh"),
         shAnnotateResults = path(s"${scriptsDir}/annotate_results.sh"),
         shKing = path(s"${scriptsDir}/king.sh"),
