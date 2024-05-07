@@ -28,8 +28,6 @@ print_usage () {
 	printf "  --log-level [STRING]:\n"
 	printf "      a string from [TRACE,DEBUG,INFO]\n"
 	printf "      indicating the level of logging in loamstream\n\n"
-	printf "  --log [STRING]:\n"
-	printf "      filename of log for this dig-loam session\n\n"
 	printf "OPTIONAL:\n\n"
 	printf "  --step [STRING]:\n"
 	printf "      run from a specific step (note: will only run step/s if prior required steps are complete)\n"
@@ -158,15 +156,6 @@ do
 				exit 1
 			fi
 			;;
-		--log)
-			if [ "$2" ]; then
-				log=$2
-				shift
-			else
-				printf "\nERROR: --log requires a non-empty argument."
-				exit 1
-			fi
-			;;
 		--step)
 			if [ "$2" ]; then
 				moduleStep=$2
@@ -220,6 +209,13 @@ do
 	esac
 	shift
 done
+
+if [ ! -d ".dig-loam" ]
+then
+	mkdir .dig-loam
+fi
+
+log=".dig-loam/dig-loam.log"
 
 echo "******************************************************" | tee $log
 echo "dig-loam.sh" | tee -a $log
@@ -388,6 +384,18 @@ do
 			nFailed=1
 		else
 			nFailed=$(echo $x | tr ',' '\n' | grep failed | awk '{print $1}')
+		fi
+		if [ -f .loamstream/logs/successful-job-outputs.txt ]
+		then
+			cat .loamstream/logs/successful-job-outputs.txt | sort -u > .dig-loam/dig-loam.${thisStep}.successful
+			if [ -f .dig-loam/dig-loam.successful ]
+			then
+				mv .dig-loam/dig-loam.successful .dig-loam/dig-loam.successful.tmp
+				cat .dig-loam/dig-loam.successful.tmp .dig-loam/dig-loam.${thisStep}.successful | sort -u > .dig-loam/dig-loam.successful
+				rm .dig-loam/dig-loam.successful.tmp
+			else
+				cat .dig-loam/dig-loam.${thisStep}.successful | sort -u > .dig-loam/dig-loam.successful
+			fi
 		fi
 		if [ $nFailed -ne 0 ]
 		then

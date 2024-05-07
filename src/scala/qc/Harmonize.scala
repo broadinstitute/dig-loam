@@ -144,7 +144,17 @@ object Harmonize extends loamstream.LoamFile {
   
           drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
 
-            cmd"""/bin/bash -c "n=`wc -l ${chrData.otherPlink.get.base}.bim | awk '{print $$1}'`; m=`wc -l ${chrData.otherRemove.get} | awk '{print $$1}'`; if [ $$n -eq $$m ]; then touch ${chrData.otherHuRefPlink.get.base}.bed; touch ${chrData.otherHuRefPlink.get.base}.bim; touch ${chrData.otherHuRefPlink.get.base}.fam; ${utils.binary.binPlink} --bfile ${chrData.mergedKgHuRefPlink.base} --allow-no-sex --output-chr MT --make-bed --keep-allele-order --out ${chrData.refPlink.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1; else ${utils.binary.binPlink} --bfile ${chrData.otherPlink.get.base} --allow-no-sex --exclude ${chrData.otherRemove.get} --flip ${chrData.otherFlip.get} --a1-allele ${chrData.otherForceA1.get} --output-chr MT --make-bed --out ${chrData.otherHuRefPlink.get.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1 && ${utils.binary.binPlink} --bfile ${chrData.mergedKgHuRefPlink.base} --allow-no-sex --bmerge ${chrData.otherHuRefPlink.get.base} --output-chr MT --make-bed --keep-allele-order --out ${chrData.refPlink.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1; fi""""
+            cmd"""${utils.bash.shMergeSnpsOther}
+              --plink-path ${utils.binary.binPlink}
+              --other-bim ${chrData.otherPlink.get.base}.bim
+              --other-nonkg-remove ${chrData.otherRemove.get}
+              --other-nonkg-flip ${chrData.otherFlip.get}
+              --other-nonkg-force-a1 ${chrData.otherForceA1.get}
+              --snps-huref-bfile ${chrData.mergedKgHuRefPlink.base}
+              --other-huref-bfile ${chrData.otherHuRefPlink.get.base}
+              --other-bfile ${chrData.otherPlink.get.base}
+              --ref-bfile ${chrData.refPlink.base}
+              """
               .in((chrData.mergedKgHuRefPlink.data ++ chrData.otherPlink.get.data) :+ chrData.otherRemove.get :+ chrData.otherFlip.get :+ chrData.otherForceA1.get)
               .out(chrData.otherHuRefPlink.get.data ++ chrData.refPlink.data)
               .tag(s"${chrData.refPlink.base}".split("/").last)
