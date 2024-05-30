@@ -65,6 +65,9 @@ object Ancestry extends loamstream.LoamFile {
             --mt-in ${arrayStores(array).refData.mt.google.get}
             --kg-vcf-in ${projectStores.kgPurcellVcf.google.get}
             --kg-sample ${projectStores.kgSample.google.get}
+            --kg-sample-id ${projectConfig.kgSampleId}
+            --kg-sample-pop ${projectConfig.kgSamplePop}
+            --kg-sample-group ${projectConfig.kgSampleGroup}
             --plink-out ${arrayStores(array).ref1kgData.plink.base.google.get}
             --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples.google.get}
             --cloud
@@ -95,6 +98,9 @@ object Ancestry extends loamstream.LoamFile {
             --mt-in ${arrayStores(array).refData.mt.local.get}
             --kg-vcf-in ${projectStores.kgPurcellVcf.local.get}
             --kg-sample ${projectStores.kgSample.local.get}
+            --kg-sample-id ${projectConfig.kgSampleId}
+            --kg-sample-pop ${projectConfig.kgSamplePop}
+            --kg-sample-group ${projectConfig.kgSampleGroup}
             --plink-out ${arrayStores(array).ref1kgData.plink.base.local.get}
             --kg-samples-out ${arrayStores(array).ref1kgData.kgSamples.local.get}
             --log ${arrayStores(array).ref1kgData.hailLog.local.get}"""
