@@ -59,8 +59,8 @@ if(! is.null(args$sex_col)) {
 if(! is.null(args$covars)) {
 	cat("removing factor indicators from covariates\n")
 	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
-	cat(paste0("extracting model specific columns from pheno file: ", paste(c(cols_extract, covars), collapse=",")),"\n")
-	pheno<-pheno[,c(cols_extract, covars)]
+	cat(paste0("extracting model specific columns from pheno file: ", paste(unique(c(cols_extract, covars)), collapse=",")),"\n")
+	pheno<-pheno[,unique(c(cols_extract, covars))]
 } else {
 	cat(paste0("extracting model specific columns from pheno file: ", paste(cols_extract, collapse=",")),"\n")
 	pheno<-pheno[,cols_extract]
