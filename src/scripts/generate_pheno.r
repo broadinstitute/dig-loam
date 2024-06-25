@@ -104,9 +104,9 @@ if(length(covars) > 0) {
 				failed <- TRUE
 			} else {
 				for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-					pheno[,paste0(cvb,val)] <- 0
-					pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-					covars_factors <- c(covars_factors,paste0(cvb,val))
+					pheno[,paste0(cvb,"_",val)] <- 0
+					pheno[,paste0(cvb,"_",val)][which(pheno[,cvb] == val)] <- 1
+					covars_factors <- c(covars_factors,paste0(cvb,"_",val))
 				}
 			}
 			covars_factors <- covars_factors[covars_factors != cv]

@@ -27,9 +27,9 @@ for(cv in covars_analyzed) {
 	if(cvv[1] == "[" && cvv[length(cvv)] == "]") {
 		cvb<-paste(cvv[2:(length(cvv)-1)],collapse="")
 		for(val in sort(unique(pheno[,cvb]))[2:length(sort(unique(pheno[,cvb])))]) {
-			pheno[,paste0(cvb,val)] <- 0
-			pheno[,paste0(cvb,val)][which(pheno[,cvb] == val)] <- 1
-			covars_analyzed <- c(covars_analyzed,paste0(cvb,val))
+			pheno[,paste0(cvb,"_",val)] <- 0
+			pheno[,paste0(cvb,"_",val)][which(pheno[,cvb] == val)] <- 1
+			covars_analyzed <- c(covars_analyzed,paste0(cvb,"_",val))
 		}
 		covars_analyzed <- covars_analyzed[covars_analyzed != cv]
 	}
