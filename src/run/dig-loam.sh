@@ -336,7 +336,7 @@ do
 	stepLogPre=`echo $log | awk -F'.' 'BEGIN { OFS="." } {NF--; print $0}'`
 	stepLogPost=`echo $log | awk -F'.' 'BEGIN { OFS="." } {print $NF}'`
 	stepLog="${stepLogPre}.${thisStep}.${stepLogPost}"
-	echo "******************************************************" | tee -a $stepLog
+	echo "******************************************************" | tee $stepLog
 	echo $ls_jar | awk '{print "loamstream jar: "$0}' | tee -a $stepLog
 	ls_version=`java -Xmx${javaXmx}G -Xss${javaXss}m -jar $ls_jar --version | grep "built on" | cut -d' ' -f6- | tr -dc '[:alnum:][:space:]().:\-\n' | sed 's/Z0m//g'`
 	echo "loamstream version: ${ls_version}" | tee -a $stepLog
