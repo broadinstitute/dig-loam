@@ -25,32 +25,36 @@ args<-parser$parse_args()
 
 print(args)
 
-cat("read in pheno file\n")
+cat("read in pheno file: ")
 pheno<-read.table(args$pheno_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+cat(paste0(nrow(pheno)," samples\n"))
 
-cat("reading cohorts from file\n")
+cat("reading cohorts from file: ")
 cohorts_map<-read.table(args$cohorts_map_in,header=F,as.is=T,stringsAsFactors=F,sep="\t")
+cat(paste0(nrow(cohorts_map)," samples\n"))
 names(cohorts_map)[1]<-args$iid_col
 names(cohorts_map)[2]<-"COHORT"
 pheno<-merge(pheno,cohorts_map,all.y=T)
 
-cat("reading inferred ancestry from file\n")
+cat("reading inferred ancestry from file: ")
 ancestry<-read.table(args$ancestry_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+cat(paste0(nrow(ancestry)," samples\n"))
 names(ancestry)[1]<-args$iid_col
 names(ancestry)[2]<-"ANCESTRY_INFERRED"
 pheno<-merge(pheno,ancestry,all.x=T)
 
-cat("limiting to cohorts in list\n")
+cat("limiting to cohorts in list: ")
 pheno<-pheno[pheno$COHORT %in% unlist(strsplit(args$cohorts,",")),]
+cat(paste0(nrow(pheno)," samples remaining\n"))
 
-cat("read in pheno table from file")
+cat("read in pheno table from file: ")
 phenoTable<-read.table(args$pheno_table,header=T,as.is=T,stringsAsFactors=F,sep="\t")
+cat(paste0(nrow(phenoTable)," phenotypes\n"))
 phenoTable[is.na(phenoTable)]<-"NA"
 pheno_cols <- phenoTable$id
 
-#pheno_cols<-unlist(strsplit(args$pheno_cols,split=","))
-
 if(! is.null(args$sex_col)) {
+	cat(paste0("adding ",args$sex_col," to output fields list\n"))
 	cols_extract <- c(args$iid_col, pheno_cols, args$sex_col)
 } else {
 	cols_extract <- c(args$iid_col, pheno_cols)
@@ -60,6 +64,7 @@ if(! is.null(args$covars)) {
 	cat("removing factor indicators from covariates\n")
 	covars <- gsub("\\]","",gsub("\\[","",unlist(strsplit(args$covars,split="\\+"))))
 	cat(paste0("extracting model specific columns from pheno file: ", paste(unique(c(cols_extract, covars)), collapse=",")),"\n")
+	print(colnames(pheno))
 	pheno<-pheno[,unique(c(cols_extract, covars))]
 } else {
 	cat(paste0("extracting model specific columns from pheno file: ", paste(cols_extract, collapse=",")),"\n")
@@ -76,9 +81,10 @@ id_map$removed_cckinship <- 0
 id_map$flagged_incomplete_obs <- 0
 id_map$removed_incomplete_obs <- 0
 
-cat("reading in kinship values for related pairs\n")
+cat("reading in kinship values for related pairs: ")
 kinship_in <- read.table(args$kinship_in,header=T,as.is=T,stringsAsFactors=F,sep="\t")
 kinship_in <- kinship_in[which((kinship_in$ID1 %in% pheno[,args$iid_col]) & (kinship_in$ID2 %in% pheno[,args$iid_col])),]
+cat(paste0(nrow(kinship_in)," pairs found\n"))
 
 if(nrow(kinship_in) > 0) {
 	kinship_in$pair_idx <- row.names(kinship_in)
@@ -153,11 +159,12 @@ if(nrow(kinship_in) > 0) {
 		pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
 		id_map$flagged_kinship[which(id_map$ID %in% samples_excl)] <- 1
 		id_map$removed_kinship[which(id_map$ID %in% samples_excl)] <- 1
-		cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)])),"/",as.character(length(id_map$flagged_kinship[which(id_map$flagged_kinship == 1)]))," flagged samples due to within-array kinship"),"\n")
+		cat(paste0("removed ",as.character(length(id_map$removed_kinship[which(id_map$removed_kinship == 1)])),"/",as.character(length(id_map$flagged_kinship[which(id_map$flagged_kinship == 1)]))," flagged samples due to within-array kinship: "))
 	}
 } else {
-	cat(paste0("removed 0 samples due to kinship"),"\n")
+	cat("removed 0 samples due to kinship: ")
 }
+cat(paste0(nrow(pheno)," samples remaining\n"))
 
 get_id<-function(s) {
 	paste(unlist(strsplit(s,"_"))[1:(length(unlist(strsplit(s,"_")))-1)],collapse="_")
@@ -203,13 +210,15 @@ if(! is.null(args$cckinship)) {
 	pheno <- pheno[which(! pheno[,args$iid_col] %in% samples_excl),]
 	id_map$flagged_cckinship[which(id_map$ID %in% samples_excl)] <- 1
 	id_map$removed_cckinship[which((id_map$removed_kinship == 0) & (id_map$ID %in% samples_excl))] <- 1
-	cat(paste0("removed ",as.character(length(id_map$removed_cckinship[which(id_map$removed_cckinship == 1)])),"/",as.character(length(id_map$flagged_cckinship[which(id_map$flagged_cckinship == 1)]))," flagged samples due to cross cohort kinship"),"\n")
+	cat(paste0("removed ",as.character(length(id_map$removed_cckinship[which(id_map$removed_cckinship == 1)])),"/",as.character(length(id_map$flagged_cckinship[which(id_map$flagged_cckinship == 1)]))," flagged samples due to cross cohort kinship: "))
 }
+cat(paste0(nrow(pheno)," samples remaining\n"))
 
 cat("extracting only complete observations\n")
 pheno <- subset(pheno, rowSums(! is.na(pheno[pheno_cols])) > 0)
 id_map$removed_incomplete_obs[which((id_map$removed_kinship == 0) & (id_map$removed_cckinship == 0) & (! id_map$ID %in% pheno[,args$iid_col]))] <- 1
-cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)])),"/",as.character(length(id_map$flagged_incomplete_obs[which(id_map$flagged_incomplete_obs == 1)]))," flagged samples with incomplete observations"),"\n")
+cat(paste0("removed ",as.character(length(id_map$removed_incomplete_obs[which(id_map$removed_incomplete_obs == 1)])),"/",as.character(length(id_map$flagged_incomplete_obs[which(id_map$flagged_incomplete_obs == 1)]))," flagged samples with incomplete observations: "))
+cat(paste0(nrow(pheno)," samples remaining\n"))
 
 cohorts_map <- cohorts_map[cohorts_map[,args$iid_col] %in% pheno[,args$iid_col],]
 
