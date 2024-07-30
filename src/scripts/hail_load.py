@@ -42,7 +42,14 @@ def main(args=None):
 		mt = hl.import_vcf(args.vcf_in.split(","), force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False, contig_recoding=recode)
 	elif args.plink_in:
 		print("read plink file")
-		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
+		x = args.plink_in.split(",")
+		if len(x) == 3:
+			mt = hl.import_plink(bed = x[0], bim = x[1], fam = x[2], reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
+		else if len(x) == 1:
+			mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
+		else:
+			print("option --plink-in must either be a single plink file base name, or 3 comma separated plink fileset names (bed/bim/fam)")
+			return -1
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
 		mt = mt.annotate_rows(qual = hl.missing(hl.tfloat64), filters = hl.missing(hl.tset(hl.tstr)), info = hl.struct(**{}))
@@ -226,7 +233,7 @@ if __name__ == "__main__":
 	parser.add_argument('--vcf-in', help='a compressed vcf file')
 	parser.add_argument('--mt-in', help='a hail matrix table')
 	parser.add_argument('--dbsnp-ht', help='a dbsnp build vcf (ex: https://ftp.ncbi.nlm.nih.gov/snp/organisms/human_9606_b151_GRCh37p13/VCF/00-All.vcf.gz)')
-	parser.add_argument('--plink-in', help='a plink file set base name')
+	parser.add_argument('--plink-in', help='a plink file set base name, or a comma separated list of bed,bim,fam')
 	parser.add_argument('--sex-col', help='a column name for sex in the sample file')
 	parser.add_argument('--male-code', help='a code for male')
 	parser.add_argument('--female-code', help='a code for female')
