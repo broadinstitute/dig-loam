@@ -39,7 +39,7 @@ def main(args=None):
 			recode['MT'] = 'chrM'
 		else:
 			recode = None
-		mt = hl.import_vcf(args.vcf_in, force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False, contig_recoding=recode)
+		mt = hl.import_vcf(args.vcf_in.split(","), force_bgz=True, reference_genome=args.reference_genome, min_partitions=args.min_partitions, array_elements_required=False, contig_recoding=recode)
 	elif args.plink_in:
 		print("read plink file")
 		mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
