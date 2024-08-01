@@ -53,7 +53,7 @@ def main(args=None):
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
 		mt = mt.annotate_rows(qual = hl.missing(hl.tfloat64), filters = hl.missing(hl.tset(hl.tstr)), info = hl.struct(**{}))
-	elif args.plink_bed and arggs.plink_bim and args.plink_fam:
+	elif args.plink_bed and args.plink_bim and args.plink_fam:
 		mt = hl.import_plink(bed = args.plink_bed, bim = args.plink_bim, fam = args.plink_fam, reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
 		mt = mt.filter_rows((mt.alleles[0] == ".") | (mt.alleles[1] == "."), keep=False)
 		mt = mt.drop(mt.fam_id, mt.pat_id, mt.mat_id, mt.is_female, mt.quant_pheno)
