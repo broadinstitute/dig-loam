@@ -45,7 +45,7 @@ def main(args=None):
 		x = args.plink_in.split(",")
 		if len(x) == 3:
 			mt = hl.import_plink(bed = x[0], bim = x[1], fam = x[2], reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
-		else if len(x) == 1:
+		elif len(x) == 1:
 			mt = hl.import_plink(bed = args.plink_in + ".bed", bim = args.plink_in + ".bim", fam = args.plink_in + ".fam", reference_genome=args.reference_genome, min_partitions=args.min_partitions, a2_reference=True, quant_pheno=True, missing='-9')
 		else:
 			print("option --plink-in must either be a single plink file base name, or 3 comma separated plink fileset names (bed/bim/fam)")
