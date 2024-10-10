@@ -180,6 +180,7 @@ object ProjectConfig extends loamstream.LoamFile {
     cloudHome: Option[URI],
     projectId: String,
     referenceGenome: String,
+    plinkOutputChr: String,
     dbSNPht: String,
     regionsExclude: String,
     kgPurcellVcf: String,
@@ -382,6 +383,12 @@ object ProjectConfig extends loamstream.LoamFile {
       val acknowledgements = optionalStrList(config = config, field = "acknowledgements")
       val nAncestryInferenceFeatures = requiredInt(config = config, field = "nAncestryInferenceFeatures", default = Some(3), min = Some(1), max = Some(20))
       val preferredAncestryInferenceMethod = requiredStr(config = config, field = "preferredAncestryInferenceMethod", regex = ancestryInferenceMethods.mkString("|"))
+
+      val plinkOutputChr = referenceGenome match {
+        case "GRCh37" => "MT"
+        case "GRCh38" => "chrM"
+        case _ => "MT"
+      }
 
       (referenceGenome, vepGerpBW) match {
         case ("GRCh38", None) => throw new CfgException("projectConfig: config setting for vepGerpBW required with reference genome GRCh38")
@@ -799,6 +806,7 @@ object ProjectConfig extends loamstream.LoamFile {
         cloudHome = cloudHome,
         cloudShare = cloudShare,
         referenceGenome = referenceGenome,
+        plinkOutputChr = plinkOutputChr,
         regionsExclude = regionsExclude,
         kgPurcellVcf = kgPurcellVcf,
         dbSNPht = dbSNPht,

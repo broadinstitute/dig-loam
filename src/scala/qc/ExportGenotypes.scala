@@ -14,11 +14,6 @@ object ExportGenotypes extends loamstream.LoamFile {
   
   def ExportGenotypes(array: ConfigArray, filter: Boolean, alignBgenMaf: Boolean): Unit = {
 
-    val outChr = projectConfig.referenceGenome match {
-      case "GRCh37" => "MT"
-      case "GRCh38" => "M"
-    }
-
     filter match {
 
       case false =>
@@ -85,7 +80,7 @@ object ExportGenotypes extends loamstream.LoamFile {
             --export bgen-1.2 'bits=8' ref-first id-paste=iid
             --set-all-var-ids @:#:\$$r:\$$a
             --new-id-max-allele-len ${array.varUidMaxAlleleLen}
-            --output-chr ${outChr}
+            --output-chr ${projectConfig.plinkOutputChr}
             --out ${arrayStores(array).unfilteredBgen.bgen.base.local.get}
             --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
             .in(arrayStores(array).unfilteredVcf.vcf.data.local.get, arrayStores(array).unfilteredVcf.vcf.tbi.local.get)
@@ -135,7 +130,7 @@ object ExportGenotypes extends loamstream.LoamFile {
                 --bgen ${arrayStores(array).unfilteredBgen.bgen.data.local.get}
                 --double-id
                 --export bgen-1.2 'bits=8' ref-first id-paste=iid
-                --output-chr ${outChr}
+                --output-chr ${projectConfig.plinkOutputChr}
                 --ref-allele force ${arrayStores(array).unfilteredBgen.stats.get.majorAlleles} 2 1
                 --out ${arrayStores(array).unfilteredBgen.bgenAlignedMaf.get.base.local.get}
                 --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
@@ -227,7 +222,7 @@ object ExportGenotypes extends loamstream.LoamFile {
             --export bgen-1.2 'bits=8' ref-first id-paste=iid
             --set-all-var-ids @:#:\$$r:\$$a
             --new-id-max-allele-len ${array.varUidMaxAlleleLen}
-            --output-chr ${outChr}
+            --output-chr ${projectConfig.plinkOutputChr}
             --out ${arrayStores(array).filteredBgen.get.bgen.base.local.get}
             --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""
             .in(arrayStores(array).filteredVcf.get.vcf.data.local.get, arrayStores(array).filteredVcf.get.vcf.tbi.local.get)
@@ -277,7 +272,7 @@ object ExportGenotypes extends loamstream.LoamFile {
                 --bgen ${arrayStores(array).filteredBgen.get.bgen.data.local.get}
                 --double-id
                 --export bgen-1.2 'bits=8' ref-first id-paste=iid
-                --output-chr ${outChr}
+                --output-chr ${projectConfig.plinkOutputChr}
                 --ref-allele force ${arrayStores(array).filteredBgen.get.stats.get.majorAlleles} 2 1 
                 --out ${arrayStores(array).filteredBgen.get.bgenAlignedMaf.get.base.local.get}
                 --memory ${projectConfig.resources.highMemPlink.mem * 0.9 * 1000}"""

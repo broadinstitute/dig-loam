@@ -38,7 +38,7 @@ object Harmonize extends loamstream.LoamFile {
   
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-  	  cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --snps-only --chr $chr --keep-allele-order --make-bed --out ${chrData.snpsPlink.base} --output-chr MT --memory ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)} --seed 1"""
+  	  cmd"""${utils.binary.binPlink} --bfile ${arrayStores(arrayCfg).annotatedData.get.plink.base} --allow-no-sex --snps-only --chr $chr --keep-allele-order --make-bed --out ${chrData.snpsPlink.base} --output-chr ${projectConfig.plinkOutputChr} --memory ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)} --seed 1"""
           .in(arrayStores(arrayCfg).annotatedData.get.plink.data)
           .out(chrData.snpsPlink.data)
           .tag(s"${chrData.snpsPlink.base}".split("/").last)
@@ -51,7 +51,7 @@ object Harmonize extends loamstream.LoamFile {
   
           drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
   
-            cmd"""${utils.bash.shExtractIndels} ${utils.binary.binPlink} ${arrayStores(arrayCfg).annotatedData.get.plink.base} ${arrayStores(arrayCfg).annotatedData.get.snplist} $chr ${chrData.otherPlink.get.base} ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)}"""
+            cmd"""${utils.bash.shExtractIndels} ${utils.binary.binPlink} ${arrayStores(arrayCfg).annotatedData.get.plink.base} ${arrayStores(arrayCfg).annotatedData.get.snplist} $chr ${chrData.otherPlink.get.base} ${(projectConfig.resources.standardPlink.mem * 0.9 * 1000)} ${projectConfig.plinkOutputChr}"""
               .in(arrayStores(arrayCfg).annotatedData.get.plink.data :+ arrayStores(arrayCfg).annotatedData.get.snplist)
               .out(chrData.otherPlink.get.data)
               .tag(s"${chrData.otherPlink.get.base}".split("/").last)
@@ -131,7 +131,7 @@ object Harmonize extends loamstream.LoamFile {
   
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
         
-        cmd"""${utils.binary.binPlink} --bfile ${chrData.mergedKgPlink.base} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr MT --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
+        cmd"""${utils.binary.binPlink} --bfile ${chrData.mergedKgPlink.base} --allow-no-sex --exclude ${chrData.nonKgRemove} --flip ${chrData.nonKgFlip} --a1-allele ${chrData.nonKgForceA1} --output-chr ${projectConfig.plinkOutputChr} --make-bed --out ${chrData.mergedKgHuRefPlink.base} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1"""
           .in(chrData.mergedKgPlink.data :+ chrData.nonKgRemove :+ chrData.nonKgFlip :+ chrData.nonKgForceA1)
           .out(chrData.mergedKgHuRefPlink.data)
           .tag(s"${chrData.mergedKgHuRefPlink.base}".split("/").last)
@@ -176,7 +176,7 @@ object Harmonize extends loamstream.LoamFile {
       
       drmWith(imageName = s"${utils.image.imgTools}", cores = projectConfig.resources.standardPlink.cpus, mem = projectConfig.resources.standardPlink.mem, maxRunTime = projectConfig.resources.standardPlink.maxRunTime) {
       
-        cmd"""${utils.binary.binPlink} --bfile ${chrData.refPlink.base} --allow-no-sex --real-ref-alleles --a2-allele ${chrData.forceA2} --output-chr MT --recode vcf-iid bgz --out ${chrData.harmonizedVcf.base.local.get} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1; if [ $$? -eq 0 ]; then mv ${chrData.harmonizedVcf.base.local.get}.vcf.gz ${chrData.harmonizedVcf.base.local.get}.vcf.bgz; fi"""
+        cmd"""${utils.binary.binPlink} --bfile ${chrData.refPlink.base} --allow-no-sex --real-ref-alleles --a2-allele ${chrData.forceA2} --output-chr ${projectConfig.plinkOutputChr} --recode vcf-iid bgz --out ${chrData.harmonizedVcf.base.local.get} --memory ${projectConfig.resources.standardPlink.mem * 0.9 * 1000} --seed 1; if [ $$? -eq 0 ]; then mv ${chrData.harmonizedVcf.base.local.get}.vcf.gz ${chrData.harmonizedVcf.base.local.get}.vcf.bgz; fi"""
           .in(chrData.refPlink.data :+ chrData.forceA2)
           .out(chrData.harmonizedVcf.data.local.get)
           .tag(s"${chrData.harmonizedVcf.base.local.get}.vcf.bgz".split("/").last)
@@ -210,7 +210,7 @@ object Harmonize extends loamstream.LoamFile {
           --allow-no-sex
           --real-ref-alleles
           --a2-allele ${chrData.forceA2}
-          --output-chr MT
+          --output-chr ${projectConfig.plinkOutputChr}
           --make-just-bim
           --out ${chrData.harmonizedBim.toString.split("@")(1).replace(".bim","")}
           --memory 14400.0
