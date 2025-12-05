@@ -71,7 +71,11 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 	
 	mt = mt.annotate_rows(
 		**{variant_qc: mt[variant_qc].annotate(
+			n_called = hl.agg.count_where(hl.is_defined(mt.GT)),
+			n_het = hl.agg.count_where(mt.GT.is_het()),
 			n_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female])),
+			n_homvar = hl.agg.count_where(mt.GT.is_hom_var()),
+			n_homref = hl.agg.count_where(mt.GT.is_hom_ref()),
 			n_male_homvar = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female])),
 			n_male_homref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female])),
 			n_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female])),
@@ -108,14 +112,14 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 			AC = (hl.case()
 				.when(mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_male_homvar)
 				.when(mt.locus.in_x_nonpar(), 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)
-				.default(mt[variant_qc].AC)),
+				.default(2*mt[variant_qc].n_homvar + mt[variant_qc].n_het)),
 			AN = (hl.case()
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_male_called)
-				.default(mt[variant_qc].AN)),
+				.default(2*mt[variant_qc].n_called)),
 			AF = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar / mt[variant_qc].n_male_called)
 				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))
-				.default(mt[variant_qc].AF)),
+				.default((2*mt[variant_qc].n_homvar + mt[variant_qc].n_het) / 2*mt[variant_qc].n_called)),
 			het_freq_hwe = (hl.case()
 				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
@@ -131,11 +135,11 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 			n_hom_var = (hl.case()
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_homvar)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar)
-				.default(hl.agg.count_where(mt.GT.is_hom_var()))),
+				.default(mt[variant_qc].n_homvar)),
 			n_hom_ref = (hl.case()
 				.when(mt.locus.in_x_nonpar(), mt[variant_qc].n_female_homref)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homref)
-				.default(hl.agg.count_where(mt.GT.is_hom_ref()))),
+				.default(mt[variant_qc].n_homref)),
 			avg_ab = hl.if_else(
 				'AD' in gt_codes,
 				(hl.case()
