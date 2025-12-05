@@ -1,6 +1,7 @@
 #!/bin/bash
 
 chr="NA"
+region="NA"
 splitPhenoOut=0
 
 while :; do
@@ -86,6 +87,15 @@ while :; do
 				exit 1
 			fi
 			;;
+		--region)
+			if [ "$2" ]; then
+				region=$2
+				shift
+			else
+				echo "ERROR: --region requires a non-empty argument."
+				exit 1
+			fi
+			;;
 		--batch)
 			if [ "$2" ]; then
 				batch=$2
@@ -137,6 +147,7 @@ echo "covarFile: $covarFile"
 echo "phenoFile: $phenoFile"
 echo "phenoTable: $phenoTable"
 echo "chr: $chr"
+echo "region: $region"
 echo "batch: $batch"
 echo "splitPhenoOut: $splitPhenoOut"
 echo "pred: $pred"
@@ -150,6 +161,13 @@ then
 	chrString=""
 else
 	chrString="--chr $chr"
+fi
+
+if [ "$region" == "NA" ]
+then
+	regionString=""
+else
+	regionString="--range $region"
 fi
 
 if [ $splitPhenoOut -eq 1 ]
@@ -169,6 +187,7 @@ $regenie \
 --phenoFile $phenoFile \
 $cliOptions \
 $chrString \
+$regionString \
 $splitPhenoOutString \
 --pred $pred \
 --out $out \
