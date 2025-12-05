@@ -66,6 +66,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 
 	gt_codes = list(mt.entry)
 
+	num_samples = mt.count_cols()
 	num_males = mt.aggregate_cols(hl.agg.count_where(~ mt[is_female]))
 	num_females = mt.aggregate_cols(hl.agg.count_where(mt[is_female]))
 	
@@ -108,7 +109,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 		**{variant_qc: mt[variant_qc].annotate(
 			call_rate = (hl.case()
 				.when(mt.locus.in_y_nonpar(), (mt[variant_qc].n_male_called / num_males))
-				.default(mt[variant_qc].n_called)),
+				.default(mt[variant_qc].n_called / num_samples)),
 			AC = (hl.case()
 				.when(mt.locus.in_y_nonpar(), 2*mt[variant_qc].n_male_homvar)
 				.when(mt.locus.in_x_nonpar(), 2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar)
@@ -119,7 +120,7 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 			AF = (hl.case()
 				.when(mt.locus.in_y_nonpar(), mt[variant_qc].n_male_homvar / mt[variant_qc].n_male_called)
 				.when(mt.locus.in_x_nonpar(), (2*mt[variant_qc].n_male_homvar + mt[variant_qc].n_female_het + 2*mt[variant_qc].n_female_homvar) / (2*mt[variant_qc].n_male_called + 2*mt[variant_qc].n_female_called))
-				.default((2*mt[variant_qc].n_homvar + mt[variant_qc].n_het) / 2*mt[variant_qc].n_called)),
+				.default((2*mt[variant_qc].n_homvar + mt[variant_qc].n_het) / (2*mt[variant_qc].n_called))),
 			het_freq_hwe = (hl.case()
 				.when(mt.locus.in_x_nonpar(), hl.agg.filter(mt[is_female], hl.agg.hardy_weinberg_test(mt.GT)).het_freq_hwe)
 				.when(mt.locus.in_y_par() | mt.locus.in_y_nonpar(), hl.missing(hl.tfloat64))
