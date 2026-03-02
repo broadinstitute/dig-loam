@@ -83,7 +83,10 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 			n_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female])),
 			n_female_homvar = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female])),
 			n_female_homref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female])),
-			n_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]))
+			n_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female])),
+			n_male_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (~ mt[is_female])),
+			n_female_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (mt[is_female])),
+			n_unknown_sex_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & hl.is_missing(mt[is_female]))
 		)}
 	)
 
@@ -181,6 +184,11 @@ def update_variant_qc(mt: hl.MatrixTable, is_female: hl.tstr, variant_qc: hl.tst
 				'GQ' in gt_codes,
 				hl.agg.filter((mt.GT.is_non_ref()) & (mt.GT.is_het()), hl.agg.mean(mt.GQ)),
 				hl.missing(hl.tfloat64)
+			),
+			singleton_carrier_id = hl.if_else(
+				mt[variant_qc].n_non_ref == 1,
+				hl.agg.filter(mt.GT.is_non_ref(),hl.agg.take(mt.s, 1))[0],
+				hl.missing(hl.tstr)
 			)
 		)}
 	)
@@ -476,28 +484,36 @@ def add_case_ctrl_stats_results(mt: hl.MatrixTable, is_female: hl.tstr, variant_
 		**{variant_qc: mt[variant_qc].annotate(
 			n_case_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 1)),
 			n_case_het = hl.agg.count_where(mt.GT.is_het() & (mt.pheno[is_case] == 1)),
+			n_case_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (mt.pheno[is_case] == 1)),
 			n_case_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt.pheno[is_case] == 1)),
 			n_case_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt.pheno[is_case] == 1)),
 			n_case_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
+			n_case_male_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_case_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+			n_case_female_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (mt[is_female]) & (mt.pheno[is_case] == 1)),
+			n_case_unknown_sex_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & hl.is_missing(mt[is_female]) & (mt.pheno[is_case] == 1)),
 			n_ctrl_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt.pheno[is_case] == 0)),
 			n_ctrl_het = hl.agg.count_where(mt.GT.is_het() & (mt.pheno[is_case] == 0)),
+			n_ctrl_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (mt.pheno[is_case] == 0)),
 			n_ctrl_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt.pheno[is_case] == 0)),
 			n_ctrl_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_het = hl.agg.count_where(mt.GT.is_het() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_male_called = hl.agg.count_where(hl.is_defined(mt.GT) & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
+			n_ctrl_male_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (~ mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_female_het = hl.agg.count_where(mt.GT.is_het() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_female_hom_var = hl.agg.count_where(mt.GT.is_hom_var() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
 			n_ctrl_female_hom_ref = hl.agg.count_where(mt.GT.is_hom_ref() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
-			n_ctrl_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 0))
+			n_ctrl_female_called = hl.agg.count_where(hl.is_defined(mt.GT) & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+			n_ctrl_female_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & (mt[is_female]) & (mt.pheno[is_case] == 0)),
+			n_ctrl_unknown_sex_non_ref = hl.agg.count_where(mt.GT.is_non_ref() & hl.is_missing(mt[is_female]) & (mt.pheno[is_case] == 0)),
 		)}
 	)
 
