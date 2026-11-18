@@ -29,7 +29,7 @@ def main(args=None):
 			print "removing {0:d} variants with mac < 3".format(df[df[args.mac] < 3].shape[0])
 			df = df[df[args.mac] >= 3]
 	elif args.n and args.eaf:
-		df['__MAC__'] = np.floor(df[args.n] * df['__MAF__'])
+		df['__MAC__'] = np.floor(2 * df[args.n] * df['__MAF__'])
 		if len([col for col in df if col.startswith('case_') or col.startswith('ctrl_')]) > 0:
 			print "removing {0:d} variants with mac < 20".format(df[df['__MAC__'] < 20].shape[0])
 			df = df[df['__MAC__'] >= 20]
